@@ -36,15 +36,15 @@ public interface TransactionDao {
     long getTotalExpense(long start, long end);
 
     //Top 5 danh mục chi nhiều nhất (pie chart)
-    @Query("SELECT category_id, SUM(amount) as total FROM transactions "+"WHERE type=0 AND timestamp BETWEEN :start AND :end "+"GROUP BY category_id ORDER BY total DESC LIMIT 5")
+    @Query("SELECT categoryId, SUM(amount) as total FROM transactions "+"WHERE type=0 AND timestamp BETWEEN :start AND :end "+"GROUP BY categoryId ORDER BY total DESC LIMIT 5")
     List<CategorySum> getTop5ExpenseCategories(long start, long end);
 
     //Phần 'khác' trong pie chart: tổng tất cả ngoài top 5
-    @Query("SELECT IFNULL(SUM(amount), 0) FROM transactions "+"WHERE type=0 AND timestamp BETWEEN :start AND :end "+"AND category_id NOT IN("+" SELECT category_id FROM transactions WHERE type=0 AND timestamp BETWEEN :start AND :end "+" GROUP BY category_id ORDER BY SUM(amount) DESC LIMIT 5"+")")
+    @Query("SELECT IFNULL(SUM(amount), 0) FROM transactions "+"WHERE type=0 AND timestamp BETWEEN :start AND :end "+"AND categoryId NOT IN("+" SELECT categoryId FROM transactions WHERE type=0 AND timestamp BETWEEN :start AND :end "+" GROUP BY categoryId ORDER BY SUM(amount) DESC LIMIT 5"+")")
     long getOtherExpenseTotal(long start, long end);
 
     //Tổng chi theo 1 danh mục cụ thể trong 1 tgian cu the
-    @Query("SELECT IFNULL(SUM(amount),0) FROM transactions "+"WHERE type = 0 AND category_id = :category_id AND timestamp BETWEEN :start AND :end")
+    @Query("SELECT IFNULL(SUM(amount),0) FROM transactions "+"WHERE type = 0 AND categoryId = :category_id AND timestamp BETWEEN :start AND :end")
     long getTotalExpenseByCategory(int category_id, long start, long end);
 
     //N giao dịch gần nhất
@@ -55,4 +55,8 @@ public interface TransactionDao {
     //tính sô dư
     @Query("SELECT (SELECT IFNULL(SUM(amount), 0) FROM transactions WHERE type = 1) - " + "(SELECT IFNULL(SUM(amount), 0) FROM transactions WHERE type = 0)")
     long getActualBalance();
+
+    //đếm số lượng giao dịch trong 1 khoang thời gian
+    @Query("SELECT COUNT(*) FROM transactions WHERE timestamp BETWEEN :startOfDay AND :endOfDay")
+    int countTransactionsByDay(long startOfDay, long endOfDay);
 }

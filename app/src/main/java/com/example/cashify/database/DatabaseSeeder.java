@@ -29,14 +29,14 @@ public class DatabaseSeeder {
             }
         });
     }
-    private static Category makeCategory(String name, String icon, String color, int type, int is_default){
+    private static Category makeCategory(String name, String icon, String color, int type, int isDefault){
         Category c=new Category();
         c.name=name;
-        c.icon_name=icon;
-        c.color_code=color;
+        c.iconName=icon;
+        c.colorCode=color;
         c.type=type;
-        c.is_default=is_default;
-        c.is_deleted=0;
+        c.isDefault=isDefault;
+        c.isDeleted=0;
         return c;
     }
 }
