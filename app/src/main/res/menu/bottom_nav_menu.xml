@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Nút home trong bottom navigation -->
+    <!-- dùng chính id này để kết nối từng fragment với nav_graph -->
+    <item
+        android:id="@+id/nav_home"
+        android:title="Tổng quan"
+        android:icon="@drawable/home_regular"
+        />
+    <!-- Nút budget trong bottom navigation -->
+    <item
+        android:id="@+id/nav_budget"
+        android:title="Ngân sách"
+        android:icon="@drawable/budget_regular"/>
+    <!-- Nút history trong bottom navigation -->
+    <item
+        android:id="@+id/nav_history"
+        android:title="Lịch sử giao dịch"
+        android:icon="@drawable/history_transaction_regular"/>
+    <!-- Nút settings trong bottom navigation -->
+    <item
+        android:id="@+id/nav_settings"
+        android:title="Cài đặt"
+        android:icon="@drawable/settings_regular"/>
+</menu>
