@@ -20,8 +20,7 @@ public abstract class AppDatabase extends RoomDatabase {
         if (instance == null) {
             instance = Room.databaseBuilder(context.getApplicationContext(),
                             AppDatabase.class, "money_manager_db")
-                    .fallbackToDestructiveMigration() // Nếu đổi cấu trúc bảng thì xóa dữ liệu cũ (tiện khi đang làm đồ án)
-                    .allowMainThreadQueries()
+                    .fallbackToDestructiveMigration() // Nếu đổi cấu trúc bảng thì xóa dữ liệu cũ
                     .build();
         }
         return instance;
