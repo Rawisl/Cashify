@@ -5,11 +5,13 @@ import java.util.concurrent.Executors;
 
 public class DatabaseSeeder {
     public static void seedIfEmpty(Context context){
+        //Gọi hàm execute này tránh làm đơ màn hình khi chèn dữ liệu
         Executors.newSingleThreadExecutor().execute(() ->{
             CategoryDao dao=AppDatabase.getInstance(context).categoryDao();
 
-            //seed neu chua co du lieu
+            //Check isEmpty để chèn chỉ khi trống dữ liệu, tránh bị trùng lặp, hoan hô Thu An
             if(dao.getCategoriesByType(0).isEmpty()&&dao.getCategoriesByType(1).isEmpty()){
+                //Danh sách này chứa các danh mục phổ biến
                 //--thu vao--//
                 dao.insert(makeCategory("Lương", "ic_salary", "#FFFFFF", 1, 1));
                 dao.insert(makeCategory("Gia đình cho", "ic_family", "#FFFFFF", 1, 1));

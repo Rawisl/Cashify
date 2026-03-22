@@ -23,15 +23,20 @@ public class MainActivity extends AppCompatActivity {
     boolean keepSplash = true;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        //Gọi thư viện Google trước super.onCreate
+        //Gọi thư viện Google trước super.onCreate cho splash screen
         SplashScreen splashScreen = SplashScreen.installSplashScreen(this);
-        super.onCreate(savedInstanceState);
 
-        //Cài đồng hồ đếm ngược 2000 ms
-        new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+        super.onCreate(savedInstanceState);
+        //Gọi hàm khởi tạo các danh mục lần đầu mở app
+        DatabaseSeeder.seedIfEmpty(this);
+
+        //Cài đồng hồ đếm ngược cho splash screen 2000 ms
+        new Handler(Looper.getMainLooper()).postDelayed(new Runnable()
+        {
             @Override
-            public void run() {
-                keepSplash = false; // Hết 2 giây thì báo "Xong rồi!"
+            public void run()
+            {
+                keepSplash = false;
             }
         }, 2000);
 
@@ -44,8 +49,6 @@ public class MainActivity extends AppCompatActivity {
         });
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
-        DatabaseSeeder.seedIfEmpty(this);
-
 
         //tìm thanh điều hướng
         BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
