@@ -6,73 +6,95 @@
     android:layout_height="match_parent"
     android:fillViewport="true"
     android:background="#F8F9FA"
-    >
+    android:requiresFadingEdge="vertical"
+    android:fadingEdgeLength="24dp">
+    <!-- 2 dòng fading edge để hỗ trợ việc scroll mượt hơn (content bị fade dần) -->
 
     <LinearLayout
         android:id="@+id/settings_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:padding="20dp">
 
+        <!-- Header -->
         <TextView
             android:id="@+id/tvSettings"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="4dp"
             android:fontFamily="@font/inter_bold"
             android:text="Settings"
             android:textColor="#111827"
             android:textSize="28dp"
             android:textStyle="bold" />
-
+        <!-- Subtitle -->
         <TextView
             android:id="@+id/tv_Settings_SubTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
             android:fontFamily="@font/inter_regular"
             android:text="Manage your preferences"
             android:textColor="#6B7280"
             android:textSize="14sp" />
 
+        <!-- Section ACCOUNT -->
         <TextView
             android:id="@+id/tv_Account"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
             android:fontFamily="@font/inter_semibold"
             android:text="Account"
             android:textAllCaps="true"
             android:textColor="#6B7280" />
 
         <androidx.cardview.widget.CardView
-            android:id="@+id/cv_security"
-            android:layout_width="wrap_content"
+            android:id="@+id/cv_account"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginLeft="16dp"
             android:layout_marginTop="8dp"
             android:layout_marginRight="16dp"
             app:cardCornerRadius="16dp"
-            app:cardElevation="0dp">
+            app:cardElevation="0.5dp"
+            app:cardMaxElevation="2dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="false"
+                android:focusable="true"
                 android:orientation="vertical">
 
+                <!-- Nút security -->
                 <LinearLayout
                     android:id="@+id/btn_security"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
                     android:orientation="horizontal"
                     android:padding="16dp">
 
-                    <ImageView
-                        android:id="@+id/imageView"
-                        android:layout_width="30dp"
-                        android:layout_height="40dp"
-                        android:layout_weight="1"
-                        app:srcCompat="@drawable/security_regular" />
+                    <!-- Icon -->
+                    <com.google.android.material.imageview.ShapeableImageView
+                        android:id="@+id/iv_ic_security"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_gravity="center"
+                        android:background="#EAF7F1"
+                        app:contentPadding="10dp"
+                        app:shapeAppearanceOverlay="@style/circle"
+                        app:srcCompat="@drawable/security_regular"
+                        app:tint="#005452" />
 
+                    <!-- 2 dòng title + mô tả -->
                     <LinearLayout
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="16dp"
                         android:layout_weight="1"
@@ -92,13 +114,336 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:fontFamily="@font/inter_regular"
-                            android:text="Đổi mật khẩu"
+                            android:text="Change password"
                             android:textColor="#6B7280"
                             android:textSize="13sp" />
-
                     </LinearLayout>
 
+                    <!-- Icon next -->
+                    <ImageView
+                        android:id="@+id/iv_ic_next"
+                        android:layout_width="24dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="0"
+                        app:srcCompat="@drawable/angle_right_next"
+                        app:tint="@color/material_dynamic_neutral50" />
+
                 </LinearLayout>
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Section PREFERENCES -->
+        <TextView
+            android:id="@+id/tv_Preferences"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:fontFamily="@font/inter_semibold"
+            android:text="Preferences"
+            android:textAllCaps="true"
+            android:textColor="#6B7280"
+            android:textSize="14sp" />
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cv_preferences"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="16dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginRight="16dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0.5dp"
+            app:cardMaxElevation="2dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:focusable="true"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:id="@+id/btn_categories"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+
+                    <!-- Nút categories -->
+                    <com.google.android.material.imageview.ShapeableImageView
+                        android:id="@+id/iv_ic_category"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_gravity="center"
+                        android:background="#EAF7F1"
+                        app:contentPadding="10dp"
+                        app:shapeAppearanceOverlay="@style/circle"
+                        app:srcCompat="@drawable/category_regular"
+                        app:tint="#005452" />
+
+                    <!-- 2 dòng title + mô tả -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/tv_categories"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/inter_semibold"
+                            android:text="Categories"
+                            android:textColor="#1F2937"
+                            android:textSize="16sp" />
+
+                        <TextView
+                            android:id="@+id/tv_category"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/inter_regular"
+                            android:text="Organize categories"
+                            android:textColor="#6B7280"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+                    <!-- Nút next -->
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="0"
+                        app:srcCompat="@drawable/angle_right_next"
+                        app:tint="@color/material_dynamic_neutral50" />
+                </LinearLayout>
+
+                <!-- Devider giữa 2 nút -->
+                <View
+                    android:id="@+id/view_divider"
+                    android:layout_width="match_parent"
+                    android:layout_height="0.7dp"
+                    android:background="#E5E7EB" />
+
+                <!-- Nút noti -->
+                <LinearLayout
+                    android:id="@+id/btn_notification"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+
+                    <!-- icon -->
+                    <com.google.android.material.imageview.ShapeableImageView
+                        android:id="@+id/iv_ic_notification"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_gravity="center"
+                        android:background="#EAF7F1"
+                        app:contentPadding="10dp"
+                        app:shapeAppearanceOverlay="@style/circle"
+                        app:srcCompat="@drawable/notification_regular"
+                        app:tint="#005452" />
+
+                    <!-- 2 dòng title + mô tả-->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/tv_notification"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/inter_semibold"
+                            android:text="Notifications"
+                            android:textColor="#1F2937"
+                            android:textSize="16sp" />
+
+                        <TextView
+                            android:id="@+id/tv_noti"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/inter_regular"
+                            android:text="Manage notification settings"
+                            android:textColor="#6B7280"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+                    <!-- nút next -->
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="0"
+                        app:srcCompat="@drawable/angle_right_next"
+                        app:tint="@color/material_dynamic_neutral50" />
+                </LinearLayout>
+
+
+                <!-- Devider giữa 2 nút -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="0.7dp"
+                    android:background="#E5E7EB" />
+
+                <!-- Nút language -->
+                <LinearLayout
+                    android:id="@+id/btn_language"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+
+                    <!-- icon -->
+                    <com.google.android.material.imageview.ShapeableImageView
+                        android:id="@+id/iv_ic_language"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_gravity="center"
+                        android:background="#EAF7F1"
+                        app:contentPadding="10dp"
+                        app:shapeAppearanceOverlay="@style/circle"
+                        app:srcCompat="@drawable/language_exchange_regular"
+                        app:tint="#005452" />
+
+                    <!-- 2 dòng title + mô tả-->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/tv_language"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/inter_semibold"
+                            android:text="Language"
+                            android:textColor="#1F2937"
+                            android:textSize="16sp" />
+
+                        <TextView
+                            android:id="@+id/tv_lang"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/inter_regular"
+                            android:text="Language enxchange"
+                            android:textColor="#6B7280"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+
+                    <!-- nút next -->
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="0"
+                        app:srcCompat="@drawable/angle_right_next"
+                        app:tint="@color/material_dynamic_neutral50" />
+                </LinearLayout>
+
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- Section OTHER -->
+        <TextView
+            android:id="@+id/tv_Other"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:fontFamily="@font/inter_semibold"
+            android:text="Other"
+            android:textAllCaps="true"
+            android:textColor="#6B7280"
+            android:layout_marginTop="16dp"
+            android:textSize="14sp" />
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cv_other"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="16dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginRight="16dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0.5dp"
+            app:cardMaxElevation="2dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clickable="false"
+                android:focusable="true"
+                android:orientation="vertical">
+
+                <!-- Nút logout -->
+                <LinearLayout
+                    android:id="@+id/btn_logout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+
+                    <!-- Icon -->
+                    <com.google.android.material.imageview.ShapeableImageView
+                        android:id="@+id/iv_ic_logout"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_gravity="center"
+                        android:background="#FFF3F3"
+                        app:contentPadding="10dp"
+                        app:shapeAppearanceOverlay="@style/circle"
+                        app:srcCompat="@drawable/logout_regular"
+                        app:tint="#D35959" />
+
+                    <!-- 2 dòng title + mô tả -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/tv_logout"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/inter_semibold"
+                            android:text="Log Out"
+                            android:textColor="#1F2937"
+                            android:textSize="16sp" />
+
+                        <TextView
+                            android:id="@+id/tv_logout_subtitle"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/inter_regular"
+                            android:text="Sign out of your account"
+                            android:textColor="#6B7280"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+
+                    <!-- Icon next -->
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="0"
+                        app:srcCompat="@drawable/angle_right_next"
+                        app:tint="@color/material_dynamic_neutral50" />
+
+                </LinearLayout>
+
             </LinearLayout>
         </androidx.cardview.widget.CardView>
     </LinearLayout>
