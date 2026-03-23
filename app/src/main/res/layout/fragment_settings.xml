@@ -1,11 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
+<androidx.core.widget.NestedScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".ui.SettingsFragment">
+    android:fillViewport="true"
+    >
 
-    <!-- TODO: Update blank fragment layout -->
-    <NestedScrollView />
+    <LinearLayout
+        android:id="@+id/settings_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
 
-</FrameLayout>
+        <TextView
+            android:id="@+id/tvSettings"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/inter_bold"
+            android:text="Settings"
+            android:textColor="#111827"
+            android:textSize="28dp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tv_Settings_SubTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Manage your preferences"
+            android:textColor="#1F2937"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/tv_Account"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Account"
+            android:textColor="#6B7280" />
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>
