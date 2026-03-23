@@ -142,8 +142,8 @@ public class CategoryManagement extends AppCompatActivity {
         // Pre-fill data if we are in Edit Mode
         if (editCat != null) {
             edtName.setText(editCat.name);
-            selectedIconName = editCat.icon_name;
-            selectedColorCode = editCat.color_code;
+            selectedIconName = editCat.iconName;
+            selectedColorCode = editCat.colorCode;
             isExpense = (editCat.type == 0);
         } else {
             // Default values for new category
@@ -160,10 +160,10 @@ public class CategoryManagement extends AppCompatActivity {
 
             Category c = (editCat != null) ? editCat : new Category();
             c.name = name;
-            c.icon_name = selectedIconName;
-            c.color_code = selectedColorCode;
+            c.iconName = selectedIconName;
+            c.colorCode = selectedColorCode;
             c.type = isExpense ? 0 : 1;
-            c.is_deleted = 0;
+            c.isDeleted = 0;
 
             Executors.newSingleThreadExecutor().execute(() -> {
                 if (editCat != null) db.categoryDao().update(c);

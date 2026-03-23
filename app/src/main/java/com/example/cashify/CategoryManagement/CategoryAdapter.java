@@ -54,12 +54,12 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHo
         // --- 1. Dynamic Icon Loading ---
         // Converts a string (e.g., "ic_food") into a Resource ID.
         // This allows you to store just the name in the database.
-        String iconName = (category.icon_name != null && !category.icon_name.isEmpty()) ? category.icon_name : "ic_food";
+        String iconName = (category.iconName != null && !category.iconName.isEmpty()) ? category.iconName : "ic_food";
         int resId = context.getResources().getIdentifier(iconName, "drawable", context.getPackageName());
         holder.imgIcon.setImageResource(resId != 0 ? resId : R.drawable.ic_food);
 
         // --- 2. Dynamic Color & Pastel Background Styling ---
-        String colorStr = (category.color_code != null && !category.color_code.trim().isEmpty()) ? category.color_code.trim() : "#4CAF50";
+        String colorStr = (category.colorCode != null && !category.colorCode.trim().isEmpty()) ? category.colorCode.trim() : "#4CAF50";
 
         try {
             int originColor = Color.parseColor(colorStr);
