@@ -1,15 +1,15 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
     <style name="Base.Theme.Cashify" parent="Theme.Material3.Light.NoActionBar">
+
     </style>
 
     <style name="Theme.Cashify" parent="Base.Theme.Cashify" />
+
     <style name="Theme.App.Starting" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">#F1FBF0</item>
-
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_logo_splash</item>
-
         <item name="postSplashScreenTheme">@style/Theme.Cashify</item>
+
     </style>
 
 
@@ -17,5 +17,119 @@
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">50%</item>
     </style>
+    <!--Chỉ dùng đơn vị sp cho định dạng style text với mục đích ng dùng có thể phóng to, thu nhỏ cỡ chữ-->
+
+    <style name="screen_title">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">28sp</item>
+        <item name="android:fontFamily">@font/inter_bold</item>
+        <item name="android:textColor">@color/screen_title</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:layout_marginBottom">4dp</item>
+    </style>
+    <style name="screen_subtitle">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:fontFamily">@font/inter_regular</item>
+        <item name="android:textColor">@color/screen_subtitle</item>
+        <item name="android:layout_marginBottom">24dp</item>
+    </style>
+
+    <style name="section_header">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:fontFamily">@font/inter_semibold</item>
+        <item name="android:textColor">@color/section_header</item>
+        <item name="android:textAllCaps">true</item>
+    </style>
+
+    <style name="cardview_buttons">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginLeft">16dp</item>
+        <item name="android:layout_marginTop">8dp</item>
+        <item name="android:layout_marginRight">16dp</item>
+        <item name="cardCornerRadius">16dp</item>
+        <item name="cardElevation">0.5dp</item>
+        <item name="cardMaxElevation">2dp</item>
+    </style>
+
+    <style name="buttons_layout">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:background">?attr/selectableItemBackground</item>
+        <item name="android:focusable">true</item>
+        <item name="android:orientation">vertical</item>
+    </style>
+
+    <style name="btn_component_layout">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:background">?attr/selectableItemBackground</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:orientation">horizontal</item>
+        <item name="android:padding">16dp</item>
+    </style>
+
+    <style name="btn_main_icon">
+        <item name="android:layout_width">48dp</item>
+        <item name="android:layout_height">48dp</item>
+        <item name="android:layout_gravity">center</item>
+        <item name="contentPadding">10dp</item>
+        <item name="shapeAppearanceOverlay">@style/circle</item>
+    </style>
+
+    <style name="btn_text_layout">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginStart">16dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:orientation">vertical</item>
+    </style>
+
+    <style name="btn_item_title">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/item_title</item>
+        <item name="android:fontFamily">@font/inter_semibold</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+
+    <style name="btn_item_description">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/item_description</item>
+        <item name="android:fontFamily">@font/inter_regular</item>
+        <item name="android:textSize">13sp</item>
+    </style>
+
+
+    <style name="btn_next_icon">
+        <item name="android:layout_width">24dp</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:layout_weight">0</item>
+        <item name="srcCompat">@drawable/angle_right_next</item>
+        <item name="tint">@color/material_dynamic_neutral50</item>
+    </style>
+
+    <style name="buttons_divider">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">0.7dp</item>
+        <item name="android:background">@color/cardview_divider</item>
+    </style>
+
+
+
+
+
+
+
+
+
+
 
 </resources>

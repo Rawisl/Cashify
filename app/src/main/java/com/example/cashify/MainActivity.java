@@ -14,6 +14,8 @@ import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.NavigationUI;
 
+import androidx.appcompat.app.AppCompatDelegate; // Nhớ import thư viện này
+
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import com.example.cashify.database.DatabaseSeeder;
@@ -23,6 +25,10 @@ public class MainActivity extends AppCompatActivity {
     boolean keepSplash = true;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
+        //Khóa cứng app ở chế độ Sáng
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+
         //Gọi thư viện Google trước super.onCreate cho splash screen
         SplashScreen splashScreen = SplashScreen.installSplashScreen(this);
 

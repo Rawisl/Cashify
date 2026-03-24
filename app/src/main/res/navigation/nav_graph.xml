@@ -11,10 +11,10 @@
         android:label="fragment_budget"
         tools:layout="@layout/fragment_budget" />
     <fragment
-        android:id="@+id/nav_history"
-        android:name="com.example.cashify.ui.HistoryFragment"
-        android:label="fragment_history"
-        tools:layout="@layout/fragment_history" />
+        android:id="@+id/nav_transaction"
+        android:name="com.example.cashify.ui.TransactionFragment"
+        android:label="fragment_transaction"
+        tools:layout="@layout/fragment_transaction" />
     <fragment
         android:id="@+id/nav_home"
         android:name="com.example.cashify.ui.HomeFragment"
