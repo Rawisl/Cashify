@@ -31,12 +31,17 @@ public interface BudgetDao {
     @Query("SELECT * FROM budgets WHERE categoryId = -1 AND startDate <= :now AND endDate >= :now LIMIT 1")
     Budget getMasterBudget(long now);
 
-    //progress bar ngân sách
-    @Query("SELECT b.*, IFNULL(SUM(t.amount), 0) as spentAmount " +
+    //progress bar ngân sách (Đã chỉnh sửa)
+    @Query("SELECT b.*, c.name as categoryName, IFNULL(SUM(t.amount), 0) as spentAmount " +
             "FROM budgets b " +
+            "LEFT JOIN categories c ON b.categoryId = c.id " +
             "LEFT JOIN transactions t ON t.categoryId = b.categoryId " +
             "AND t.type = 0 AND t.timestamp BETWEEN b.startDate AND b.endDate " +
             "WHERE b.startDate <= :now AND b.endDate >= :now " +
             "GROUP BY b.id")
     List<BudgetWithSpent> getActiveBudgetsWithSpent(long now);
+
+    // Tính tổng tất cả khoản chi (type = 0) trong khoảng thời gian để dành riêng cho Master Budget (Mới them)
+    @Query("SELECT IFNULL(SUM(amount), 0) FROM transactions WHERE type = 0 AND timestamp BETWEEN :startDate AND :endDate")
+    long getMasterSpentAmount(long startDate, long endDate);
 }
