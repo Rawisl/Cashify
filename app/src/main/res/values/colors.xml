@@ -50,4 +50,6 @@
     <color name="cat_pastel_purple">#AD78B4</color>
     <color name="cat_pastel_gray">#81949D</color>
 
+    <!--Numpad button's bg color-->
+    <color name="numpad_key_bg">#73DED7B8</color>
 </resources>

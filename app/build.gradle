@@ -43,6 +43,7 @@ dependencies {
     implementation libs.navigation.ui.ktx
     //Sử dụng SplashScreen chính chủ của Google
     implementation("androidx.core:core-splashscreen:1.0.1")
+    implementation libs.gridlayout
     testImplementation libs.junit
     androidTestImplementation libs.ext.junit
     androidTestImplementation libs.espresso.core
