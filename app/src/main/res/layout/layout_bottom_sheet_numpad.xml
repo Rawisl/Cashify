@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_sheet_rounded"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:id="@+id/tv_amount"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="25dp"
+        android:fontFamily="@font/outfit_bold"
+        android:gravity="center"
+        android:text="0đ"
+        android:textColor="@color/brand_primary"
+        android:textSize="30sp" />
+
+    <androidx.gridlayout.widget.GridLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:columnCount="3"
+        app:rowCount="4">
+
+        <TextView
+            android:id="@+id/btn_num_1"
+            android:text="1"
+            style="@style/numpad_key"
+             />
+        <TextView
+            android:id="@+id/btn_num_2"
+            android:text="2"
+            style="@style/numpad_key"
+            />
+        <TextView
+            android:id="@+id/btn_num_3"
+            android:text="3"
+            style="@style/numpad_key"
+            />
+
+        <TextView
+            android:id="@+id/btn_num_4"
+            android:text="4"
+            style="@style/numpad_key"
+            />
+        <TextView
+            android:id="@+id/btn_num_5"
+            android:text="5"
+            style="@style/numpad_key"
+            />
+        <TextView
+            android:id="@+id/btn_num_6"
+            android:text="6"
+            style="@style/numpad_key"
+            />
+
+        <TextView
+            android:id="@+id/btn_num_7"
+            android:text="7"
+            style="@style/numpad_key"
+            />
+        <TextView
+            android:id="@+id/btn_num_8"
+            android:text="8"
+            style="@style/numpad_key"
+            />
+        <TextView
+            android:id="@+id/btn_num_9"
+            android:text="9"
+            style="@style/numpad_key"
+            />
+
+        <TextView
+            android:id="@+id/btn_num_dot"
+            android:text=""
+            android:background="@android:color/transparent"
+            style="@style/numpad_key"
+            />
+        <TextView
+            android:id="@+id/btn_num_0"
+            android:text="0"
+            style="@style/numpad_key"
+            />
+
+        <ImageView
+            android:id="@+id/btn_backspace"
+            style="@style/numpad_key"
+            android:padding="19dp"
+            android:src="@drawable/delete"
+            app:tint="@color/status_red" />
+
+    </androidx.gridlayout.widget.GridLayout>
+
+    <Button
+        android:id="@+id/btn_continue"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_marginTop="24dp"
+        android:backgroundTint="@color/brand_primary"
+        android:fontFamily="@font/inter_bold"
+        android:text="@string/action_next"
+        android:textColor="@color/white"
+        android:textSize="24sp"
+        app:cornerRadius="16dp" />
+
+</LinearLayout>
