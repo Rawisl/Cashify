@@ -7,6 +7,8 @@ import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.transition.TransitionManager;
 import android.view.View;
 import android.view.ViewGroup;
@@ -37,53 +39,31 @@ import java.util.concurrent.Executors;
 public class CategoryManagement extends AppCompatActivity {
     private RecyclerView rvChi, rvThu;
     private CategoryAdapter adapterChi, adapterThu;
+    private AppDatabase db;
+    private EditText edtSearch;
+
+    // List gốc từ Database
     private List<Category> listChi = new ArrayList<>();
     private List<Category> listThu = new ArrayList<>();
-    private AppDatabase db;
+
+    // List dùng để hiển thị (đã qua bộ lọc Search)
+    private List<Category> filteredChi = new ArrayList<>();
+    private List<Category> filteredThu = new ArrayList<>();
 
     private final int[] allIconsRepo = {
-            //income
-            R.drawable.ic_salary,
-            R.drawable.ic_family,
-            R.drawable.ic_freelance,
-            R.drawable.ic_bonus,
-            R.drawable.ic_gift,
-            //expense
-            R.drawable.ic_food,
-            R.drawable.ic_cafe,
-            R.drawable.ic_transport,
-            R.drawable.ic_fuel,
-            R.drawable.ic_shopping,
-            R.drawable.ic_house,
-            R.drawable.ic_bill,
-            R.drawable.ic_electricity,
-            R.drawable.ic_gas,
-            R.drawable.ic_health,
-            R.drawable.ic_education,
-            R.drawable.ic_vacation,
-            R.drawable.ic_entertain,
-            R.drawable.ic_gym,
-            R.drawable.ic_other};
+            R.drawable.ic_salary, R.drawable.ic_family, R.drawable.ic_freelance, R.drawable.ic_bonus, R.drawable.ic_gift,
+            R.drawable.ic_food, R.drawable.ic_cafe, R.drawable.ic_transport, R.drawable.ic_fuel, R.drawable.ic_shopping,
+            R.drawable.ic_house, R.drawable.ic_bill, R.drawable.ic_electricity, R.drawable.ic_gas, R.drawable.ic_health,
+            R.drawable.ic_education, R.drawable.ic_vacation, R.drawable.ic_entertain, R.drawable.ic_gym, R.drawable.ic_other
+    };
+
     private final String[] colorRepo = {
-            "#F44336", // đỏ
-            "#E91E63", // hồng
-            "#9C27B0", // tím
-            "#673AB7", // tím đậm
-            "#3F51B5", // indigo
-            "#2196F3", // xanh dương
-            "#03A9F4", // xanh da trời
-            "#00BCD4", // cyan
-            "#009688", // teal
-            "#4CAF50", // xanh lá
-            "#8BC34A", // xanh lá nhạt (vẫn ổn)
-            "#FFC107", // vàng (đậm, vẫn thấy được)
-            "#FF9800", // cam
-            "#FF5722", // cam đỏ
-            "#795548"  // nâu
+            "#E96565", "#FDA664", "#F675A1", "#559DE4", "#6CD0D0", "#847FF0", "#87D18C", "#93CE9D",
+            "#9B8077", "#F6DA88", "#AD78B4", "#81949D", "#313B60", "#D14040", "#1DB424"
     };
 
     private String selectedIconName = "ic_other";
-    private String selectedColorCode = "#F44336";
+    private String selectedColorCode = "#313B60"; // Mặc định dùng brand_primary
     private boolean isExpense = true;
 
     @Override
@@ -91,34 +71,58 @@ public class CategoryManagement extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_category);
         db = AppDatabase.getInstance(this);
-
         DatabaseSeeder.seedIfEmpty(this);
 
         // Ánh xạ View
         rvChi = findViewById(R.id.recyclerChiRa);
         rvThu = findViewById(R.id.recyclerThuVao);
+        edtSearch = findViewById(R.id.edtSearchCategory);
         ImageButton btnAddCategory = findViewById(R.id.btnAddCategory);
         ImageView btnBack = findViewById(R.id.btnBack);
 
         loadData();
 
-        // Xử lý nút Back
-        if (btnBack != null) {
-            btnBack.setOnClickListener(v -> finish());
+        if (btnBack != null) btnBack.setOnClickListener(v -> finish());
+
+        // --- Logic Tìm Kiếm ---
+        if (edtSearch != null) {
+            edtSearch.addTextChangedListener(new TextWatcher() {
+                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    filterCategories(s.toString());
+                }
+                @Override public void afterTextChanged(Editable s) {}
+            });
         }
 
-        // --- UI Collapsible Sections ---
+        // --- UI Collapsible ---
         findViewById(R.id.layoutHeaderChi).setOnClickListener(v -> toggleRecyclerView(rvChi, findViewById(R.id.tvArrowChi)));
         findViewById(R.id.layoutHeaderThu).setOnClickListener(v -> toggleRecyclerView(rvThu, findViewById(R.id.tvArrowThu)));
 
         btnAddCategory.setOnClickListener(v -> showCategoryPopup(null));
     }
 
+    private void filterCategories(String query) {
+        String pattern = query.toLowerCase().trim();
+        filteredChi.clear();
+        filteredThu.clear();
+
+        for (Category c : listChi) if (c.name.toLowerCase().contains(pattern)) filteredChi.add(c);
+        for (Category c : listThu) if (c.name.toLowerCase().contains(pattern)) filteredThu.add(c);
+
+        if (adapterChi != null) adapterChi.notifyDataSetChanged();
+        if (adapterThu != null) adapterThu.notifyDataSetChanged();
+
+        // Tự mở rộng khi search để thấy kết quả
+        if (!pattern.isEmpty()) {
+            rvChi.setVisibility(View.VISIBLE);
+            rvThu.setVisibility(View.VISIBLE);
+        }
+    }
+
     private void toggleRecyclerView(RecyclerView rv, TextView arrow) {
         ViewGroup root = findViewById(R.id.content_layout);
-        if (root != null) {
-            TransitionManager.beginDelayedTransition(root);
-        }
+        if (root != null) TransitionManager.beginDelayedTransition(root);
 
         if (rv.getVisibility() == View.VISIBLE) {
             rv.setVisibility(View.GONE);
@@ -138,27 +142,26 @@ public class CategoryManagement extends AppCompatActivity {
                 listChi.clear(); listChi.addAll(chi);
                 listThu.clear(); listThu.addAll(thu);
 
+                // Cập nhật list hiển thị ban đầu
+                filterCategories(edtSearch != null ? edtSearch.getText().toString() : "");
+
                 CategoryAdapter.OnCategoryListener listener = new CategoryAdapter.OnCategoryListener() {
                     @Override public void onDeleteSuccess() { loadData(); }
                     @Override public void onEditClick(Category c) { showCategoryPopup(c); }
                 };
 
-                // Adapter Chi
                 if (adapterChi == null) {
-                    adapterChi = new CategoryAdapter(this, listChi, listener);
+                    adapterChi = new CategoryAdapter(this, filteredChi, listener);
                     rvChi.setLayoutManager(new LinearLayoutManager(this));
                     rvChi.setAdapter(adapterChi);
-                    rvChi.setNestedScrollingEnabled(false); // Quan trọng: Tắt scroll để mượt hơn
-                    setupSwipeToDelete(rvChi, adapterChi, listChi);
+                    setupSwipeToDelete(rvChi, adapterChi, filteredChi);
                 } else adapterChi.notifyDataSetChanged();
 
-                // Adapter Thu
                 if (adapterThu == null) {
-                    adapterThu = new CategoryAdapter(this, listThu, listener);
+                    adapterThu = new CategoryAdapter(this, filteredThu, listener);
                     rvThu.setLayoutManager(new LinearLayoutManager(this));
                     rvThu.setAdapter(adapterThu);
-                    rvThu.setNestedScrollingEnabled(false); // Quan trọng: Tắt scroll để mượt hơn
-                    setupSwipeToDelete(rvThu, adapterThu, listThu);
+                    setupSwipeToDelete(rvThu, adapterThu, filteredThu);
                 } else adapterThu.notifyDataSetChanged();
             });
         });
@@ -184,7 +187,7 @@ public class CategoryManagement extends AppCompatActivity {
             isExpense = (editCat.type == 0);
         } else {
             selectedIconName = "ic_other";
-            selectedColorCode = "#4C6FFF";
+            selectedColorCode = "#313B60";
             isExpense = true;
         }
 
@@ -219,9 +222,9 @@ public class CategoryManagement extends AppCompatActivity {
 
         try {
             int originColor = Color.parseColor(selectedColorCode);
+            // Tạo nền nhạt (20% Alpha) cho Icon Preview
             int pastelColor = Color.argb(51, Color.red(originColor), Color.green(originColor), Color.blue(originColor));
 
-            // Đoạn này tôi đổi lại RECTANGLE cho đồng bộ với danh sách ngoài nhé
             GradientDrawable shape = new GradientDrawable();
             shape.setShape(GradientDrawable.RECTANGLE);
             shape.setCornerRadius(14 * getResources().getDisplayMetrics().density);
@@ -236,32 +239,32 @@ public class CategoryManagement extends AppCompatActivity {
         TextView btnChi = dialog.findViewById(R.id.btnTabChi);
         TextView btnThu = dialog.findViewById(R.id.btnTabThu);
 
-        if (isExpense) {
-            updateTabStyles(btnChi, btnThu);
-        } else {
-            updateTabStyles(btnThu, btnChi);
-        }
+        if (isExpense) updateTabStyles(btnChi, btnThu, true);
+        else updateTabStyles(btnThu, btnChi, false);
 
-        if (isEditMode) {
+        if (!isEditMode) {
+            btnChi.setOnClickListener(v -> { isExpense = true; updatePopupUI(dialog, preview, false); });
+            btnThu.setOnClickListener(v -> { isExpense = false; updatePopupUI(dialog, preview, false); });
+        } else {
             btnChi.setAlpha(0.5f);
             btnThu.setAlpha(0.5f);
-            btnChi.setOnClickListener(null);
-            btnThu.setOnClickListener(null);
-        } else {
-            btnChi.setAlpha(1.0f);
-            btnThu.setAlpha(1.0f);
-            btnChi.setOnClickListener(v -> {
-                isExpense = true;
-                updatePopupUI(dialog, preview, false);
-            });
-            btnThu.setOnClickListener(v -> {
-                isExpense = false;
-                updatePopupUI(dialog, preview, false);
-            });
         }
-        // --- KẾT THÚC PHẦN THAY ĐỔI ---
 
         setupPickers(dialog, preview, isEditMode);
+    }
+
+    private void updateTabStyles(TextView selected, TextView unselected, boolean isExpenseTab) {
+        GradientDrawable selectedBg = new GradientDrawable();
+        selectedBg.setColor(Color.parseColor("#E5E7EB")); // Màu nền tab active
+        selectedBg.setCornerRadius(10 * getResources().getDisplayMetrics().density);
+
+        selected.setBackground(selectedBg);
+        selected.setTextColor(isExpenseTab ? Color.parseColor("#D14040") : Color.parseColor("#1DB424"));
+        selected.setTypeface(null, android.graphics.Typeface.BOLD);
+
+        unselected.setBackground(null);
+        unselected.setTextColor(Color.parseColor("#9CA3AF"));
+        unselected.setTypeface(null, android.graphics.Typeface.NORMAL);
     }
 
     private void setupPickers(Dialog dialog, ImageView preview, boolean isEditMode) {
@@ -287,84 +290,36 @@ public class CategoryManagement extends AppCompatActivity {
 
     private void setupSwipeToDelete(RecyclerView rv, CategoryAdapter adapter, List<Category> list) {
         ItemTouchHelper.SimpleCallback callback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
-            @Override
-            public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
-                return false;
-            }
+            @Override public boolean onMove(@NonNull RecyclerView r, @NonNull RecyclerView.ViewHolder v, @NonNull RecyclerView.ViewHolder t) { return false; }
 
             @Override
-            public void onChildDraw(@NonNull android.graphics.Canvas c, @NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive) {
-                View itemView = viewHolder.itemView;
-
-                if (dX < 0) { // Khi quẹt trái
-                    // 1. Vẽ nền đỏ bo góc
-                    GradientDrawable background = new GradientDrawable();
-                    background.setColor(Color.parseColor("#F44336"));
-                    background.setCornerRadius(12 * getResources().getDisplayMetrics().density);
-                    background.setBounds(itemView.getRight() + (int) dX, itemView.getTop(), itemView.getRight(), itemView.getBottom());
-                    background.draw(c);
-
-                    // 2. Vẽ icon thùng rác màu trắng
-                    android.graphics.drawable.Drawable icon = androidx.core.content.ContextCompat.getDrawable(CategoryManagement.this, R.drawable.trash_regularsvg);
-                    if (icon != null) {
-                        // Ép màu icon thành trắng (nếu file svg gốc đang là màu khác)
-                        androidx.core.graphics.drawable.DrawableCompat.setTint(icon, Color.WHITE);
-
-                        int itemHeight = itemView.getBottom() - itemView.getTop();
-                        int iconSize = (int) (24 * getResources().getDisplayMetrics().density); // Kích thước icon 24dp
-                        int margin = (int) (16 * getResources().getDisplayMetrics().density); // Cách mép phải 16dp
-
-                        // Tính toán vị trí icon (Căn giữa dọc và cách mép phải)
-                        int iconTop = itemView.getTop() + (itemHeight - iconSize) / 2;
-                        int iconBottom = iconTop + iconSize;
-                        int iconRight = itemView.getRight() - margin;
-                        int iconLeft = iconRight - iconSize;
-
-                        // Chỉ vẽ icon nếu người dùng quẹt đủ xa để thấy nó
-                        if (dX < - (margin + iconSize)) {
-                            icon.setBounds(iconLeft, iconTop, iconRight, iconBottom);
-                            icon.draw(c);
-                        }
-                    }
+            public void onChildDraw(@NonNull android.graphics.Canvas c, @NonNull RecyclerView rv, @NonNull RecyclerView.ViewHolder vh, float dX, float dY, int action, boolean active) {
+                View item = vh.itemView;
+                if (dX < 0) {
+                    GradientDrawable bg = new GradientDrawable();
+                    bg.setColor(Color.parseColor("#D14040")); // Dùng status_red
+                    bg.setCornerRadius(16 * getResources().getDisplayMetrics().density);
+                    bg.setBounds(item.getRight() + (int) dX, item.getTop(), item.getRight(), item.getBottom());
+                    bg.draw(c);
                 }
-                super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
+                super.onChildDraw(c, rv, vh, dX, dY, action, active);
             }
 
             @Override
-            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
-                int position = viewHolder.getAdapterPosition();
-                Category category = list.get(position);
-
+            public void onSwiped(@NonNull RecyclerView.ViewHolder vh, int direction) {
+                int pos = vh.getAdapterPosition();
+                Category cat = list.get(pos);
                 new AlertDialog.Builder(CategoryManagement.this)
-                        .setTitle("Xác nhận xóa")
-                        .setMessage("Bạn có chắc muốn xóa '" + category.name + "'?")
-                        .setPositiveButton("Xóa", (dialog, which) -> {
-                            Executors.newSingleThreadExecutor().execute(() -> {
-                                db.categoryDao().softDelete(category.id);
-                                runOnUiThread(() -> loadData());
-                            });
-                        })
-                        .setNegativeButton("Hủy", (dialog, which) -> {
-                            adapter.notifyItemChanged(position);
-                        })
-                        .setCancelable(false).show();
+                        .setTitle("Delete Category")
+                        .setMessage("Are you sure you want to delete '" + cat.name + "'?")
+                        .setPositiveButton("Delete", (d, w) -> Executors.newSingleThreadExecutor().execute(() -> {
+                            db.categoryDao().softDelete(cat.id);
+                            runOnUiThread(() -> loadData());
+                        }))
+                        .setNegativeButton("Cancel", (d, w) -> adapter.notifyItemChanged(pos))
+                        .show();
             }
         };
         new ItemTouchHelper(callback).attachToRecyclerView(rv);
-    }
-    private void updateTabStyles(TextView selected, TextView unselected) {
-        // 1. Tạo nền xám tối hơn cho bên được chọn (Darker Gray)
-        GradientDrawable selectedBg = new GradientDrawable();
-        selectedBg.setColor(Color.parseColor("#CDCDCD")); // Màu xám tối hơn nền trắng một chút
-        selectedBg.setCornerRadius(10 * getResources().getDisplayMetrics().density); // Bo góc cho khít với viền ngoài
-
-        selected.setBackground(selectedBg);
-        selected.setTextColor(Color.BLACK); // Chữ đen cho rõ
-        selected.setTypeface(null, android.graphics.Typeface.BOLD); // Chữ đậm
-
-        // 2. Trả bên KHÔNG được chọn về mặc định (Trong suốt)
-        unselected.setBackground(null);
-        unselected.setTextColor(Color.parseColor("#808080")); // Chữ xám mờ
-        unselected.setTypeface(null, android.graphics.Typeface.NORMAL); // Chữ thường
     }
 }

@@ -6,6 +6,7 @@
     android:layout_height="wrap_content"
     app:cardCornerRadius="24dp"
     app:cardElevation="8dp"
+    app:cardBackgroundColor="@color/white"
     android:layout_gravity="center">
 
     <LinearLayout
@@ -19,7 +20,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:text="Thiết lập danh mục"
+            android:text="Add category"
+            android:textColor="@color/screen_title"
             android:textSize="20sp" />
 
         <com.google.android.material.imageview.ShapeableImageView
@@ -28,14 +30,16 @@
             android:layout_height="100dp"
             android:layout_gravity="center"
             android:layout_marginTop="20dp"
-            android:background="#F0F2F5"
-            android:padding="20dp"
+            android:background="@color/icon_setting_background"
+            android:padding="24dp"
             app:shapeAppearanceOverlay="@style/square_rounded"
-            android:src="@drawable/ic_food" />
+            android:src="@drawable/ic_food"
+            app:tint="@color/brand_primary" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="48dp"
+            android:layout_marginTop="20dp"
             android:orientation="horizontal"
             android:background="@drawable/bg_tab_outline"
             android:padding="2dp"
@@ -50,14 +54,8 @@
                 android:text="EXPENSE"
                 android:textSize="12sp"
                 android:textStyle="bold"
-                android:textColor="#000000" />
-
-            <View
-                android:layout_width="1dp"
-                android:layout_height="match_parent"
-                android:layout_marginTop="8dp"
-                android:layout_marginBottom="8dp"
-                android:background="#D1D1D1" />
+                android:background="@drawable/bg_tab_outline"
+                android:textColor="@color/status_red" />
 
             <TextView
                 android:id="@+id/btnTabThu"
@@ -68,7 +66,7 @@
                 android:text="INCOME"
                 android:textSize="12sp"
                 android:textStyle="bold"
-                android:textColor="#808080" />
+                android:textColor="@color/item_description" />
         </LinearLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -80,59 +78,57 @@
             app:boxCornerRadiusBottomStart="12dp"
             app:boxCornerRadiusTopEnd="12dp"
             app:boxCornerRadiusTopStart="12dp"
-            android:hint="Tên danh mục">
+            app:boxStrokeColor="@color/brand_primary"
+            app:hintTextColor="@color/brand_primary"
+            android:hint="Category">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/edtCategoryName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:fontFamily="@font/inter_regular"
+                android:textColor="@color/item_title"
                 android:inputType="textCapSentences" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <TextView
             style="@style/section_header"
             android:layout_marginTop="16dp"
-            android:text="Chọn biểu tượng &amp; màu sắc"
+            android:text="Icon &amp; Colors"
+            android:textColor="@color/section_header"
             android:textSize="12sp" />
 
-        <!-- ICON PICKER -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             app:cardCornerRadius="12dp"
             app:cardElevation="0dp"
-            app:strokeWidth="1dp"
-            app:strokeColor="#E0E0E0">
+            app:cardBackgroundColor="@color/bg_card">
 
             <GridView
                 android:id="@+id/gridIconPicker"
                 android:layout_width="match_parent"
                 android:layout_height="120dp"
                 android:numColumns="5"
-                android:scrollbars="none"
                 android:padding="8dp"
                 android:verticalSpacing="8dp"
                 android:horizontalSpacing="8dp"/>
         </androidx.cardview.widget.CardView>
 
-
-        <!-- COLOR PICKER -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             app:cardCornerRadius="12dp"
             app:cardElevation="0dp"
-            app:strokeWidth="1dp"
-            app:strokeColor="#E0E0E0">
+            app:cardBackgroundColor="@color/bg_card">
 
             <GridView
                 android:id="@+id/gridColorPicker"
                 android:layout_width="match_parent"
                 android:layout_height="120dp"
                 android:numColumns="5"
-                android:scrollbars="none"
                 android:padding="8dp"
                 android:verticalSpacing="8dp"
                 android:horizontalSpacing="8dp"/>
@@ -144,9 +140,10 @@
             android:layout_width="match_parent"
             android:layout_height="56dp"
             android:layout_marginTop="24dp"
-            android:text="LƯU THAY ĐỔI"
-            android:backgroundTint="#121212"
-            app:cornerRadius="12dp" />
+            android:text="SAVE CHANGES"
+            android:fontFamily="@font/inter_bold"
+            android:backgroundTint="@color/brand_primary"
+            app:cornerRadius="14dp" />
 
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
