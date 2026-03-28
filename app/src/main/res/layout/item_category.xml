@@ -2,54 +2,57 @@
 <androidx.cardview.widget.CardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    style="@style/cardview_buttons"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="5dp"
-    app:cardCornerRadius="10dp"
-    app:cardElevation="1dp"
-    app:cardBackgroundColor="#FFFFFF"
-    android:clickable="true"
-    android:focusable="true"
-    android:foreground="?attr/selectableItemBackground">
+    android:layout_marginBottom="8dp"
+    app:cardElevation="1dp">
 
     <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="80dp"
-        android:orientation="horizontal"
+        style="@style/btn_component_layout"
         android:gravity="center_vertical"
-        android:padding="10dp">
+        android:padding="12dp">
 
-        <ImageView
+        <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/imgCategoryIcon"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
-            android:padding="5dp" />
+            style="@style/btn_main_icon"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:scaleType="centerInside"
+            app:shapeAppearanceOverlay="@style/square_rounded"
+            tools:srcCompat="@drawable/ic_other" />
 
         <TextView
             android:id="@+id/tvCategoryName"
+            style="@style/btn_item_title"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:layout_marginStart="16dp"
             android:text="Ăn uống"
-            android:textSize="25sp"
-            android:textStyle="bold"
-            android:layout_marginStart="10dp"
-            android:textColor="#212121"/> <ImageButton
-        android:id="@+id/btnEdit"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
-        android:src="@android:drawable/ic_menu_edit"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        app:tint="#4CAF50"/>
+            android:textSize="16sp" />
+
+        <ImageButton
+            android:id="@+id/btnEdit"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/pencil_regular"
+            android:padding="10dp"
+            android:scaleType="centerInside"
+            app:tint="#4CAF50" />
 
         <ImageButton
             android:id="@+id/btnDelete"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
-            android:src="@android:drawable/ic_menu_delete"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="8dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            app:tint="#F44336"
-            android:layout_marginStart="5dp"/>
+            android:src="@drawable/trash_regularsvg"
+            android:padding="10dp"
+            android:scaleType="centerInside"
+            app:tint="#F44336" />
 
     </LinearLayout>
 </androidx.cardview.widget.CardView>

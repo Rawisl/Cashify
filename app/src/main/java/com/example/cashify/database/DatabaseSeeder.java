@@ -13,20 +13,20 @@ public class DatabaseSeeder {
             if(dao.getCategoriesByType(0).isEmpty()&&dao.getCategoriesByType(1).isEmpty()){
                 //Danh sách này chứa các danh mục phổ biến
                 //--thu vao--//
-                dao.insert(makeCategory("Lương", "ic_salary", "#FFFFFF", 1, 1));
-                dao.insert(makeCategory("Gia đình cho", "ic_family", "#FFFFFF", 1, 1));
-                dao.insert(makeCategory("Thưởng", "ic_bonus", "#FFFFFF", 1, 1));
+                dao.insert(makeCategory("Lương", "ic_salary", "#000000", 1, 1));
+                dao.insert(makeCategory("Gia đình cho", "ic_family", "#000000", 1, 1));
+                dao.insert(makeCategory("Thưởng", "ic_bonus", "#000000", 1, 1));
 
                 //--chi ra--//
-                dao.insert(makeCategory("Ăn uống", "ic_food", "#FFFFFF", 0, 1));
-                dao.insert(makeCategory("Di chuyển", "ic_transport", "#FFFFFF", 0, 1));
-                dao.insert(makeCategory("Mua sắm", "ic_shopping", "#FFFFFF", 0, 1));
-                dao.insert(makeCategory("Hóa đơn", "ic_bill", "#FFFFFF", 0, 1));
-                dao.insert(makeCategory("Cafe", "ic_cafe", "#FFFFFF", 0, 1));
-                dao.insert(makeCategory("Giải trí", "ic_entertain", "#FFFFFF", 0, 1));
-                dao.insert(makeCategory("Xăng xe", "ic_fuel", "#FFFFFF", 0, 1));
-                dao.insert(makeCategory("Tiền trọ", "ic_house", "#FFFFFF", 0, 1));
-                dao.insert(makeCategory("Khác", "ic_other", "#FFFFFF", 0, 1));
+                dao.insert(makeCategory("Ăn uống", "ic_food", "#000000", 0, 1));
+                dao.insert(makeCategory("Di chuyển", "ic_transport", "#000000", 0, 1));
+                dao.insert(makeCategory("Mua sắm", "ic_shopping", "#000000", 0, 1));
+                dao.insert(makeCategory("Hóa đơn", "ic_bill", "#000000", 0, 1));
+                dao.insert(makeCategory("Cafe", "ic_cafe", "#000000", 0, 1));
+                dao.insert(makeCategory("Giải trí", "ic_entertain", "#000000", 0, 1));
+                dao.insert(makeCategory("Xăng xe", "ic_fuel", "#000000", 0, 1));
+                dao.insert(makeCategory("Tiền trọ", "ic_house", "#000000", 0, 1));
+                dao.insert(makeCategory("Khác", "ic_other", "#000000", 0, 1));
 
             }
         });

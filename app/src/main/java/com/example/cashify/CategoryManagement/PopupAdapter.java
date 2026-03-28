@@ -69,11 +69,11 @@ public class PopupAdapter {
             // Set size for the color preview circle/square
             colorView.setLayoutParams(new GridView.LayoutParams(100, 100));
 
-            // Create a rounded rectangle shape programmatically
+            // Trong getView của ColorGridAdapter
             GradientDrawable shape = new GradientDrawable();
-            shape.setShape(GradientDrawable.RECTANGLE);
-            shape.setCornerRadius(20f); // Rounds the corners
-            shape.setColor(Color.parseColor(colors[i])); // Applies the hex color
+            shape.setShape(GradientDrawable.OVAL); // Chọn màu thì nên để hình tròn cho tinh tế
+            shape.setColor(Color.parseColor(colors[i]));
+            colorView.setBackground(shape);
 
             colorView.setBackground(shape);
             return colorView;

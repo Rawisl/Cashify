@@ -18,6 +18,10 @@
         <item name="cornerSize">50%</item>
     </style>
     <!--Chỉ dùng đơn vị sp cho định dạng style text với mục đích ng dùng có thể phóng to, thu nhỏ cỡ chữ-->
+    <style name="square_rounded">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">10dp</item>
+    </style>
 
     <style name="screen_title">
         <item name="android:layout_width">match_parent</item>
