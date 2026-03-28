@@ -219,11 +219,12 @@ public class CategoryManagement extends AppCompatActivity {
 
         try {
             int originColor = Color.parseColor(selectedColorCode);
-            // Tạo màu pastel (độ trong suốt 20%) cho background icon
             int pastelColor = Color.argb(51, Color.red(originColor), Color.green(originColor), Color.blue(originColor));
 
+            // Đoạn này tôi đổi lại RECTANGLE cho đồng bộ với danh sách ngoài nhé
             GradientDrawable shape = new GradientDrawable();
-            shape.setShape(GradientDrawable.OVAL); // Đổi thành OVAL cho đúng chuẩn Material
+            shape.setShape(GradientDrawable.RECTANGLE);
+            shape.setCornerRadius(14 * getResources().getDisplayMetrics().density);
             shape.setColor(pastelColor);
 
             preview.setBackground(shape);
@@ -235,19 +236,31 @@ public class CategoryManagement extends AppCompatActivity {
         TextView btnChi = dialog.findViewById(R.id.btnTabChi);
         TextView btnThu = dialog.findViewById(R.id.btnTabThu);
 
-        // Cập nhật style cho tab được chọn
-        btnChi.setTextColor(isExpense ? Color.parseColor("#4C6FFF") : Color.GRAY);
-        btnThu.setTextColor(!isExpense ? Color.parseColor("#4C6FFF") : Color.GRAY);
+        if (isExpense) {
+            updateTabStyles(btnChi, btnThu);
+        } else {
+            updateTabStyles(btnThu, btnChi);
+        }
 
         if (isEditMode) {
             btnChi.setAlpha(0.5f);
             btnThu.setAlpha(0.5f);
+            btnChi.setOnClickListener(null);
+            btnThu.setOnClickListener(null);
         } else {
             btnChi.setAlpha(1.0f);
             btnThu.setAlpha(1.0f);
-            btnChi.setOnClickListener(v -> { isExpense = true; updatePopupUI(dialog, preview, false); });
-            btnThu.setOnClickListener(v -> { isExpense = false; updatePopupUI(dialog, preview, false); });
+            btnChi.setOnClickListener(v -> {
+                isExpense = true;
+                updatePopupUI(dialog, preview, false);
+            });
+            btnThu.setOnClickListener(v -> {
+                isExpense = false;
+                updatePopupUI(dialog, preview, false);
+            });
         }
+        // --- KẾT THÚC PHẦN THAY ĐỔI ---
+
         setupPickers(dialog, preview, isEditMode);
     }
 
@@ -274,9 +287,51 @@ public class CategoryManagement extends AppCompatActivity {
 
     private void setupSwipeToDelete(RecyclerView rv, CategoryAdapter adapter, List<Category> list) {
         ItemTouchHelper.SimpleCallback callback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
-            @Override public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) { return false; }
+            @Override
+            public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
+                return false;
+            }
 
-            @Override public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+            @Override
+            public void onChildDraw(@NonNull android.graphics.Canvas c, @NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive) {
+                View itemView = viewHolder.itemView;
+
+                if (dX < 0) { // Khi quẹt trái
+                    // 1. Vẽ nền đỏ bo góc
+                    GradientDrawable background = new GradientDrawable();
+                    background.setColor(Color.parseColor("#F44336"));
+                    background.setCornerRadius(12 * getResources().getDisplayMetrics().density);
+                    background.setBounds(itemView.getRight() + (int) dX, itemView.getTop(), itemView.getRight(), itemView.getBottom());
+                    background.draw(c);
+
+                    // 2. Vẽ icon thùng rác màu trắng
+                    android.graphics.drawable.Drawable icon = androidx.core.content.ContextCompat.getDrawable(CategoryManagement.this, R.drawable.trash_regularsvg);
+                    if (icon != null) {
+                        // Ép màu icon thành trắng (nếu file svg gốc đang là màu khác)
+                        androidx.core.graphics.drawable.DrawableCompat.setTint(icon, Color.WHITE);
+
+                        int itemHeight = itemView.getBottom() - itemView.getTop();
+                        int iconSize = (int) (24 * getResources().getDisplayMetrics().density); // Kích thước icon 24dp
+                        int margin = (int) (16 * getResources().getDisplayMetrics().density); // Cách mép phải 16dp
+
+                        // Tính toán vị trí icon (Căn giữa dọc và cách mép phải)
+                        int iconTop = itemView.getTop() + (itemHeight - iconSize) / 2;
+                        int iconBottom = iconTop + iconSize;
+                        int iconRight = itemView.getRight() - margin;
+                        int iconLeft = iconRight - iconSize;
+
+                        // Chỉ vẽ icon nếu người dùng quẹt đủ xa để thấy nó
+                        if (dX < - (margin + iconSize)) {
+                            icon.setBounds(iconLeft, iconTop, iconRight, iconBottom);
+                            icon.draw(c);
+                        }
+                    }
+                }
+                super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
+            }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
                 int position = viewHolder.getAdapterPosition();
                 Category category = list.get(position);
 
@@ -286,7 +341,7 @@ public class CategoryManagement extends AppCompatActivity {
                         .setPositiveButton("Xóa", (dialog, which) -> {
                             Executors.newSingleThreadExecutor().execute(() -> {
                                 db.categoryDao().softDelete(category.id);
-                                runOnUiThread(() -> { loadData(); });
+                                runOnUiThread(() -> loadData());
                             });
                         })
                         .setNegativeButton("Hủy", (dialog, which) -> {
@@ -296,5 +351,20 @@ public class CategoryManagement extends AppCompatActivity {
             }
         };
         new ItemTouchHelper(callback).attachToRecyclerView(rv);
+    }
+    private void updateTabStyles(TextView selected, TextView unselected) {
+        // 1. Tạo nền xám tối hơn cho bên được chọn (Darker Gray)
+        GradientDrawable selectedBg = new GradientDrawable();
+        selectedBg.setColor(Color.parseColor("#CDCDCD")); // Màu xám tối hơn nền trắng một chút
+        selectedBg.setCornerRadius(10 * getResources().getDisplayMetrics().density); // Bo góc cho khít với viền ngoài
+
+        selected.setBackground(selectedBg);
+        selected.setTextColor(Color.BLACK); // Chữ đen cho rõ
+        selected.setTypeface(null, android.graphics.Typeface.BOLD); // Chữ đậm
+
+        // 2. Trả bên KHÔNG được chọn về mặc định (Trong suốt)
+        unselected.setBackground(null);
+        unselected.setTextColor(Color.parseColor("#808080")); // Chữ xám mờ
+        unselected.setTypeface(null, android.graphics.Typeface.NORMAL); // Chữ thường
     }
 }
