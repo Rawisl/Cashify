@@ -3,6 +3,7 @@ package com.example.cashify.database;
 public class BudgetWithSpent {
     public int id;
     public int categoryId;
+    public String categoryName; //Mới thêm
     public long limitAmount;
     public String periodType;
     public long startDate;

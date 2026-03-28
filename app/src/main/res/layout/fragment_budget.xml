@@ -18,7 +18,7 @@
             android:layout_height="wrap_content"
             android:fontFamily="@font/inter_bold"
             android:text="Budget"
-            android:textColor="#111827"
+            android:textColor="#000000"
             android:textSize="28sp"
             android:textStyle="bold"
             app:layout_constraintStart_toStartOf="parent"
@@ -58,11 +58,11 @@
                     android:textSize="14sp" />
 
                 <TextView
-                    android:layout_width="wrap_content"
+                    android:id="@+id/tvMasterLimit" android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:text="$2300.00"
-                    android:textColor="#111827"
+                    android:text="23.000.000VNĐ"
+                    android:textColor="#FFFFFF"
                     android:textSize="32sp"
                     android:textStyle="bold" />
 
@@ -72,51 +72,24 @@
                     android:layout_marginTop="12dp"
                     android:orientation="horizontal">
 
-                    <LinearLayout
-                        android:layout_width="0dp"
+                    <TextView
+                        android:id="@+id/tvMasterSpent" android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:orientation="vertical">
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Spent"
-                            android:textColor="#E0E0E0"
-                            android:textSize="11sp" />
-                        <TextView
-                            android:id="@+id/tvSpentValue"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="2.000.000 VNĐ"
-                            android:textColor="#111827"
-                            android:textSize="13sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
+                        android:text="Spent: 2.000.000VNĐ"
+                        android:textColor="#FFFFFF"
+                        android:textSize="12sp" />
 
-                    <LinearLayout
-                        android:layout_width="wrap_content"
+                    <TextView
+                        android:id="@+id/tvMasterRemaining" android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:gravity="end"
-                        android:orientation="vertical">
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Remaining"
-                            android:textColor="#E0E0E0"
-                            android:textSize="11sp" />
-                        <TextView
-                            android:id="@+id/tvRemainingValue"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="360.000 VNĐ"
-                            android:textColor="#111827"
-                            android:textSize="13sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
+                        android:text="Remaining: 360.000VNĐ"
+                        android:textColor="#FFFFFF"
+                        android:textSize="12sp" />
                 </LinearLayout>
 
                 <ProgressBar
-                    style="?android:attr/progressBarStyleHorizontal"
+                    android:id="@+id/pbMaster" style="?android:attr/progressBarStyleHorizontal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
@@ -133,11 +106,26 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="32dp"
             android:text="Category Budgets"
+            tools:ignore="HardcodedText"
             android:textColor="#000000"
             android:textSize="18sp"
             android:textStyle="bold"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/cardMaster" />
+
+        <ImageButton
+            android:id="@+id/btnAddBudget"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:padding="8dp"
+            android:scaleType="centerInside"
+            android:contentDescription="Add new budget"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_input_add"
+            app:tint="#4C6FFF"
+            app:layout_constraintBottom_toBottomOf="@id/tvCategoryLabel"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/tvCategoryLabel" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvCategoryBudgets"
