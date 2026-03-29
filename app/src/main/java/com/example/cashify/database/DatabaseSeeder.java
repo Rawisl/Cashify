@@ -12,6 +12,7 @@ public class DatabaseSeeder {
             //Check isEmpty để chèn chỉ khi trống dữ liệu, tránh bị trùng lặp, hoan hô Thu An
             if(dao.getCategoriesByType(0).isEmpty()&&dao.getCategoriesByType(1).isEmpty()){
                 //Danh sách này chứa các danh mục phổ biến
+
                 //--thu vao--//
                 dao.insert(makeCategory("Lương", "ic_salary", "#000000", 1, 1));
                 dao.insert(makeCategory("Gia đình cho", "ic_family", "#000000", 1, 1));

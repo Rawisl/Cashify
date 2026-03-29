@@ -23,7 +23,6 @@
     <string name="settings_section_preferences">Preferences</string>
     <string name="settings_section_other">Other</string>
 
-
     <string name="settings_item_security">Security</string>
     <string name="settings_item_security_desc">Change password</string>
 
@@ -31,7 +30,7 @@
     <string name="settings_item_language_desc">English</string>
 
     <string name="settings_item_category">Category</string>
-    <string name="settings_item_category_desc">Organize categories</string>
+    <string name="settings_item_category_desc">Organize cagtegories</string>
 
     <string name="settings_item_notifications">Notifications</string>
     <string name="settings_item_notifications_desc">Manage notification settings</string>
@@ -40,7 +39,6 @@
     <string name="settings_item_logout_desc">Sign out of your account</string>
 
     <string name="settings_item_darkmode">Dark mode</string>
-
 
 
     <string name="category_title_manage">Category management</string>
