@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_main"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp">
+
+            <ImageView
+                android:id="@+id/btnBack"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_centerVertical="true"
+                android:padding="8dp"
+                android:src="@drawable/arrow_left_back"
+                app:tint="@color/screen_title"
+                android:background="?attr/selectableItemBackgroundBorderless"/>
+
+            <TextView
+                style="@style/screen_title"
+                android:layout_width="wrap_content"
+                android:layout_centerInParent="true"
+                android:text="Add transaction"
+                android:textSize="20sp" />
+        </RelativeLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="54dp"
+            android:orientation="horizontal"
+            android:background="@drawable/bg_tab_outline"
+            android:padding="4dp"
+            android:weightSum="2">
+
+            <TextView
+                android:id="@+id/tabChi"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="EXPENSE"
+                android:background="@drawable/bg_tab_outline"
+                android:textColor="@color/status_red"
+                android:fontFamily="@font/inter_bold"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/tabThu"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="INCOME"
+                android:textColor="@color/item_description"
+                android:fontFamily="@font/inter_medium"
+                android:textSize="14sp" />
+        </LinearLayout>
+
+        <TextView
+            style="@style/section_header"
+            android:layout_marginTop="10dp"
+            android:letterSpacing="0.1"
+            android:text="SỐ TIỀN"
+            android:textSize="12sp" />
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp">
+
+            <EditText
+                android:id="@+id/edtAmount"
+                android:layout_width="match_parent"
+                android:layout_height="80dp"
+                android:hint="0"
+                android:inputType="numberDecimal"
+                android:paddingStart="16dp"
+                android:paddingEnd="60dp"
+                android:textColor="@color/status_red"
+                android:textSize="40sp"
+                android:fontFamily="@font/outfit_bold"
+                android:background="@drawable/bg_input_fields" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignEnd="@id/edtAmount"
+                android:layout_centerVertical="true"
+                android:layout_marginEnd="16dp"
+                android:text="đ"
+                android:textSize="24sp"
+                android:fontFamily="@font/inter_bold"
+                android:textColor="@color/item_description" />
+        </RelativeLayout>
+
+        <TextView
+            style="@style/section_header"
+            android:text="CATEGORY"
+            android:layout_marginTop="10dp"
+            android:textSize="12sp" />
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            app:cardCornerRadius="24dp"
+            app:cardBackgroundColor="@color/white"
+            app:cardElevation="1dp">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvCategories"
+                android:layout_width="match_parent"
+                android:layout_height="170dp"
+                android:padding="12dp"
+                android:clipToPadding="false"
+                android:scrollbars="vertical"
+                android:nestedScrollingEnabled="true" />
+        </androidx.cardview.widget.CardView>
+
+        <TextView
+            style="@style/section_header"
+            android:text="DESCRIPTION"
+            android:layout_marginTop="10dp"
+            android:textSize="12sp" />
+
+        <EditText
+            android:id="@+id/edtNote"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:hint="Mua gì đó..."
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:textColor="@color/item_title"
+            android:textSize="15sp"
+            android:fontFamily="@font/inter_regular"
+            android:background="@drawable/bg_input_fields"
+            android:layout_marginTop="8dp"/>
+
+        <TextView
+            style="@style/section_header"
+            android:text="DATE"
+            android:layout_marginTop="10dp"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/tvDate"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:gravity="center_vertical"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:textColor="@color/item_title"
+            android:fontFamily="@font/inter_medium"
+            android:text="Hôm nay, 29/03/2026"
+            android:background="@drawable/bg_input_fields"
+            android:layout_marginTop="8dp"
+            android:drawablePadding="10dp"
+            app:drawableTint="@color/brand_primary"/>
+        <TextView
+            style="@style/section_header"
+            android:text="PAYMENT"
+            android:layout_marginTop="10dp"
+            android:textSize="12sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="70dp"
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal"
+            android:weightSum="3">
+
+            <LinearLayout
+                android:id="@+id/btnPayCash"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/bg_input_fields"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:id="@+id/imgCash"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_cash"
+                    app:tint="@color/brand_primary" />
+
+                <TextView
+                    android:id="@+id/tvCash"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Cash"
+                    android:textSize="11sp"
+                    android:layout_marginTop="4dp"
+                    android:fontFamily="@font/inter_medium"
+                    android:textColor="@color/brand_primary" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/btnPayCard"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:layout_marginHorizontal="3dp"
+                android:background="@drawable/bg_input_fields"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:id="@+id/imgCard"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_credit_card"
+                    app:tint="@color/item_description" />
+
+                <TextView
+                    android:id="@+id/tvCard"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Card"
+                    android:textSize="11sp"
+                    android:layout_marginTop="4dp"
+                    android:fontFamily="@font/inter_medium"
+                    android:textColor="@color/item_description" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/btnPayBank"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/bg_input_fields"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:id="@+id/imgBank"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_bank"
+                    app:tint="@color/item_description" />
+
+                <TextView
+                    android:id="@+id/tvBank"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Bank"
+                    android:textSize="11sp"
+                    android:layout_marginTop="4dp"
+                    android:fontFamily="@font/inter_medium"
+                    android:textColor="@color/item_description" />
+            </LinearLayout>
+
+        </LinearLayout>
+        <Button
+            android:id="@+id/btnConfirm"
+            android:layout_width="match_parent"
+            android:layout_height="62dp"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="32dp"
+            android:text="CONFIRM"
+            android:textSize="16sp"
+            android:fontFamily="@font/inter_bold"
+            android:backgroundTint="@color/brand_primary"
+            android:textColor="@color/white"
+            app:cornerRadius="18dp"
+            app:elevation="4dp" />
+
+    </LinearLayout>
+
+</androidx.core.widget.NestedScrollView>
