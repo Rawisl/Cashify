@@ -80,7 +80,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="↓ Income"
+                        android:text="↘ Income"
                         android:textColor="#E0E0E0"
                         android:textSize="12sp" />
 
@@ -102,7 +102,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="↑ Expenses"
+                        android:text="↗ Expenses"
                         android:textColor="#E0E0E0"
                         android:textSize="12sp" />
 

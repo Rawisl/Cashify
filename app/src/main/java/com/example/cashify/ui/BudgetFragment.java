@@ -221,13 +221,13 @@ public class BudgetFragment extends Fragment {
                         int percent = limit > 0 ? (int) ((masterSpent * 100) / limit) : 0;
 
                         tvMasterLimit.setText(String.format("%,d VNĐ", limit));
-                        tvMasterSpent.setText(String.format("Spent: %,d VNĐ", masterSpent));
-                        tvMasterRemaining.setText(String.format("Remaining: %,d VNĐ", remaining));
+                        tvMasterSpent.setText(String.format("%,d VNĐ", masterSpent));
+                        tvMasterRemaining.setText(String.format("%,d VNĐ", remaining));
                         pbMaster.setProgress(Math.min(percent, 100));
                     } else {
                         tvMasterLimit.setText("0 VNĐ");
-                        tvMasterSpent.setText(String.format("Spent: %,d VNĐ", masterSpent));
-                        tvMasterRemaining.setText("Remaining: 0 VNĐ");
+                        tvMasterSpent.setText(String.format("%,d VNĐ", masterSpent));
+                        tvMasterRemaining.setText("0 VNĐ");
                         pbMaster.setProgress(0);
                     }
                 });

@@ -30,6 +30,7 @@
     <color name="icon_inactive">#9CA3AF</color>
 
     <!--33 = 20% alpha, 1A = 10%, 1F = 12%, 26 = 15%-->
+
     <!--Màu tăng trưởng và báo động dành cho income/expense-->
     <color name="status_background_red">#33D14040</color>
     <color name="status_red">#D14040</color>
@@ -52,4 +53,6 @@
 
     <!--Numpad button's bg color-->
     <color name="numpad_key_bg">#73DED7B8</color>
+
+    <color name="tips_text_color">#4C6FFF</color>
 </resources>
