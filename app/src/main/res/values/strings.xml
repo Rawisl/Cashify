@@ -7,6 +7,8 @@
     <string name="action_edit">Edit</string>
     <string name="action_see_all">See all</string>
     <string name="action_next">Next</string>
+    <string name="action_update">Update</string>
+    <string name="action_search">Search…</string>
 
     <string name="tab_income">Income</string>
     <string name="tab_expense">Expense</string>
@@ -18,6 +20,13 @@
 
     <string name="settings_title">Setting</string>
     <string name="settings_subtitle">Manage your preferences</string>
+
+    <string name="budget_title">Budget</string>
+    <string name="budget_subtitle">Track your spending limits</string>
+    <string name="budget_main_card_title_monthly">Monthly Master Budget</string>
+    <string name="budget_tips">💡 Budget Tips</string>
+    <string name="budget_label_spent">Spent</string>
+    <string name="budget_label_remaining">Remaining</string>
 
     <string name="settings_section_account">Account</string>
     <string name="settings_section_preferences">Preferences</string>
@@ -47,7 +56,10 @@
     <string name="category_input_name">Name</string>
     <string name="category_choose_icon">Icon</string>
     <string name="category_choose_color">Color</string>
-    <string name="category_btn_save">SAVE</string>
+
+    <string name="category_popup_add">Add category</string>
+    <string name="category_popup_edit">Edit category</string>
+    <string name="category_popup_category_name">Category name</string>
 
     <string name="trans_title_add">Add transaction</string>
     <string name="trans_input_amount">Amount</string>
@@ -55,5 +67,9 @@
     <string name="trans_input_date">Today, 24/10/2023</string>
     <string name="trans_choose_category">Choose category</string>
     <string name="trans_btn_save">SAVE TRANSACTION</string>
+
+
+
+
 
 </resources>

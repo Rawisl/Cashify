@@ -51,6 +51,30 @@ public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.BudgetView
         String nameToShow = (item.categoryName != null) ? item.categoryName : ("Danh mục " + item.categoryId);
         holder.tvCategoryName.setText(nameToShow);
 
+        // === ĐOẠN CODE LÔI ICON TỪ DATABASE LÊN ĐÂY KHI CÓ ICON===
+//        String iconName = item.categoryIcon; // Kiểm tra lại tên biến này trong class BudgetWithSpent
+//
+//        if (iconName != null && !iconName.isEmpty()) {
+//            // Biến cái tên String (VD: "ic_food") thành ID (int) trong res/drawable
+//            int resId = holder.itemView.getContext().getResources().getIdentifier(
+//                    iconName,
+//                    "drawable",
+//                    holder.itemView.getContext().getPackageName()
+//            );
+//
+//            if (resId != 0) {
+//                holder.ivCategoryIcon.setImageResource(resId);
+//            } else
+//            {
+//                // Nếu lỡ trong DB lưu tên icon mà trong máy không có file ảnh đó
+//                holder.ivCategoryIcon.setImageResource(R.drawable.food_drinking_solid);
+//            }
+//        } else {
+//            // Nếu DB chưa có dữ liệu icon
+//            holder.ivCategoryIcon.setImageResource(R.drawable.food_drinking_solid);
+//        }
+
+
         // Bỏ phần thập phân, thêm dấu phẩy hàng nghìn
         holder.tvSpentAndLimit.setText(String.format("%,.0f VNĐ / %,.0f VNĐ", spent, limit));
         holder.tvPercent.setText(percent + "%");
