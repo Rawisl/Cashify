@@ -1,8 +1,8 @@
 package com.example.cashify.CategoryManagement;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
-import android.graphics.PorterDuff;
 import android.graphics.drawable.GradientDrawable;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -26,7 +26,8 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHo
     private Context context;
     private OnCategoryListener listener;
 
-    // Interface to handle clicks in the Activity/Fragment
+    private static final String DEFAULT_COLOR = "#4C6FFF";
+
     public interface OnCategoryListener {
         void onDeleteSuccess();
         void onEditClick(Category category);
@@ -41,7 +42,6 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHo
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        // Inflate the custom XML layout for a single item row
         View v = LayoutInflater.from(context).inflate(R.layout.item_category, parent, false);
         return new ViewHolder(v);
     }
@@ -51,42 +51,49 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHo
         Category category = list.get(position);
         holder.tvName.setText(category.name);
 
-        // --- 1. Dynamic Icon Loading ---
-        // Converts a string (e.g., "ic_food") into a Resource ID.
-        // This allows you to store just the name in the database.
-        String iconName = (category.iconName != null && !category.iconName.isEmpty()) ? category.iconName : "ic_food";
+        // --- 1. Load Icon động ---
+        String iconName = (category.iconName != null && !category.iconName.isEmpty()) ? category.iconName : "ic_other";
         int resId = context.getResources().getIdentifier(iconName, "drawable", context.getPackageName());
         holder.imgIcon.setImageResource(resId != 0 ? resId : R.drawable.ic_food);
 
-        // --- 2. Dynamic Color & Pastel Background Styling ---
-        String colorStr = (category.colorCode != null && !category.colorCode.trim().isEmpty()) ? category.colorCode.trim() : "#4CAF50";
+        // --- 2. Xử lý Màu sắc & Nền Circle Pastel (Style Settings) ---
+        String colorStr = (category.colorCode != null && !category.colorCode.trim().isEmpty()) ? category.colorCode.trim() : DEFAULT_COLOR;
 
         try {
             int originColor = Color.parseColor(colorStr);
+            int pastelColor = Color.argb(40, Color.red(originColor), Color.green(originColor), Color.blue(originColor));
 
-            /* Logic: Create a "Pastel" effect by setting Alpha to 51 (approx 20% opacity).
-               Color.argb(alpha, red, green, blue) where 255 is fully opaque.
-            */
-            int pastelColor = Color.argb(51, Color.red(originColor), Color.green(originColor), Color.blue(originColor));
+            // 1. Set màu icon
+            holder.imgIcon.setImageTintList(ColorStateList.valueOf(originColor));
 
-            // Dynamically create a rounded background (shape)
-            GradientDrawable shape = new GradientDrawable();
-            shape.setShape(GradientDrawable.RECTANGLE);
-            shape.setCornerRadius(25f);
-            shape.setColor(pastelColor);
+            // 2. Tạo nền hình vuông bo góc bằng code (thay vì dùng BackgroundTintList)
+            GradientDrawable gd = new GradientDrawable();
+            gd.setShape(GradientDrawable.RECTANGLE);
 
-            holder.imgIcon.setBackground(shape);
+            // Bo góc 14dp (tính theo pixel) - số này càng lớn bo càng mạnh
+            float radius = 14 * context.getResources().getDisplayMetrics().density;
+            gd.setCornerRadius(radius);
+            gd.setColor(pastelColor);
 
-            // Tint the icon itself with the original solid color
-            holder.imgIcon.setColorFilter(originColor, PorterDuff.Mode.SRC_IN);
+            holder.imgIcon.setBackground(gd);
+
+            // Đảm bảo icon không bị to quá
+            holder.imgIcon.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+
         } catch (Exception e) {
-            // Fallback UI if the color string is invalid
-            int fallback = Color.parseColor("#4CAF50");
-            holder.imgIcon.setColorFilter(fallback, PorterDuff.Mode.SRC_IN);
-            holder.imgIcon.setBackgroundColor(Color.TRANSPARENT);
+            int defaultColor = Color.parseColor(DEFAULT_COLOR);
+            holder.imgIcon.setImageTintList(ColorStateList.valueOf(defaultColor));
+
+            int pastelColor = Color.argb(40, Color.red(defaultColor), Color.green(defaultColor), Color.blue(defaultColor));
+
+            GradientDrawable gd = new GradientDrawable();
+            gd.setShape(GradientDrawable.RECTANGLE);
+            gd.setCornerRadius(14 * context.getResources().getDisplayMetrics().density);
+            gd.setColor(pastelColor);
+            holder.imgIcon.setBackground(gd);
         }
 
-        // --- 3. Event Listeners ---
+        // --- 3. Sự kiện Click ---
         holder.btnEdit.setOnClickListener(v -> {
             if (listener != null) listener.onEditClick(category);
         });
@@ -96,32 +103,26 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHo
                     .setTitle("Xác nhận xóa")
                     .setMessage("Xóa danh mục '" + category.name + "'?")
                     .setPositiveButton("Xóa", (dialog, which) -> {
-                        // Room database operations MUST NOT run on the Main Thread.
-                        // We use a SingleThreadExecutor for background processing.
                         Executors.newSingleThreadExecutor().execute(() -> {
                             AppDatabase.getInstance(context).categoryDao().softDelete(category.id);
-
-                            // UI updates (like refreshing the list) MUST happen back on the Main Thread.
-                            ((CategoryManagement)context).runOnUiThread(() -> listener.onDeleteSuccess());
+                            if (context instanceof CategoryManagement) {
+                                ((CategoryManagement)context).runOnUiThread(() -> listener.onDeleteSuccess());
+                            }
                         });
                     })
                     .setNegativeButton("Hủy", null)
                     .show();
         });
 
-        holder.itemView.setOnLongClickListener(v -> {
-            if (listener != null) {
-                listener.onEditClick(category);
-                return true;
-            }
-            return false;
+        // Click vào cả dòng để sửa
+        holder.itemView.setOnClickListener(v -> {
+            if (listener != null) listener.onEditClick(category);
         });
     }
 
     @Override
     public int getItemCount() { return list.size(); }
 
-    // ViewHolder holds references to the views to avoid calling findViewById() repeatedly
     public static class ViewHolder extends RecyclerView.ViewHolder {
         ImageView imgIcon;
         TextView tvName;

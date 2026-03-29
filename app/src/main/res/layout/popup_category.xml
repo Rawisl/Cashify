@@ -1,113 +1,149 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="320dp"
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="340dp"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="20dp"
-    android:background="@drawable/bg_search"
+    app:cardCornerRadius="24dp"
+    app:cardElevation="8dp"
+    app:cardBackgroundColor="@color/white"
     android:layout_gravity="center">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_marginBottom="15dp"
-        android:text="Thêm/sửa danh mục"
-        android:textColor="#000000"
-        android:textSize="20sp"
-        android:textStyle="bold" />
-
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center"
-        android:padding="10dp">
-        <ImageView
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <TextView
+            style="@style/btn_item_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="Add category"
+            android:textColor="@color/screen_title"
+            android:textSize="20sp" />
+
+        <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/imgSelectedIcon"
-            android:layout_width="60dp"
-            android:layout_height="60dp"
-            android:src="@android:drawable/ic_menu_gallery"
-            android:background="@drawable/bg_circle_button"
-            android:padding="12dp"/>
-    </LinearLayout>
-    <LinearLayout
-        android:layout_width="200dp"
-        android:layout_height="40dp"
-        android:layout_gravity="center"
-        android:layout_marginTop="15dp"
-        android:background="@drawable/bg_search"
-        android:orientation="horizontal"
-        android:weightSum="2">
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:layout_gravity="center"
+            android:layout_marginTop="20dp"
+            android:background="@color/icon_setting_background"
+            android:padding="24dp"
+            app:shapeAppearanceOverlay="@style/square_rounded"
+            android:src="@drawable/ic_food"
+            app:tint="@color/brand_primary" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="20dp"
+            android:orientation="horizontal"
+            android:background="@drawable/bg_tab_outline"
+            android:padding="2dp"
+            android:weightSum="2">
+
+            <TextView
+                android:id="@+id/btnTabChi"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="EXPENSE"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:background="@drawable/bg_tab_outline"
+                android:textColor="@color/status_red" />
+
+            <TextView
+                android:id="@+id/btnTabThu"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="INCOME"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@color/item_description" />
+        </LinearLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            app:boxCornerRadiusBottomEnd="12dp"
+            app:boxCornerRadiusBottomStart="12dp"
+            app:boxCornerRadiusTopEnd="12dp"
+            app:boxCornerRadiusTopStart="12dp"
+            app:boxStrokeColor="@color/brand_primary"
+            app:hintTextColor="@color/brand_primary"
+            android:hint="Category">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/edtCategoryName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/inter_regular"
+                android:textColor="@color/item_title"
+                android:inputType="textCapSentences" />
+        </com.google.android.material.textfield.TextInputLayout>
 
         <TextView
-            android:id="@+id/btnTabChi"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:text="CHI"
-            android:textColor="#888888"
-            android:textStyle="bold" />
+            style="@style/section_header"
+            android:layout_marginTop="16dp"
+            android:text="Icon &amp; Colors"
+            android:textColor="@color/section_header"
+            android:textSize="12sp" />
 
-        <TextView
-            android:id="@+id/btnTabThu"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:text="THU"
-            android:textColor="#888888"
-            android:textStyle="bold" />
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="@color/bg_card">
+
+            <GridView
+                android:id="@+id/gridIconPicker"
+                android:layout_width="match_parent"
+                android:layout_height="120dp"
+                android:numColumns="5"
+                android:padding="8dp"
+                android:verticalSpacing="8dp"
+                android:horizontalSpacing="8dp"/>
+        </androidx.cardview.widget.CardView>
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="@color/bg_card">
+
+            <GridView
+                android:id="@+id/gridColorPicker"
+                android:layout_width="match_parent"
+                android:layout_height="120dp"
+                android:numColumns="5"
+                android:padding="8dp"
+                android:verticalSpacing="8dp"
+                android:horizontalSpacing="8dp"/>
+        </androidx.cardview.widget.CardView>
+
+        <Button
+            android:id="@+id/btnSave"
+            style="@style/Widget.Material3.Button"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="24dp"
+            android:text="SAVE CHANGES"
+            android:fontFamily="@font/inter_bold"
+            android:backgroundTint="@color/brand_primary"
+            app:cornerRadius="14dp" />
+
     </LinearLayout>
-    <EditText
-        android:id="@+id/edtCategoryName"
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:hint="Tên danh mục..."
-        android:textStyle="italic"
-        android:paddingStart="10dp"
-        android:background="@android:drawable/edit_text"
-        android:layout_marginTop="10dp"/>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Icon:"
-        android:layout_marginTop="15dp"
-        android:textStyle="italic"/>
-
-    <GridView
-        android:id="@+id/gridIconPicker"
-        android:layout_width="match_parent"
-        android:layout_height="100dp"
-        android:numColumns="5"
-        android:verticalSpacing="5dp"
-        android:horizontalSpacing="5dp"
-        android:scrollbars="vertical"
-        android:layout_marginTop="10dp"/>
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Color:"
-        android:layout_marginTop="15dp"
-        android:textStyle="italic"/>
-    <GridView
-        android:id="@+id/gridColorPicker"
-        android:layout_width="match_parent"
-        android:layout_height="100dp"
-        android:numColumns="5"
-        android:verticalSpacing="5dp"
-        android:horizontalSpacing="5dp"
-        android:scrollbars="vertical"
-        android:layout_marginTop="10dp"/>
-
-    <Button
-        android:id="@+id/btnSave"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="LƯU"
-        android:layout_marginTop="20dp"
-        android:backgroundTint="#000000"
-        android:textColor="#FFFFFF"
-        android:textStyle="bold"/>
-</LinearLayout>
+</com.google.android.material.card.MaterialCardView>
