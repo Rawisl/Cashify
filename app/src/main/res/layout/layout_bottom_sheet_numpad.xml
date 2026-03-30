@@ -16,7 +16,7 @@
         android:gravity="center"
         android:text="0đ"
         android:textColor="@color/brand_primary"
-        android:textSize="30sp" />
+        android:textSize="28sp" />
 
     <androidx.gridlayout.widget.GridLayout
         android:layout_width="match_parent"
@@ -86,23 +86,16 @@
 
         <ImageView
             android:id="@+id/btn_backspace"
-            style="@style/numpad_key"
             android:padding="19dp"
             android:src="@drawable/delete"
-            app:tint="@color/status_red" />
+            app:tint="@color/status_red"
+            style="@style/numpad_key" />
 
     </androidx.gridlayout.widget.GridLayout>
 
     <Button
         android:id="@+id/btn_continue"
-        android:layout_width="match_parent"
-        android:layout_height="60dp"
-        android:layout_marginTop="24dp"
-        android:backgroundTint="@color/brand_primary"
-        android:fontFamily="@font/inter_bold"
         android:text="@string/action_next"
-        android:textColor="@color/white"
-        android:textSize="24sp"
-        app:cornerRadius="16dp" />
+        style="@style/btn_bottom" />
 
 </LinearLayout>

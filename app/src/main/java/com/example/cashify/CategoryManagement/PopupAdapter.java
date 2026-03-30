@@ -42,6 +42,7 @@ public class PopupAdapter {
             // Add padding so icons don't touch the edges of their grid cell
             imageView.setPadding(25, 25, 25, 25);
             return imageView;
+
         }
     }
 
@@ -71,7 +72,9 @@ public class PopupAdapter {
 
             // Trong getView của ColorGridAdapter
             GradientDrawable shape = new GradientDrawable();
-            shape.setShape(GradientDrawable.OVAL); // Chọn màu thì nên để hình tròn cho tinh tế
+
+            shape.setShape(GradientDrawable.RECTANGLE); // Chọn màu thì nên để hình tròn cho tinh tế
+            shape.setCornerRadius(28f);
             shape.setColor(Color.parseColor(colors[i]));
             colorView.setBackground(shape);
 

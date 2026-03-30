@@ -17,6 +17,7 @@
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">50%</item>
     </style>
+
     <!--Chỉ dùng đơn vị sp cho định dạng style text với mục đích ng dùng có thể phóng to, thu nhỏ cỡ chữ-->
     <style name="square_rounded">
         <item name="cornerFamily">rounded</item>
@@ -32,6 +33,7 @@
         <item name="android:textStyle">bold</item>
         <item name="android:layout_marginBottom">4dp</item>
     </style>
+
     <style name="screen_subtitle">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
@@ -111,6 +113,58 @@
         <item name="android:textSize">13sp</item>
     </style>
 
+    <style name="item_budget_title">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/item_title</item>
+        <item name="android:fontFamily">@font/inter_bold</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+
+    <style name="item_budget_money_amount">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/item_description</item>
+        <item name="android:fontFamily">@font/outfit_semibold</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+    </style>
+
+    <style name="item_budget_layout">
+        <item name="android:layout_width">35dp</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:layout_marginStart">0dp</item>
+        <item name="android:layout_weight">0</item>
+        <item name="android:orientation">vertical</item>
+    </style>
+
+    <style name="item_budget_percent">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/item_title</item>
+        <item name="android:fontFamily">@font/inter_semibold</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <style name="item_budget_edit">
+        <item name="android:layout_width">20dp</item>
+        <item name="android:layout_height">20dp</item>
+        <item name="android:layout_marginTop">4dp</item>
+        <item name="android:src">@android:drawable/ic_menu_edit</item>
+        <item name="tint">@color/btn_disabled_text</item>
+    </style>
+
+    <!--Cho cái style này kế thừa lại style có sẵn của progressbar-->
+    <style name="item_budget_progress_bar" parent="Widget.AppCompat.ProgressBar.Horizontal">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:maxHeight">8dp</item>
+        <item name="android:minHeight">8dp</item>
+        <item name="android:progressDrawable">@drawable/bg_progress_rounded</item>
+        <item name="android:max">100</item>
+    </style>
+
 
     <style name="btn_next_icon">
         <item name="android:layout_width">24dp</item>
@@ -118,6 +172,129 @@
         <item name="android:layout_weight">0</item>
         <item name="srcCompat">@drawable/angle_right_next</item>
         <item name="tint">@color/material_dynamic_neutral50</item>
+    </style>
+
+    <style name="btn_back_icon">
+        <item name="android:layout_width">45dp</item>
+        <item name="android:layout_height">45dp</item>
+        <item name="android:padding">4dp</item>
+        <item name="srcCompat">@drawable/arrow_left_back</item>
+        <item name="tint">@color/icon_inactive</item>
+        <item name="shapeAppearanceOverlay">@style/circle</item>
+        <item name="android:layout_gravity">left</item>
+        <item name="contentPadding">7dp</item>
+    </style>
+
+    <style name="btn_bottom">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">56dp</item>
+        <item name="android:layout_marginTop">24dp</item>
+        <item name="android:backgroundTint">@color/brand_primary</item>
+        <item name="android:fontFamily">@font/inter_bold</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:textSize">24sp</item>
+        <item name="cornerRadius">16dp</item>
+    </style>
+
+    <style name="btn_category_type">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:gravity">center</item>
+        <item name="android:fontFamily">@font/inter_bold</item>
+        <item name="android:textSize">12sp</item>
+        <item name="cornerRadius">16dp</item>
+        <item name="textAllCaps">true</item>
+    </style>
+
+
+    <style name="popup_category_icon">
+        <item name="android:layout_width">80dp</item>
+        <item name="android:layout_height">80dp</item>
+        <item name="android:layout_gravity">center</item>
+        <item name="android:layout_marginTop">20dp</item>
+        <item name="contentPadding">10dp</item>
+        <item name="shapeAppearanceOverlay">@style/square_rounded</item>
+    </style>
+
+    <style name="popup_category_title">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_gravity">left</item>
+        <item name="android:textColor">@color/screen_title</item>
+        <item name="android:fontFamily">@font/inter_bold</item>
+        <item name="android:layout_marginLeft">10dp</item>
+        <item name="android:textSize">25sp</item>
+    </style>
+
+    <style name="popup_category_gridview">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">130dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:horizontalSpacing">8dp</item>
+        <item name="android:numColumns">5</item>
+        <item name="android:scrollbars">none</item>
+        <item name="android:stretchMode">columnWidth</item>
+        <item name="android:verticalSpacing">8dp</item>
+    </style>
+
+    <style name="budget_main_card_title">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:fontFamily">@font/inter_regular</item>
+        <item name="android:textColor">@color/bg_main</item>
+        <item name="android:textSize">15sp</item>
+    </style>
+
+    <style name="main_card_left_label">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:fontFamily">@font/inter_medium</item>
+        <item name="android:textColor">@color/cat_pastel_coral</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <style name="main_card_right_label">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:fontFamily">@font/inter_medium</item>
+        <item name="android:textColor">@color/cat_pastel_green</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <style name="main_card_left_money_amount">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:fontFamily">@font/outfit_bold</item>
+        <item name="android:textColor">@color/cat_pastel_coral</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:textAlignment">viewStart</item>
+    </style>
+
+    <style name="main_card_right_money_amount">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:fontFamily">@font/outfit_bold</item>
+        <item name="android:textColor">@color/cat_pastel_green</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:textAlignment">viewEnd</item>
+    </style>
+
+    <style name="main_money_amount">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">0dp</item>
+        <item name="android:textColor">@color/bg_main</item>
+        <item name="android:fontFamily">@font/outfit_bold</item>
+        <item name="android:textSize">32sp</item>
     </style>
 
     <style name="buttons_divider">
@@ -128,11 +305,8 @@
 
     <style name="numpad_key">
         <item name="android:layout_width">0dp</item>
-
         <item name="android:layout_height">72dp</item>
-
         <item name="layout_columnWeight">1</item>
-
         <item name="android:layout_margin">6dp</item>
         <item name="android:background">@drawable/bg_numpad_key</item>
         <item name="android:gravity">center</item>

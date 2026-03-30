@@ -164,12 +164,23 @@ public class CategoryManagement extends AppCompatActivity {
         EditText edtName = dialog.findViewById(R.id.edtCategoryName);
         ImageView imgPreview = dialog.findViewById(R.id.imgSelectedIcon);
         Button btnSave = dialog.findViewById(R.id.btnSave);
+<<<<<<< AddTransaction
         if (editCat != null) {
+=======
+        TextView tvTitle = dialog.findViewById(R.id.tvPopupTitle);
+
+        if (editCat != null)
+        {
+            if (tvTitle != null) tvTitle.setText(R.string.category_popup_edit);
+            btnSave.setText(R.string.action_update);
+>>>>>>> master
             edtName.setText(editCat.name);
             selectedIconName = editCat.iconName;
             selectedColorCode = editCat.colorCode;
             isExpense = (editCat.type == 0);
         } else {
+            if (tvTitle != null) tvTitle.setText(R.string.category_popup_add);
+            btnSave.setText(R.string.action_save);
             selectedIconName = "ic_other";
             selectedColorCode = "#313B60";
             isExpense = true;

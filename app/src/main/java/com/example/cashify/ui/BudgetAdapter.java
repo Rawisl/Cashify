@@ -1,5 +1,9 @@
 package com.example.cashify.ui;
 
+import android.animation.ObjectAnimator;
+import android.content.Context;
+import android.content.res.ColorStateList;
+import androidx.core.content.ContextCompat;
 import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -11,6 +15,8 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.cashify.R;
 import com.example.cashify.database.BudgetWithSpent;
+import com.example.cashify.utils.CurrencyFormatter;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,6 +33,8 @@ public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.BudgetView
         this.listener = listener;
     }
 
+    public List<BudgetWithSpent> getBudgets() { return budgetList; }
+
     public void setBudgets(List<BudgetWithSpent> budgets) {
         this.budgetList = budgets;
         notifyDataSetChanged();
@@ -42,49 +50,115 @@ public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.BudgetView
     @Override
     public void onBindViewHolder(@NonNull BudgetViewHolder holder, int position) {
         BudgetWithSpent item = budgetList.get(position);
+        Context context = holder.itemView.getContext();
 
         double spent = item.spentAmount;
         double limit = item.limitAmount;
+
+        // KIỂM TRA KHOẢN CHI NGOÀI KẾ HOẠCH (Hạn mức bằng 0)
+        boolean isUnplanned = (limit <= 0);
+
         int percent = limit > 0 ? (int) ((spent / limit) * 100) : 0;
         double remaining = limit - spent;
 
         String nameToShow = (item.categoryName != null) ? item.categoryName : ("Danh mục " + item.categoryId);
         holder.tvCategoryName.setText(nameToShow);
 
-        // Bỏ phần thập phân, thêm dấu phẩy hàng nghìn
-        holder.tvSpentAndLimit.setText(String.format("%,.0f VNĐ / %,.0f VNĐ", spent, limit));
-        holder.tvPercent.setText(percent + "%");
-        holder.pbBudget.setMax(100);
-        holder.pbBudget.setProgress(Math.min(percent, 100));
+        // === ĐOẠN CODE LÔI ICON TỪ DATABASE LÊN ĐÂY KHI CÓ ICON===
+//        String iconName = item.categoryIcon; // Kiểm tra lại tên biến này trong class BudgetWithSpent
+//
+//        if (iconName != null && !iconName.isEmpty()) {
+//            // Biến cái tên String (VD: "ic_food") thành ID (int) trong res/drawable
+//            int resId = holder.itemView.getContext().getResources().getIdentifier(
+//                    iconName,
+//                    "drawable",
+//                    holder.itemView.getContext().getPackageName()
+//            );
+//
+//            if (resId != 0) {
+//                holder.ivCategoryIcon.setImageResource(resId);
+//            } else
+//            {
+//                // Nếu lỡ trong DB lưu tên icon mà trong máy không có file ảnh đó
+//                holder.ivCategoryIcon.setImageResource(R.drawable.food_drinking_solid);
+//            }
+//        } else {
+//            // Nếu DB chưa có dữ liệu icon
+//            holder.ivCategoryIcon.setImageResource(R.drawable.food_drinking_solid);
+//        }
 
-        // LOGIC ĐỔI MÀU & HIỆN CẢNH BÁO
-        if (percent >= 100) {
-            String redColor = "#E53935";
-            holder.pbBudget.setProgressTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor(redColor)));
-            holder.tvPercent.setTextColor(android.graphics.Color.parseColor(redColor));
+
+        // =========================================================
+        // === 1. ĐEM LÒ ĐÚC TIỀN VÀO SỬ DỤNG Ở ĐÂY ===
+        // =========================================================
+        String shortSpent = CurrencyFormatter.formatCompactVND(spent);
+
+        // XỬ LÝ HIỂN THỊ RIÊNG CHO NGOÀI KẾ HOẠCH
+        if (isUnplanned) {
+            holder.tvSpentAndLimit.setText(shortSpent + " (Unplanned)");
+            holder.tvPercent.setText(""); // Không hiện % khi chưa có hạn mức
+            holder.pbBudget.setMax(100);
+            ObjectAnimator.ofInt(holder.pbBudget, "progress", 0, 100)
+                    .setDuration(1000)
+                    .start();
+            holder.pbBudget.setProgressTintList(ColorStateList.valueOf(Color.parseColor("#BDBDBD"))); // Màu xám (Grey 400)
+
             holder.tvAlertMessage.setVisibility(View.VISIBLE);
+            holder.tvAlertMessage.setText("Tap (+) to set a limit");
+            holder.tvAlertMessage.setTextColor(Color.parseColor("#757575"));
 
-            // CẢNH BÁO
-            holder.tvAlertMessage.setText(String.format("Vượt ngân sách %,.0f VNĐ", Math.abs(remaining)));
-            holder.tvAlertMessage.setTextColor(android.graphics.Color.parseColor(redColor));
-
-        } else if (percent >= 80) {
-            String orangeColor = "#FB8C00";
-            holder.pbBudget.setProgressTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor(orangeColor)));
-            holder.tvPercent.setTextColor(android.graphics.Color.parseColor(orangeColor));
-            holder.tvAlertMessage.setVisibility(View.VISIBLE);
-
-            // CẢNH BÁO
-            holder.tvAlertMessage.setText(String.format("Chỉ còn %,.0f VNĐ", remaining));
-            holder.tvAlertMessage.setTextColor(android.graphics.Color.parseColor(orangeColor));
-
+            holder.ivEdit.setImageResource(android.R.drawable.ic_input_add); // Hiện dấu (+)
         } else {
-            String blueColor = "#4C6FFF";
-            holder.pbBudget.setProgressTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor(blueColor)));
-            holder.tvPercent.setTextColor(android.graphics.Color.parseColor("#000000"));
-            holder.tvAlertMessage.setVisibility(View.GONE);
+            // Giao diện bình thường (Đã lên kế hoạch)
+            String shortLimit = CurrencyFormatter.formatCompactVND(limit);
+            holder.tvSpentAndLimit.setText(shortSpent + " / " + shortLimit);
+            holder.tvPercent.setText(percent + "%");
+            holder.pbBudget.setMax(100);
+            int targetProgress = Math.min(percent, 100);
+            ObjectAnimator.ofInt(holder.pbBudget, "progress", 0, targetProgress)
+                    .setDuration(1000)
+                    .start();
+            holder.ivEdit.setImageResource(android.R.drawable.ic_menu_edit); // Hiện cây bút chì
+
+            // LOGIC ĐỔI MÀU & HIỆN CẢNH BÁO
+            holder.tvAlertMessage.setVisibility(View.VISIBLE);
+            String formattedRemaining = CurrencyFormatter.formatCompactVND(Math.abs(remaining));
+
+            if (percent > 100) {
+                // Mức độ cao hơn (pastel-coral): Ahh c'mon man...
+                int colorCoral = ContextCompat.getColor(context, R.color.cat_pastel_coral);
+                holder.pbBudget.setProgressTintList(ColorStateList.valueOf(colorCoral));
+                holder.tvPercent.setTextColor(colorCoral);
+                holder.tvAlertMessage.setText("Ahh c'mon man...");
+                holder.tvAlertMessage.setTextColor(colorCoral);
+
+            } else if (percent >= 80) {
+                // Mức độ cảnh cáo (pastel-coral): Just <...> VNĐ left!
+                int colorCoral = ContextCompat.getColor(context, R.color.cat_pastel_coral);
+                holder.pbBudget.setProgressTintList(ColorStateList.valueOf(colorCoral));
+                holder.tvPercent.setTextColor(colorCoral);
+                holder.tvAlertMessage.setText("Just " + formattedRemaining + " left!");
+                holder.tvAlertMessage.setTextColor(colorCoral);
+
+            } else if (percent >= 60) {
+                // Mức độ trung bình (pastel-orange): <...> VNĐ available
+                int colorOrange = ContextCompat.getColor(context, R.color.cat_pastel_orange);
+                holder.pbBudget.setProgressTintList(ColorStateList.valueOf(colorOrange));
+                holder.tvPercent.setTextColor(colorOrange);
+                holder.tvAlertMessage.setText(formattedRemaining + " available");
+                holder.tvAlertMessage.setTextColor(colorOrange);
+
+            } else {
+                // Mức độ nhẹ (pastel-green): <...> VNĐ left to spend
+                int colorGreen = ContextCompat.getColor(context, R.color.cat_pastel_green);
+                holder.pbBudget.setProgressTintList(ColorStateList.valueOf(colorGreen));
+                holder.tvPercent.setTextColor(ContextCompat.getColor(context, R.color.black)); // Chữ % để màu đen cho dễ đọc
+                holder.tvAlertMessage.setText(formattedRemaining + " left to spend");
+                holder.tvAlertMessage.setTextColor(colorGreen);
+            }
         }
 
+        //bắt sự kiện click để mở numpad
         holder.itemView.setOnClickListener(v -> listener.onBudgetClick(item));
     }
 
