@@ -32,4 +32,13 @@
             app:layout_constraintTop_toTopOf="parent"
             app:navGraph="@navigation/nav_graph" />
 
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_add_transaction"
+        style="@style/float_btn_add"
+        android:layout_width="46dp"
+        android:layout_height="44dp"
+        android:contentDescription="@string/action_add_transaction"
+        app:layout_constraintBottom_toTopOf="@id/bottom_navigation"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:srcCompat="@drawable/add_transaction" />
 </androidx.constraintlayout.widget.ConstraintLayout>

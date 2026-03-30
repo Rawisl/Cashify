@@ -316,7 +316,14 @@
         </style>
 
 
+    <style name="float_btn_add" parent="Widget.Material3.FloatingActionButton.Primary">
+    <item name="backgroundTint">@color/brand_primary</item>
+    <item name="tint">@color/bg_main</item>
+    <item name="android:layout_margin">24dp</item>
+    <item name="elevation">2dp</item>
+    <item name="hoveredFocusedTranslationZ">2dp</item>
 
+    </style>
 
 
 
