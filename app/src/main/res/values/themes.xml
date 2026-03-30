@@ -305,11 +305,8 @@
 
     <style name="numpad_key">
         <item name="android:layout_width">0dp</item>
-
         <item name="android:layout_height">72dp</item>
-
         <item name="layout_columnWeight">1</item>
-
         <item name="android:layout_margin">6dp</item>
         <item name="android:background">@drawable/bg_numpad_key</item>
         <item name="android:gravity">center</item>

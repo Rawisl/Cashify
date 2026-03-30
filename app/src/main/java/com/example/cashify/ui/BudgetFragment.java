@@ -21,6 +21,7 @@ import com.example.cashify.database.AppDatabase;
 import com.example.cashify.database.Budget;
 import com.example.cashify.database.BudgetDao;
 import com.example.cashify.database.BudgetWithSpent;
+import com.example.cashify.utils.CurrencyFormatter;
 
 import java.util.Calendar;
 import java.util.List;
@@ -226,13 +227,15 @@ public class BudgetFragment extends Fragment {
                         long remaining = limit - masterSpent;
                         int percent = limit > 0 ? (int) ((masterSpent * 100) / limit) : 0;
 
-                        tvMasterLimit.setText(String.format("%,d VNĐ", limit));
-                        tvMasterSpent.setText(String.format("%,d VNĐ", masterSpent));
-                        tvMasterRemaining.setText(String.format("%,d VNĐ", remaining));
+                        tvMasterLimit.setText(CurrencyFormatter.formatFullVND(limit));
+                        tvMasterSpent.setText(CurrencyFormatter.formatFullVND(masterSpent));
+                        tvMasterRemaining.setText(CurrencyFormatter.formatFullVND(remaining));
                         pbMaster.setProgress(Math.min(percent, 100));
-                    } else {
+                    }
+                    else
+                    {
                         tvMasterLimit.setText("0 VNĐ");
-                        tvMasterSpent.setText(String.format("%,d VNĐ", masterSpent));
+                        tvMasterSpent.setText(CurrencyFormatter.formatFullVND(masterSpent));
                         tvMasterRemaining.setText("0 VNĐ");
                         pbMaster.setProgress(0);
                     }

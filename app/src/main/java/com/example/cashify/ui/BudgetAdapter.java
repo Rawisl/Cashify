@@ -11,6 +11,8 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.cashify.R;
 import com.example.cashify.database.BudgetWithSpent;
+import com.example.cashify.utils.CurrencyFormatter;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -75,8 +77,16 @@ public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.BudgetView
 //        }
 
 
-        // Bỏ phần thập phân, thêm dấu phẩy hàng nghìn
-        holder.tvSpentAndLimit.setText(String.format("%,.0f VNĐ / %,.0f VNĐ", spent, limit));
+        // =========================================================
+        // === 1. ĐEM LÒ ĐÚC TIỀN VÀO SỬ DỤNG Ở ĐÂY ===
+        // =========================================================
+        String shortSpent = CurrencyFormatter.formatCompactVND(spent);
+        String shortLimit = CurrencyFormatter.formatCompactVND(limit);
+
+        // Gắn số đã format lên UI
+        holder.tvSpentAndLimit.setText(shortSpent + " / " + shortLimit);
+
+        // Cập nhật % và Progress Bar
         holder.tvPercent.setText(percent + "%");
         holder.pbBudget.setMax(100);
         holder.pbBudget.setProgress(Math.min(percent, 100));
@@ -88,8 +98,9 @@ public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.BudgetView
             holder.tvPercent.setTextColor(android.graphics.Color.parseColor(redColor));
             holder.tvAlertMessage.setVisibility(View.VISIBLE);
 
-            // CẢNH BÁO
-            holder.tvAlertMessage.setText(String.format("Vượt ngân sách %,.0f VNĐ", Math.abs(remaining)));
+            // CẢNH BÁO: Rút gọn luôn số tiền vượt để tránh vỡ Layout
+            String overSpent = CurrencyFormatter.formatCompactVND(Math.abs(remaining));
+            holder.tvAlertMessage.setText("Vượt ngân sách " + overSpent);
             holder.tvAlertMessage.setTextColor(android.graphics.Color.parseColor(redColor));
 
         } else if (percent >= 80) {
@@ -98,8 +109,9 @@ public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.BudgetView
             holder.tvPercent.setTextColor(android.graphics.Color.parseColor(orangeColor));
             holder.tvAlertMessage.setVisibility(View.VISIBLE);
 
-            // CẢNH BÁO
-            holder.tvAlertMessage.setText(String.format("Chỉ còn %,.0f VNĐ", remaining));
+            // CẢNH BÁO: Rút gọn số tiền còn lại
+            String leftAmount = CurrencyFormatter.formatCompactVND(remaining);
+            holder.tvAlertMessage.setText("Chỉ còn " + leftAmount);
             holder.tvAlertMessage.setTextColor(android.graphics.Color.parseColor(orangeColor));
 
         } else {
@@ -109,6 +121,7 @@ public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.BudgetView
             holder.tvAlertMessage.setVisibility(View.GONE);
         }
 
+        //bắt sự kiện click để mở numpad
         holder.itemView.setOnClickListener(v -> listener.onBudgetClick(item));
     }
 

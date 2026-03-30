@@ -49,7 +49,7 @@
                 <TextView
                     android:id="@+id/tvMasterLimit"
                     style="@style/main_money_amount"
-                    android:text="0 VNĐ" />
+                    android:text="500.000.000 VNĐ" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -89,7 +89,7 @@
                         <TextView
                             android:id="@+id/tvMasterSpent"
                             style="@style/main_card_left_money_amount"
-                            android:text="15.000.000 VNĐ" />
+                            android:text="999.999.999 VNĐ" />
                     </LinearLayout>
 
 
@@ -123,7 +123,7 @@
                         <TextView
                             android:id="@+id/tvMasterRemaining"
                             style="@style/main_card_right_money_amount"
-                            android:text="5.000.000 VNĐ" />
+                            android:text="999.999.999VNĐ" />
                     </LinearLayout>
 
                 </LinearLayout>
