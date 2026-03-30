@@ -38,15 +38,16 @@ public class BudgetBottomSheetDialog extends BottomSheetDialogFragment {
     private double currentSpending;
     private double currentLimit;
 
+    private List<Integer> disabledCategoryIds = new ArrayList<>();
     private OnBudgetActionListener actionListener;
     public interface OnBudgetActionListener {
         void onSave(int selectedCategoryId, double limitAmount);
         void onDelete(int categoryId);
     }
 
-    private TextInputEditText edtMonthlyBudget, edtWeeklyBudget, edtYearlyBudget;
-    private TextInputLayout layoutMonthly;
-    private LinearLayout layoutCategorySelector, layoutMasterInfo, layoutMasterPresets;
+    private TextInputEditText edtBudgetAmount;
+    private TextInputLayout layoutInputAmount;
+    private LinearLayout layoutCategorySelector, layoutMasterInfo;
     private MaterialAutoCompleteTextView actvCategoryDropdown;
     private Button btnSaveBudget, btnDeleteBudget;
     private ImageView ivIcon;
@@ -60,6 +61,10 @@ public class BudgetBottomSheetDialog extends BottomSheetDialogFragment {
         this.currentSpending = currentSpending;
         this.currentLimit = currentLimit;
         this.actionListener = listener;
+    }
+
+    public void setDisabledCategoryIds(List<Integer> ids) {
+        this.disabledCategoryIds = ids;
     }
 
     @Override
@@ -81,24 +86,22 @@ public class BudgetBottomSheetDialog extends BottomSheetDialogFragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // ánh xạ views
+        // Ánh xạ views
         TextView tvTitle = view.findViewById(R.id.tvTitle);
         TextView tvCurrentSpending = view.findViewById(R.id.tvCurrentSpending);
         ImageButton btnClose = view.findViewById(R.id.btnClose);
         ivIcon = view.findViewById(R.id.ivIcon);
-        edtWeeklyBudget = view.findViewById(R.id.edtWeeklyBudget);
-        edtMonthlyBudget = view.findViewById(R.id.edtMonthlyBudget);
-        edtYearlyBudget = view.findViewById(R.id.edtYearlyBudget);
-        layoutMonthly = view.findViewById(R.id.layoutInputMonthly);
+
+        edtBudgetAmount = view.findViewById(R.id.edtBudgetAmount);
+        layoutInputAmount = view.findViewById(R.id.layoutInputAmount);
+
         layoutCategorySelector = view.findViewById(R.id.layoutCategorySelector);
         actvCategoryDropdown = view.findViewById(R.id.actvCategoryDropdown);
         layoutMasterInfo = view.findViewById(R.id.layoutMasterInfo);
-        layoutMasterPresets = view.findViewById(R.id.layoutMasterPresets);
-        Button btnQuickFill = view.findViewById(R.id.btnQuickFill);
+
         btnSaveBudget = view.findViewById(R.id.btnSaveBudget);
         btnDeleteBudget = view.findViewById(R.id.btnDeleteBudget);
 
-        // hiển thị nút xóa nếu là chỉnh sửa ngân sách cũ
         if (categoryId > 0) {
             btnDeleteBudget.setVisibility(View.VISIBLE);
         } else {
@@ -110,21 +113,39 @@ public class BudgetBottomSheetDialog extends BottomSheetDialogFragment {
             dismiss();
         });
 
-        // thiết lập giao diện dựa trên loại ngân sách
+        // Khóa không cho hiện bàn phím hệ thống
+        edtBudgetAmount.setFocusable(false);
+        edtBudgetAmount.setFocusableInTouchMode(false);
+
+        // Bắt sự kiện click để gọi Numpad
+        edtBudgetAmount.setOnClickListener(v -> {
+            NumpadBottomSheet numpad = new NumpadBottomSheet();
+
+            String currentAmt = edtBudgetAmount.getText().toString();
+            if (currentAmt.isEmpty()) {
+                currentAmt = "0";
+            }
+            numpad.setInitialAmount(currentAmt);
+
+            numpad.setListener((rawAmount, formattedAmount) -> {
+                edtBudgetAmount.setText(rawAmount);
+            });
+
+            numpad.show(getParentFragmentManager(), "NumpadFromCategory");
+        });
+
         if (categoryId == -1) {
+            // Giao diện Master Budget
             layoutCategorySelector.setVisibility(View.GONE);
             layoutMasterInfo.setVisibility(View.VISIBLE);
-            layoutMasterPresets.setVisibility(View.VISIBLE);
             ivIcon.setImageResource(android.R.drawable.ic_menu_sort_by_size);
             ivIcon.setImageTintList(ColorStateList.valueOf(Color.parseColor("#E91E63")));
             btnSaveBudget.setText("Save Master Budget");
             btnSaveBudget.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#E91E63")));
-
-            // thiết lập sự kiện cho các nút gợi ý master budget
-            setupMasterPresets();
         } else {
+            // Giao diện Category Budget
             layoutMasterInfo.setVisibility(View.GONE);
-            layoutMasterPresets.setVisibility(View.GONE);
+
             if (categoryId == 0) {
                 layoutCategorySelector.setVisibility(View.VISIBLE);
                 loadCategoriesFromDB();
@@ -138,20 +159,17 @@ public class BudgetBottomSheetDialog extends BottomSheetDialogFragment {
 
         tvTitle.setText(title);
         tvCurrentSpending.setText(String.format("%,.0f VNĐ", currentSpending));
+
         if (currentLimit > 0) {
-            edtMonthlyBudget.setText(String.format("%.0f", currentLimit));
+            edtBudgetAmount.setText(String.format("%.0f", currentLimit));
         }
 
         btnClose.setOnClickListener(v -> dismiss());
 
-        btnQuickFill.setOnClickListener(v -> {
-            calculateFromMonthly();
-        });
-
         btnSaveBudget.setOnClickListener(v -> {
-            String monthlyVal = edtMonthlyBudget.getText().toString().trim();
-            if (TextUtils.isEmpty(monthlyVal)) {
-                layoutMonthly.setBoxStrokeColor(ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark));
+            String amountVal = edtBudgetAmount.getText().toString().trim();
+            if (TextUtils.isEmpty(amountVal)) {
+                layoutInputAmount.setBoxStrokeColor(ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark));
                 Toast.makeText(getContext(), "Vui lòng nhập số tiền", Toast.LENGTH_SHORT).show();
                 return;
             }
@@ -161,7 +179,7 @@ public class BudgetBottomSheetDialog extends BottomSheetDialogFragment {
                 return;
             }
 
-            double finalLimit = Double.parseDouble(monthlyVal);
+            double finalLimit = Double.parseDouble(amountVal);
             if (actionListener != null) {
                 int idToSave = (categoryId == 0) ? selectedCategoryIdFromDropdown : categoryId;
                 actionListener.onSave(idToSave, finalLimit);
@@ -170,56 +188,30 @@ public class BudgetBottomSheetDialog extends BottomSheetDialogFragment {
         });
     }
 
-    // xử lý sự kiện click cho các nút tiền nhanh 2tr, 3tr, 5tr
-    private void setupMasterPresets() {
-        for (int i = 0; i < layoutMasterPresets.getChildCount(); i++) {
-            View child = layoutMasterPresets.getChildAt(i);
-            if (child instanceof Button) {
-                Button btnPreset = (Button) child;
-                btnPreset.setOnClickListener(v -> {
-                    String btnText = btnPreset.getText().toString().toLowerCase();
-                    double amount = 0;
-                    if (btnText.contains("2tr")) amount = 2000000;
-                    else if (btnText.contains("3tr")) amount = 3000000;
-                    else if (btnText.contains("5tr")) amount = 5000000;
-
-                    if (amount > 0) {
-                        edtMonthlyBudget.setText(String.valueOf((long) amount));
-                        calculateFromMonthly(); // tự động cập nhật tuần và năm
-                    }
-                });
-            }
-        }
-    }
-
-    // tính toán ngân sách tuần và năm dựa trên giá trị tháng
-    private void calculateFromMonthly() {
-        String monthStr = edtMonthlyBudget.getText().toString();
-        if (!TextUtils.isEmpty(monthStr)) {
-            try {
-                double monthly = Double.parseDouble(monthStr);
-                edtWeeklyBudget.setText(String.format("%.0f", monthly / 4));
-                edtYearlyBudget.setText(String.format("%.0f", monthly * 12));
-            } catch (NumberFormatException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
     private void loadCategoriesFromDB() {
         AppDatabase db = AppDatabase.getInstance(requireContext());
         new Thread(() -> {
-            expenseCategories = db.categoryDao().getCategoriesByType(0);
+            // Lấy tất cả danh mục chi tiêu từ DB
+            List<Category> allCategories = db.categoryDao().getCategoriesByType(0);
+
+            // Lọc: Chỉ giữ lại những danh mục CHƯA có budget
+            List<Category> availableCategories = new ArrayList<>();
+            for (Category c : allCategories) {
+                if (!disabledCategoryIds.contains(c.id)) {
+                    availableCategories.add(c);
+                }
+            }
+
             if (getActivity() != null) {
                 getActivity().runOnUiThread(() -> {
-                    List<String> categoryNames = new ArrayList<>();
-                    for (Category c : expenseCategories) {
-                        categoryNames.add(c.name);
-                    }
-                    ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_dropdown_item_1line, categoryNames);
+                    // Sử dụng CategoryAdapter để hiển thị danh sách đã lọc
+                    CategoryAdapter adapter = new CategoryAdapter(requireContext(), availableCategories);
                     actvCategoryDropdown.setAdapter(adapter);
+
                     actvCategoryDropdown.setOnItemClickListener((parent, view, position, id) -> {
-                        selectedCategoryIdFromDropdown = expenseCategories.get(position).id;
+                        Category selected = (Category) parent.getItemAtPosition(position);
+                        selectedCategoryIdFromDropdown = selected.id;
+                        actvCategoryDropdown.setText(selected.name, false); // Hiển thị tên lên ô nhập
                     });
                 });
             }

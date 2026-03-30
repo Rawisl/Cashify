@@ -2,7 +2,6 @@ package com.example.cashify.AddTransaction;
 
 import android.app.DatePickerDialog;
 import android.content.res.ColorStateList;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -20,8 +19,9 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.cashify.R;
 import com.example.cashify.database.AppDatabase;
 import com.example.cashify.database.Category;
+import com.example.cashify.database.DatabaseSeeder;
+import com.example.cashify.database.Transaction;
 
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
@@ -45,7 +45,6 @@ public class AddTransactionActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // Kiểm tra đúng tên file XML của ông là add_transaction hay activity_add_transaction
         setContentView(R.layout.add_transaction);
 
         initViews();
@@ -53,8 +52,10 @@ public class AddTransactionActivity extends AppCompatActivity {
         setupDatePicker();
         setupPaymentMethods();
 
-        // 1. Khởi tạo danh sách category mặc định (CHI) ngay khi vào màn hình
-        loadCategories(0);
+        // --- CHỈNH SỬA TẠI ĐÂY: Đổ dữ liệu ---
+        // 1. Seed dữ liệu nếu DB trống (Lần đầu chạy app)
+        // 2. Load danh sách category ngay lập tức
+        loadInitialData();
 
         btnConfirm.setOnClickListener(v -> validateAndSave());
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
@@ -72,16 +73,23 @@ public class AddTransactionActivity extends AppCompatActivity {
         btnConfirm = findViewById(R.id.btnConfirm);
         rvCategories = findViewById(R.id.rvCategories);
 
-        // Mặc định ngày hôm nay
         updateDateText();
     }
 
-    // --- 1. Logic Switch Tab (Expense/Income) ---
+    private void loadInitialData() {
+        Executors.newSingleThreadExecutor().execute(() -> {
+            // Đảm bảo có dữ liệu mẫu trước khi lấy
+            DatabaseSeeder.seedIfEmpty(this);
+
+            // Sau khi seed xong thì load lên UI
+            loadCategories(isExpense ? 0 : 1);
+        });
+    }
+
     private void setupTabs() {
         View.OnClickListener tabListener = v -> {
             isExpense = (v.getId() == R.id.tabChi);
             updateTabUI();
-            // 2. Khi đổi tab, load lại danh sách category tương ứng
             loadCategories(isExpense ? 0 : 1);
         };
         tabChi.setOnClickListener(tabListener);
@@ -102,11 +110,9 @@ public class AddTransactionActivity extends AppCompatActivity {
             tabChi.setTextColor(ContextCompat.getColor(this, R.color.item_description));
             edtAmount.setTextColor(ContextCompat.getColor(this, R.color.status_green));
         }
-        // Reset selected category khi chuyển tab để tránh chọn nhầm category cũ
         selectedCategory = null;
     }
 
-    // --- 2. Logic Load Category ---
     private void loadCategories(int type) {
         Executors.newSingleThreadExecutor().execute(() -> {
             List<Category> data = AppDatabase.getInstance(this).categoryDao().getCategoriesByType(type);
@@ -121,7 +127,40 @@ public class AddTransactionActivity extends AppCompatActivity {
         });
     }
 
-    // --- 3. Logic Payment Selection ---
+    // --- Logic Lưu Dữ Liệu Thực Tế ---
+    private void validateAndSave() {
+        String amountStr = edtAmount.getText().toString().trim();
+
+        if (amountStr.isEmpty() || amountStr.equals("0")) {
+            edtAmount.setBackgroundResource(R.drawable.bg_input_error);
+            Toast.makeText(this, "Vui lòng nhập số tiền!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (selectedCategory == null) {
+            Toast.makeText(this, "Vui lòng chọn danh mục!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Tạo đối tượng Transaction để lưu
+        Transaction transaction = new Transaction();
+        transaction.amount = Long.parseLong(amountStr);
+        transaction.categoryId = selectedCategory.id;
+        transaction.note = edtNote.getText().toString().trim();
+        transaction.timestamp = calendar.getTimeInMillis();
+        transaction.type = isExpense ? 0 : 1;
+
+        // Gọi DB để lưu
+        Executors.newSingleThreadExecutor().execute(() -> {
+            AppDatabase.getInstance(this).transactionDao().insert(transaction);
+
+            runOnUiThread(() -> {
+                Toast.makeText(this, "Lưu thành công!", Toast.LENGTH_SHORT).show();
+                finish(); // Đóng màn hình sau khi lưu
+            });
+        });
+    }
+
     private void setupPaymentMethods() {
         View.OnClickListener payListener = v -> {
             resetPaymentUI(btnCash, R.id.imgCash, R.id.tvCash);
@@ -140,12 +179,10 @@ public class AddTransactionActivity extends AppCompatActivity {
                 setActivePaymentUI(btnBank, R.id.imgBank, R.id.tvBank);
             }
         };
-
         btnCash.setOnClickListener(payListener);
         btnCard.setOnClickListener(payListener);
         btnBank.setOnClickListener(payListener);
-
-        btnCash.setActivated(true); // Mặc định chọn Cash
+        btnCash.setActivated(true);
     }
 
     private void resetPaymentUI(LinearLayout layout, int imgId, int txtId) {
@@ -159,7 +196,6 @@ public class AddTransactionActivity extends AppCompatActivity {
         ((TextView)findViewById(txtId)).setTextColor(ContextCompat.getColor(this, R.color.brand_primary));
     }
 
-    // --- 4. Logic Date Picker ---
     private void setupDatePicker() {
         tvDate.setOnClickListener(v -> {
             new DatePickerDialog(this, (view, year, month, dayOfMonth) -> {
@@ -175,30 +211,5 @@ public class AddTransactionActivity extends AppCompatActivity {
                 calendar.get(Calendar.MONTH) + 1,
                 calendar.get(Calendar.YEAR));
         tvDate.setText(format);
-    }
-
-    // --- 5. Validate Form & Save ---
-    private void validateAndSave() {
-        String amountStr = edtAmount.getText().toString().trim();
-
-        // Kiểm tra tiền
-        if (amountStr.isEmpty() || amountStr.equals("0")) {
-            edtAmount.setBackgroundResource(R.drawable.bg_input_error);
-            Toast.makeText(this, "Vui lòng nhập số tiền hợp lệ!", Toast.LENGTH_SHORT).show();
-            return;
-        } else {
-            // Reset lại viền bình thường nếu đã nhập
-            edtAmount.setBackgroundResource(R.drawable.bg_input_fields);
-        }
-
-        // Kiểm tra Category
-        if (selectedCategory == null) {
-            Toast.makeText(this, "Vui lòng chọn một danh mục!", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        // Nếu mọi thứ OK, thực hiện lưu (Chỗ này ông sẽ gọi DAO để Insert Transaction)
-        Toast.makeText(this, "Đã lưu giao dịch " + (isExpense ? "Chi" : "Thu") + ": " + amountStr + "đ", Toast.LENGTH_LONG).show();
-        finish();
     }
 }
