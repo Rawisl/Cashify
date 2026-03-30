@@ -61,9 +61,12 @@ public class BudgetFragment extends Fragment {
         if (cardMaster != null) {
             cardMaster.setOnClickListener(v -> {
                 double limit = masterBudgetCache != null ? masterBudgetCache.limitAmount : 0;
+                //mở numpad, truyền id = -1 (master) vô
+                openNumpadToEditBudget(-1, limit);
                 BudgetBottomSheetDialog bottomSheet = new BudgetBottomSheetDialog(
                         -1, "Master Budget", currentMasterSpent, limit,
-                        new BudgetBottomSheetDialog.OnBudgetActionListener() {
+                        new BudgetBottomSheetDialog.OnBudgetActionListener()
+                        {
                             @Override
                             public void onSave(int selectedId, double newLimit) {
                                 saveBudgetToDatabase(-1, newLimit);
@@ -106,9 +109,12 @@ public class BudgetFragment extends Fragment {
         rvBudgets.setLayoutManager(new LinearLayoutManager(getContext()));
         adapter = new BudgetAdapter(item -> {
             String titleName = (item.categoryName != null) ? item.categoryName : "Danh mục " + item.categoryId;
+            // Gọi Numpad, truyền ID của danh mục và số tiền limit hiện tại vào
+            openNumpadToEditBudget(item.categoryId, item.limitAmount);
             BudgetBottomSheetDialog bottomSheet = new BudgetBottomSheetDialog(
                     item.categoryId, titleName, item.spentAmount, item.limitAmount,
-                    new BudgetBottomSheetDialog.OnBudgetActionListener() {
+                    new BudgetBottomSheetDialog.OnBudgetActionListener()
+                    {
                         @Override
                         public void onSave(int selectedId, double newLimit) {
                             saveBudgetToDatabase(selectedId, newLimit);
@@ -233,5 +239,28 @@ public class BudgetFragment extends Fragment {
                 });
             }
         }).start();
+    }
+
+    // Hàm này sẽ được gọi khi người dùng bấm vào thẻ Master hoặc 1 thẻ Category Budget
+    private void openNumpadToEditBudget(int categoryId, double currentLimit) {
+        NumpadBottomSheet numpad = new NumpadBottomSheet();
+
+        // 1. Ép số tiền Limit hiện tại thành chuỗi để truyền vào Numpad
+        numpad.setInitialAmount(String.valueOf((long) currentLimit));
+
+        // 2. Gắn bộ đàm để nghe ngóng kết quả trả về
+        numpad.setListener(new NumpadBottomSheet.OnNumpadListener() {
+            @Override
+            public void onAmountConfirmed(String rawAmount, String formattedAmount) {
+                // Người dùng đã bấm "Xác nhận" (Continue)
+                double newLimit = Double.parseDouble(rawAmount);
+
+                // Dùng luôn hàm lưu Database thần thánh của ông (Nó đã có sẵn logic Update/Insert và tự load lại UI)
+                saveBudgetToDatabase(categoryId, newLimit);
+            }
+        });
+
+        // 3. Kéo cái Numpad từ dưới đáy màn hình lên
+        numpad.show(getChildFragmentManager(), "NumpadBottomSheet");
     }
 }

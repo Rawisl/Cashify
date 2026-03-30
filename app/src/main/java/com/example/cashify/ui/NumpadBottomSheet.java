@@ -73,6 +73,14 @@ public class NumpadBottomSheet extends BottomSheetDialogFragment
         updateAmountDisplay();
     }
 
+    //hiện số cũ của object mới bấm vô (pre-fill)
+    public void setInitialAmount(String amount)
+    {
+        if (amount != null && !amount.isEmpty()) {
+            this.rawAmount = amount;
+        }
+    }
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle saveInstanceState)
     {
@@ -128,7 +136,7 @@ public class NumpadBottomSheet extends BottomSheetDialogFragment
             }
         );
 
-
+        updateAmountDisplay();
     }
 
     // 1. Định nghĩa bộ đàm cho nút continue
