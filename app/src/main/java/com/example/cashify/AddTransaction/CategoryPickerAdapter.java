@@ -10,6 +10,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
@@ -43,31 +44,43 @@ public class CategoryPickerAdapter extends RecyclerView.Adapter<CategoryPickerAd
         Category item = list.get(position);
         holder.tvName.setText(item.name);
 
-        // Lấy icon từ drawable
+        // 1. Lấy icon từ drawable
         int resId = context.getResources().getIdentifier(item.iconName, "drawable", context.getPackageName());
         holder.imgIcon.setImageResource(resId != 0 ? resId : R.drawable.ic_other);
 
-        // Xử lý màu sắc
-        int color = Color.parseColor(item.colorCode);
+        // --- 2. XỬ LÝ MÀU SẮC (FIX CRASH TẠI ĐÂY) ---
+        int color;
+        try {
+            // Chuyển chuỗi ID từ DB thành số nguyên, sau đó lấy màu thực tế từ Resource
+            int colorResId = Integer.parseInt(item.colorCode);
+            color = ContextCompat.getColor(context, colorResId);
+        } catch (Exception e) {
+            // Phòng hờ dữ liệu cũ hoặc lỗi, mặc định dùng màu brand_primary hoặc đen
+            color = ContextCompat.getColor(context, R.color.brand_primary);
+        }
+
+        // Tạo màu Pastel (Alpha = 51 tương đương khoảng 20%)
         int pastel = Color.argb(51, Color.red(color), Color.green(color), Color.blue(color));
 
         GradientDrawable shape = new GradientDrawable();
         shape.setShape(GradientDrawable.OVAL);
         shape.setColor(pastel);
 
-        // Nếu được chọn thì hiện viền đậm
+        // 3. Nếu được chọn thì hiện viền đậm
         if (selectedPosition == position) {
             shape.setStroke(4, color);
             holder.tvName.setTextColor(color);
-            holder.tvName.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0); // Có thể thêm icon check nhỏ
+            holder.tvName.setTypeface(null, android.graphics.Typeface.BOLD); // Làm đậm chữ khi chọn
         } else {
             shape.setStroke(0, Color.TRANSPARENT);
-            holder.tvName.setTextColor(context.getResources().getColor(R.color.item_description));
+            holder.tvName.setTextColor(ContextCompat.getColor(context, R.color.item_description));
+            holder.tvName.setTypeface(null, android.graphics.Typeface.NORMAL);
         }
 
         holder.imgIcon.setBackground(shape);
         holder.imgIcon.setImageTintList(ColorStateList.valueOf(color));
 
+        // 4. Click listener
         holder.itemView.setOnClickListener(v -> {
             int oldPos = selectedPosition;
             selectedPosition = holder.getAdapterPosition();
