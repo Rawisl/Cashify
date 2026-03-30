@@ -323,6 +323,10 @@ public class CategoryManagement extends AppCompatActivity {
                             runOnUiThread(() -> loadData());
                         }))
                         .setNegativeButton("Cancel", (d, w) -> adapter.notifyItemChanged(pos))
+                        //BẮT SỰ KIỆN PHÍM BACK / CHẠM NGOÀI
+                        .setOnDismissListener(dialogInterface -> {
+                            adapter.notifyItemChanged(pos);
+                        })
                         .show();
             }
         };
