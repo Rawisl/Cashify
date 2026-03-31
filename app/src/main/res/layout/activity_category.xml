@@ -187,4 +187,13 @@
             </androidx.cardview.widget.CardView>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_add_category"
+        style="@style/float_btn_add"
+        android:contentDescription="@string/action_add_category"
+        app:srcCompat="@drawable/add_category"
+        android:layout_gravity="bottom|end"
+        app:layout_behavior="com.google.android.material.behavior.HideBottomViewOnScrollBehavior"
+        android:layout_margin = "24dp"/>
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

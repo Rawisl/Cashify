@@ -11,6 +11,7 @@
     <string name="action_search">Search…</string>
 
     <string name="action_add_transaction">Add transaction</string>
+    <string name="action_add_category">Add category</string>
 
     <string name="tab_income">Income</string>
     <string name="tab_expense">Expense</string>

@@ -5,7 +5,10 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFFFFF"> <androidx.constraintlayout.widget.ConstraintLayout
+    android:background="#FFFFFF"
+    android:fitsSystemWindows="true">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:padding="20dp">
@@ -165,8 +168,11 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
+        android:clipToPadding="false"
+        android:paddingBottom="88dp"
         app:layout_constraintTop_toBottomOf="@id/tvRecentTransactions"
         tools:itemCount="4"
+        tools:layout_editor_absoluteX="20dp"
         tools:listitem="@layout/item_transaction" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

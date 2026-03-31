@@ -68,7 +68,6 @@ public class MainActivity extends AppCompatActivity {
 
         //ghép thanh điều hướng với bộ điều khiển để chuyển fragment
         NavigationUI.setupWithNavController(bottomNav,navController);
-
-
     }
+
 }

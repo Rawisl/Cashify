@@ -6,7 +6,8 @@
     android:layout_height="match_parent"
     android:fillViewport="true"
     android:requiresFadingEdge="vertical"
-    android:fadingEdgeLength="24dp">
+    android:fadingEdgeLength="24dp"
+    android:fitsSystemWindows="true">
     <!-- 2 dòng fading edge để hỗ trợ việc scroll mượt hơn (content bị fade dần) -->
 
     <LinearLayout
