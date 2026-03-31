@@ -15,17 +15,46 @@
 
         <TextView
             android:id="@+id/tvTitleBudget"
-            android:text="@string/budget_title"
+            android:text="Budget"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             style="@style/screen_title"/>
 
         <TextView
             android:id="@+id/tvSubTitle"
-            android:text="@string/budget_subtitle"
+            android:text="Track your spending limits"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tvTitleBudget"
             style="@style/screen_subtitle"/>
+
+        <com.google.android.material.button.MaterialButtonToggleGroup
+            android:id="@+id/toggleGroupPeriod"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            app:singleSelection="true"
+            app:checkedButton="@+id/btnMonthly"
+            app:layout_constraintTop_toBottomOf="@id/tvSubTitle"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnWeekly"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                style="?attr/materialButtonOutlinedStyle"
+                android:text="Weekly" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnMonthly"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                style="?attr/materialButtonOutlinedStyle"
+                android:text="Monthly" />
+        </com.google.android.material.button.MaterialButtonToggleGroup>
 
         <androidx.cardview.widget.CardView
             android:id="@+id/cardMaster"
@@ -34,7 +63,7 @@
             android:layout_marginTop="24dp"
             app:cardCornerRadius="24dp"
             app:cardElevation="4dp"
-            app:layout_constraintTop_toBottomOf="@id/tvSubTitle">
+            app:layout_constraintTop_toBottomOf="@id/toggleGroupPeriod">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -43,14 +72,33 @@
                 android:orientation="vertical"
                 android:padding="20dp">
 
-                <TextView
-                    style="@style/budget_main_card_title"
-                    android:text="@string/budget_main_card_title_monthly" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:id="@+id/tvMasterTitle"
+                        style="@style/budget_main_card_title"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Monthly Master Budget" />
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@android:drawable/ic_menu_edit"
+                        app:tint="@color/bg_main"
+                        android:alpha="0.5"
+                        android:importantForAccessibility="no" />
+                </LinearLayout>
 
                 <TextView
                     android:id="@+id/tvMasterLimit"
                     style="@style/main_money_amount"
-                    android:text="500.000.000 VNĐ" />
+                    android:text="0 VNĐ" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -74,23 +122,15 @@
                             android:gravity="center_vertical"
                             android:orientation="horizontal">
 
-                            <!--                            Dùng thì chèn icon vào, không thì thôi xóa đi-->
-                            <!--                            <ImageView-->
-                            <!--                                android:layout_width="12dp"-->
-                            <!--                                android:layout_height="12dp"-->
-                            <!--                                android:src="...icon images..."-->
-                            <!--                                app:tint="#E0E0E0"-->
-                            <!--                                android:layout_marginEnd="4dp"/>-->
-
                             <TextView
                                 style="@style/main_card_left_label"
-                                android:text="@string/budget_label_spent" />
+                                android:text="Spent" />
                         </LinearLayout>
 
                         <TextView
                             android:id="@+id/tvMasterSpent"
                             style="@style/main_card_left_money_amount"
-                            android:text="999.999.999 VNĐ" />
+                            android:text="0 VNĐ" />
                     </LinearLayout>
 
 
@@ -111,30 +151,33 @@
 
                             <TextView
                                 style="@style/main_card_right_label"
-                                android:text="@string/budget_label_remaining" />
-
-                            <!--                            <ImageView-->
-                            <!--                                android:layout_width="12dp"-->
-                            <!--                                android:layout_height="12dp"-->
-                            <!--                                android:src="...icon image..."-->
-                            <!--                                app:tint="#E0E0E0"-->
-                            <!--                                android:layout_marginStart="4dp"/>-->
+                                android:text="Remaining" />
                         </LinearLayout>
 
                         <TextView
                             android:id="@+id/tvMasterRemaining"
                             style="@style/main_card_right_money_amount"
-                            android:text="999.999.999VNĐ" />
+                            android:text="0 VNĐ" />
                     </LinearLayout>
 
                 </LinearLayout>
 
                 <ProgressBar
                     android:id="@+id/pbMaster"
-                    android:progress="36"
+                    android:progress="0"
                     android:progressTint="@color/cat_pastel_green"
                     android:layout_marginTop="10dp"
                     style="@style/item_budget_progress_bar"/>
+
+                <TextView
+                    android:id="@+id/tvMasterAlert"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:fontFamily="@font/inter_semibold"
+                    android:textSize="12sp"
+                    android:gravity="center"
+                    android:visibility="gone" />
 
             </LinearLayout>
         </androidx.cardview.widget.CardView>
@@ -192,7 +235,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/budget_tips"
+                    android:text="💡 Budget Tips"
                     android:fontFamily="@font/inter_bold"
                     android:textColor="@color/tips_text_color"/>
             </LinearLayout>

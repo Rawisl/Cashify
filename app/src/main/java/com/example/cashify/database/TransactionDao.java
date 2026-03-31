@@ -36,7 +36,10 @@ public interface TransactionDao {
     long getTotalExpense(long start, long end);
 
     //Top 5 danh mục chi nhiều nhất (pie chart)
-    @Query("SELECT categoryId, SUM(amount) as total FROM transactions "+"WHERE type=0 AND timestamp BETWEEN :start AND :end "+"GROUP BY categoryId ORDER BY total DESC LIMIT 5")
+    @Query("SELECT t.categoryId, c.name as categoryName, SUM(t.amount) as total " +
+            "FROM transactions t INNER JOIN categories c ON t.categoryId = c.id " +
+            "WHERE t.type=0 AND t.timestamp BETWEEN :start AND :end " +
+            "GROUP BY t.categoryId ORDER BY total DESC LIMIT 5")
     List<CategorySum> getTop5ExpenseCategories(long start, long end);
 
     //Phần 'khác' trong pie chart: tổng tất cả ngoài top 5
