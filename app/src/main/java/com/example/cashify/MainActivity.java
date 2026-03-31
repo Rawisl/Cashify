@@ -5,7 +5,9 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.view.ViewGroup;
 
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.splashscreen.SplashScreen;
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -57,6 +59,29 @@ public class MainActivity extends AppCompatActivity {
             NavController navController = (NavController) navHostFragment.getNavController();
             //ghép thanh điều hướng với bộ điều khiển để chuyển fragment
             NavigationUI.setupWithNavController(bottomNav, navController);
+
+            // Lắng nghe sự kiện mỗi khi người dùng chuyển tab/fragment để fix lỗi chìm fab
+            navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
+
+                // Ép tọa độ trục Y của nút về vị trí gốc (mặt đất) ngay lập tức
+                fabAddTransaction.setTranslationY(0f);
+
+                // Đảm bảo trạng thái hiển thị là True
+                if (!fabAddTransaction.isShown()) {
+                    fabAddTransaction.show();
+                }
+
+                //đoạn này để nút fab ko hiện trong settings
+                int id = destination.getId();
+
+                // Giả sử R.id.settingsFragment là màn hình không cần nút thêm giao dịch
+                if (id == R.id.nav_settings) {
+                    fabAddTransaction.hide(); // Giấu đi khi vào các tab không liên quan
+                } else {
+                    fabAddTransaction.show(); // Hiện lên ở các tab quản lý thu chi
+                }
+            });
+
         }
 
         //Gọi hàm khởi tạo các danh mục lần đầu mở app
