@@ -65,14 +65,14 @@ public class AddTransactionActivity extends AppCompatActivity {
         btnConfirm.setOnClickListener(v ->validateAndSave());
 
         findViewById(R.id.btnBack).setOnClickListener(v ->
-                hideKeyboardAndFinish()
+                finish()
         );
 
         // Bắt sự kiện vuốt viền hoặc phím cứng Back của điện thoại
         getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                hideKeyboardAndFinish();
+                finish();
             }
         });
     }
@@ -229,7 +229,7 @@ public class AddTransactionActivity extends AppCompatActivity {
         // TODO: Gọi DAO Insert
 
         Toast.makeText(this, getString(R.string.noti_save_transaction_successfully), Toast.LENGTH_LONG).show();
-        hideKeyboardAndFinish();
+        finish();
     }
 
     private void showAmountError() {
@@ -247,11 +247,12 @@ public class AddTransactionActivity extends AppCompatActivity {
         }
     }
 
-    private void hideKeyboardAndFinish()
-    {
-        supportFinishAfterTransition();
+    @Override
+    public void finish() {
+        super.finish();
+        // Ép hiệu ứng trượt XUỐNG khi Activity này bị tiêu diệt
+        overridePendingTransition(R.anim.stay, R.anim.slide_out_down);
     }
-
     private void openNumpadBottomSheet() {
         NumpadBottomSheet numpad = new NumpadBottomSheet();
 

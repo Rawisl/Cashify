@@ -45,12 +45,13 @@ public class MainActivity extends AppCompatActivity {
         //tìm thanh điều hướng
         BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
 
+        //sự kiện click nút fab
         fabAddTransaction.setOnClickListener(v ->
         {
-            //Dùng activity option bundle để n phóng màn hình mới từ cái nút fab nhìn cho n pro vip
             Intent intent = new Intent(this, AddTransactionActivity.class);
-            ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(this, fabAddTransaction, "transition_fab");
-            startActivity(intent, options.toBundle());
+            startActivity(intent);
+            // Gọi hiệu ứng trượt LÊN ngay sau khi start
+            overridePendingTransition(R.anim.slide_in_up, R.anim.stay);
         });
 
         NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager().findFragmentById(R.id.nav_host_fragment);
