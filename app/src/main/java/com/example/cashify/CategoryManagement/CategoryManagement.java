@@ -23,6 +23,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -58,27 +59,42 @@ public class CategoryManagement extends AppCompatActivity {
             R.drawable.ic_education, R.drawable.ic_vacation, R.drawable.ic_entertain, R.drawable.ic_gym, R.drawable.ic_other
     };
 
-    private final String[] colorRepo = {
-            "#E96565", "#FDA664", "#F675A1", "#559DE4", "#6CD0D0", "#847FF0", "#87D18C", "#93CE9D",
-            "#9B8077", "#F6DA88", "#AD78B4", "#81949D", "#313B60", "#D14040", "#1DB424"
-    };
+    // Mảng lưu màu gốc từ hệ thống (tránh lỗi bộ nhớ)
+    private int[] colorRepo;
+    private String[] colorHexRepo; // Mảng trung gian cấp cho Adapter
 
     private String selectedIconName = "ic_other";
-    private String selectedColorCode = "#313B60"; // Mặc định dùng brand_primary
+    private String selectedColorCode; // Vẫn dùng String để tương thích DB
     private boolean isExpense = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_category);
+
+        // 1. KHỞI TẠO TÀI NGUYÊN MÀU SẮC NGAY TẠI ĐÂY
+        colorRepo = getResources().getIntArray(R.array.category_color_repo);
+        colorHexRepo = new String[colorRepo.length];
+
         db = AppDatabase.getInstance(this);
         DatabaseSeeder.seedIfEmpty(this);
+
+        // Tự động dịch từ Color Int sang mã Hex String để xài cho DB và Adapter
+        for (int i = 0; i < colorRepo.length; i++) {
+            colorHexRepo[i] = String.format("#%06X", (0xFFFFFF & colorRepo[i]));
+        }
+
+        // Đặt màu mặc định là màu đầu tiên trong danh sách XML
+        if (colorHexRepo.length > 0) {
+            selectedColorCode = colorHexRepo[0];
+        }
 
         // Ánh xạ View
         rvChi = findViewById(R.id.recyclerChiRa);
         rvThu = findViewById(R.id.recyclerThuVao);
         edtSearch = findViewById(R.id.edtSearchCategory);
-        ImageButton btnAddCategory = findViewById(R.id.btnAddCategory);
+        FloatingActionButton fabAddCategory = findViewById(R.id.fab_add_category);
+
         ImageView btnBack = findViewById(R.id.btnBack);
 
         loadData();
@@ -100,7 +116,7 @@ public class CategoryManagement extends AppCompatActivity {
         findViewById(R.id.layoutHeaderChi).setOnClickListener(v -> toggleRecyclerView(rvChi, findViewById(R.id.tvArrowChi)));
         findViewById(R.id.layoutHeaderThu).setOnClickListener(v -> toggleRecyclerView(rvThu, findViewById(R.id.tvArrowThu)));
 
-        btnAddCategory.setOnClickListener(v -> showCategoryPopup(null));
+        fabAddCategory.setOnClickListener(v -> showCategoryPopup(null));
     }
 
     private void filterCategories(String query) {
@@ -234,7 +250,7 @@ public class CategoryManagement extends AppCompatActivity {
         btnSave.setOnClickListener(v -> {
             String name = edtName.getText().toString().trim();
             if (name.isEmpty()) {
-                Toast.makeText(this, "Vui lòng nhập tên!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this,getString(R.string.error_empty_category_name) , Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -293,7 +309,7 @@ public class CategoryManagement extends AppCompatActivity {
 
     private void updateTabStyles(TextView selected, TextView unselected, boolean isExpenseTab) {
         GradientDrawable selectedBg = new GradientDrawable();
-        selectedBg.setColor(Color.parseColor("#E5E7EB")); // Màu nền tab active
+        selectedBg.setColor(ContextCompat.getColor(this, R.color.tab_active_bg)); // Màu nền tab active
         selectedBg.setCornerRadius(10 * getResources().getDisplayMetrics().density);
 
         selected.setBackground(selectedBg);
@@ -317,10 +333,12 @@ public class CategoryManagement extends AppCompatActivity {
             });
         }
 
-        if (gColor != null) {
-            gColor.setAdapter(new PopupAdapter.ColorGridAdapter(this, colorRepo));
+        if (gColor != null)
+        {
+                // Truyền mảng màu đã quy đổi thành Hex String vào Adapter cũ của bạn
+            gColor.setAdapter(new PopupAdapter.ColorGridAdapter(this, colorHexRepo));
             gColor.setOnItemClickListener((p, v, pos, id) -> {
-                selectedColorCode = colorRepo[pos];
+                selectedColorCode = colorHexRepo[pos];
                 updatePopupUI(dialog, preview, isEditMode);
             });
         }
@@ -335,7 +353,7 @@ public class CategoryManagement extends AppCompatActivity {
                 View item = vh.itemView;
                 if (dX < 0) {
                     GradientDrawable bg = new GradientDrawable();
-                    bg.setColor(Color.parseColor("#D14040")); // Dùng status_red
+                    bg.setColor(ContextCompat.getColor(CategoryManagement.this, R.color.status_red));// Dùng status_red
                     bg.setCornerRadius(16 * getResources().getDisplayMetrics().density);
                     bg.setBounds(item.getRight() + (int) dX, item.getTop(), item.getRight(), item.getBottom());
                     bg.draw(c);
@@ -347,14 +365,17 @@ public class CategoryManagement extends AppCompatActivity {
             public void onSwiped(@NonNull RecyclerView.ViewHolder vh, int direction) {
                 int pos = vh.getAdapterPosition();
                 Category cat = list.get(pos);
+
+                String msg = getString(R.string.confirm_delete, cat.name);
+
                 new AlertDialog.Builder(CategoryManagement.this)
-                        .setTitle("Delete Category")
-                        .setMessage("Are you sure you want to delete '" + cat.name + "'?")
-                        .setPositiveButton("Delete", (d, w) -> Executors.newSingleThreadExecutor().execute(() -> {
+                        .setTitle(getString(R.string.action_delete_category))
+                        .setMessage(msg)
+                        .setPositiveButton(getString(R.string.action_delete), (d, w) -> Executors.newSingleThreadExecutor().execute(() -> {
                             db.categoryDao().softDelete(cat.id);
                             runOnUiThread(() -> loadData());
                         }))
-                        .setNegativeButton("Cancel", (d, w) -> adapter.notifyItemChanged(pos))
+                        .setNegativeButton(getString(R.string.action_cancel), (d, w) -> adapter.notifyItemChanged(pos))
                         .show();
             }
         };
