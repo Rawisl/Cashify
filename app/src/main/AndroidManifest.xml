@@ -11,6 +11,7 @@
         android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
         android:theme="@style/Theme.Cashify">
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -22,9 +23,13 @@
         </activity>
 
         <activity
-            android:name=".CategoryManagement.CategoryManagement">
-        </activity>
+            android:name=".CategoryManagement.CategoryManagement"/>
 
+
+        <activity
+            android:name=".AddTransaction.AddTransactionActivity"
+            android:windowSoftInputMode="adjustResize"
+            android:screenOrientation="portrait"/>
     </application>
 
 </manifest>

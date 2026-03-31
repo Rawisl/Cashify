@@ -93,6 +93,7 @@ public class CategoryManagement extends AppCompatActivity {
         rvChi = findViewById(R.id.recyclerChiRa);
         rvThu = findViewById(R.id.recyclerThuVao);
         edtSearch = findViewById(R.id.edtSearchCategory);
+
         FloatingActionButton fabAddCategory = findViewById(R.id.fab_add_category);
 
         ImageView btnBack = findViewById(R.id.btnBack);

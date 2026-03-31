@@ -1,17 +1,20 @@
+
 package com.example.cashify.AddTransaction;
 
 import android.app.DatePickerDialog;
+import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.View;
+import android.view.Window;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.GridLayoutManager;
@@ -20,6 +23,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.cashify.R;
 import com.example.cashify.database.AppDatabase;
 import com.example.cashify.database.Category;
+import com.google.android.material.transition.platform.MaterialContainerTransform;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -44,6 +48,20 @@ public class AddTransactionActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
+        // Phải gọi trước khi super.onCreate và setContentView
+        getWindow().requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS);
+
+        MaterialContainerTransform transform = new MaterialContainerTransform();
+        // Dùng addTarget thay vì setDrawingViewId.
+        // android.R.id.content là ID mặc định chứa toàn bộ nội dung của Activity
+        transform.addTarget(android.R.id.content);
+        transform.setDuration(450);
+
+        // Khi mở ra và khi đóng lại đều dùng hiệu ứng này
+        getWindow().setSharedElementEnterTransition(transform);
+        getWindow().setSharedElementReturnTransition(transform);
+
         super.onCreate(savedInstanceState);
         // Kiểm tra đúng tên file XML của ông là add_transaction hay activity_add_transaction
         setContentView(R.layout.add_transaction);
@@ -56,8 +74,11 @@ public class AddTransactionActivity extends AppCompatActivity {
         // 1. Khởi tạo danh sách category mặc định (CHI) ngay khi vào màn hình
         loadCategories(0);
 
-        btnConfirm.setOnClickListener(v -> validateAndSave());
-        findViewById(R.id.btnBack).setOnClickListener(v -> finish());
+        btnConfirm.setOnClickListener(v ->hideKeyboardAndFinish());
+
+        findViewById(R.id.btnBack).setOnClickListener(v ->
+                hideKeyboardAndFinish()
+        );
     }
 
     private void initViews() {
@@ -199,6 +220,15 @@ public class AddTransactionActivity extends AppCompatActivity {
 
         // Nếu mọi thứ OK, thực hiện lưu (Chỗ này ông sẽ gọi DAO để Insert Transaction)
         Toast.makeText(this, "Đã lưu giao dịch " + (isExpense ? "Chi" : "Thu") + ": " + amountStr + "đ", Toast.LENGTH_LONG).show();
-        finish();
+        supportFinishAfterTransition();
+    }
+    private void hideKeyboardAndFinish()
+    {
+        View view = this.getCurrentFocus();
+        if (view != null) {
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+        }
+        supportFinishAfterTransition();
     }
 }
