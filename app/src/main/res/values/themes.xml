@@ -1,7 +1,9 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
     <style name="Base.Theme.Cashify" parent="Theme.Material3.Light.NoActionBar">
-
+        <item name="android:windowActivityTransitions">true</item>
+        <item name="android:windowSharedElementEnterTransition">@android:transition/move</item>
+        <item name="android:windowSharedElementExitTransition">@android:transition/move</item>
     </style>
 
     <style name="Theme.Cashify" parent="Base.Theme.Cashify" />
@@ -316,7 +318,16 @@
         </style>
 
 
-
+    <style name="float_btn_add" parent="Widget.Material3.FloatingActionButton.Primary">
+        <item name="backgroundTint">@color/brand_primary</item>
+        <item name="tint">@color/bg_main</item>
+        <item name="elevation">0.5dp</item>
+        <item name="hoveredFocusedTranslationZ">1dp</item>
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="fabCustomSize">56dp</item>
+        <item name="maxImageSize">32dp</item>
+    </style>
 
 
 

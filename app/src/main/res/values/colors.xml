@@ -17,6 +17,7 @@
     <color name="item_title">#1F2937</color>
     <color name="item_description">#6B7280</color>
     <color name="cardview_divider">#E5E7EB</color>
+    <color name="tab_active_bg">#E5E7EB</color>
 
     <!--Màu nền và màu thẻ hiện trên nền-->
     <color name="bg_main">#EDE7DE</color>

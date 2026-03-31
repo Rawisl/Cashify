@@ -1,3 +1,4 @@
+
 package com.example.cashify.AddTransaction;
 
 import android.app.DatePickerDialog;
@@ -19,6 +20,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.cashify.R;
 import com.example.cashify.database.AppDatabase;
 import com.example.cashify.database.Category;
+import com.example.cashify.ui.NumpadBottomSheet;
+import com.example.cashify.utils.CurrencyFormatter;
 import com.example.cashify.database.DatabaseSeeder;
 import com.example.cashify.database.Transaction;
 
@@ -29,6 +32,11 @@ import java.util.concurrent.Executors;
 
 public class AddTransactionActivity extends AppCompatActivity {
 
+    // Khai báo trên đầu class:
+    private final java.util.concurrent.ExecutorService databaseExecutor = Executors.newSingleThreadExecutor();
+
+    // Khai báo ở cấp class để lưu lại, tránh bug ng dùng bị delay xong bấm 2 3 lần vô hiện 2 3 cái date picker
+    private DatePickerDialog datePickerDialog;
     private EditText edtAmount, edtNote;
     private TextView tabChi, tabThu, tvDate;
     private LinearLayout btnCash, btnCard, btnBank;
@@ -57,12 +65,31 @@ public class AddTransactionActivity extends AppCompatActivity {
         // 2. Load danh sách category ngay lập tức
         loadInitialData();
 
-        btnConfirm.setOnClickListener(v -> validateAndSave());
-        findViewById(R.id.btnBack).setOnClickListener(v -> finish());
+        btnConfirm.setOnClickListener(v ->validateAndSave());
+
+        findViewById(R.id.btnBack).setOnClickListener(v ->
+                finish()
+        );
+
+        // Bắt sự kiện vuốt viền hoặc phím cứng Back của điện thoại
+        getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                finish();
+            }
+        });
     }
 
     private void initViews() {
         edtAmount = findViewById(R.id.edtAmount);
+
+        // 1. Chặn Focus để không bao giờ hiện bàn phím hệ thống
+        edtAmount.setFocusable(false);
+        edtAmount.setFocusableInTouchMode(false);
+
+        // 2. Lắng nghe sự kiện Click để mở Numpad
+        edtAmount.setOnClickListener(v -> openNumpadBottomSheet());
+
         edtNote = findViewById(R.id.edtNote);
         tabChi = findViewById(R.id.tabChi);
         tabThu = findViewById(R.id.tabThu);
@@ -114,13 +141,10 @@ public class AddTransactionActivity extends AppCompatActivity {
     }
 
     private void loadCategories(int type) {
-        Executors.newSingleThreadExecutor().execute(() -> {
+        databaseExecutor.execute(() -> {
             List<Category> data = AppDatabase.getInstance(this).categoryDao().getCategoriesByType(type);
-
             runOnUiThread(() -> {
-                catAdapter = new CategoryPickerAdapter(this, data, category -> {
-                    selectedCategory = category;
-                });
+                catAdapter = new CategoryPickerAdapter(this, data, category -> selectedCategory = category);
                 rvCategories.setLayoutManager(new GridLayoutManager(this, 4));
                 rvCategories.setAdapter(catAdapter);
             });
@@ -198,18 +222,103 @@ public class AddTransactionActivity extends AppCompatActivity {
 
     private void setupDatePicker() {
         tvDate.setOnClickListener(v -> {
-            new DatePickerDialog(this, (view, year, month, dayOfMonth) -> {
-                calendar.set(year, month, dayOfMonth);
-                updateDateText();
-            }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)).show();
+            if (datePickerDialog == null || !datePickerDialog.isShowing()) {
+                datePickerDialog = new DatePickerDialog(this, (view, year, month, dayOfMonth) -> {
+                    calendar.set(year, month, dayOfMonth);
+                    updateDateText();
+                }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH));
+                datePickerDialog.show();
+            }
         });
     }
 
-    private void updateDateText() {
-        String format = String.format(Locale.getDefault(), "%02d/%02d/%d",
+    private void updateDateText()
+    {
+        //Luôn dùng Locale.ENGLISH để tránh lỗi hiển thị/lưu trữ ở các máy dùng ngôn ngữ Ả Rập, Farsi...
+        String format = String.format(Locale.ENGLISH, "%02d/%02d/%04d",
                 calendar.get(Calendar.DAY_OF_MONTH),
                 calendar.get(Calendar.MONTH) + 1,
                 calendar.get(Calendar.YEAR));
         tvDate.setText(format);
     }
+
+    // --- 5. Validate Form & Save ---
+    private void validateAndSave() {
+        String amountStr = edtAmount.getText().toString();
+
+        // 1. Quăng toàn bộ trách nhiệm parse số cho CurrencyFormatter
+        double amount = CurrencyFormatter.parseVNDToDouble(amountStr);
+
+        // 2. Validate kết quả toán học trả về
+        if (amount <= 0) {
+            showAmountError();
+            return;
+        }
+
+        // Reset lại viền bình thường nếu dữ liệu đã chuẩn
+        edtAmount.setBackgroundResource(R.drawable.bg_input_fields);
+
+        // Kiểm tra Category
+        if (selectedCategory == null) {
+            Toast.makeText(this, getString(R.string.error_transaction_empty_category), Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // TODO: Gọi DAO Insert
+
+        Toast.makeText(this, getString(R.string.noti_save_transaction_successfully), Toast.LENGTH_LONG).show();
+        finish();
+    }
+
+    private void showAmountError() {
+        edtAmount.setBackgroundResource(R.drawable.bg_input_error);
+        Toast.makeText(this, getString(R.string.error_invalid_money_amount), Toast.LENGTH_SHORT).show();
+    }
+
+    // Bổ sung hàm onDestroy để giải phóng bộ nhớ:
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // Giải phóng Executor khi Activity chết để tránh Memory Leak
+        if (!databaseExecutor.isShutdown()) {
+            databaseExecutor.shutdown();
+        }
+    }
+
+    @Override
+    public void finish() {
+        super.finish();
+        // Ép hiệu ứng trượt XUỐNG khi Activity này bị tiêu diệt
+        overridePendingTransition(R.anim.stay, R.anim.slide_out_down);
+    }
+    private void openNumpadBottomSheet() {
+        NumpadBottomSheet numpad = new NumpadBottomSheet();
+
+        // Lấy số tiền hiện tại đang hiển thị (nếu có) để truyền vào Numpad
+        // Cần cẩn thận loại bỏ các dấu phẩy/chấm (nếu bạn đã format hiển thị trước đó)
+        String currentText = edtAmount.getText().toString().replaceAll("[^\\d]", "");
+        if (currentText.isEmpty()) {
+            currentText = "0";
+        }
+
+        numpad.setInitialAmount(currentText);
+
+        // Lắng nghe kết quả trả về từ Numpad
+        numpad.setListener((rawAmount, formattedAmount) ->
+        {
+            // rawAmount: "50000" (dùng để lưu DB)
+            // formattedAmount: "50,000" (dùng để hiển thị lên UI)
+
+            // Cập nhật giao diện
+            edtAmount.setText(formattedAmount);
+
+            // Nếu trước đó đang bị viền đỏ báo lỗi, thì giờ người dùng nhập xong xóa viền đỏ đi
+            edtAmount.setBackgroundResource(R.drawable.bg_input_fields);
+        });
+
+        // Gọi BottomSheet lên.
+        // Lưu ý: Trong Activity phải dùng getSupportFragmentManager() thay vì getChildFragmentManager()
+        numpad.show(getSupportFragmentManager(), "NumpadBottomSheet");
+    }
+
 }

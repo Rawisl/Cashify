@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <integer-array name="category_color_repo">
+        <item>@color/brand_primary</item>
+        <item>@color/status_red</item>
+        <item>@color/status_green</item>
+
+        <item>@color/cat_pastel_coral</item>
+        <item>@color/cat_pastel_orange</item>
+        <item>@color/cat_pastel_pink</item>
+        <item>@color/cat_pastel_blue</item>
+        <item>@color/cat_pastel_cyan</item>
+        <item>@color/cat_pastel_indigo</item>
+        <item>@color/cat_pastel_green</item>
+        <item>@color/cat_pastel_mint</item>
+        <item>@color/cat_pastel_brown</item>
+        <item>@color/cat_pastel_yellow</item>
+        <item>@color/cat_pastel_purple</item>
+        <item>@color/cat_pastel_gray</item>
+
+        <item>@color/tab_active_bg</item>
+    </integer-array>
+</resources>
+

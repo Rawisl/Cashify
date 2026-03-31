@@ -29,18 +29,6 @@
                 android:layout_gravity="center"
                 android:text="@string/category_title_manage"
                 android:textSize="25sp" />
-
-            <ImageButton
-                android:id="@+id/btnAddCategory"
-                android:layout_width="50dp"
-                android:layout_height="50dp"
-                android:layout_gravity="end"
-                android:layout_marginEnd="16dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:padding="8dp"
-                android:scaleType="centerInside"
-                android:src="@drawable/add_bold"
-                app:tint="@color/brand_primary" />
         </androidx.appcompat.widget.Toolbar>
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -187,4 +175,13 @@
             </androidx.cardview.widget.CardView>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_add_category"
+        style="@style/float_btn_add"
+        android:contentDescription="@string/action_add_category"
+        app:srcCompat="@drawable/add_category"
+        android:layout_gravity="bottom|end"
+        app:layout_behavior="com.google.android.material.behavior.HideBottomViewOnScrollBehavior"
+        android:layout_margin = "24dp"/>
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
