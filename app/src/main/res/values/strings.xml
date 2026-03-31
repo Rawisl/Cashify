@@ -15,9 +15,13 @@
 
     <string name="action_delete_category">Delete category</string>
 
+    <string name="noti_save_transaction_successfully">Saved transaction successfully!</string>
+
     <string name="confirm_delete">Are you sure you want to delete \'%1$s\'?</string>
 
     <string name="error_empty_category_name">Please enter category\'s name</string>
+    <string name="error_invalid_money_amount">Amount must be greater than zero!</string>
+    <string name="error_transaction_empty_category">Please select a category from the list!</string>
 
     <string name="tab_income">Income</string>
     <string name="tab_expense">Expense</string>

@@ -5,22 +5,17 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import androidx.core.splashscreen.SplashScreen;
 
+import androidx.core.splashscreen.SplashScreen;
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.NavigationUI;
-
 import androidx.appcompat.app.AppCompatDelegate; // Nhớ import thư viện này
 
 import com.example.cashify.AddTransaction.AddTransactionActivity;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-
 import com.example.cashify.database.DatabaseSeeder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
@@ -30,6 +25,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
+
         //Gọi thư viện Google trước super.onCreate cho splash screen
         SplashScreen splashScreen = SplashScreen.installSplashScreen(this);
 

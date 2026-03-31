@@ -2,19 +2,16 @@
 package com.example.cashify.AddTransaction;
 
 import android.app.DatePickerDialog;
-import android.content.Context;
 import android.content.res.ColorStateList;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.view.View;
-import android.view.Window;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.GridLayoutManager;
@@ -23,9 +20,9 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.cashify.R;
 import com.example.cashify.database.AppDatabase;
 import com.example.cashify.database.Category;
-import com.google.android.material.transition.platform.MaterialContainerTransform;
+import com.example.cashify.ui.NumpadBottomSheet;
+import com.example.cashify.utils.CurrencyFormatter;
 
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
@@ -33,6 +30,11 @@ import java.util.concurrent.Executors;
 
 public class AddTransactionActivity extends AppCompatActivity {
 
+    // Khai báo trên đầu class:
+    private final java.util.concurrent.ExecutorService databaseExecutor = Executors.newSingleThreadExecutor();
+
+    // Khai báo ở cấp class để lưu lại, tránh bug ng dùng bị delay xong bấm 2 3 lần vô hiện 2 3 cái date picker
+    private DatePickerDialog datePickerDialog;
     private EditText edtAmount, edtNote;
     private TextView tabChi, tabThu, tvDate;
     private LinearLayout btnCash, btnCard, btnBank;
@@ -48,20 +50,6 @@ public class AddTransactionActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
-        // Phải gọi trước khi super.onCreate và setContentView
-        getWindow().requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS);
-
-        MaterialContainerTransform transform = new MaterialContainerTransform();
-        // Dùng addTarget thay vì setDrawingViewId.
-        // android.R.id.content là ID mặc định chứa toàn bộ nội dung của Activity
-        transform.addTarget(android.R.id.content);
-        transform.setDuration(450);
-
-        // Khi mở ra và khi đóng lại đều dùng hiệu ứng này
-        getWindow().setSharedElementEnterTransition(transform);
-        getWindow().setSharedElementReturnTransition(transform);
-
         super.onCreate(savedInstanceState);
         // Kiểm tra đúng tên file XML của ông là add_transaction hay activity_add_transaction
         setContentView(R.layout.add_transaction);
@@ -74,15 +62,31 @@ public class AddTransactionActivity extends AppCompatActivity {
         // 1. Khởi tạo danh sách category mặc định (CHI) ngay khi vào màn hình
         loadCategories(0);
 
-        btnConfirm.setOnClickListener(v ->hideKeyboardAndFinish());
+        btnConfirm.setOnClickListener(v ->validateAndSave());
 
         findViewById(R.id.btnBack).setOnClickListener(v ->
                 hideKeyboardAndFinish()
         );
+
+        // Bắt sự kiện vuốt viền hoặc phím cứng Back của điện thoại
+        getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                hideKeyboardAndFinish();
+            }
+        });
     }
 
     private void initViews() {
         edtAmount = findViewById(R.id.edtAmount);
+
+        // 1. Chặn Focus để không bao giờ hiện bàn phím hệ thống
+        edtAmount.setFocusable(false);
+        edtAmount.setFocusableInTouchMode(false);
+
+        // 2. Lắng nghe sự kiện Click để mở Numpad
+        edtAmount.setOnClickListener(v -> openNumpadBottomSheet());
+
         edtNote = findViewById(R.id.edtNote);
         tabChi = findViewById(R.id.tabChi);
         tabThu = findViewById(R.id.tabThu);
@@ -129,13 +133,10 @@ public class AddTransactionActivity extends AppCompatActivity {
 
     // --- 2. Logic Load Category ---
     private void loadCategories(int type) {
-        Executors.newSingleThreadExecutor().execute(() -> {
+        databaseExecutor.execute(() -> {
             List<Category> data = AppDatabase.getInstance(this).categoryDao().getCategoriesByType(type);
-
             runOnUiThread(() -> {
-                catAdapter = new CategoryPickerAdapter(this, data, category -> {
-                    selectedCategory = category;
-                });
+                catAdapter = new CategoryPickerAdapter(this, data, category -> selectedCategory = category);
                 rvCategories.setLayoutManager(new GridLayoutManager(this, 4));
                 rvCategories.setAdapter(catAdapter);
             });
@@ -183,15 +184,20 @@ public class AddTransactionActivity extends AppCompatActivity {
     // --- 4. Logic Date Picker ---
     private void setupDatePicker() {
         tvDate.setOnClickListener(v -> {
-            new DatePickerDialog(this, (view, year, month, dayOfMonth) -> {
-                calendar.set(year, month, dayOfMonth);
-                updateDateText();
-            }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)).show();
+            if (datePickerDialog == null || !datePickerDialog.isShowing()) {
+                datePickerDialog = new DatePickerDialog(this, (view, year, month, dayOfMonth) -> {
+                    calendar.set(year, month, dayOfMonth);
+                    updateDateText();
+                }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH));
+                datePickerDialog.show();
+            }
         });
     }
 
-    private void updateDateText() {
-        String format = String.format(Locale.getDefault(), "%02d/%02d/%d",
+    private void updateDateText()
+    {
+        //Luôn dùng Locale.ENGLISH để tránh lỗi hiển thị/lưu trữ ở các máy dùng ngôn ngữ Ả Rập, Farsi...
+        String format = String.format(Locale.ENGLISH, "%02d/%02d/%04d",
                 calendar.get(Calendar.DAY_OF_MONTH),
                 calendar.get(Calendar.MONTH) + 1,
                 calendar.get(Calendar.YEAR));
@@ -200,35 +206,80 @@ public class AddTransactionActivity extends AppCompatActivity {
 
     // --- 5. Validate Form & Save ---
     private void validateAndSave() {
-        String amountStr = edtAmount.getText().toString().trim();
+        String amountStr = edtAmount.getText().toString();
 
-        // Kiểm tra tiền
-        if (amountStr.isEmpty() || amountStr.equals("0")) {
-            edtAmount.setBackgroundResource(R.drawable.bg_input_error);
-            Toast.makeText(this, "Vui lòng nhập số tiền hợp lệ!", Toast.LENGTH_SHORT).show();
+        // 1. Quăng toàn bộ trách nhiệm parse số cho CurrencyFormatter
+        double amount = CurrencyFormatter.parseVNDToDouble(amountStr);
+
+        // 2. Validate kết quả toán học trả về
+        if (amount <= 0) {
+            showAmountError();
             return;
-        } else {
-            // Reset lại viền bình thường nếu đã nhập
-            edtAmount.setBackgroundResource(R.drawable.bg_input_fields);
         }
+
+        // Reset lại viền bình thường nếu dữ liệu đã chuẩn
+        edtAmount.setBackgroundResource(R.drawable.bg_input_fields);
 
         // Kiểm tra Category
         if (selectedCategory == null) {
-            Toast.makeText(this, "Vui lòng chọn một danh mục!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.error_transaction_empty_category), Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // Nếu mọi thứ OK, thực hiện lưu (Chỗ này ông sẽ gọi DAO để Insert Transaction)
-        Toast.makeText(this, "Đã lưu giao dịch " + (isExpense ? "Chi" : "Thu") + ": " + amountStr + "đ", Toast.LENGTH_LONG).show();
-        supportFinishAfterTransition();
+        // TODO: Gọi DAO Insert
+
+        Toast.makeText(this, getString(R.string.noti_save_transaction_successfully), Toast.LENGTH_LONG).show();
+        hideKeyboardAndFinish();
     }
+
+    private void showAmountError() {
+        edtAmount.setBackgroundResource(R.drawable.bg_input_error);
+        Toast.makeText(this, getString(R.string.error_invalid_money_amount), Toast.LENGTH_SHORT).show();
+    }
+
+    // Bổ sung hàm onDestroy để giải phóng bộ nhớ:
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // Giải phóng Executor khi Activity chết để tránh Memory Leak
+        if (!databaseExecutor.isShutdown()) {
+            databaseExecutor.shutdown();
+        }
+    }
+
     private void hideKeyboardAndFinish()
     {
-        View view = this.getCurrentFocus();
-        if (view != null) {
-            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
-        }
         supportFinishAfterTransition();
     }
+
+    private void openNumpadBottomSheet() {
+        NumpadBottomSheet numpad = new NumpadBottomSheet();
+
+        // Lấy số tiền hiện tại đang hiển thị (nếu có) để truyền vào Numpad
+        // Cần cẩn thận loại bỏ các dấu phẩy/chấm (nếu bạn đã format hiển thị trước đó)
+        String currentText = edtAmount.getText().toString().replaceAll("[^\\d]", "");
+        if (currentText.isEmpty()) {
+            currentText = "0";
+        }
+
+        numpad.setInitialAmount(currentText);
+
+        // Lắng nghe kết quả trả về từ Numpad
+        numpad.setListener((rawAmount, formattedAmount) ->
+        {
+            // rawAmount: "50000" (dùng để lưu DB)
+            // formattedAmount: "50,000" (dùng để hiển thị lên UI)
+
+            // Cập nhật giao diện
+            edtAmount.setText(formattedAmount);
+
+            // Nếu trước đó đang bị viền đỏ báo lỗi, thì giờ người dùng nhập xong xóa viền đỏ đi
+            edtAmount.setBackgroundResource(R.drawable.bg_input_fields);
+        });
+
+        // Gọi BottomSheet lên.
+        // Lưu ý: Trong Activity phải dùng getSupportFragmentManager() thay vì getChildFragmentManager()
+        numpad.show(getSupportFragmentManager(), "NumpadBottomSheet");
+    }
+
 }

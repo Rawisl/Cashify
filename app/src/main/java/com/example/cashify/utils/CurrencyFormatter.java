@@ -56,4 +56,19 @@ public class CurrencyFormatter
             return sign + (absAmount == 0 ? "0" : dfNormal.format(absAmount)) + " đ";
         }
     }
+
+    // Bổ sung hàm Parse: Gom toàn bộ logic bóc tách chuỗi dơ bẩn vào đây
+    public static double parseVNDToDouble(String formattedAmount) {
+        if (formattedAmount == null || formattedAmount.trim().isEmpty()) {
+            return 0;
+        }
+        try {
+            // Giữ lại số nguyên, loại bỏ dấu phẩy, chấm, chữ cái...
+            String cleanString = formattedAmount.replaceAll("[^\\d]", "");
+            if (cleanString.isEmpty()) return 0;
+            return Double.parseDouble(cleanString);
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
 }
