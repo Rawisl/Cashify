@@ -31,6 +31,7 @@ import com.example.cashify.R;
 import com.example.cashify.database.AppDatabase;
 import com.example.cashify.database.Category;
 import com.example.cashify.database.DatabaseSeeder;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -120,19 +121,50 @@ public class CategoryManagement extends AppCompatActivity {
         }
     }
 
-    private void toggleRecyclerView(RecyclerView rv, TextView arrow) {
+    private void toggleRecyclerView(RecyclerView rv, TextView arrow)
+    {
         ViewGroup root = findViewById(R.id.content_layout);
         if (root != null) TransitionManager.beginDelayedTransition(root);
 
-        if (rv.getVisibility() == View.VISIBLE) {
+        if (rv.getVisibility() == View.VISIBLE)
+        {
             rv.setVisibility(View.GONE);
             if (arrow != null) arrow.animate().rotation(-90).setDuration(200).start();
-        } else {
+            // Gọi hàm giải cứu FAB ngay sau khi một danh sách bị ẩn (thu gọn)
+            rescueFloatingActionButton();
+        }
+        else
+        {
             rv.setVisibility(View.VISIBLE);
             if (arrow != null) arrow.animate().rotation(0).setDuration(200).start();
         }
     }
 
+    private void rescueFloatingActionButton() {
+        try {
+            // Ánh xạ nút FAB từ file XML hiện tại của bạn
+            FloatingActionButton fab = findViewById(R.id.fab_add_category);
+
+            if (fab != null) {
+                ViewGroup.LayoutParams params = fab.getLayoutParams();
+                if (params instanceof androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams) {
+                    androidx.coordinatorlayout.widget.CoordinatorLayout.Behavior behavior =
+                            ((androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams) params).getBehavior();
+
+                    if (behavior instanceof com.google.android.material.behavior.HideBottomViewOnScrollBehavior) {
+                        com.google.android.material.behavior.HideBottomViewOnScrollBehavior<FloatingActionButton> hideBehavior =
+                                (com.google.android.material.behavior.HideBottomViewOnScrollBehavior<FloatingActionButton>) behavior;
+
+                        // Cưỡng chế kéo FAB lên lại màn hình
+                        hideBehavior.slideUp(fab);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // Nuốt lỗi (nếu có) để không làm crash ứng dụng khi người dùng bấm liên tục
+            e.printStackTrace();
+        }
+    }
     private void loadData() {
         Executors.newSingleThreadExecutor().execute(() -> {
             List<Category> chi = db.categoryDao().getCategoriesByType(0);
