@@ -64,14 +64,6 @@ public class MainActivity extends AppCompatActivity {
             // Lắng nghe sự kiện mỗi khi người dùng chuyển tab/fragment để fix lỗi chìm fab
             navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
 
-                // Ép tọa độ trục Y của nút về vị trí gốc (mặt đất) ngay lập tức
-                fabAddTransaction.setTranslationY(0f);
-
-                // Đảm bảo trạng thái hiển thị là True
-                if (!fabAddTransaction.isShown()) {
-                    fabAddTransaction.show();
-                }
-
                 //đoạn này để nút fab ko hiện trong settings
                 int id = destination.getId();
 

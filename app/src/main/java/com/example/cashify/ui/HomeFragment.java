@@ -27,11 +27,18 @@ import com.github.mikephil.charting.data.PieEntry;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class HomeFragment extends Fragment {
 
+    // Khai báo Executor để quản lý luồng truy vấn DB
+    private final ExecutorService databaseExecutor = Executors.newSingleThreadExecutor();
+
     private PieChart pieChart;
     private TextView tvDate;
+    // Khai báo các TextView cho thẻ Tổng quan
+    private TextView tvTotalBalance, tvIncome, tvExpense;
     private Calendar currentCalendar;
 
     // Bộ màu chuẩn cho Rule of 5 (5 màu nổi + 1 màu xám)
@@ -59,12 +66,16 @@ public class HomeFragment extends Fragment {
         pieChart = view.findViewById(R.id.pieChart);
         tvDate = view.findViewById(R.id.tvDate);
 
+        // Ánh xạ View cho Thẻ số dư
+        tvTotalBalance = view.findViewById(R.id.total_money_amount);
+        tvIncome = view.findViewById(R.id.income_money_amount);
+        tvExpense = view.findViewById(R.id.expenses_money_amount);
+
         //Setup giao diện chuẩn Donut Chart
         setupDonutChart();
 
         //Setup thời gian mặc định (Tháng hiện tại)
         currentCalendar = Calendar.getInstance();
-        updateMonthTextAndLoadData();
 
         //Bắt sự kiện click chọn tháng (Tạm thời để Toast, Khang ráp DatePicker vào sau nhé)
         tvDate.setOnClickListener(v -> {
@@ -73,6 +84,15 @@ public class HomeFragment extends Fragment {
             // currentCalendar.add(Calendar.MONTH, -1);
             // updateMonthTextAndLoadData();
         });
+    }
+
+    // Viết đè hàm này để fragment tự kéo dữ liệu từ database
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Mỗi khi màn hình này hiện lên (kể cả lúc vừa mở app hay vừa đóng màn hình Thêm),
+        // nó sẽ tự động tính lại ngày tháng và kéo dữ liệu mới nhất từ DB.
+        updateMonthTextAndLoadData();
     }
 
     private void setupDonutChart() {
@@ -104,11 +124,12 @@ public class HomeFragment extends Fragment {
         int year = currentCalendar.get(Calendar.YEAR);
         tvDate.setText("Tháng " + month + "/" + year);
 
-        loadDonutChartData();
+        //tui đổi tên cho n thích hợp cái bro tại h hàm này gánh cả card với chart
+        loadDashboardData();
     }
 
-    private void loadDonutChartData() {
-        new Thread(() -> {
+    private void loadDashboardData() {
+        databaseExecutor.execute(() -> {
             // Tính mốc thời gian: Đầu tháng -> Cuối tháng
             Calendar cal = (Calendar) currentCalendar.clone();
             cal.set(Calendar.DAY_OF_MONTH, 1);
@@ -122,6 +143,12 @@ public class HomeFragment extends Fragment {
             // Gọi Database
             AppDatabase db = AppDatabase.getInstance(requireContext());
             TransactionDao dao = db.transactionDao();
+
+            // Lấy tổng số dư (Actual Balance lấy trọn đời, không phụ thuộc tháng) --mốt cái này chỉnh theo tháng sau
+            long actualBalance = dao.getActualBalance();
+            // Lấy tổng thu & chi (Chỉ lấy trong tháng hiện tại)
+            long totalIncome = dao.getTotalIncome(startOfMonth, endOfMonth);
+            long totalExpense = dao.getTotalExpense(startOfMonth, endOfMonth);
 
             // Lấy Top 5 và Lấy tổng "Khác" bằng 2 câu Query của Khang
             List<CategorySum> top5Categories = dao.getTop5ExpenseCategories(startOfMonth, endOfMonth);
@@ -149,29 +176,38 @@ public class HomeFragment extends Fragment {
             // Đẩy lên UI
             if (getActivity() != null) {
                 getActivity().runOnUiThread(() -> {
+                    // --- Cập nhật Thẻ Số Dư ---
+                    tvTotalBalance.setText(CurrencyFormatter.formatFullVND(actualBalance));
+                    tvIncome.setText(CurrencyFormatter.formatFullVND(totalIncome));
+                    tvExpense.setText(CurrencyFormatter.formatFullVND(totalExpense));
+
+                    //sửa logic chỗ này để không bị kẹt UI khi xóa hết giao dịch
                     if (entries.isEmpty()) {
                         pieChart.clear();
                         pieChart.setCenterText("No Expenses");
-                        return;
+                    } else {
+                        PieDataSet dataSet = new PieDataSet(entries, "");
+                        dataSet.setColors(colors);
+                        dataSet.setSliceSpace(3f);
+                        dataSet.setSelectionShift(5f);
+
+                        PieData data = new PieData(dataSet);
+                        data.setDrawValues(false);
+
+                        pieChart.setData(data);
+                        pieChart.setCenterText("Chi tiêu\nTháng " + (currentCalendar.get(Calendar.MONTH) + 1));
+                        pieChart.animateY(700);
                     }
-
-                    PieDataSet dataSet = new PieDataSet(entries, "");
-                    dataSet.setColors(colors);
-                    dataSet.setSliceSpace(3f); // Khe hở giữa các mảnh bánh
-                    dataSet.setSelectionShift(5f); // Hiệu ứng lồi ra khi bấm vào
-
-                    PieData data = new PieData(dataSet);
-                    // Tắt hiển thị số trực tiếp trên miếng bánh nếu thấy rối
-                    data.setDrawValues(false);
-
-                    pieChart.setData(data);
-                    pieChart.setCenterText("Chi tiêu\nTháng " + (currentCalendar.get(Calendar.MONTH) + 1));
-
-                    // Hiệu ứng xoay mượt mà khi load xong
-                    pieChart.animateY(1000);
                     pieChart.invalidate();
                 });
             }
-        }).start();
+        });
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        // Không shutdown databaseExecutor ở đây vì Fragment có thể được tạo lại
+        // Executor này sẽ tồn tại theo vòng đời của HomeFragment instance.
     }
 }

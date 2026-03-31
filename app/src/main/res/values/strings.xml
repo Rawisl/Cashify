@@ -26,6 +26,9 @@
     <string name="tab_income">Income</string>
     <string name="tab_expense">Expense</string>
 
+    <string name="tab_monthly">Monthly</string>
+    <string name="tab_weekly">Weekly</string>
+
     <string name="nav_home">Home</string>
     <string name="nav_transaction_history">Transaction</string>
     <string name="nav_budget">Budget</string>
@@ -37,9 +40,16 @@
     <string name="budget_title">Budget</string>
     <string name="budget_subtitle">Track your spending limits</string>
     <string name="budget_main_card_title_monthly">Monthly Master Budget</string>
+    <string name="budget_main_card_title_weekly">Weekly Master Budget</string>
     <string name="budget_tips">💡 Budget Tips</string>
     <string name="budget_label_spent">Spent</string>
     <string name="budget_label_remaining">Remaining</string>
+    <string name="budget_type_spent">Remaining</string>
+
+    <string name="budget_category">Category Budgets</string>
+
+
+    <string name="home_main_card_title_total">Total Balance</string>
 
     <string name="settings_section_account">Account</string>
     <string name="settings_section_preferences">Preferences</string>
@@ -61,6 +71,9 @@
     <string name="settings_item_logout_desc">Sign out of your account</string>
 
     <string name="settings_item_darkmode">Dark mode</string>
+
+    <string name="dashboard_title">DashBoard</string>
+    <string name="dashboard_recent_transactions">Recent Transactions</string>
 
 
     <string name="category_title_manage">Category management</string>

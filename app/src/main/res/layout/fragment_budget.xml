@@ -22,7 +22,7 @@
 
         <TextView
             android:id="@+id/tvSubTitle"
-            android:text="Track your spending limits"
+            android:text="@string/budget_subtitle"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tvTitleBudget"
             style="@style/screen_subtitle"/>
@@ -45,7 +45,7 @@
                 android:layout_weight="1"
                 android:layout_height="wrap_content"
                 style="?attr/materialButtonOutlinedStyle"
-                android:text="Weekly" />
+                android:text="@string/tab_weekly" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnMonthly"
@@ -53,17 +53,14 @@
                 android:layout_weight="1"
                 android:layout_height="wrap_content"
                 style="?attr/materialButtonOutlinedStyle"
-                android:text="Monthly" />
+                android:text="@string/tab_monthly" />
         </com.google.android.material.button.MaterialButtonToggleGroup>
 
         <androidx.cardview.widget.CardView
             android:id="@+id/cardMaster"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
-            app:cardCornerRadius="24dp"
-            app:cardElevation="4dp"
-            app:layout_constraintTop_toBottomOf="@id/toggleGroupPeriod">
+            app:layout_constraintTop_toBottomOf="@id/toggleGroupPeriod"
+            style="@style/main_card">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -80,11 +77,11 @@
 
                     <TextView
                         android:id="@+id/tvMasterTitle"
-                        style="@style/budget_main_card_title"
+                        style="@style/main_card_title"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Monthly Master Budget" />
+                        android:text="@string/budget_main_card_title_monthly" />
 
                     <ImageView
                         android:layout_width="20dp"
@@ -124,7 +121,7 @@
 
                             <TextView
                                 style="@style/main_card_left_label"
-                                android:text="Spent" />
+                                android:text="@string/budget_label_spent" />
                         </LinearLayout>
 
                         <TextView
@@ -151,7 +148,7 @@
 
                             <TextView
                                 style="@style/main_card_right_label"
-                                android:text="Remaining" />
+                                android:text="@string/budget_label_remaining" />
                         </LinearLayout>
 
                         <TextView
@@ -185,7 +182,7 @@
         <TextView
             android:id="@+id/tvCategoryLabel"
             android:layout_marginTop="28dp"
-            android:text="Category Budgets"
+            android:text="@string/budget_category"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/cardMaster"
             android:textSize="16sp"

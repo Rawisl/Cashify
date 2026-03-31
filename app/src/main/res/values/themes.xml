@@ -240,7 +240,7 @@
         <item name="android:verticalSpacing">8dp</item>
     </style>
 
-    <style name="budget_main_card_title">
+    <style name="main_card_title">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:fontFamily">@font/inter_regular</item>
@@ -297,6 +297,13 @@
         <item name="android:textColor">@color/bg_main</item>
         <item name="android:fontFamily">@font/outfit_bold</item>
         <item name="android:textSize">32sp</item>
+    </style>
+
+    <style name="main_card">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="cardCornerRadius">24dp</item>
+        <item name="cardElevation">3dp</item>
     </style>
 
     <style name="buttons_divider">
