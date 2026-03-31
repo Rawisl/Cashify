@@ -104,11 +104,13 @@ public class AddTransactionActivity extends AppCompatActivity {
     }
 
     private void loadInitialData() {
-        Executors.newSingleThreadExecutor().execute(() -> {
-            // Đảm bảo có dữ liệu mẫu trước khi lấy
+        // 1. Chạy tiến trình kiểm tra và nạp dữ liệu mẫu (nếu cần) trên luồng phụ
+        databaseExecutor.execute(() -> {
             DatabaseSeeder.seedIfEmpty(this);
 
-            // Sau khi seed xong thì load lên UI
+            // 2. Sau khi chắc chắn DB đã có dữ liệu, mới bắt đầu tải danh mục
+            // Không cần bọc trong runOnUiThread vì bản thân hàm loadCategories
+            // đã tự biết đẩy tác vụ xuống luồng phụ và cập nhật UI đúng cách.
             loadCategories(isExpense ? 0 : 1);
         });
     }
@@ -147,40 +149,6 @@ public class AddTransactionActivity extends AppCompatActivity {
                 catAdapter = new CategoryPickerAdapter(this, data, category -> selectedCategory = category);
                 rvCategories.setLayoutManager(new GridLayoutManager(this, 4));
                 rvCategories.setAdapter(catAdapter);
-            });
-        });
-    }
-
-    // --- Logic Lưu Dữ Liệu Thực Tế ---
-    private void validateAndSave() {
-        String amountStr = edtAmount.getText().toString().trim();
-
-        if (amountStr.isEmpty() || amountStr.equals("0")) {
-            edtAmount.setBackgroundResource(R.drawable.bg_input_error);
-            Toast.makeText(this, "Vui lòng nhập số tiền!", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        if (selectedCategory == null) {
-            Toast.makeText(this, "Vui lòng chọn danh mục!", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        // Tạo đối tượng Transaction để lưu
-        Transaction transaction = new Transaction();
-        transaction.amount = Long.parseLong(amountStr);
-        transaction.categoryId = selectedCategory.id;
-        transaction.note = edtNote.getText().toString().trim();
-        transaction.timestamp = calendar.getTimeInMillis();
-        transaction.type = isExpense ? 0 : 1;
-
-        // Gọi DB để lưu
-        Executors.newSingleThreadExecutor().execute(() -> {
-            AppDatabase.getInstance(this).transactionDao().insert(transaction);
-
-            runOnUiThread(() -> {
-                Toast.makeText(this, "Lưu thành công!", Toast.LENGTH_SHORT).show();
-                finish(); // Đóng màn hình sau khi lưu
             });
         });
     }
@@ -246,28 +214,40 @@ public class AddTransactionActivity extends AppCompatActivity {
     private void validateAndSave() {
         String amountStr = edtAmount.getText().toString();
 
-        // 1. Quăng toàn bộ trách nhiệm parse số cho CurrencyFormatter
+        // 1. Dùng Formatter để bóc tách số liệu an toàn (Chống sập app do dấu phẩy)
         double amount = CurrencyFormatter.parseVNDToDouble(amountStr);
 
-        // 2. Validate kết quả toán học trả về
+        // 2. Validate dữ liệu
         if (amount <= 0) {
             showAmountError();
             return;
         }
-
-        // Reset lại viền bình thường nếu dữ liệu đã chuẩn
         edtAmount.setBackgroundResource(R.drawable.bg_input_fields);
 
-        // Kiểm tra Category
         if (selectedCategory == null) {
             Toast.makeText(this, getString(R.string.error_transaction_empty_category), Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // TODO: Gọi DAO Insert
+        // 3. Khởi tạo đối tượng Entity
+        Transaction transaction = new Transaction();
+        transaction.amount = (long) amount; // Ép kiểu về long cho phù hợp với VND
+        transaction.categoryId = selectedCategory.id;
+        transaction.note = edtNote.getText().toString().trim();
+        transaction.timestamp = calendar.getTimeInMillis();
+        transaction.type = isExpense ? 0 : 1;
 
-        Toast.makeText(this, getString(R.string.noti_save_transaction_successfully), Toast.LENGTH_LONG).show();
-        finish();
+        // 4. Đẩy tác vụ xuống luồng Background ĐÃ ĐƯỢC QUẢN LÝ (databaseExecutor)
+        databaseExecutor.execute(() -> {
+            // Thực thi lệnh ghi vào DB
+            AppDatabase.getInstance(this).transactionDao().insert(transaction);
+
+            // 5. Trở lại luồng UI để báo cáo và đóng màn hình SAU KHI ghi xong
+            runOnUiThread(() -> {
+                Toast.makeText(this, getString(R.string.noti_save_transaction_successfully), Toast.LENGTH_SHORT).show();
+                finish();
+            });
+        });
     }
 
     private void showAmountError() {

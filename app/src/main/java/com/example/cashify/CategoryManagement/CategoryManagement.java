@@ -105,11 +105,18 @@ public class CategoryManagement extends AppCompatActivity {
 
         if (edtSearch != null) {
             edtSearch.addTextChangedListener(new TextWatcher() {
-                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-                @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                }
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
                     filterCategories(s.toString());
                 }
-                @Override public void afterTextChanged(Editable s) {}
+
+                @Override
+                public void afterTextChanged(Editable s) {
+                }
             });
         }
 
@@ -121,7 +128,8 @@ public class CategoryManagement extends AppCompatActivity {
 
     private void filterCategories(String query) {
         String pattern = query.toLowerCase().trim();
-        filteredChi.clear(); filteredThu.clear();
+        filteredChi.clear();
+        filteredThu.clear();
         for (Category c : listChi) if (c.name.toLowerCase().contains(pattern)) filteredChi.add(c);
         for (Category c : listThu) if (c.name.toLowerCase().contains(pattern)) filteredThu.add(c);
         if (adapterChi != null) adapterChi.notifyDataSetChanged();
@@ -132,20 +140,16 @@ public class CategoryManagement extends AppCompatActivity {
         }
     }
 
-    private void toggleRecyclerView(RecyclerView rv, TextView arrow)
-    {
+    private void toggleRecyclerView(RecyclerView rv, TextView arrow) {
         ViewGroup root = findViewById(R.id.content_layout);
         if (root != null) TransitionManager.beginDelayedTransition(root);
 
-        if (rv.getVisibility() == View.VISIBLE)
-        {
+        if (rv.getVisibility() == View.VISIBLE) {
             rv.setVisibility(View.GONE);
             if (arrow != null) arrow.animate().rotation(-90).setDuration(200).start();
             // Gọi hàm giải cứu FAB ngay sau khi một danh sách bị ẩn (thu gọn)
             rescueFloatingActionButton();
-        }
-        else
-        {
+        } else {
             rv.setVisibility(View.VISIBLE);
             if (arrow != null) arrow.animate().rotation(0).setDuration(200).start();
         }
@@ -176,17 +180,27 @@ public class CategoryManagement extends AppCompatActivity {
             e.printStackTrace();
         }
     }
+
     private void loadData() {
         Executors.newSingleThreadExecutor().execute(() -> {
             List<Category> chi = db.categoryDao().getCategoriesByType(0);
             List<Category> thu = db.categoryDao().getCategoriesByType(1);
             runOnUiThread(() -> {
-                listChi.clear(); listChi.addAll(chi);
-                listThu.clear(); listThu.addAll(thu);
+                listChi.clear();
+                listChi.addAll(chi);
+                listThu.clear();
+                listThu.addAll(thu);
                 filterCategories(edtSearch != null ? edtSearch.getText().toString() : "");
                 CategoryAdapter.OnCategoryListener listener = new CategoryAdapter.OnCategoryListener() {
-                    @Override public void onDeleteSuccess() { loadData(); }
-                    @Override public void onEditClick(Category c) { showCategoryPopup(c); }
+                    @Override
+                    public void onDeleteSuccess() {
+                        loadData();
+                    }
+
+                    @Override
+                    public void onEditClick(Category c) {
+                        showCategoryPopup(c);
+                    }
                 };
                 if (adapterChi == null) {
                     adapterChi = new CategoryAdapter(this, filteredChi, listener);
@@ -216,8 +230,7 @@ public class CategoryManagement extends AppCompatActivity {
         Button btnSave = dialog.findViewById(R.id.btnSave);
         TextView tvTitle = dialog.findViewById(R.id.tvPopupTitle);
 
-        if (editCat != null)
-        {
+        if (editCat != null) {
             if (tvTitle != null) tvTitle.setText(R.string.category_popup_edit);
             btnSave.setText(R.string.action_update);
             edtName.setText(editCat.name);
@@ -235,15 +248,22 @@ public class CategoryManagement extends AppCompatActivity {
         btnSave.setOnClickListener(v -> {
             String name = edtName.getText().toString().trim();
             if (name.isEmpty()) {
-                Toast.makeText(this,getString(R.string.error_empty_category_name) , Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, getString(R.string.error_empty_category_name), Toast.LENGTH_SHORT).show();
                 return;
             }
             Category c = (editCat != null) ? editCat : new Category();
-            c.name = name; c.iconName = selectedIconName; c.colorCode = selectedColorCode;
-            c.type = isExpense ? 0 : 1; c.isDeleted = 0;
+            c.name = name;
+            c.iconName = selectedIconName;
+            c.colorCode = selectedColorCode;
+            c.type = isExpense ? 0 : 1;
+            c.isDeleted = 0;
             Executors.newSingleThreadExecutor().execute(() -> {
-                if (editCat != null) db.categoryDao().update(c); else db.categoryDao().insert(c);
-                runOnUiThread(() -> { dialog.dismiss(); loadData(); });
+                if (editCat != null) db.categoryDao().update(c);
+                else db.categoryDao().insert(c);
+                runOnUiThread(() -> {
+                    dialog.dismiss();
+                    loadData();
+                });
             });
         });
         dialog.show();
@@ -261,15 +281,27 @@ public class CategoryManagement extends AppCompatActivity {
             shape.setColor(pastelColor);
             preview.setBackground(shape);
             preview.setImageTintList(ColorStateList.valueOf(originColor));
-        } catch (Exception e) { preview.setImageTintList(ColorStateList.valueOf(Color.GRAY)); }
+        } catch (Exception e) {
+            preview.setImageTintList(ColorStateList.valueOf(Color.GRAY));
+        }
 
         TextView btnChi = dialog.findViewById(R.id.btnTabChi);
         TextView btnThu = dialog.findViewById(R.id.btnTabThu);
-        if (isExpense) updateTabStyles(btnChi, btnThu, true); else updateTabStyles(btnThu, btnChi, false);
+        if (isExpense) updateTabStyles(btnChi, btnThu, true);
+        else updateTabStyles(btnThu, btnChi, false);
         if (!isEditMode) {
-            btnChi.setOnClickListener(v -> { isExpense = true; updatePopupUI(dialog, preview, false); });
-            btnThu.setOnClickListener(v -> { isExpense = false; updatePopupUI(dialog, preview, false); });
-        } else { btnChi.setAlpha(0.5f); btnThu.setAlpha(0.5f); }
+            btnChi.setOnClickListener(v -> {
+                isExpense = true;
+                updatePopupUI(dialog, preview, false);
+            });
+            btnThu.setOnClickListener(v -> {
+                isExpense = false;
+                updatePopupUI(dialog, preview, false);
+            });
+        } else {
+            btnChi.setAlpha(0.5f);
+            btnThu.setAlpha(0.5f);
+        }
         setupPickers(dialog, preview, isEditMode);
     }
 
@@ -296,9 +328,8 @@ public class CategoryManagement extends AppCompatActivity {
             });
         }
 
-        if (gColor != null)
-        {
-                // Truyền mảng màu đã quy đổi thành Hex String vào Adapter cũ của bạn
+        if (gColor != null) {
+            // Truyền mảng màu đã quy đổi thành Hex String vào Adapter cũ của bạn
             gColor.setAdapter(new PopupAdapter.ColorGridAdapter(this, colorHexRepo));
             gColor.setOnItemClickListener((p, v, pos, id) -> {
                 selectedColorCode = colorHexRepo[pos];
@@ -310,43 +341,42 @@ public class CategoryManagement extends AppCompatActivity {
     // --- CẬP NHẬT PHẦN SWIPE Ở ĐÂY ---
     private void setupSwipeToDelete(RecyclerView rv, CategoryAdapter adapter, List<Category> list) {
         ItemTouchHelper.SimpleCallback callback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
-            @Override public boolean onMove(@NonNull RecyclerView r, @NonNull RecyclerView.ViewHolder v, @NonNull RecyclerView.ViewHolder t) { return false; }
+            @Override
+            public boolean onMove(@NonNull RecyclerView r, @NonNull RecyclerView.ViewHolder v, @NonNull RecyclerView.ViewHolder t) {
+                return false;
+            }
 
             @Override
             public void onChildDraw(@NonNull android.graphics.Canvas c, @NonNull RecyclerView rv, @NonNull RecyclerView.ViewHolder vh, float dX, float dY, int action, boolean active) {
-              View itemView = viewHolder.itemView;
+                View itemView = vh.itemView;
                 float density = getResources().getDisplayMetrics().density;
+                // Bắt buộc phải có điều kiện này để chỉ vẽ UI xóa khi người dùng vuốt sang trái
+                if (dX < 0) {
+                    // 1. Vẽ nền đỏ bo góc (Sử dụng resource màu chuẩn đồng bộ toàn app)
+                    GradientDrawable background = new GradientDrawable();
+                    background.setColor(ContextCompat.getColor(CategoryManagement.this, R.color.status_red));
+                    background.setCornerRadius(16 * density);
+                    background.setBounds(itemView.getRight() + (int) dX, itemView.getTop(), itemView.getRight(), itemView.getBottom());
+                    background.draw(c);
 
-    // Bắt buộc phải có điều kiện này để chỉ vẽ UI xóa khi người dùng vuốt sang trái
-    if (dX < 0) {
-        // 1. Vẽ nền đỏ bo góc (Sử dụng resource màu chuẩn đồng bộ toàn app)
-        GradientDrawable background = new GradientDrawable();
-        background.setColor(ContextCompat.getColor(CategoryManagement.this, R.color.status_red));
-        background.setCornerRadius(16 * density);
-        background.setBounds(itemView.getRight() + (int) dX, itemView.getTop(), itemView.getRight(), itemView.getBottom());
-        background.draw(c);
+                    // 2. Vẽ icon Thùng rác màu trắng
+                    Drawable deleteIcon = ContextCompat.getDrawable(CategoryManagement.this, R.drawable.trash_regularsvg);
+                    if (deleteIcon != null && dX < -100) { // Chỉ hiện icon khi swipe đủ xa
+                        deleteIcon.setColorFilter(Color.WHITE, PorterDuff.Mode.SRC_ATOP);
 
-        // 2. Vẽ icon Thùng rác màu trắng
-        Drawable deleteIcon = ContextCompat.getDrawable(CategoryManagement.this, R.drawable.trash_regularsvg);
-        if (deleteIcon != null && dX < -100) { // Chỉ hiện icon khi swipe đủ xa
-            deleteIcon.setColorFilter(Color.WHITE, PorterDuff.Mode.SRC_ATOP);
+                        // Tính toán tọa độ hiển thị icon
+                        int iconMargin = (itemView.getHeight() - deleteIcon.getIntrinsicHeight()) / 2;
+                        int iconTop = itemView.getTop() + iconMargin;
+                        int iconBottom = iconTop + deleteIcon.getIntrinsicHeight();
 
-            // Tính toán tọa độ hiển thị icon
-            int iconMargin = (itemView.getHeight() - deleteIcon.getIntrinsicHeight()) / 2;
-            int iconTop = itemView.getTop() + iconMargin;
-            int iconBottom = iconTop + deleteIcon.getIntrinsicHeight();
+                        // Căn icon nằm bên phải
+                        int iconRight = itemView.getRight() - (int) (16 * density);
+                        int iconLeft = iconRight - deleteIcon.getIntrinsicWidth();
 
-            // Căn icon nằm bên phải
-            int iconRight = itemView.getRight() - (int)(16 * density);
-            int iconLeft = iconRight - deleteIcon.getIntrinsicWidth();
-
-            deleteIcon.setBounds(iconLeft, iconTop, iconRight, iconBottom);
-            deleteIcon.draw(c);
-        }
-    }
+                        deleteIcon.setBounds(iconLeft, iconTop, iconRight, iconBottom);
+                        deleteIcon.draw(c);
+                    }
                 }
-
-                super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
             }
 
             @Override
@@ -364,7 +394,7 @@ public class CategoryManagement extends AppCompatActivity {
                             runOnUiThread(() -> loadData());
                         }))
                         .setNegativeButton(getString(R.string.action_cancel), (d, w) -> adapter.notifyItemChanged(pos))
-                                          //BẮT SỰ KIỆN PHÍM BACK / CHẠM NGOÀI
+                        //BẮT SỰ KIỆN PHÍM BACK / CHẠM NGOÀI
                         .setOnDismissListener(dialogInterface -> {
                             adapter.notifyItemChanged(pos);
                         })
