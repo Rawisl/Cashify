@@ -55,4 +55,7 @@ dependencies {
 
     // Thư viện hỗ trợ Material Design (để vẽ Card, BottomSheet)
     implementation 'com.google.android.material:material:1.11.0'
+
+    // Thư viện hỗ trợ vẽ chart
+    implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
 }
