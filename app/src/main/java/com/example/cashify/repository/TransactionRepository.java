@@ -43,6 +43,9 @@ public class TransactionRepository {
     public void getActualBalance(Callback<Long> callback){
         executor.execute(() -> callback.onResult(transactionDao.getActualBalance()));
     }
+    public void getMonthlyBalance(long startDate, long endDate, Callback<Long> callback) {
+        executor.execute(() -> callback.onResult(transactionDao.getMonthlyBalance(startDate, endDate)));
+    }
     public void getRecentTransactions(int limit, Callback<List<Transaction>> callback){
         executor.execute(()-> callback.onResult(transactionDao.getRecentTransaction(limit)));
     }
