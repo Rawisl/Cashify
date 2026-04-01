@@ -40,4 +40,7 @@ public interface CategoryDao {
     @Query("SELECT * FROM categories WHERE isDeleted=0")
     List<Category>getAllActive();
 
+    @Query("DELETE FROM categories")
+    void deleteAllCategories();
+
 }

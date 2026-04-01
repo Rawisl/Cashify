@@ -55,11 +55,28 @@ public interface TransactionDao {
     List<Transaction> getRecentTransaction(int limit);
 
 
-    //tính sô dư
+    //tính sô dư trọn đời
     @Query("SELECT (SELECT IFNULL(SUM(amount), 0) FROM transactions WHERE type = 1) - " + "(SELECT IFNULL(SUM(amount), 0) FROM transactions WHERE type = 0)")
     long getActualBalance();
+
+    //tính số dư trong tháng
+    @Query("SELECT (SELECT IFNULL(SUM(amount), 0) FROM transactions WHERE type = 1 AND timestamp BETWEEN :startDate AND :endDate) - " +
+                  "(SELECT IFNULL(SUM(amount), 0) FROM transactions WHERE type = 0 AND timestamp BETWEEN :startDate AND :endDate)")
+    long getMonthlyBalance(long startDate, long endDate);
 
     //đếm số lượng giao dịch trong 1 khoang thời gian
     @Query("SELECT COUNT(*) FROM transactions WHERE timestamp BETWEEN :startOfDay AND :endOfDay")
     int countTransactionsByDay(long startOfDay, long endOfDay);
+
+    // Lấy tháng đầu tiên có giao dịch
+    @Query("SELECT MIN(timestamp) FROM transactions")
+    long getEarliestTransactionDate();
+
+
+
+
+    @Query("DELETE FROM transactions")
+    void deleteAllTransactions();
+    @Query("SELECT COUNT(*) FROM transactions")
+    int countTransactions();
 }

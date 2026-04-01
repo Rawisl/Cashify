@@ -32,7 +32,7 @@ public interface BudgetDao {
     Budget getMasterBudget(long now);
 
     //progress bar ngân sách (Đã chỉnh sửa)
-    @Query("SELECT b.*, c.name as categoryName, IFNULL(SUM(t.amount), 0) as spentAmount " +
+    @Query("SELECT b.*, c.name as categoryName, c.iconName as categoryIcon, IFNULL(SUM(t.amount), 0) as spentAmount " +
             "FROM budgets b " +
             "LEFT JOIN categories c ON b.categoryId = c.id " +
             "LEFT JOIN transactions t ON t.categoryId = b.categoryId " +
@@ -50,7 +50,7 @@ public interface BudgetDao {
     long getTotalCategoryLimitExcluding(int excludedId, String periodType);
 
     // Lấy các danh mục CÓ chi tiêu nhưng CHƯA có ngân sách (Ngoài kế hoạch)
-    @Query("SELECT c.id as categoryId, c.name as categoryName, SUM(t.amount) as spentAmount, 0 as limitAmount, " +
+    @Query("SELECT c.id as categoryId, c.name as categoryName, c.iconName as categoryIcon, SUM(t.amount) as spentAmount, 0 as limitAmount, " +
             "0 as id, :startDate as startDate, :endDate as endDate " +
             "FROM categories c " +
             "JOIN transactions t ON c.id = t.categoryId " +
@@ -63,4 +63,19 @@ public interface BudgetDao {
     // Tính tổng hạn mức của tất cả danh mục con (không bao gồm Master -1)
     @Query("SELECT IFNULL(SUM(limitAmount), 0) FROM budgets WHERE categoryId != -1 AND periodType = :periodType")
     long getTotalCategoryLimits(String periodType);
+
+    //Lấy cái mốc tgian của cái giao dịch đầu tiên để chặn bộ lọc tgian
+    @Query("SELECT MIN(startDate) FROM budgets WHERE periodType = :periodType ")
+    long getEarliestStartDate(String periodType);
+
+    //lấy cái mốc tgian của cái giao dịch cuối cùng để chặn lọc tgian
+    @Query("SELECT MAX(endDate) FROM budgets WHERE periodType = :periodType")
+    long getLatestEndDate(String periodType);
+
+    //Lấy ngân sách theo tuần/tháng cụ thể
+    @Query ("SELECT * FROM budgets WHERE periodType = :periodType AND startDate = :startDate LIMIT 1")
+    Budget getBudgetByPeriod(String periodType, long startDate);
+
+
+
 }

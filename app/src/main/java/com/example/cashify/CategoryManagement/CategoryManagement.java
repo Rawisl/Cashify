@@ -78,7 +78,10 @@ public class CategoryManagement extends AppCompatActivity {
         colorHexRepo = new String[colorRepo.length];
 
         db = AppDatabase.getInstance(this);
-        DatabaseSeeder.seedIfEmpty(this);
+        Executors.newSingleThreadExecutor().execute(() -> {
+            DatabaseSeeder.seedIfEmpty(this);
+            runOnUiThread(() -> loadData());
+        });
 
         // Tự động dịch từ Color Int sang mã Hex String để xài cho DB và Adapter
         for (int i = 0; i < colorRepo.length; i++) {
