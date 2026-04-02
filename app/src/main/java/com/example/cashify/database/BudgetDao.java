@@ -24,12 +24,12 @@ public interface BudgetDao {
     List<Budget> getActiveBudgets(long now);
 
     //lấy ngân sách của 1 danh mục cụ thể
-    @Query("SELECT * FROM budgets WHERE categoryId = :category_id AND startDate <= :now AND endDate >= :now LIMIT 1")
-    Budget getBudgetByCategory(int category_id, long now);
+    @Query("SELECT * FROM budgets WHERE categoryId = :category_id AND startDate <= :now AND endDate >= :now AND periodType = :periodType LIMIT 1")
+    Budget getBudgetByCategory(int category_id, long now, String periodType);
 
     //Lấy ngân sách tổng (category=-1)
-    @Query("SELECT * FROM budgets WHERE categoryId = -1 AND startDate <= :now AND endDate >= :now LIMIT 1")
-    Budget getMasterBudget(long now);
+    @Query("SELECT * FROM budgets WHERE categoryId = -1 AND startDate <= :now AND endDate >= :now AND periodType = :periodType LIMIT 1")
+    Budget getMasterBudget(long now, String periodType);
 
     //progress bar ngân sách (Đã chỉnh sửa)
     @Query("SELECT b.*, c.name as categoryName, c.iconName as categoryIcon, IFNULL(SUM(t.amount), 0) as spentAmount " +
@@ -37,9 +37,9 @@ public interface BudgetDao {
             "LEFT JOIN categories c ON b.categoryId = c.id " +
             "LEFT JOIN transactions t ON t.categoryId = b.categoryId " +
             "AND t.type = 0 AND t.timestamp BETWEEN b.startDate AND b.endDate " +
-            "WHERE b.startDate <= :now AND b.endDate >= :now " +
+            "WHERE b.startDate <= :now AND b.endDate >= :now AND b.periodType = :periodType " +
             "GROUP BY b.id")
-    List<BudgetWithSpent> getActiveBudgetsWithSpent(long now);
+    List<BudgetWithSpent> getActiveBudgetsWithSpent(long now, String periodType);
 
     // Tính tổng tất cả khoản chi (type = 0) trong khoảng thời gian để dành riêng cho Master Budget (Mới them)
     @Query("SELECT IFNULL(SUM(amount), 0) FROM transactions WHERE type = 0 AND timestamp BETWEEN :startDate AND :endDate")

@@ -33,15 +33,15 @@ public class BudgetViewModel extends AndroidViewModel {
         repository.getActiveBudgets(now, callback);
     }
 
-    public void getBudgetByCategory(int categoryId, long now, BudgetRepository.Callback<Budget> callback) {
-        repository.getBudgetByCategory(categoryId, now, callback);
+    public void getBudgetByCategory(int categoryId, long now, String periodType, BudgetRepository.Callback<Budget> callback) {
+        repository.getBudgetByCategory(categoryId, now, periodType, callback);
     }
 
-    public void getMasterBudget(long now, BudgetRepository.Callback<Budget> callback) {
-        repository.getMasterBudget(now, callback);
+    public void getMasterBudget(long now, String periodType, BudgetRepository.Callback<Budget> callback) {
+        repository.getMasterBudget(now, periodType, callback);
     }
 
-    public void getActiveBudgetsWithSpent(long now, BudgetRepository.Callback<List<BudgetWithSpent>> callback) {
-        repository.getActiveBudgetsWithSpent(now, callback);
+    public void getActiveBudgetsWithSpent(long now, String periodType, BudgetRepository.Callback<List<BudgetWithSpent>> callback) {
+        repository.getActiveBudgetsWithSpent(now, periodType, callback);
     }
 }

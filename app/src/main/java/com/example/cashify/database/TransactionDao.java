@@ -79,4 +79,8 @@ public interface TransactionDao {
     void deleteAllTransactions();
     @Query("SELECT COUNT(*) FROM transactions")
     int countTransactions();
+
+    // Lấy toàn bộ mốc thời gian của tất cả giao dịch (Dùng để gom nhóm tháng)
+    @Query("SELECT timestamp FROM transactions ORDER BY timestamp DESC")
+    List<Long> getAllTimestamps();
 }
