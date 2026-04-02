@@ -23,25 +23,50 @@
             app:layout_constraintTop_toTopOf="parent"
             style="@style/screen_title"/>
 
-        <TextView
-            android:id="@+id/tvDate"
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cardDateSelector"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Tháng 3/2026"
-            android:textColor="#4C6FFF"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:padding="8dp"
-            android:background="?attr/selectableItemBackground"
-            app:drawableEndCompat="@android:drawable/arrow_down_float"
-            android:drawablePadding="8dp"
+            android:layout_marginTop="12dp"
+            app:cardBackgroundColor="@color/brand_primary"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="2dp"
+            android:foreground="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvDashboard" />
+            app:layout_constraintTop_toBottomOf="@id/tvDashboard">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="8dp">
+
+                <TextView
+                    android:id="@+id/tvDate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    tools:text="@string/dashboard_month_default"
+                    android:textColor="@color/white"
+                    android:textSize="14sp"
+                    android:fontFamily="@font/inter_bold" />
+
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:layout_marginStart="8dp"
+                    android:src="@android:drawable/arrow_down_float"
+                    app:tint="@color/white" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
 
         <androidx.cardview.widget.CardView
             android:id="@+id/cardBalance"
             android:layout_marginTop="20dp"
-            app:layout_constraintTop_toBottomOf="@id/tvDate"
+            app:layout_constraintTop_toBottomOf="@+id/cardDateSelector"
             style="@style/main_card">
 
             <LinearLayout

@@ -66,6 +66,8 @@ public class HomeFragment extends Fragment {
         pieChart = view.findViewById(R.id.pieChart);
         tvDate = view.findViewById(R.id.tvDate);
 
+        View cardDateSelector = view.findViewById(R.id.cardDateSelector);
+
         // Ánh xạ View cho Thẻ số dư
         tvTotalBalance = view.findViewById(R.id.total_money_amount);
         tvIncome = view.findViewById(R.id.income_money_amount);
@@ -77,13 +79,19 @@ public class HomeFragment extends Fragment {
         //Setup thời gian mặc định (Tháng hiện tại)
         currentCalendar = Calendar.getInstance();
 
-        //Bắt sự kiện click chọn tháng (Tạm thời để Toast, Khang ráp DatePicker vào sau nhé)
-        tvDate.setOnClickListener(v -> {
-            Toast.makeText(getContext(), "Tính năng chọn tháng sẽ mở BottomSheet!", Toast.LENGTH_SHORT).show();
-            // Test lùi lại 1 tháng:
-            // currentCalendar.add(Calendar.MONTH, -1);
-            // updateMonthTextAndLoadData();
-        });
+        View.OnClickListener showDialogListener = v -> showMonthSelectorDialog();
+        tvDate.setOnClickListener(showDialogListener);
+        if (cardDateSelector != null) {
+            cardDateSelector.setOnClickListener(showDialogListener);
+        }
+
+//        //Bắt sự kiện click chọn tháng (Tạm thời để Toast, Khang ráp DatePicker vào sau nhé)
+//        tvDate.setOnClickListener(v -> {
+//            Toast.makeText(getContext(), "Tính năng chọn tháng sẽ mở BottomSheet!", Toast.LENGTH_SHORT).show();
+//            // Test lùi lại 1 tháng:
+//            // currentCalendar.add(Calendar.MONTH, -1);
+//            // updateMonthTextAndLoadData();
+//        });
     }
 
     // Viết đè hàm này để fragment tự kéo dữ liệu từ database
@@ -93,6 +101,70 @@ public class HomeFragment extends Fragment {
         // Mỗi khi màn hình này hiện lên (kể cả lúc vừa mở app hay vừa đóng màn hình Thêm),
         // nó sẽ tự động tính lại ngày tháng và kéo dữ liệu mới nhất từ DB.
         updateMonthTextAndLoadData();
+    }
+
+    private void showMonthSelectorDialog() {
+        databaseExecutor.execute(() -> {
+            AppDatabase db = AppDatabase.getInstance(requireContext());
+
+            // Kéo toàn bộ mốc thời gian từ DB về (nhờ câu Query Khang vừa thêm bên DAO)
+            List<Long> timestamps = db.transactionDao().getAllTimestamps();
+
+            if (timestamps == null || timestamps.isEmpty()) {
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(() ->
+                            Toast.makeText(getContext(), "Chưa có dữ liệu giao dịch nào!", Toast.LENGTH_SHORT).show()
+                    );
+                }
+                return; // Dừng lại, không mở bảng chọn nếu DB trống
+            }
+
+            // Gom nhóm các tháng (loại bỏ trùng lặp) và giữ nguyên thứ tự Mới -> Cũ
+            java.util.LinkedHashMap<String, Calendar> monthMap = new java.util.LinkedHashMap<>();
+
+            for (Long ts : timestamps) {
+                Calendar cal = Calendar.getInstance();
+                cal.setTimeInMillis(ts);
+                int m = cal.get(Calendar.MONTH) + 1;
+                int y = cal.get(Calendar.YEAR);
+
+                // Format lại để có chữ giống strings.xml
+                String label = getString(R.string.dashboard_month_format, m, y);
+
+                if (!monthMap.containsKey(label)) {
+                    // Reset ngày giờ về đầu tháng để lát nữa lọc DB cho chuẩn
+                    cal.set(Calendar.DAY_OF_MONTH, 1);
+                    cal.set(Calendar.HOUR_OF_DAY, 0);
+                    cal.set(Calendar.MINUTE, 0);
+                    cal.set(Calendar.SECOND, 0);
+                    monthMap.put(label, cal);
+                }
+            }
+
+            //Ép danh sách Map thành Mảng để ném vào AlertDialog
+            List<String> displayList = new ArrayList<>(monthMap.keySet());
+            String[] displayArray = displayList.toArray(new String[0]);
+
+            //Mở Popup hiển thị cho người dùng chọn
+            if (getActivity() != null) {
+                getActivity().runOnUiThread(() -> {
+                    new android.app.AlertDialog.Builder(requireContext())
+                            .setTitle("Chọn tháng")
+                            .setItems(displayArray, (dialog, which) -> {
+                                // Khi người dùng bấm chọn 1 dòng
+                                String selectedLabel = displayArray[which];
+                                Calendar selectedCal = monthMap.get(selectedLabel);
+
+                                if (selectedCal != null) {
+                                    // Cập nhật lại mốc thời gian và load lại toàn bộ màn hình
+                                    currentCalendar.setTimeInMillis(selectedCal.getTimeInMillis());
+                                    updateMonthTextAndLoadData();
+                                }
+                            })
+                            .show();
+                });
+            }
+        });
     }
 
     private void setupDonutChart() {
@@ -122,7 +194,8 @@ public class HomeFragment extends Fragment {
     private void updateMonthTextAndLoadData() {
         int month = currentCalendar.get(Calendar.MONTH) + 1;
         int year = currentCalendar.get(Calendar.YEAR);
-        tvDate.setText("Tháng " + month + "/" + year);
+        String dateText = getString(R.string.dashboard_month_format, month, year);
+        tvDate.setText(dateText);
 
         //tui đổi tên cho n thích hợp cái bro tại h hàm này gánh cả card với chart
         loadDashboardData();

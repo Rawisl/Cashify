@@ -35,16 +35,16 @@ public class BudgetRepository {
         executor.execute(() -> callback.onResult(budgetDao.getActiveBudgets(now)));
     }
 
-    public void getBudgetByCategory(int categoryId, long now, Callback<Budget> callback) {
-        executor.execute(() -> callback.onResult(budgetDao.getBudgetByCategory(categoryId, now)));
+    public void getBudgetByCategory(int categoryId, long now, String periodType, Callback<Budget> callback) {
+        executor.execute(() -> callback.onResult(budgetDao.getBudgetByCategory(categoryId, now, periodType)));
     }
 
-    public void getMasterBudget(long now, Callback<Budget> callback) {
-        executor.execute(() -> callback.onResult(budgetDao.getMasterBudget(now)));
+    public void getMasterBudget(long now, String periodType, Callback<Budget> callback) {
+        executor.execute(() -> callback.onResult(budgetDao.getMasterBudget(now, periodType)));
     }
 
-    public void getActiveBudgetsWithSpent(long now, Callback<List<BudgetWithSpent>> callback) {
-        executor.execute(() -> callback.onResult(budgetDao.getActiveBudgetsWithSpent(now)));
+    public void getActiveBudgetsWithSpent(long now, String periodType, Callback<List<BudgetWithSpent>> callback) {
+        executor.execute(() -> callback.onResult(budgetDao.getActiveBudgetsWithSpent(now, periodType)));
     }
 
     public interface Callback<T> {

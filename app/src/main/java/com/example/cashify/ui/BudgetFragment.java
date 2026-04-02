@@ -271,7 +271,7 @@ public class BudgetFragment extends Fragment {
                     return; // Chặn không cho lưu
                 }
             } else { // Chỉ check nếu đây không phải là đang sửa chính thẻ Master
-                Budget master = budgetDao.getMasterBudget(System.currentTimeMillis());
+                Budget master = budgetDao.getMasterBudget(System.currentTimeMillis(), currentPeriodType);
                 if (master != null) {
                     // Lấy tổng hạn mức của các category hiện tại (trừ category đang sửa ra để tránh cộng dồn chính nó)
                     long totalOthersLimit = budgetDao.getTotalCategoryLimitExcluding(categoryId, currentPeriodType);
@@ -301,8 +301,7 @@ public class BudgetFragment extends Fragment {
             budget.startDate = startTime;
             budget.endDate = endTime;
 
-            // TODO: NỐI DÂY DB - Nhắc bạn làm DB sửa hàm này để lọc theo periodType nữa nhé
-            Budget existingBudget = budgetDao.getBudgetByCategory(categoryId, System.currentTimeMillis());
+            Budget existingBudget = budgetDao.getBudgetByCategory(categoryId, System.currentTimeMillis(), currentPeriodType);
             if (existingBudget != null) {
                 budget.id = existingBudget.id;
                 budgetDao.update(budget);
@@ -322,7 +321,11 @@ public class BudgetFragment extends Fragment {
     private void deleteBudgetFromDatabase(int categoryId) {
         new Thread(() -> {
             // Tìm ngân sách hiện tại của danh mục này (dựa trên thời gian thực tế)
-            Budget existingBudget = budgetDao.getBudgetByCategory(categoryId, System.currentTimeMillis());
+            Budget existingBudget = budgetDao.getBudgetByCategory(categoryId, System.currentTimeMillis(), currentPeriodType);
+
+            if (existingBudget != null) {
+                budgetDao.delete(existingBudget);
+            }
 
             if (existingBudget != null) {
                 // Thực hiện xóa khỏi bảng budgets
@@ -352,13 +355,13 @@ public class BudgetFragment extends Fragment {
 
             // 1. Lấy toàn bộ dữ liệu ĐÃ LÊN KẾ HOẠCH từ DB
             // TODO: NỐI DÂY DB - Truyền thêm currentPeriodType vào các truy vấn này
-            List<BudgetWithSpent> plannedData = budgetDao.getActiveBudgetsWithSpent(now);
+            List<BudgetWithSpent> plannedData = budgetDao.getActiveBudgetsWithSpent(now, currentPeriodType);
 
             // 2. Lấy toàn bộ dữ liệu NGOÀI KẾ HOẠCH (ĐÃ MỞ KHÓA)
             // ĐÃ MỞ KHÓA: Gọi hàm lấy unplannedExpenses
             List<BudgetWithSpent> unplannedData = budgetDao.getUnplannedExpenses(startTime, endTime, now, currentPeriodType);
 
-            masterBudgetCache = budgetDao.getMasterBudget(now);
+            masterBudgetCache = budgetDao.getMasterBudget(now, currentPeriodType);
             long masterSpent = budgetDao.getMasterSpentAmount(startTime, endTime);
             currentMasterSpent = masterSpent;
 
