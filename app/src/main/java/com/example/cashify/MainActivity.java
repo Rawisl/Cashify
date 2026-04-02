@@ -1,21 +1,20 @@
 package com.example.cashify;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+
 import androidx.core.splashscreen.SplashScreen;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.NavigationUI;
-
 import androidx.appcompat.app.AppCompatDelegate;
 
+import com.example.cashify.AddTransaction.AddTransactionActivity;
 import com.example.cashify.database.Category;
 import com.example.cashify.database.CategoryDao;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -23,6 +22,7 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.example.cashify.database.AppDatabase;
 import com.example.cashify.database.DatabaseSeeder;
 import com.example.cashify.database.FakeDataSeeder;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.List;
 
@@ -91,6 +91,18 @@ public class MainActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
 
+        //khai báo biến lưu fab để lát dùng để chuyển qua màn hình thêm giao dịch
+        FloatingActionButton fabAddTransaction = findViewById(R.id.fab_add_transaction);
+
+        //sự kiện click nút fab
+        fabAddTransaction.setOnClickListener(v ->
+        {
+            Intent intent = new Intent(this, AddTransactionActivity.class);
+            startActivity(intent);
+            // Gọi hiệu ứng trượt LÊN ngay sau khi start
+            overridePendingTransition(R.anim.slide_in_up, R.anim.stay);
+        });
+
         //tìm thanh điều hướng
         BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
 
@@ -100,7 +112,19 @@ public class MainActivity extends AppCompatActivity {
         //ghép thanh điều hướng với bộ điều khiển để chuyển fragment
         NavigationUI.setupWithNavController(bottomNav,navController);
 
+        // Lắng nghe sự kiện mỗi khi người dùng chuyển tab/fragment để fix lỗi chìm fab
+        navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
 
+            //đoạn này để nút fab ko hiện trong settings
+            int id = destination.getId();
+
+            // Giả sử R.id.settingsFragment là màn hình không cần nút thêm giao dịch
+            if (id == R.id.nav_settings) {
+                fabAddTransaction.hide(); // Giấu đi khi vào các tab không liên quan
+            } else {
+                fabAddTransaction.show(); // Hiện lên ở các tab quản lý thu chi
+            }
+        });
 
     }
 }
