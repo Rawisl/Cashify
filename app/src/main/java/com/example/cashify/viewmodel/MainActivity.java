@@ -1,4 +1,4 @@
-package com.example.cashify;
+package com.example.cashify.viewmodel;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -15,6 +15,7 @@ import androidx.navigation.ui.NavigationUI;
 import androidx.appcompat.app.AppCompatDelegate;
 
 import com.example.cashify.AddTransaction.AddTransactionActivity;
+import com.example.cashify.R;
 import com.example.cashify.database.Category;
 import com.example.cashify.database.CategoryDao;
 import com.google.android.material.bottomnavigation.BottomNavigationView;

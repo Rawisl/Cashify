@@ -1,4 +1,4 @@
-package com.example.cashify.CategoryManagement;
+package com.example.cashify.ui.category;
 
 import android.content.Context;
 import android.graphics.Color;
@@ -15,11 +15,11 @@ import android.widget.ImageView;
 public class PopupAdapter {
 
     /**
-     * Adapter to display a grid of selectable icons (ImageResources).
+     * IconGridAdapter: Tái sử dụng view để mượt mà khi cuộn
      */
     public static class IconGridAdapter extends BaseAdapter {
         private Context context;
-        private int[] icons; // Array of drawable resource IDs (e.g., R.drawable.ic_food)
+        private int[] icons;
 
         public IconGridAdapter(Context context, int[] icons) {
             this.context = context;
@@ -32,26 +32,28 @@ public class PopupAdapter {
 
         @Override
         public View getView(int i, View view, ViewGroup viewGroup) {
-            // Logic: Dynamically create an ImageView for each icon in the array
-            ImageView imageView = new ImageView(context);
+            ImageView imageView;
+            if (view == null) {
+                // Chỉ khởi tạo lần đầu, các lần sau dùng lại view cũ
+                imageView = new ImageView(context);
+                // Tip: 150px này nếu muốn chuẩn nên convert từ DP sang PX
+                imageView.setLayoutParams(new GridView.LayoutParams(150, 150));
+                imageView.setPadding(25, 25, 25, 25);
+            } else {
+                imageView = (ImageView) view;
+            }
+
             imageView.setImageResource(icons[i]);
-
-            // Set fixed size for grid items (150x150 pixels)
-            imageView.setLayoutParams(new GridView.LayoutParams(150, 150));
-
-            // Add padding so icons don't touch the edges of their grid cell
-            imageView.setPadding(25, 25, 25, 25);
             return imageView;
-
         }
     }
 
     /**
-     * Adapter to display a grid of selectable colors.
+     * ColorGridAdapter: Chỉnh lại hình tròn cho tinh tế
      */
     public static class ColorGridAdapter extends BaseAdapter {
         private Context context;
-        private String[] colors; // Array of Hex strings (e.g., "#F44336")
+        private String[] colors;
 
         public ColorGridAdapter(Context context, String[] colors) {
             this.context = context;
@@ -64,19 +66,21 @@ public class PopupAdapter {
 
         @Override
         public View getView(int i, View view, ViewGroup viewGroup) {
-            // Logic: Create a simple View to act as a colored square/rectangle
-            View colorView = new View(context);
+            View colorView;
+            if (view == null) {
+                colorView = new View(context);
+                colorView.setLayoutParams(new GridView.LayoutParams(100, 100));
+            } else {
+                colorView = view;
+            }
 
-            // Set size for the color preview circle/square
-            colorView.setLayoutParams(new GridView.LayoutParams(100, 100));
-
-            // Trong getView của ColorGridAdapter
             GradientDrawable shape = new GradientDrawable();
-
-            shape.setShape(GradientDrawable.RECTANGLE); // Chọn màu thì nên để hình tròn cho tinh tế
-            shape.setCornerRadius(28f);
-            shape.setColor(Color.parseColor(colors[i]));
-            colorView.setBackground(shape);
+            shape.setShape(GradientDrawable.OVAL);
+            try {
+                shape.setColor(Color.parseColor(colors[i]));
+            } catch (Exception e) {
+                shape.setColor(Color.GRAY); // Fallback nếu mã màu lỗi
+            }
 
             colorView.setBackground(shape);
             return colorView;

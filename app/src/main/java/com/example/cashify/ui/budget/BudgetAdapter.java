@@ -1,4 +1,4 @@
-package com.example.cashify.ui;
+package com.example.cashify.ui.budget;
 
 import android.animation.ObjectAnimator;
 import android.content.Context;

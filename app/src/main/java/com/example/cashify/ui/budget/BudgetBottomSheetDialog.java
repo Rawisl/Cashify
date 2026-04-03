@@ -1,4 +1,4 @@
-package com.example.cashify.ui;
+package com.example.cashify.ui.budget;
 
 import android.content.res.ColorStateList;
 import android.graphics.Color;
@@ -7,7 +7,6 @@ import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -22,6 +21,8 @@ import androidx.core.content.ContextCompat;
 import com.example.cashify.R;
 import com.example.cashify.database.AppDatabase;
 import com.example.cashify.database.Category;
+import com.example.cashify.ui.CategoryAdapter;
+import com.example.cashify.ui.NumpadBottomSheet;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.android.material.textfield.MaterialAutoCompleteTextView;

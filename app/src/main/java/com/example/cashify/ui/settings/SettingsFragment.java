@@ -1,4 +1,4 @@
-package com.example.cashify.ui;
+package com.example.cashify.ui.settings;
 
 import android.app.AlertDialog;
 import android.content.Intent;
@@ -11,8 +11,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 
-import com.example.cashify.CategoryManagement.CategoryManagement;
-import com.example.cashify.MainActivity;
+import com.example.cashify.ui.category.CategoryManagement;
 import com.example.cashify.R;
 import com.example.cashify.database.AppDatabase;
 
