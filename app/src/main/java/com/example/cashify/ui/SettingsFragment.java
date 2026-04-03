@@ -1,5 +1,6 @@
 package com.example.cashify.ui;
 
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
 
@@ -11,7 +12,11 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 
 import com.example.cashify.CategoryManagement.CategoryManagement;
+import com.example.cashify.MainActivity;
 import com.example.cashify.R;
+import com.example.cashify.database.AppDatabase;
+
+import java.util.concurrent.Executors;
 
 public class SettingsFragment extends Fragment {
 
@@ -27,7 +32,6 @@ public class SettingsFragment extends Fragment {
 
         //Tìm cái nút categories bằng id đã đặt cho n
         LinearLayout btnCategories = view.findViewById(R.id.btn_categories);
-
         btnCategories.setOnClickListener(new View.OnClickListener()
         {
             @Override
@@ -38,6 +42,25 @@ public class SettingsFragment extends Fragment {
 
                 Intent intent = new Intent(getActivity(), CategoryManagement.class);
                 startActivity(intent);
+            }
+        });
+
+        LinearLayout btnResetTransaction = view.findViewById(R.id.btn_reset_transaction);
+        btnResetTransaction.setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View v)
+            {
+                String msg = getString(R.string.confirm_reset) + " all " + getString(R.string.nav_transaction_history) + "?";                AppDatabase db = AppDatabase.getInstance(requireContext());
+
+                new AlertDialog.Builder(requireContext())
+                        .setTitle(getString(R.string.action_reset_transactions))
+                        .setMessage(msg)
+                        .setPositiveButton(getString(R.string.action_reset), (d, w) -> Executors.newSingleThreadExecutor().execute(() -> {
+                            db.transactionDao().deleteAllTransactions();
+                        }))
+                        .setNegativeButton(getString(R.string.action_cancel), null)
+                        .show();
             }
         });
         return view;

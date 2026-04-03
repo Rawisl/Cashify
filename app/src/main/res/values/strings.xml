@@ -9,15 +9,18 @@
     <string name="action_next">Next</string>
     <string name="action_update">Update</string>
     <string name="action_search">Search…</string>
+    <string name="action_reset">Reset</string>
 
     <string name="action_add_transaction">Add transaction</string>
     <string name="action_add_category">Add category</string>
 
     <string name="action_delete_category">Delete category</string>
+    <string name="action_reset_transactions">Reset transactions</string>
 
     <string name="noti_save_transaction_successfully">Saved transaction successfully!</string>
 
     <string name="confirm_delete">Are you sure you want to delete \'%1$s\'?</string>
+    <string name="confirm_reset">Are you sure you want to reset</string>
 
     <string name="error_empty_category_name">Please enter category\'s name</string>
     <string name="error_invalid_money_amount">Amount must be greater than zero!</string>
@@ -30,9 +33,9 @@
     <string name="tab_weekly">Weekly</string>
 
     <string name="nav_home">Home</string>
-    <string name="nav_transaction_history">Transaction</string>
+    <string name="nav_transaction_history">Transactions</string>
     <string name="nav_budget">Budget</string>
-    <string name="nav_settings">Setting</string>
+    <string name="nav_settings">Settings</string>
 
     <string name="settings_title">Setting</string>
     <string name="settings_subtitle">Manage your preferences</string>
@@ -54,6 +57,7 @@
     <string name="settings_section_account">Account</string>
     <string name="settings_section_preferences">Preferences</string>
     <string name="settings_section_other">Other</string>
+    <string name="settings_section_reset">Reset</string>
 
     <string name="settings_item_security">Security</string>
     <string name="settings_item_security_desc">Change password</string>
@@ -69,6 +73,9 @@
 
     <string name="settings_item_logout">Log out</string>
     <string name="settings_item_logout_desc">Sign out of your account</string>
+
+    <string name="settings_item_reset_transaction">Reset transaction history</string>
+    <string name="settings_item_reset_transaction_desc">Delete all the transactions</string>
 
     <string name="settings_item_darkmode">Dark mode</string>
 
