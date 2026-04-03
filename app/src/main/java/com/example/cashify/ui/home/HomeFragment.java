@@ -1,4 +1,4 @@
-package com.example.cashify.ui;
+package com.example.cashify.ui.home;
 
 import android.graphics.Color;
 import android.os.Bundle;

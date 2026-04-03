@@ -1,4 +1,4 @@
-package com.example.cashify.ui;
+package com.example.cashify.ui.transactions;
 
 import android.os.Bundle;
 
