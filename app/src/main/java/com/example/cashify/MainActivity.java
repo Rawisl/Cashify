@@ -46,8 +46,8 @@ public class MainActivity extends AppCompatActivity {
                 CategoryDao categoryDao = db.categoryDao();
 
                 // nếu muốn reset database, bật 2 dòng này chạy 1 lần
-                 db.transactionDao().deleteAllTransactions();
-                 categoryDao.deleteAllCategories();
+//                 db.transactionDao().deleteAllTransactions();
+//                 categoryDao.deleteAllCategories();
 
                 // Nạp Category - Hàm này chỉ nạp nếu máy trống trơn
                 DatabaseSeeder.seedIfEmpty(MainActivity.this);
