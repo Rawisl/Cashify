@@ -6,22 +6,21 @@
     <!-- dùng chính id này để kết nối từng fragment với nav_graph -->
     <item
         android:id="@+id/nav_home"
-        android:title="Home"
-        android:icon="@drawable/home_regular"
-        />
+        android:title="@string/nav_home"
+        android:icon="@drawable/nav_home_selector" />
     <!-- Nút budget trong bottom navigation -->
     <item
         android:id="@+id/nav_budget"
-        android:title="Budget"
-        android:icon="@drawable/budget_regular"/>
+        android:title="@string/nav_budget"
+        android:icon="@drawable/nav_budget_selector"/>
     <!-- Nút history trong bottom navigation -->
     <item
         android:id="@+id/nav_transaction"
-        android:title="Transaction"
-        android:icon="@drawable/history_transaction_regular"/>
+        android:title="@string/nav_transaction_history"
+        android:icon="@drawable/nav_history_selector"/>
     <!-- Nút settings trong bottom navigation -->
     <item
         android:id="@+id/nav_settings"
-        android:title="Settings"
-        android:icon="@drawable/settings_regular"/>
+        android:title="@string/nav_settings"
+        android:icon="@drawable/nav_settings_selector"/>
 </menu>
