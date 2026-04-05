@@ -81,7 +81,7 @@ public class CategoryManagement extends AppCompatActivity {
                 // Hiện Dialog xác nhận ở ĐÂY (Activity)
                 new AlertDialog.Builder(CategoryManagement.this)
                         .setTitle(getString(R.string.action_delete_category))
-                        .setMessage(getString(R.string.confirm_delete,category.name))
+                        .setMessage(getString(R.string.confirm_delete, category.name))
                         .setPositiveButton(getString(R.string.action_delete), (d, w) -> {
                             // GỌI VIEWMODEL THỰC HIỆN LỆNH XÓA
                             viewModel.deleteCategory(category.id);
@@ -127,11 +127,18 @@ public class CategoryManagement extends AppCompatActivity {
         });
 
         edtSearch.addTextChangedListener(new TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
                 filterCategories(s.toString());
             }
-            @Override public void afterTextChanged(Editable s) {}
+
+            @Override
+            public void afterTextChanged(Editable s) {
+            }
         });
     }
 
@@ -139,8 +146,10 @@ public class CategoryManagement extends AppCompatActivity {
         String pattern = query.toLowerCase().trim();
         filteredChi.clear();
         filteredThu.clear();
-        for (Category c : listChiOriginal) if (c.name.toLowerCase().contains(pattern)) filteredChi.add(c);
-        for (Category c : listThuOriginal) if (c.name.toLowerCase().contains(pattern)) filteredThu.add(c);
+        for (Category c : listChiOriginal)
+            if (c.name.toLowerCase().contains(pattern)) filteredChi.add(c);
+        for (Category c : listThuOriginal)
+            if (c.name.toLowerCase().contains(pattern)) filteredThu.add(c);
 
         adapterChi.notifyDataSetChanged();
         adapterThu.notifyDataSetChanged();
@@ -175,32 +184,54 @@ public class CategoryManagement extends AppCompatActivity {
                     ((com.google.android.material.behavior.HideBottomViewOnScrollBehavior<FloatingActionButton>) behavior).slideUp(fab);
                 }
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
     }
 
     private void setupSwipeToDelete(RecyclerView rv, CategoryAdapter adapter, List<Category> list) {
+        // TỐI ƯU HIỆU NĂNG: Khởi tạo các công cụ vẽ ở ngoài để không phải tạo lại 60 lần/giây
+        float density = getResources().getDisplayMetrics().density;
+
+        GradientDrawable background = new GradientDrawable();
+        background.setColor(ContextCompat.getColor(CategoryManagement.this, R.color.status_red));
+        background.setCornerRadius(16 * density);
+
+        Drawable deleteIcon = ContextCompat.getDrawable(CategoryManagement.this, R.drawable.trash_regularsvg);
+        if (deleteIcon != null) {
+            deleteIcon.setColorFilter(Color.WHITE, PorterDuff.Mode.SRC_ATOP);
+        }
+
         ItemTouchHelper.SimpleCallback callback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
             @Override
-            public boolean onMove(@NonNull RecyclerView r, @NonNull RecyclerView.ViewHolder v, @NonNull RecyclerView.ViewHolder t) { return false; }
+            public boolean onMove(@NonNull RecyclerView r, @NonNull RecyclerView.ViewHolder v, @NonNull RecyclerView.ViewHolder t) {
+                return false;
+            }
 
             @Override
             public void onChildDraw(@NonNull android.graphics.Canvas c, @NonNull RecyclerView rv, @NonNull RecyclerView.ViewHolder vh, float dX, float dY, int action, boolean active) {
-                if (dX < 0) {
-                    float density = getResources().getDisplayMetrics().density;
+
+                // BẮT BUỘC CÓ DÒNG NÀY: Để cái Item view trượt theo ngón tay của người dùng
+                super.onChildDraw(c, rv, vh, dX, dY, action, active);
+
+                if (dX < 0) { // Khi đang vuốt sang trái
                     View itemView = vh.itemView;
-                    GradientDrawable background = new GradientDrawable();
-                    background.setColor(ContextCompat.getColor(CategoryManagement.this, R.color.status_red));
-                    background.setCornerRadius(16 * density);
+
+                    // 1. Cập nhật kích thước nền đỏ trượt theo dX và vẽ ra
                     background.setBounds(itemView.getRight() + (int) dX, itemView.getTop(), itemView.getRight(), itemView.getBottom());
                     background.draw(c);
 
-                    Drawable deleteIcon = ContextCompat.getDrawable(CategoryManagement.this, R.drawable.trash_regularsvg);
+                    // 2. Cập nhật vị trí thùng rác và vẽ ra (chỉ vẽ khi vuốt qua một khoảng -100px)
                     if (deleteIcon != null && dX < -100) {
-                        deleteIcon.setColorFilter(Color.WHITE, PorterDuff.Mode.SRC_ATOP);
                         int iconMargin = (itemView.getHeight() - deleteIcon.getIntrinsicHeight()) / 2;
                         int iconTop = itemView.getTop() + iconMargin;
                         int iconRight = itemView.getRight() - (int) (16 * density);
-                        deleteIcon.setBounds(iconRight - deleteIcon.getIntrinsicWidth(), iconTop, iconRight, iconTop + deleteIcon.getIntrinsicHeight());
+
+                        deleteIcon.setBounds(
+                                iconRight - deleteIcon.getIntrinsicWidth(),
+                                iconTop,
+                                iconRight,
+                                iconTop + deleteIcon.getIntrinsicHeight()
+                        );
                         deleteIcon.draw(c);
                     }
                 }
@@ -208,14 +239,30 @@ public class CategoryManagement extends AppCompatActivity {
 
             @Override
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+                // 1. Lấy vị trí cẩn thận, đề phòng view đang bị xáo trộn
                 int pos = viewHolder.getAdapterPosition();
+                if (pos == RecyclerView.NO_POSITION) return;
+
                 Category cat = list.get(pos);
+
+                // 2. Tạo một cái cờ để biết người dùng có CHỐT xóa hay không
+                final boolean[] isDeleted = {false};
+
                 new AlertDialog.Builder(CategoryManagement.this)
                         .setTitle(R.string.action_delete_category)
                         .setMessage(getString(R.string.confirm_delete, cat.name))
-                        .setPositiveButton(R.string.action_delete, (d, w) -> viewModel.deleteCategory(cat.id))
-                        .setNegativeButton(R.string.action_cancel, (d, w) -> adapter.notifyItemChanged(pos))
-                        .setOnDismissListener(dialogInterface -> adapter.notifyItemChanged(pos))
+                        .setPositiveButton(R.string.action_delete, (d, w) -> {
+                            isDeleted[0] = true; // Phất cờ là "Đã xóa"
+                            viewModel.deleteCategory(cat.id);
+                        })
+                        .setNegativeButton(R.string.action_cancel, null) // Bấm Hủy thì không làm gì cả, để Dismiss lo
+                        .setOnDismissListener(dialogInterface -> {
+                            // 3. Nếu hộp thoại đóng mà KHÔNG PHẢI do bấm nút Xóa (tức là bấm Cancel hoặc chạm ra ngoài)
+                            if (!isDeleted[0]) {
+                                // Dùng rv.post để đảm bảo UI Thread phục hồi lại view mượt mà
+                                rv.post(() -> adapter.notifyItemChanged(pos));
+                            }
+                        })
                         .show();
             }
         };

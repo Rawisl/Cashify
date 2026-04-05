@@ -5,85 +5,126 @@ import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.BaseAdapter;
-import android.widget.GridView;
 import android.widget.ImageView;
 
-/**
- * A helper class containing adapters for the Icon and Color selection grids.
- */
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
+
 public class PopupAdapter {
 
-    /**
-     * IconGridAdapter: Tái sử dụng view để mượt mà khi cuộn
-     */
-    public static class IconGridAdapter extends BaseAdapter {
-        private Context context;
-        private int[] icons;
+    // --- 1. ADAPTER CHO ICON ---
+    public static class IconAdapter extends RecyclerView.Adapter<IconAdapter.ViewHolder> {
+        private final Context context;
+        private final int[] icons;
+        private final OnItemClickListener listener;
 
-        public IconGridAdapter(Context context, int[] icons) {
-            this.context = context;
-            this.icons = icons;
+        public interface OnItemClickListener {
+            void onClick(int position);
         }
 
-        @Override public int getCount() { return icons.length; }
-        @Override public Object getItem(int i) { return icons[i]; }
-        @Override public long getItemId(int i) { return i; }
+        public IconAdapter(Context context, int[] icons, OnItemClickListener listener) {
+            this.context = context;
+            this.icons = icons;
+            this.listener = listener;
+        }
+
+        @NonNull
+        @Override
+        public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            ImageView imageView = new ImageView(context);
+
+            // Quy đổi sang DP cho chuẩn màn hình (Khoảng 45dp)
+            int size = (int) (45 * context.getResources().getDisplayMetrics().density);
+            int margin = (int) (8 * context.getResources().getDisplayMetrics().density);
+
+            RecyclerView.LayoutParams params = new RecyclerView.LayoutParams(size, size);
+            params.setMargins(margin, margin, margin, margin);
+            imageView.setLayoutParams(params);
+
+            // Padding cho icon khỏi chạm viền
+            imageView.setPadding(margin, margin, margin, margin);
+            return new ViewHolder(imageView);
+        }
 
         @Override
-        public View getView(int i, View view, ViewGroup viewGroup) {
-            ImageView imageView;
-            if (view == null) {
-                // Chỉ khởi tạo lần đầu, các lần sau dùng lại view cũ
-                imageView = new ImageView(context);
-                // Tip: 150px này nếu muốn chuẩn nên convert từ DP sang PX
-                imageView.setLayoutParams(new GridView.LayoutParams(150, 150));
-                imageView.setPadding(25, 25, 25, 25);
-            } else {
-                imageView = (ImageView) view;
-            }
+        public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+            holder.imageView.setImageResource(icons[position]);
+            holder.itemView.setOnClickListener(v -> listener.onClick(position));
+        }
 
-            imageView.setImageResource(icons[i]);
-            return imageView;
+        @Override
+        public int getItemCount() {
+            return icons.length;
+        }
+
+        public static class ViewHolder extends RecyclerView.ViewHolder {
+            ImageView imageView;
+
+            public ViewHolder(@NonNull View itemView) {
+                super(itemView);
+                imageView = (ImageView) itemView;
+            }
         }
     }
 
-    /**
-     * ColorGridAdapter: Chỉnh lại hình tròn cho tinh tế
-     */
-    public static class ColorGridAdapter extends BaseAdapter {
-        private Context context;
-        private String[] colors;
+    // --- 2. ADAPTER CHO MÀU SẮC ---
+    public static class ColorAdapter extends RecyclerView.Adapter<ColorAdapter.ViewHolder> {
+        private final Context context;
+        private final String[] colors;
+        private final OnItemClickListener listener;
 
-        public ColorGridAdapter(Context context, String[] colors) {
-            this.context = context;
-            this.colors = colors;
+        public interface OnItemClickListener {
+            void onClick(int position);
         }
 
-        @Override public int getCount() { return colors.length; }
-        @Override public Object getItem(int i) { return colors[i]; }
-        @Override public long getItemId(int i) { return i; }
+        public ColorAdapter(Context context, String[] colors, OnItemClickListener listener) {
+            this.context = context;
+            this.colors = colors;
+            this.listener = listener;
+        }
+
+        @NonNull
+        @Override
+        public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            View colorView = new View(context);
+
+            // Quy đổi kích thước màu (Khoảng 35dp)
+            int size = (int) (35 * context.getResources().getDisplayMetrics().density);
+            int margin = (int) (8 * context.getResources().getDisplayMetrics().density);
+
+            RecyclerView.LayoutParams params = new RecyclerView.LayoutParams(size, size);
+            params.setMargins(margin, margin, margin, margin);
+            colorView.setLayoutParams(params);
+
+            return new ViewHolder(colorView);
+        }
 
         @Override
-        public View getView(int i, View view, ViewGroup viewGroup) {
-            View colorView;
-            if (view == null) {
-                colorView = new View(context);
-                colorView.setLayoutParams(new GridView.LayoutParams(100, 100));
-            } else {
-                colorView = view;
-            }
-
+        public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
             GradientDrawable shape = new GradientDrawable();
-            shape.setShape(GradientDrawable.OVAL);
+            shape.setShape(GradientDrawable.OVAL); // Vẫn dùng hình tròn cho tinh tế
             try {
-                shape.setColor(Color.parseColor(colors[i]));
+                shape.setColor(Color.parseColor(colors[position]));
             } catch (Exception e) {
-                shape.setColor(Color.GRAY); // Fallback nếu mã màu lỗi
+                shape.setColor(Color.GRAY);
             }
+            holder.colorView.setBackground(shape);
 
-            colorView.setBackground(shape);
-            return colorView;
+            holder.itemView.setOnClickListener(v -> listener.onClick(position));
+        }
+
+        @Override
+        public int getItemCount() {
+            return colors.length;
+        }
+
+        public static class ViewHolder extends RecyclerView.ViewHolder {
+            View colorView;
+
+            public ViewHolder(@NonNull View itemView) {
+                super(itemView);
+                colorView = itemView;
+            }
         }
     }
 }
