@@ -229,15 +229,9 @@
         <item name="android:textSize">25sp</item>
     </style>
 
-    <style name="popup_category_gridview">
+    <style name="popup_category_recycler">
         <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">130dp</item>
-        <item name="android:gravity">center</item>
-        <item name="android:horizontalSpacing">8dp</item>
-        <item name="android:numColumns">5</item>
-        <item name="android:scrollbars">none</item>
-        <item name="android:stretchMode">columnWidth</item>
-        <item name="android:verticalSpacing">8dp</item>
+        <item name="android:layout_height">200dp</item>
     </style>
 
     <style name="main_card_title">
@@ -322,7 +316,7 @@
         <item name="android:fontFamily">@font/outfit_bold</item>
         <item name="android:textSize">24sp</item>
         <item name="android:textColor">@color/brand_primary</item>
-        </style>
+    </style>
 
 
     <style name="float_btn_add" parent="Widget.Material3.FloatingActionButton.Primary">

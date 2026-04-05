@@ -81,7 +81,7 @@ public class CategoryManagement extends AppCompatActivity {
                 // Hiện Dialog xác nhận ở ĐÂY (Activity)
                 new AlertDialog.Builder(CategoryManagement.this)
                         .setTitle(getString(R.string.action_delete_category))
-                        .setMessage(getString(R.string.confirm_delete,category.name))
+                        .setMessage(getString(R.string.confirm_delete, category.name))
                         .setPositiveButton(getString(R.string.action_delete), (d, w) -> {
                             // GỌI VIEWMODEL THỰC HIỆN LỆNH XÓA
                             viewModel.deleteCategory(category.id);
@@ -127,11 +127,18 @@ public class CategoryManagement extends AppCompatActivity {
         });
 
         edtSearch.addTextChangedListener(new TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
                 filterCategories(s.toString());
             }
-            @Override public void afterTextChanged(Editable s) {}
+
+            @Override
+            public void afterTextChanged(Editable s) {
+            }
         });
     }
 
@@ -139,8 +146,10 @@ public class CategoryManagement extends AppCompatActivity {
         String pattern = query.toLowerCase().trim();
         filteredChi.clear();
         filteredThu.clear();
-        for (Category c : listChiOriginal) if (c.name.toLowerCase().contains(pattern)) filteredChi.add(c);
-        for (Category c : listThuOriginal) if (c.name.toLowerCase().contains(pattern)) filteredThu.add(c);
+        for (Category c : listChiOriginal)
+            if (c.name.toLowerCase().contains(pattern)) filteredChi.add(c);
+        for (Category c : listThuOriginal)
+            if (c.name.toLowerCase().contains(pattern)) filteredThu.add(c);
 
         adapterChi.notifyDataSetChanged();
         adapterThu.notifyDataSetChanged();
@@ -175,7 +184,8 @@ public class CategoryManagement extends AppCompatActivity {
                     ((com.google.android.material.behavior.HideBottomViewOnScrollBehavior<FloatingActionButton>) behavior).slideUp(fab);
                 }
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
     }
 
     private void setupSwipeToDelete(RecyclerView rv, CategoryAdapter adapter, List<Category> list) {

@@ -1,11 +1,11 @@
 package com.example.cashify.ui.category;
 
-
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -19,10 +19,12 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
 import com.example.cashify.database.Category;
 import com.example.cashify.viewmodel.CategoryViewModel;
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 
 import java.io.Serializable;
@@ -37,7 +39,7 @@ public class CategoryBottomSheet extends BottomSheetDialogFragment {
     private ImageView imgPreview;
     private TextView tvTitle, btnTabChi, btnTabThu;
     private Button btnSave;
-    private GridView gIcon, gColor;
+    private RecyclerView gIcon, gColor;
 
     // State variables (Bốc từ Activity sang)
     private String selectedIconName = "ic_other";
@@ -109,8 +111,8 @@ public class CategoryBottomSheet extends BottomSheetDialogFragment {
         btnTabChi = v.findViewById(R.id.btnTabChi);
         btnTabThu = v.findViewById(R.id.btnTabThu);
         btnSave = v.findViewById(R.id.btnSave);
-        gIcon = v.findViewById(R.id.gridIconPicker);
-        gColor = v.findViewById(R.id.gridColorPicker);
+        gIcon = v.findViewById(R.id.recyclerIconPicker);
+        gColor = v.findViewById(R.id.recyclerColorPicker);
     }
 
     private void setupEditMode() {
@@ -141,22 +143,49 @@ public class CategoryBottomSheet extends BottomSheetDialogFragment {
             });
         }
 
-        // Picker Icon
-        gIcon.setAdapter(new PopupAdapter.IconGridAdapter(requireContext(), allIconsRepo));
-        gIcon.setOnItemClickListener((p, v, pos, id) -> {
-            selectedIconName = getResources().getResourceEntryName(allIconsRepo[pos]);
+        // Setup RecyclerView cho Icon (5 cột)
+        gIcon.setLayoutManager(new androidx.recyclerview.widget.GridLayoutManager(requireContext(), 5));
+        gIcon.setAdapter(new PopupAdapter.IconAdapter(requireContext(), allIconsRepo, position -> {
+            selectedIconName = getResources().getResourceEntryName(allIconsRepo[position]);
             updatePopupUI();
-        });
+        }));
 
-        // Picker Color
-        gColor.setAdapter(new PopupAdapter.ColorGridAdapter(requireContext(), colorHexRepo));
-        gColor.setOnItemClickListener((p, v, pos, id) -> {
-            selectedColorCode = colorHexRepo[pos];
+        // Setup RecyclerView cho Màu (5 cột)
+        gColor.setLayoutManager(new androidx.recyclerview.widget.GridLayoutManager(requireContext(), 5));
+        gColor.setAdapter(new PopupAdapter.ColorAdapter(requireContext(), colorHexRepo, position -> {
+            selectedColorCode = colorHexRepo[position];
             updatePopupUI();
-        });
+        }));
 
-        // Nút Save
         btnSave.setOnClickListener(v -> handleSave());
+
+        // Bùa chuẩn cho RecyclerView
+        RecyclerView.OnItemTouchListener bulletproofScrollLock = new RecyclerView.OnItemTouchListener() {
+            @Override
+            public boolean onInterceptTouchEvent(@NonNull RecyclerView rv, @NonNull MotionEvent e) {
+                int action = e.getActionMasked();
+                if (action == MotionEvent.ACTION_DOWN) {
+                    // Ngón tay chạm vào -> Khóa BottomSheet
+                    setBottomSheetDraggable(false);
+                } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+                    // Ngón tay nhấc lên -> Nhả BottomSheet
+                    setBottomSheetDraggable(true);
+                }
+                return false; // Phải return false để RecyclerView còn cuộn được
+            }
+
+            @Override
+            public void onTouchEvent(@NonNull RecyclerView rv, @NonNull MotionEvent e) {
+            }
+
+            @Override
+            public void onRequestDisallowInterceptTouchEvent(boolean disallowIntercept) {
+            }
+        };
+
+        // Gắn bùa vào 2 danh sách
+        gIcon.addOnItemTouchListener(bulletproofScrollLock);
+        gColor.addOnItemTouchListener(bulletproofScrollLock);
     }
 
     private void updatePopupUI() {
@@ -216,5 +245,16 @@ public class CategoryBottomSheet extends BottomSheetDialogFragment {
         }
 
         dismiss(); // Xong việc thì cút (đóng sheet)
+    }
+
+    // Hàm này dùng để Bật/Tắt khả năng trượt của BottomSheet
+    private void setBottomSheetDraggable(boolean isDraggable) {
+        if (getDialog() != null) {
+            View bottomSheet = getDialog().findViewById(com.google.android.material.R.id.design_bottom_sheet);
+            if (bottomSheet != null) {
+                BottomSheetBehavior<View> behavior = BottomSheetBehavior.from(bottomSheet);
+                behavior.setDraggable(isDraggable);
+            }
+        }
     }
 }

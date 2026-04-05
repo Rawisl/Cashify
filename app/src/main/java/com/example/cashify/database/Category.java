@@ -8,8 +8,7 @@ import java.io.Serializable;
 @Entity(tableName = "categories")
 // implements Serializable để "đóng gói" toàn bộ Object này lại,
 // giúp truyền nguyên 1 cục dữ liệu qua Bundle (từ Activity sang BottomSheet) 1 cách tự động mà không bị crash.
-public class Category implements Serializable
-{
+public class Category implements Serializable {
     @PrimaryKey(autoGenerate = true)
     public int id;
     public String name;
