@@ -13,6 +13,7 @@ import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.NavigationUI;
 import androidx.appcompat.app.AppCompatDelegate;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.example.cashify.AddTransaction.AddTransactionActivity;
 import com.example.cashify.R;
@@ -23,6 +24,7 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.example.cashify.database.AppDatabase;
 import com.example.cashify.database.DatabaseSeeder;
 import com.example.cashify.database.FakeDataSeeder;
+import com.example.cashify.viewmodel.TransactionViewModel;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.List;
@@ -38,7 +40,7 @@ public class MainActivity extends AppCompatActivity {
 
         //Gọi thư viện Google trước super.onCreate cho splash screen
         SplashScreen splashScreen = SplashScreen.installSplashScreen(this);
-
+        TransactionViewModel viewModel = new ViewModelProvider(this).get(TransactionViewModel.class);
         super.onCreate(savedInstanceState);
         //reset và seed data - chạy ngầm
         new Thread(() -> {
@@ -62,8 +64,10 @@ public class MainActivity extends AppCompatActivity {
                     if (count == 0) {
                         FakeDataSeeder.seed(MainActivity.this);
                         android.util.Log.d("BACKEND_TEST", "Database trống. Đã nạp 50 giao dịch mẫu!");
+                        viewModel.fetchHistoryData();
                     } else {
                         android.util.Log.d("BACKEND_TEST", "Đã có dữ liệu cũ (" + count + " dòng). Không nạp thêm để tránh trùng!");
+                        viewModel.fetchHistoryData();
                     }
                 } else {
                     android.util.Log.e("BACKEND_TEST", "LỖI: Danh mục vẫn trống rỗng!");
