@@ -1,69 +1,59 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:paddingVertical="12dp"
-    android:paddingHorizontal="4dp">
-
-    <androidx.cardview.widget.CardView
-        android:id="@+id/cardIcon"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        app:cardBackgroundColor="#2A1E1E"
-        app:cardCornerRadius="24dp"
-        app:cardElevation="0dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent">
-
-        <ImageView
-            android:id="@+id/ivIcon"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_gravity="center"
-            android:src="@android:drawable/ic_menu_agenda"
-            app:tint="#FF5252" />
-    </androidx.cardview.widget.CardView>
-
-    <TextView
-        android:id="@+id/tvTitle"
-        android:layout_width="0dp"
+    android:layout_marginHorizontal="16dp"
+    android:layout_marginBottom="8dp"
+    app:cardBackgroundColor="@color/white"
+    app:cardElevation="1dp"
+    app:cardCornerRadius="16dp"
+    app:strokeWidth="0dp"
+    android:clickable="false"
+    android:focusable="false"
+    android:longClickable="false">
+    <LinearLayout
+        android:id="@+id/itemContainer"
+        style="@style/btn_component_layout"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="8dp"
-        tools:text="Grocery Store"
-        android:textColor="#FFFFFF"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        app:layout_constraintStart_toEndOf="@id/cardIcon"
-        app:layout_constraintEnd_toStartOf="@id/tvAmount"
-        app:layout_constraintTop_toTopOf="@id/cardIcon"
-        app:layout_constraintBottom_toTopOf="@id/tvDate"
-        app:layout_constraintVertical_chainStyle="packed" /> <TextView
-    android:id="@+id/tvDate"
-    android:layout_width="0dp"
-    android:layout_height="wrap_content"
-    tools:text="Today, 2:30 PM"
-    android:textColor="#A0A0A0"
-    android:textSize="12sp"
-    app:layout_constraintStart_toStartOf="@id/tvTitle"
-    app:layout_constraintEnd_toEndOf="@id/tvTitle"
-    app:layout_constraintTop_toBottomOf="@id/tvTitle"
-    app:layout_constraintBottom_toBottomOf="@id/cardIcon" />
+        android:longClickable="true"
+        android:clickable="true"
+        android:focusable="true"
+        android:padding="12dp">
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/ivCategoryIcon"
+            style="@style/btn_main_icon"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            app:shapeAppearanceOverlay="@style/circle" />
 
-    <TextView
-        android:id="@+id/tvAmount"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:fontFamily="@font/outfit_semibold"
-        android:textColor="#EF4444"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        tools:text="-$45.50" />
+        <LinearLayout
+            style="@style/btn_text_layout"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+            <TextView
+                android:id="@+id/tvTitle"
+                style="@style/btn_item_title"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/tvSubtitle"
+                style="@style/btn_item_description"
+                android:layout_marginTop="2dp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvAmount"
+            style="@style/item_budget_money_amount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

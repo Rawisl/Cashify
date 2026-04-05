@@ -3,69 +3,153 @@ package com.example.cashify.viewmodel;
 import android.app.Application;
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
-import com.example.cashify.database.CategorySum;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MutableLiveData;
+
+import com.example.cashify.database.AppDatabase;
+import com.example.cashify.database.Category;
+import com.example.cashify.database.CategoryDao;
 import com.example.cashify.database.Transaction;
-import com.example.cashify.repository.TransactionRepository;
+import com.example.cashify.database.TransactionDao;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class TransactionViewModel extends AndroidViewModel {
 
-    private final TransactionRepository repository;
+    private final TransactionDao transactionDao;
+    private final CategoryDao categoryDao;
+
+    // 1. Biến này dùng để ghi nhớ tab hiện tại (ALL, INCOME, hay EXPENSE)
+    private String currentFilter = "ALL";
+
+    private final MutableLiveData<List<HistoryItem>> _historyItems = new MutableLiveData<>();
+    public LiveData<List<HistoryItem>> getGroupedTransactions() { return _historyItems; }
 
     public TransactionViewModel(@NonNull Application application) {
         super(application);
-        repository = new TransactionRepository(application);
+        AppDatabase db = AppDatabase.getInstance(application);
+        transactionDao = db.transactionDao();
+        categoryDao = db.categoryDao();
     }
 
-    public void insert(Transaction transaction) {
-        repository.insert(transaction);
+    private String currentSearchQuery = ""; // Thêm biến này để lưu từ khóa tìm kiếm
+
+    // --- HÀM FETCH CHÍNH (Cập nhật để hỗ trợ Search) ---
+    public void fetchHistoryData(String filterType, String query) {
+        this.currentFilter = filterType;
+        this.currentSearchQuery = query; // Lưu lại từ khóa
+
+        new Thread(() -> {
+            List<Transaction> transactions;
+
+            // 1. Lấy dữ liệu theo Filter và Search Query
+            // Lưu ý: Nếu bạn chưa viết hàm search trong DAO, ta sẽ lọc bằng code Java ở dưới
+            switch (filterType) {
+                case "INCOME":
+                    transactions = transactionDao.getTransactionsByType(1);
+                    break;
+                case "EXPENSE":
+                    transactions = transactionDao.getTransactionsByType(0);
+                    break;
+                default:
+                    transactions = transactionDao.getAll();
+                    break;
+            }
+
+            List<HistoryItem> uiModels = new ArrayList<>();
+
+            if (transactions == null || transactions.isEmpty()) {
+                _historyItems.postValue(uiModels);
+                return;
+            }
+
+            // 2. LỌC THEO TỪ KHÓA (Search Logic)
+            List<Transaction> filteredList = new ArrayList<>();
+            for (Transaction t : transactions) {
+                // Nếu từ khóa trống HOẶC ghi chú chứa từ khóa (không phân biệt hoa thường)
+                if (query.isEmpty() || (t.note != null && t.note.toLowerCase().contains(query.toLowerCase()))) {
+                    filteredList.add(t);
+                }
+            }
+
+            // 3. Chuyển đổi sang UI Model (HistoryItem)
+            SimpleDateFormat sdf = new SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault());
+            String lastDate = "";
+
+            for (Transaction trans : filteredList) {
+                String currentDate = sdf.format(new Date(trans.timestamp));
+
+                if (!currentDate.equals(lastDate)) {
+                    uiModels.add(new HistoryItem(currentDate));
+                    lastDate = currentDate;
+                }
+
+                Category cat = categoryDao.getCategoryById(trans.categoryId);
+                String catName = (cat != null) ? cat.name : "Unknown";
+                String catIcon = (cat != null) ? cat.iconName : "ic_other";
+
+                uiModels.add(new HistoryItem(trans, catName, catIcon));
+            }
+
+            _historyItems.postValue(uiModels);
+        }).start();
     }
 
-    public void update(Transaction transaction) {
-        repository.update(transaction);
+    // --- HÀM OVERLOAD (Để không bị lỗi code cũ) ---
+    public void fetchHistoryData(String filterType) {
+        fetchHistoryData(filterType, ""); // Mặc định search trống
     }
 
-    public void delete(Transaction transaction) {
-        repository.delete(transaction);
+    public void fetchHistoryData() {
+        fetchHistoryData(currentFilter, currentSearchQuery);
     }
 
-    public void getAll(TransactionRepository.Callback<List<Transaction>> callback) {
-        repository.getAll(callback);
+    public void updateAndRefresh(Transaction transaction) {
+        new Thread(() -> {
+            transactionDao.update(transaction);
+            // Giờ đây gọi fetchHistoryData() sẽ không bị báo lỗi nữa
+            fetchHistoryData();
+        }).start();
     }
 
-    public void getByDateRange(long start, long end, TransactionRepository.Callback<List<Transaction>> callback) {
-        repository.getByDateRange(start, end, callback);
+    public void deleteAndRefresh(Transaction transaction) {
+        new Thread(() -> {
+            transactionDao.delete(transaction);
+            fetchHistoryData();
+        }).start();
     }
 
-    public void getTotalIncome(long start, long end, TransactionRepository.Callback<Long> callback) {
-        repository.getTotalIncome(start, end, callback);
-    }
+    // --- INNER CLASS ---
+    public static class HistoryItem {
+        public static final int TYPE_DATE_HEADER = 0;
+        public static final int TYPE_TRANSACTION = 1;
 
-    public void getTotalExpense(long start, long end, TransactionRepository.Callback<Long> callback) {
-        repository.getTotalExpense(start, end, callback);
-    }
+        private int type;
+        private String date;
+        private Transaction transaction;
+        private String categoryName;
+        private String categoryIcon;
 
-    public void getActualBalance(TransactionRepository.Callback<Long> callback) {
-        repository.getActualBalance(callback);
-    }
+        public HistoryItem(String date) {
+            this.type = TYPE_DATE_HEADER;
+            this.date = date;
+        }
 
-    public void getRecentTransactions(int limit, TransactionRepository.Callback<List<Transaction>> callback) {
-        repository.getRecentTransactions(limit, callback);
-    }
+        public HistoryItem(Transaction transaction, String categoryName, String categoryIcon) {
+            this.type = TYPE_TRANSACTION;
+            this.transaction = transaction;
+            this.categoryName = categoryName;
+            this.categoryIcon = categoryIcon;
+        }
 
-    public void getTop5ExpenseCategories(long start, long end, TransactionRepository.Callback<List<CategorySum>> callback) {
-        repository.getTop5ExpenseCategories(start, end, callback);
-    }
-
-    public void getOtherExpenseTotal(long start, long end, TransactionRepository.Callback<Long> callback) {
-        repository.getOtherExpenseTotal(start, end, callback);
-    }
-
-    public void getTotalExpenseByCategory(int categoryId, long start, long end, TransactionRepository.Callback<Long> callback) {
-        repository.getTotalExpenseByCategory(categoryId, start, end, callback);
-    }
-
-    public void countTransactionByDay(long startOfDay, long endOfDay, TransactionRepository.Callback<Integer> callback) {
-        repository.countTransactionByDay(startOfDay, endOfDay, callback);
+        public int getType() { return type; }
+        public String getDate() { return date; }
+        public Transaction getTransaction() { return transaction; }
+        public String getCategoryName() { return categoryName; }
+        public String getCategoryIcon() { return categoryIcon; }
     }
 }

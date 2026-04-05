@@ -72,7 +72,13 @@ public interface TransactionDao {
     @Query("SELECT MIN(timestamp) FROM transactions")
     long getEarliestTransactionDate();
 
+    // Lấy giao dịch theo loại (0: Chi, 1: Thu), sắp xếp mới nhất lên đầu
+    @Query("SELECT * FROM transactions WHERE type = :type ORDER BY timestamp DESC")
+    List<Transaction> getTransactionsByType(int type);
 
+    // (Tùy chọn) Nếu sau này bạn muốn lọc Income/Expense trong một khoảng thời gian cụ thể
+    @Query("SELECT * FROM transactions WHERE type = :type AND timestamp BETWEEN :start AND :end ORDER BY timestamp DESC")
+    List<Transaction> getTransactionsByTypeAndDate(int type, long start, long end);
 
 
     @Query("DELETE FROM transactions")
