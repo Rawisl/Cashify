@@ -218,7 +218,7 @@ public class HomeFragment extends Fragment {
             TransactionDao dao = db.transactionDao();
 
             // Lấy tổng số dư (Actual Balance lấy trọn đời, không phụ thuộc tháng) --mốt cái này chỉnh theo tháng sau
-            long actualBalance = dao.getActualBalance();
+            long actualBalance = dao.getMonthlyBalance(startOfMonth, endOfMonth);;
             // Lấy tổng thu & chi (Chỉ lấy trong tháng hiện tại)
             long totalIncome = dao.getTotalIncome(startOfMonth, endOfMonth);
             long totalExpense = dao.getTotalExpense(startOfMonth, endOfMonth);

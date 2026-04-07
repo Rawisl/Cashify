@@ -17,5 +17,6 @@ public class Category implements Serializable {
     public String colorCode; // Mã màu Hex (VD: #FF5733)
     public int isDefault; //1=mặc định (ko cho xóa), 0=user tự tạo (xóa cx dc)
     public int isDeleted;//1=đã xóa mêm, 0=bình thường
-
+    public Category() {
+    }
 }

@@ -1,11 +1,13 @@
 package com.example.cashify.database;
 
+
 import androidx.room.Dao;
 import androidx.room.Delete;
 import androidx.room.Insert;
 import androidx.room.Query;
 import androidx.room.Update;
 
+import com.example.cashify.database.Transaction;
 import java.util.List;
 
 @Dao
@@ -89,4 +91,8 @@ public interface TransactionDao {
     // Lấy toàn bộ mốc thời gian của tất cả giao dịch (Dùng để gom nhóm tháng)
     @Query("SELECT timestamp FROM transactions ORDER BY timestamp DESC")
     List<Long> getAllTimestamps();
+
+    @androidx.room.Transaction // Bắt buộc phải có để Room chạy liên kết dữ liệu
+    @Query("SELECT * FROM transactions ORDER BY timestamp DESC")
+    List<TransactionWithCategory> getAllTransactionsWithCategory();
 }
