@@ -5,6 +5,7 @@ import androidx.room.Insert;
 import androidx.room.Query;
 import androidx.room.Update;
 import androidx.room.Delete;
+import androidx.room.Transaction;
 
 import java.util.List;
 
@@ -76,6 +77,8 @@ public interface BudgetDao {
     @Query ("SELECT * FROM budgets WHERE periodType = :periodType AND startDate = :startDate LIMIT 1")
     Budget getBudgetByPeriod(String periodType, long startDate);
 
-
+    @Transaction
+    @Query("SELECT * FROM budgets WHERE periodType = :periodType")
+    List<BudgetWithCategory> getAllBudgetsWithCategory(String periodType);
 
 }

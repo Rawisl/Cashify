@@ -12,6 +12,7 @@ import androidx.room.PrimaryKey;
                 onDelete = ForeignKey.CASCADE),// Xóa danh mục thì xóa luôn giao dịch liên quan
                 indices = {@Index("categoryId")}
 )
+
 public class Transaction {
     @PrimaryKey(autoGenerate = true)
     public int id;
@@ -21,5 +22,9 @@ public class Transaction {
     public long timestamp; // Lưu ngày tháng bằng số Long để tính toán/lọc cho nhanh
 
     public int type; // 0=chi, 1=thu (lưu lại để truy vấn nhanh, khỏi join)
+    public Transaction() {
+        // Để trống cũng được, nhưng phải có nó!
+    }
+
 }
 

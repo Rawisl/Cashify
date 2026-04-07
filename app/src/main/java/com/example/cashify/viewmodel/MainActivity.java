@@ -49,24 +49,31 @@ public class MainActivity extends AppCompatActivity {
                 CategoryDao categoryDao = db.categoryDao();
 
                 // nếu muốn reset database, bật 2 dòng này chạy 1 lần
-//                 db.transactionDao().deleteAllTransactions();
-//                 categoryDao.deleteAllCategories();
+                // db.transactionDao().deleteAllTransactions();
+                // categoryDao.deleteAllCategories();
 
-                // Nạp Category - Hàm này chỉ nạp nếu máy trống trơn
+                // Nạp Category trước - chờ xong mới đi tiếp
                 DatabaseSeeder.seedIfEmpty(MainActivity.this);
 
-                // Lấy danh sách để kiểm tra
+                // Lấy danh sách category để kiểm tra + lấy ID thực tế
                 List<Category> checkList = categoryDao.getAllActive();
 
+                // Log ID thực tế để debug
+                if (checkList != null) {
+                    for (Category c : checkList) {
+                        android.util.Log.d("BACKEND_TEST", "Category ID: " + c.id + " | Name: " + c.name + " | Type: " + c.type);
+                    }
+                }
+
                 if (checkList != null && !checkList.isEmpty()) {
-                    // Kiểm tra xem đã có Giao dịch chưa, tránh nạp trùng 50 dòng cũ
                     int count = db.transactionDao().countTransactions();
                     if (count == 0) {
-                        FakeDataSeeder.seed(MainActivity.this);
-                        android.util.Log.d("BACKEND_TEST", "Database trống. Đã nạp 50 giao dịch mẫu!");
+                        // Truyền checkList vào FakeDataSeeder để dùng ID thực tế
+                        FakeDataSeeder.seed(MainActivity.this, checkList);
+                        android.util.Log.d("BACKEND_TEST", "Đã nạp giao dịch mẫu!");
                         viewModel.fetchHistoryData();
                     } else {
-                        android.util.Log.d("BACKEND_TEST", "Đã có dữ liệu cũ (" + count + " dòng). Không nạp thêm để tránh trùng!");
+                        android.util.Log.d("BACKEND_TEST", "Đã có " + count + " giao dịch. Bỏ qua seed!");
                         viewModel.fetchHistoryData();
                     }
                 } else {
