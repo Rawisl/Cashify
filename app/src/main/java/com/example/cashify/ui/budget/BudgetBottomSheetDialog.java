@@ -13,6 +13,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+import androidx.recyclerview.widget.RecyclerView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -49,10 +50,8 @@ public class BudgetBottomSheetDialog extends BottomSheetDialogFragment {
     private TextInputEditText edtBudgetAmount;
     private TextInputLayout layoutInputAmount;
     private LinearLayout layoutCategorySelector, layoutMasterInfo;
-    private MaterialAutoCompleteTextView actvCategoryDropdown;
     private Button btnSaveBudget, btnDeleteBudget;
     private ImageView ivIcon;
-
     private int selectedCategoryIdFromDropdown = -1;
     private List<Category> expenseCategories;
 
@@ -97,7 +96,6 @@ public class BudgetBottomSheetDialog extends BottomSheetDialogFragment {
         layoutInputAmount = view.findViewById(R.id.layoutInputAmount);
 
         layoutCategorySelector = view.findViewById(R.id.layoutCategorySelector);
-        actvCategoryDropdown = view.findViewById(R.id.actvCategoryDropdown);
         layoutMasterInfo = view.findViewById(R.id.layoutMasterInfo);
 
         btnSaveBudget = view.findViewById(R.id.btnSaveBudget);
@@ -205,17 +203,88 @@ public class BudgetBottomSheetDialog extends BottomSheetDialogFragment {
 
             if (getActivity() != null) {
                 getActivity().runOnUiThread(() -> {
-                    // Sử dụng CategoryAdapter để hiển thị danh sách đã lọc
-                    CategoryAdapter adapter = new CategoryAdapter(requireContext(), availableCategories);
-                    actvCategoryDropdown.setAdapter(adapter);
+                    // Ánh xạ lại RecyclerView mới tạo bên giao diện
+                    RecyclerView rvCategoryPicker = getDialog().findViewById(R.id.rvCategoryPicker);
 
-                    actvCategoryDropdown.setOnItemClickListener((parent, view, position, id) -> {
-                        Category selected = (Category) parent.getItemAtPosition(position);
-                        selectedCategoryIdFromDropdown = selected.id;
-                        actvCategoryDropdown.setText(selected.name, false); // Hiển thị tên lên ô nhập
-                    });
+                    InnerCategoryGridAdapter adapter = new InnerCategoryGridAdapter(availableCategories);
+                    rvCategoryPicker.setAdapter(adapter);
                 });
             }
         }).start();
+    }
+
+    private class InnerCategoryGridAdapter extends RecyclerView.Adapter<InnerCategoryGridAdapter.ViewHolder> {
+        private final List<Category> categories;
+        private int selectedPos = -1; // Lưu vị trí đang được bấm chọn
+
+        public InnerCategoryGridAdapter(List<Category> categories) {
+            this.categories = categories;
+        }
+
+        @NonNull
+        @Override
+        public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_category_picker, parent, false);
+            return new ViewHolder(view);
+        }
+
+        @Override
+        public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+            Category cat = categories.get(position);
+            holder.tvCatName.setText(cat.name);
+
+            // Load Icon
+            String iconName = (cat.iconName != null && !cat.iconName.isEmpty()) ? cat.iconName : "ic_food";
+            int resId = holder.itemView.getContext().getResources().getIdentifier(iconName, "drawable", holder.itemView.getContext().getPackageName());
+            holder.imgCatIcon.setImageResource(resId != 0 ? resId : R.drawable.ic_food);
+
+            // Load Color
+            try {
+                String colorStr = (cat.colorCode != null && !cat.colorCode.isEmpty()) ? cat.colorCode : "#4C6FFF";
+                int color = Color.parseColor(colorStr);
+                holder.imgCatIcon.setImageTintList(ColorStateList.valueOf(color));
+            } catch (Exception e) {
+                holder.imgCatIcon.setImageTintList(ColorStateList.valueOf(Color.GRAY));
+            }
+
+            if (position == selectedPos) {
+                // Khi được chọn: Dùng file bg_circle_button (có viền đen)
+                holder.imgCatIcon.setBackgroundResource(R.drawable.bg_circle_button);
+            } else {
+                // Khi không được chọn: Dùng file bg_circle_icon (nền xám bình thường)
+                holder.imgCatIcon.setBackgroundResource(R.drawable.bg_circle_icon);
+            }
+
+            // Xóa hiệu ứng làm mờ để các icon luôn rõ nét 100% giống hình mẫu
+            holder.itemView.setAlpha(1.0f);
+            // =========================================================================
+
+            // Sự kiện bấm vào
+            holder.itemView.setOnClickListener(v -> {
+                int oldPos = selectedPos;
+                selectedPos = holder.getAdapterPosition();
+                selectedCategoryIdFromDropdown = cat.id; // Gán ID để lưu Database
+
+                // Cập nhật lại UI để hiện viền đen cho cục mới
+                notifyItemChanged(oldPos);
+                notifyItemChanged(selectedPos);
+            });
+        }
+
+        @Override
+        public int getItemCount() {
+            return categories.size();
+        }
+
+        class ViewHolder extends RecyclerView.ViewHolder {
+            ImageView imgCatIcon;
+            TextView tvCatName;
+
+            public ViewHolder(@NonNull View itemView) {
+                super(itemView);
+                imgCatIcon = itemView.findViewById(R.id.imgCatIcon);
+                tvCatName = itemView.findViewById(R.id.tvCatName);
+            }
+        }
     }
 }
