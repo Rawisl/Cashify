@@ -17,9 +17,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.cashify.R;
-import com.example.cashify.database.AppDatabase;
 import com.example.cashify.database.CategorySum;
-import com.example.cashify.database.TransactionDao;
 import com.example.cashify.database.TransactionWithCategory;
 import com.example.cashify.utils.CurrencyFormatter;
 import com.example.cashify.viewmodel.HomeViewModel;
@@ -33,13 +31,9 @@ import com.github.mikephil.charting.data.PieEntry;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 public class HomeFragment extends Fragment {
 
-    // Khai báo Executor để quản lý luồng truy vấn DB
-    private final ExecutorService databaseExecutor = Executors.newSingleThreadExecutor();
     private PieChart pieChart;
     private TextView tvDate;
     // Khai báo các TextView cho thẻ Tổng quan
@@ -60,6 +54,8 @@ public class HomeFragment extends Fragment {
             Color.parseColor("#4CAF50")  // Green (Màu 5)
     };
     private final int COLOR_OTHERS = Color.parseColor("#BDBDBD"); // Grey (Mục Khác)
+
+    private HomeViewModel viewModel;
 
     public HomeFragment() {}
 
@@ -112,7 +108,7 @@ public class HomeFragment extends Fragment {
         }
 
 // Khởi tạo lại bằng HomeViewModel
-        HomeViewModel viewModel = new ViewModelProvider(this).get(HomeViewModel.class);
+        viewModel = new ViewModelProvider(this).get(HomeViewModel.class);
 
 // Dùng câu query lấy sẵn 5 giao dịch + Category từ Room (KHÔNG CẦN VÒNG LẶP NẶNG MÁY)
         viewModel.getRecentTransactionsWithCategory().observe(getViewLifecycleOwner(), transWithCatList -> {
@@ -129,6 +125,71 @@ public class HomeFragment extends Fragment {
                 adapter.updateData(recentItems);
                 rvRecentTransactions.setVisibility(View.VISIBLE);
             }
+        });
+
+        viewModel.getDashboardData().observe(getViewLifecycleOwner(), state -> {
+            // Cập nhật text số dư
+            tvTotalBalance.setText(CurrencyFormatter.formatFullVND(state.actualBalance));
+            tvIncome.setText(CurrencyFormatter.formatFullVND(state.totalIncome));
+            tvExpense.setText(CurrencyFormatter.formatFullVND(state.totalExpense));
+
+            // Vẽ biểu đồ
+            ArrayList<PieEntry> entries = new ArrayList<>();
+            ArrayList<Integer> colors = new ArrayList<>();
+
+            for (int i = 0; i < state.top5Categories.size(); i++) {
+                CategorySum cat = state.top5Categories.get(i);
+                if (cat.total > 0) {
+                    entries.add(new PieEntry((float) cat.total, cat.categoryName));
+                    colors.add(CHART_COLORS[i % CHART_COLORS.length]);
+                }
+            }
+
+            if (state.othersTotal > 0) {
+                entries.add(new PieEntry((float) state.othersTotal, "Khác"));
+                colors.add(COLOR_OTHERS);
+            }
+
+            if (entries.isEmpty()) {
+                pieChart.clear();
+                pieChart.setCenterText("No Expenses");
+            } else {
+                PieDataSet dataSet = new PieDataSet(entries, "");
+                dataSet.setColors(colors);
+                dataSet.setSliceSpace(3f);
+                dataSet.setSelectionShift(5f);
+
+                PieData data = new PieData(dataSet);
+                data.setDrawValues(false);
+
+                pieChart.setData(data);
+                pieChart.setCenterText("Chi tiêu\nTháng " + (currentCalendar.get(Calendar.MONTH) + 1));
+                pieChart.animateY(700);
+            }
+            pieChart.invalidate();
+        });
+
+        viewModel.getAvailableMonths().observe(getViewLifecycleOwner(), monthMap -> {
+            if (monthMap == null || monthMap.isEmpty()) {
+                Toast.makeText(getContext(), "Chưa có dữ liệu giao dịch nào!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            List<String> displayList = new ArrayList<>(monthMap.keySet());
+            String[] displayArray = displayList.toArray(new String[0]);
+
+            new android.app.AlertDialog.Builder(requireContext())
+                    .setTitle("Chọn tháng")
+                    .setItems(displayArray, (dialog, which) -> {
+                        String selectedLabel = displayArray[which];
+                        Calendar selectedCal = monthMap.get(selectedLabel);
+
+                        if (selectedCal != null) {
+                            currentCalendar.setTimeInMillis(selectedCal.getTimeInMillis());
+                            updateMonthTextAndLoadData();
+                        }
+                    })
+                    .show();
         });
 
         tvSeeAll.setOnClickListener(v -> {
@@ -162,67 +223,7 @@ public class HomeFragment extends Fragment {
     }
 
     private void showMonthSelectorDialog() {
-        databaseExecutor.execute(() -> {
-            AppDatabase db = AppDatabase.getInstance(requireContext());
-
-            // Kéo toàn bộ mốc thời gian từ DB về (nhờ câu Query Khang vừa thêm bên DAO)
-            List<Long> timestamps = db.transactionDao().getAllTimestamps();
-
-            if (timestamps == null || timestamps.isEmpty()) {
-                if (getActivity() != null) {
-                    getActivity().runOnUiThread(() ->
-                            Toast.makeText(getContext(), "Chưa có dữ liệu giao dịch nào!", Toast.LENGTH_SHORT).show()
-                    );
-                }
-                return; // Dừng lại, không mở bảng chọn nếu DB trống
-            }
-
-            // Gom nhóm các tháng (loại bỏ trùng lặp) và giữ nguyên thứ tự Mới -> Cũ
-            java.util.LinkedHashMap<String, Calendar> monthMap = new java.util.LinkedHashMap<>();
-
-            for (Long ts : timestamps) {
-                Calendar cal = Calendar.getInstance();
-                cal.setTimeInMillis(ts);
-                int m = cal.get(Calendar.MONTH) + 1;
-                int y = cal.get(Calendar.YEAR);
-
-                // Format lại để có chữ giống strings.xml
-                String label = getString(R.string.dashboard_month_format, m, y);
-
-                if (!monthMap.containsKey(label)) {
-                    // Reset ngày giờ về đầu tháng để lát nữa lọc DB cho chuẩn
-                    cal.set(Calendar.DAY_OF_MONTH, 1);
-                    cal.set(Calendar.HOUR_OF_DAY, 0);
-                    cal.set(Calendar.MINUTE, 0);
-                    cal.set(Calendar.SECOND, 0);
-                    monthMap.put(label, cal);
-                }
-            }
-
-            //Ép danh sách Map thành Mảng để ném vào AlertDialog
-            List<String> displayList = new ArrayList<>(monthMap.keySet());
-            String[] displayArray = displayList.toArray(new String[0]);
-
-            //Mở Popup hiển thị cho người dùng chọn
-            if (getActivity() != null) {
-                getActivity().runOnUiThread(() -> {
-                    new android.app.AlertDialog.Builder(requireContext())
-                            .setTitle("Chọn tháng")
-                            .setItems(displayArray, (dialog, which) -> {
-                                // Khi người dùng bấm chọn 1 dòng
-                                String selectedLabel = displayArray[which];
-                                Calendar selectedCal = monthMap.get(selectedLabel);
-
-                                if (selectedCal != null) {
-                                    // Cập nhật lại mốc thời gian và load lại toàn bộ màn hình
-                                    currentCalendar.setTimeInMillis(selectedCal.getTimeInMillis());
-                                    updateMonthTextAndLoadData();
-                                }
-                            })
-                            .show();
-                });
-            }
-        });
+        viewModel.loadAvailableMonths(getString(R.string.dashboard_month_format));
     }
 
     private void setupDonutChart() {
@@ -260,79 +261,17 @@ public class HomeFragment extends Fragment {
     }
 
     private void loadDashboardData() {
-        databaseExecutor.execute(() -> {
-            // Tính mốc thời gian: Đầu tháng -> Cuối tháng
-            Calendar cal = (Calendar) currentCalendar.clone();
-            cal.set(Calendar.DAY_OF_MONTH, 1);
-            cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0); cal.set(Calendar.SECOND, 0);
-            long startOfMonth = cal.getTimeInMillis();
+        Calendar cal = (Calendar) currentCalendar.clone();
+        cal.set(Calendar.DAY_OF_MONTH, 1);
+        cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0); cal.set(Calendar.SECOND, 0);
+        long startOfMonth = cal.getTimeInMillis();
 
-            cal.set(Calendar.DAY_OF_MONTH, cal.getActualMaximum(Calendar.DAY_OF_MONTH));
-            cal.set(Calendar.HOUR_OF_DAY, 23); cal.set(Calendar.MINUTE, 59); cal.set(Calendar.SECOND, 59);
-            long endOfMonth = cal.getTimeInMillis();
+        cal.set(Calendar.DAY_OF_MONTH, cal.getActualMaximum(Calendar.DAY_OF_MONTH));
+        cal.set(Calendar.HOUR_OF_DAY, 23); cal.set(Calendar.MINUTE, 59); cal.set(Calendar.SECOND, 59);
+        long endOfMonth = cal.getTimeInMillis();
 
-            // Gọi Database
-            AppDatabase db = AppDatabase.getInstance(requireContext());
-            TransactionDao dao = db.transactionDao();
-
-            // Lấy tổng số dư (Actual Balance lấy trọn đời, không phụ thuộc tháng) --mốt cái này chỉnh theo tháng sau
-            long actualBalance = dao.getMonthlyBalance(startOfMonth, endOfMonth);;
-            // Lấy tổng thu & chi (Chỉ lấy trong tháng hiện tại)
-            long totalIncome = dao.getTotalIncome(startOfMonth, endOfMonth);
-            long totalExpense = dao.getTotalExpense(startOfMonth, endOfMonth);
-
-            // Lấy Top 5 và Lấy tổng "Khác" bằng 2 câu Query của Khang
-            List<CategorySum> top5Categories = dao.getTop5ExpenseCategories(startOfMonth, endOfMonth);
-            long othersTotal = dao.getOtherExpenseTotal(startOfMonth, endOfMonth);
-
-            ArrayList<PieEntry> entries = new ArrayList<>();
-            ArrayList<Integer> colors = new ArrayList<>();
-
-            // Đổ Top 5 vào biểu đồ
-            for (int i = 0; i < top5Categories.size(); i++) {
-                CategorySum cat = top5Categories.get(i);
-                if (cat.total > 0) {
-                    // Dùng class CurrencyFormatter của Khang hoặc bỏ qua nếu biểu đồ tự format số
-                    entries.add(new PieEntry((float) cat.total, cat.categoryName));
-                    colors.add(CHART_COLORS[i % CHART_COLORS.length]);
-                }
-            }
-
-            // Nếu phần "Khác" > 0 thì thêm 1 cục xám vào cuối
-            if (othersTotal > 0) {
-                entries.add(new PieEntry((float) othersTotal, "Khác"));
-                colors.add(COLOR_OTHERS);
-            }
-
-            // Đẩy lên UI
-            if (getActivity() != null) {
-                getActivity().runOnUiThread(() -> {
-                    // --- Cập nhật Thẻ Số Dư ---
-                    tvTotalBalance.setText(CurrencyFormatter.formatFullVND(actualBalance));
-                    tvIncome.setText(CurrencyFormatter.formatFullVND(totalIncome));
-                    tvExpense.setText(CurrencyFormatter.formatFullVND(totalExpense));
-
-                    //sửa logic chỗ này để không bị kẹt UI khi xóa hết giao dịch
-                    if (entries.isEmpty()) {
-                        pieChart.clear();
-                        pieChart.setCenterText("No Expenses");
-                    } else {
-                        PieDataSet dataSet = new PieDataSet(entries, "");
-                        dataSet.setColors(colors);
-                        dataSet.setSliceSpace(3f);
-                        dataSet.setSelectionShift(5f);
-
-                        PieData data = new PieData(dataSet);
-                        data.setDrawValues(false);
-
-                        pieChart.setData(data);
-                        pieChart.setCenterText("Chi tiêu\nTháng " + (currentCalendar.get(Calendar.MONTH) + 1));
-                        pieChart.animateY(700);
-                    }
-                    pieChart.invalidate();
-                });
-            }
-        });
+        // Kêu ViewModel lấy dữ liệu
+        viewModel.loadDashboardData(startOfMonth, endOfMonth);
     }
 
     @Override
