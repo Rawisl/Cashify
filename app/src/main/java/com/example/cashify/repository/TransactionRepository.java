@@ -3,10 +3,14 @@ package com.example.cashify.repository;
 import android.content.Context;
 import android.telecom.Call;
 
+import androidx.lifecycle.LiveData;
+
 import com.example.cashify.database.AppDatabase;
 import com.example.cashify.database.CategorySum;
 import com.example.cashify.database.Transaction;
 import com.example.cashify.database.TransactionDao;
+import com.example.cashify.database.TransactionWithCategory;
+
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -46,8 +50,9 @@ public class TransactionRepository {
     public void getMonthlyBalance(long startDate, long endDate, Callback<Long> callback) {
         executor.execute(() -> callback.onResult(transactionDao.getMonthlyBalance(startDate, endDate)));
     }
-    public void getRecentTransactions(int limit, Callback<List<Transaction>> callback){
-        executor.execute(()-> callback.onResult(transactionDao.getRecentTransaction(limit)));
+
+    public LiveData<List<TransactionWithCategory>> getRecentTransactionsWithCategory() {
+        return transactionDao.getRecentTransactionsWithCategory();
     }
     public void getTop5ExpenseCategories(long start, long end, Callback<List<CategorySum>> callback){
         executor.execute(()-> callback.onResult(transactionDao.getTop5ExpenseCategories(start, end)));
@@ -66,7 +71,6 @@ public class TransactionRepository {
     public interface Callback<T>{
         void onResult(T result);
     }
-
 
 
 }
