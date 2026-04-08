@@ -1,6 +1,7 @@
 package com.example.cashify.database;
 
 
+import androidx.lifecycle.LiveData;
 import androidx.room.Dao;
 import androidx.room.Delete;
 import androidx.room.Insert;
@@ -95,4 +96,8 @@ public interface TransactionDao {
     @androidx.room.Transaction // Bắt buộc phải có để Room chạy liên kết dữ liệu
     @Query("SELECT * FROM transactions ORDER BY timestamp DESC")
     List<TransactionWithCategory> getAllTransactionsWithCategory();
+
+    @androidx.room.Transaction
+    @Query("SELECT * FROM transactions ORDER BY timestamp DESC LIMIT 5")
+    LiveData<List<TransactionWithCategory>> getRecentTransactionsWithCategory();
 }

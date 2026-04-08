@@ -6,6 +6,9 @@ import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -17,7 +20,10 @@ import com.example.cashify.R;
 import com.example.cashify.database.AppDatabase;
 import com.example.cashify.database.CategorySum;
 import com.example.cashify.database.TransactionDao;
+import com.example.cashify.database.TransactionWithCategory;
 import com.example.cashify.utils.CurrencyFormatter;
+import com.example.cashify.viewmodel.HomeViewModel;
+import com.example.cashify.viewmodel.TransactionViewModel;
 import com.github.mikephil.charting.charts.PieChart;
 import com.github.mikephil.charting.components.Legend;
 import com.github.mikephil.charting.data.PieData;
@@ -34,12 +40,16 @@ public class HomeFragment extends Fragment {
 
     // Khai báo Executor để quản lý luồng truy vấn DB
     private final ExecutorService databaseExecutor = Executors.newSingleThreadExecutor();
-
     private PieChart pieChart;
     private TextView tvDate;
     // Khai báo các TextView cho thẻ Tổng quan
     private TextView tvTotalBalance, tvIncome, tvExpense;
     private Calendar currentCalendar;
+
+    private TextView tvSeeAll;
+
+    private RecyclerView rvRecentTransactions;
+    private RecentTransactionAdapter adapter;
 
     // Bộ màu chuẩn cho Rule of 5 (5 màu nổi + 1 màu xám)
     private final int[] CHART_COLORS = {
@@ -63,6 +73,7 @@ public class HomeFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        tvSeeAll = view.findViewById(R.id.tvSeeAll);
         pieChart = view.findViewById(R.id.pieChart);
         tvDate = view.findViewById(R.id.tvDate);
 
@@ -72,6 +83,21 @@ public class HomeFragment extends Fragment {
         tvTotalBalance = view.findViewById(R.id.total_money_amount);
         tvIncome = view.findViewById(R.id.income_money_amount);
         tvExpense = view.findViewById(R.id.expenses_money_amount);
+
+        rvRecentTransactions = view.findViewById(R.id.rvRecentTransactions);
+
+        // Cấu hình cuộn (Cuộn dọc, nếu muốn cuộn ngang thì đổi VERTICAL thành HORIZONTAL)
+        rvRecentTransactions.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.VERTICAL, false));
+
+        // Khởi tạo Adapter mới
+        adapter = new RecentTransactionAdapter();
+        rvRecentTransactions.setAdapter(adapter);
+
+        // Setup Click cho từng dòng (Mới học được từ bên History)
+        adapter.setOnItemClickListener(transaction -> {
+            // Tạm thời hiện Toast, sau này bác có thể mở Dialog Edit hoặc xem chi tiết
+            Toast.makeText(getContext(), "Giao dịch: " + transaction.amount, Toast.LENGTH_SHORT).show();
+        });
 
         //Setup giao diện chuẩn Donut Chart
         setupDonutChart();
@@ -85,6 +111,37 @@ public class HomeFragment extends Fragment {
             cardDateSelector.setOnClickListener(showDialogListener);
         }
 
+// Khởi tạo lại bằng HomeViewModel
+        HomeViewModel viewModel = new ViewModelProvider(this).get(HomeViewModel.class);
+
+// Dùng câu query lấy sẵn 5 giao dịch + Category từ Room (KHÔNG CẦN VÒNG LẶP NẶNG MÁY)
+        viewModel.getRecentTransactionsWithCategory().observe(getViewLifecycleOwner(), transWithCatList -> {
+            if (transWithCatList != null && !transWithCatList.isEmpty()) {
+                List<TransactionViewModel.HistoryItem> recentItems = new ArrayList<>();
+
+                for (TransactionWithCategory item : transWithCatList) {
+                    String catName = (item.category != null) ? item.category.name : "Chưa phân loại";
+                    String catIcon = (item.category != null) ? item.category.iconName : "ic_food";
+
+                    recentItems.add(new TransactionViewModel.HistoryItem(item.transaction, catName, catIcon));
+                }
+
+                adapter.updateData(recentItems);
+                rvRecentTransactions.setVisibility(View.VISIBLE);
+            }
+        });
+
+        tvSeeAll.setOnClickListener(v -> {
+            // Tìm cái thanh Bottom Navigation nằm ngoài MainActivity
+            com.google.android.material.bottomnavigation.BottomNavigationView bottomNav =
+                    requireActivity().findViewById(R.id.bottom_navigation);
+
+            if (bottomNav != null) {
+                // Lệnh này tương đương với việc người dùng lấy tay bấm vào tab Transaction
+                bottomNav.setSelectedItemId(R.id.nav_transaction);
+            }
+        });
+
 //        //Bắt sự kiện click chọn tháng (Tạm thời để Toast, Khang ráp DatePicker vào sau nhé)
 //        tvDate.setOnClickListener(v -> {
 //            Toast.makeText(getContext(), "Tính năng chọn tháng sẽ mở BottomSheet!", Toast.LENGTH_SHORT).show();
@@ -92,6 +149,7 @@ public class HomeFragment extends Fragment {
 //            // currentCalendar.add(Calendar.MONTH, -1);
 //            // updateMonthTextAndLoadData();
 //        });
+
     }
 
     // Viết đè hàm này để fragment tự kéo dữ liệu từ database
