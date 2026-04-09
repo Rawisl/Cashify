@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:baselineAligned="false"
+    android:gravity="center_horizontal"
+    android:orientation="horizontal"
+    android:paddingHorizontal="6dp"
+    android:paddingVertical="6dp">
+
+    <View
+        android:id="@+id/color_circle"
+        android:layout_width="15dp"
+        android:layout_height="15dp"
+        android:layout_gravity="center_vertical"
+        android:layout_marginEnd="15dp"
+        android:background="@drawable/bg_circle_icon" />
+
+    <TextView
+        android:id="@+id/tv_category_legend_name"
+        style="@style/item_budget_title"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="Legend Name"
+        android:textSize="13sp" />
+
+    <TextView
+        android:id="@+id/tv_legend_money_amount"
+        style="@style/item_budget_money_amount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="0 VND" />
+</LinearLayout>

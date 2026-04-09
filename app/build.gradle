@@ -44,6 +44,7 @@ dependencies {
     //Sử dụng SplashScreen chính chủ của Google
     implementation("androidx.core:core-splashscreen:1.0.1")
     implementation libs.gridlayout
+    implementation libs.recyclerview
     testImplementation libs.junit
     androidTestImplementation libs.ext.junit
     androidTestImplementation libs.espresso.core

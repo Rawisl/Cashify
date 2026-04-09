@@ -53,7 +53,6 @@
 
 
     <string name="home_main_card_title_total">Total Balance</string>
-
     <string name="settings_section_account">Account</string>
     <string name="settings_section_preferences">Preferences</string>
     <string name="settings_section_other">Other</string>
@@ -81,6 +80,7 @@
 
     <string name="dashboard_title">DashBoard</string>
     <string name="dashboard_recent_transactions">Recent Transactions</string>
+    <string name="dashboard_spending_by_category">Spending by Category</string>
 
     <string name="dashboard_month_format">Tháng %1$d/%2$d</string>
     <string name="dashboard_month_default">Tháng 3/2026</string>
@@ -88,6 +88,7 @@
 
     <string name="category_title_manage">Category management</string>
     <string name="category_title_add">Add category</string>
+    <string name="category_name_others">Others</string>
 
     <string name="category_input_name">Name</string>
     <string name="category_choose_icon">Icon</string>
@@ -103,6 +104,9 @@
     <string name="trans_input_date">Today, 24/10/2023</string>
     <string name="trans_choose_category">Choose category</string>
     <string name="trans_btn_save">SAVE TRANSACTION</string>
+
+    <string name="chart_center_text">Total expenses\nin %s</string>
+    <string name="chart_other_detail">Other detail</string>
 
 
 

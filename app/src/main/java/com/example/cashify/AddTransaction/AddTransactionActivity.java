@@ -20,7 +20,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.cashify.R;
 import com.example.cashify.database.AppDatabase;
 import com.example.cashify.database.Category;
-import com.example.cashify.ui.NumpadBottomSheet;
+import com.example.cashify.utils.NumpadBottomSheet;
 import com.example.cashify.utils.CurrencyFormatter;
 import com.example.cashify.database.DatabaseSeeder;
 import com.example.cashify.database.Transaction;

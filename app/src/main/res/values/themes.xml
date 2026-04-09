@@ -297,7 +297,7 @@
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="cardCornerRadius">24dp</item>
-        <item name="cardElevation">3dp</item>
+        <item name="cardElevation">1dp</item>
     </style>
 
     <style name="buttons_divider">

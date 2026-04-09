@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -15,25 +14,25 @@
 
         <TextView
             android:id="@+id/tvDashboard"
+            style="@style/screen_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:fontFamily="@font/inter_bold"
             android:text="@string/dashboard_title"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            style="@style/screen_title"/>
+            app:layout_constraintTop_toTopOf="parent" />
 
         <androidx.cardview.widget.CardView
             android:id="@+id/cardDateSelector"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground"
             app:cardBackgroundColor="@color/brand_primary"
             app:cardCornerRadius="16dp"
             app:cardElevation="2dp"
-            android:foreground="?attr/selectableItemBackground"
-            android:clickable="true"
-            android:focusable="true"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tvDashboard">
 
@@ -49,10 +48,10 @@
                     android:id="@+id/tvDate"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    tools:text="@string/dashboard_month_default"
+                    android:fontFamily="@font/inter_bold"
                     android:textColor="@color/white"
                     android:textSize="14sp"
-                    android:fontFamily="@font/inter_bold" />
+                    tools:text="@string/dashboard_month_default" />
 
                 <ImageView
                     android:layout_width="18dp"
@@ -65,9 +64,13 @@
 
         <androidx.cardview.widget.CardView
             android:id="@+id/cardBalance"
+            style="@style/main_card"
+            android:layout_marginStart="0dp"
             android:layout_marginTop="20dp"
-            app:layout_constraintTop_toBottomOf="@+id/cardDateSelector"
-            style="@style/main_card">
+            android:layout_marginEnd="0dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/cardDateSelector">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -77,10 +80,10 @@
                 android:padding="24dp">
 
                 <TextView
+                    style="@style/main_card_title"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/home_main_card_title_total"
-                    style="@style/main_card_title"/>
+                    android:text="@string/home_main_card_title_total" />
 
                 <TextView
                     android:id="@+id/total_money_amount"
@@ -91,8 +94,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:orientation="horizontal"
                     android:baselineAligned="false"
+                    android:orientation="horizontal"
                     android:weightSum="2">
 
                     <LinearLayout
@@ -102,13 +105,13 @@
                         android:orientation="vertical">
 
                         <TextView
-                            android:text="↗ Expenses"
-                            style="@style/main_card_left_label"/>
+                            style="@style/main_card_left_label"
+                            android:text="↗ Expenses" />
 
                         <TextView
                             android:id="@+id/expenses_money_amount"
                             style="@style/main_card_left_money_amount"
-                            android:text="0 VNĐ"  />
+                            android:text="0 VNĐ" />
                     </LinearLayout>
 
                     <LinearLayout
@@ -119,45 +122,75 @@
                         android:orientation="vertical">
 
                         <TextView
-                            android:text="↘ Income"
-                            style="@style/main_card_right_label" />
+                            style="@style/main_card_right_label"
+                            android:text="↘ Income" />
 
                         <TextView
                             android:id="@+id/income_money_amount"
+                            style="@style/main_card_right_money_amount"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            style="@style/main_card_right_money_amount"
-                            android:text="0 VNĐ"/>
+                            android:text="0 VNĐ" />
                     </LinearLayout>
                 </LinearLayout>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <com.github.mikephil.charting.charts.PieChart
-            android:id="@+id/pieChart"
-            android:layout_width="match_parent"
-            android:layout_height="300dp"
-            android:layout_marginTop="24dp"
-            app:layout_constraintTop_toBottomOf="@id/cardBalance" />
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cv_pieChart"
+            style="@style/main_card"
+            android:layout_marginTop="20dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/cardBalance">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/bg_main"
+                android:orientation="vertical"
+                android:padding="24dp">
+                <TextView
+                    android:id="@+id/tvCategoryLabel"
+                    android:text="@string/dashboard_spending_by_category"
+                    android:textSize="18sp"
+                    style="@style/screen_title"
+                    />
+
+                <com.github.mikephil.charting.charts.PieChart
+                    android:id="@+id/pieChart"
+                    android:layout_width="match_parent"
+                    android:layout_height="250dp"
+                    android:layout_marginTop="2dp"
+                    app:layout_constraintTop_toBottomOf="@id/cardBalance" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvLegend"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    tools:listitem="@layout/item_chart_legend"/>
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
 
         <TextView
             android:id="@+id/tvRecentTransactions"
+            style="@style/screen_title"
             android:layout_marginTop="24dp"
+            android:text="@string/dashboard_recent_transactions"
             android:textSize="18sp"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/pieChart"
-            android:text="@string/dashboard_recent_transactions"
-            style="@style/screen_title"/>
+            app:layout_constraintTop_toBottomOf="@id/cv_pieChart" />
 
         <TextView
             android:id="@+id/tvSeeAll"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:clickable="true"
+            android:padding="8dp"
             android:text="@string/action_see_all"
             android:textColor="#4C6FFF"
             android:textSize="14sp"
-            android:clickable="true"
-            android:padding="8dp"
             app:layout_constraintBottom_toBottomOf="@id/tvRecentTransactions"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="@id/tvRecentTransactions" />
