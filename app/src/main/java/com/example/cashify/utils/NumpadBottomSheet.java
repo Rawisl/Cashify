@@ -1,4 +1,4 @@
-package com.example.cashify.ui;
+package com.example.cashify.utils;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;

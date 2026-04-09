@@ -49,6 +49,13 @@ public interface TransactionDao {
     @Query("SELECT IFNULL(SUM(amount), 0) FROM transactions "+"WHERE type=0 AND timestamp BETWEEN :start AND :end "+"AND categoryId NOT IN("+" SELECT categoryId FROM transactions WHERE type=0 AND timestamp BETWEEN :start AND :end "+" GROUP BY categoryId ORDER BY SUM(amount) DESC LIMIT 5"+")")
     long getOtherExpenseTotal(long start, long end);
 
+    // Lấy chi tiết các mục nằm ngoài Top 5 (Dùng cho Popup xem mục khác)
+    @Query("SELECT t.categoryId, c.name as categoryName, SUM(t.amount) as total " +
+            "FROM transactions t INNER JOIN categories c ON t.categoryId = c.id " +
+            "WHERE t.type=0 AND t.timestamp BETWEEN :start AND :end " +
+            "GROUP BY t.categoryId ORDER BY total DESC LIMIT -1 OFFSET 5")
+    List<CategorySum> getOthersBreakdown(long start, long end);
+
     //Tổng chi theo 1 danh mục cụ thể trong 1 tgian cu the
     @Query("SELECT IFNULL(SUM(amount),0) FROM transactions "+"WHERE type = 0 AND categoryId = :category_id AND timestamp BETWEEN :start AND :end")
     long getTotalExpenseByCategory(int category_id, long start, long end);

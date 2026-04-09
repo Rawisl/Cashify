@@ -1,10 +1,13 @@
 package com.example.cashify.ui.home;
 
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
+import androidx.core.content.res.ResourcesCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -19,6 +22,7 @@ import android.widget.Toast;
 import com.example.cashify.R;
 import com.example.cashify.database.CategorySum;
 import com.example.cashify.database.TransactionWithCategory;
+import com.example.cashify.ui.adapter.LegendAdapter;
 import com.example.cashify.utils.CurrencyFormatter;
 import com.example.cashify.viewmodel.HomeViewModel;
 import com.example.cashify.viewmodel.TransactionViewModel;
@@ -28,9 +32,13 @@ import com.github.mikephil.charting.data.PieData;
 import com.github.mikephil.charting.data.PieDataSet;
 import com.github.mikephil.charting.data.PieEntry;
 
+import org.w3c.dom.Text;
+
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Locale;
 
 public class HomeFragment extends Fragment {
 
@@ -45,19 +53,10 @@ public class HomeFragment extends Fragment {
     private RecyclerView rvRecentTransactions;
     private RecentTransactionAdapter adapter;
 
-    // Bộ màu chuẩn cho Rule of 5 (5 màu nổi + 1 màu xám)
-    private final int[] CHART_COLORS = {
-            Color.parseColor("#00BCD4"), // Cyan (Màu 1)
-            Color.parseColor("#FF9800"), // Orange (Màu 2)
-            Color.parseColor("#AB47BC"), // Purple (Màu 3)
-            Color.parseColor("#FF4081"), // Pink (Màu 4)
-            Color.parseColor("#4CAF50")  // Green (Màu 5)
-    };
-    private final int COLOR_OTHERS = Color.parseColor("#BDBDBD"); // Grey (Mục Khác)
-
     private HomeViewModel viewModel;
 
-    public HomeFragment() {}
+    public HomeFragment() {
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -68,6 +67,19 @@ public class HomeFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        //ánh xạ dùng cho chart
+        RecyclerView rvLegend = view.findViewById(R.id.rvLegend);
+        rvLegend.setLayoutManager(new LinearLayoutManager(getContext()));
+        LegendAdapter legendAdapter = new LegendAdapter();
+        rvLegend.setAdapter(legendAdapter);
+
+        //Nghe ngóng click từ Legend
+        legendAdapter.setOnItemClickListener(item -> {
+            if ("Others".equals(item.getName())) {
+                showOthersDetailBottomSheet();
+            }
+        });
 
         tvSeeAll = view.findViewById(R.id.tvSeeAll);
         pieChart = view.findViewById(R.id.pieChart);
@@ -107,10 +119,10 @@ public class HomeFragment extends Fragment {
             cardDateSelector.setOnClickListener(showDialogListener);
         }
 
-// Khởi tạo lại bằng HomeViewModel
+        // Khởi tạo lại bằng HomeViewModel
         viewModel = new ViewModelProvider(this).get(HomeViewModel.class);
 
-// Dùng câu query lấy sẵn 5 giao dịch + Category từ Room (KHÔNG CẦN VÒNG LẶP NẶNG MÁY)
+        // Dùng câu query lấy sẵn 5 giao dịch + Category từ Room (KHÔNG CẦN VÒNG LẶP NẶNG MÁY)
         viewModel.getRecentTransactionsWithCategory().observe(getViewLifecycleOwner(), transWithCatList -> {
             if (transWithCatList != null && !transWithCatList.isEmpty()) {
                 List<TransactionViewModel.HistoryItem> recentItems = new ArrayList<>();
@@ -133,21 +145,22 @@ public class HomeFragment extends Fragment {
             tvIncome.setText(CurrencyFormatter.formatFullVND(state.totalIncome));
             tvExpense.setText(CurrencyFormatter.formatFullVND(state.totalExpense));
 
-            // Vẽ biểu đồ
-            ArrayList<PieEntry> entries = new ArrayList<>();
-            ArrayList<Integer> colors = new ArrayList<>();
+            //Bơm data cho Legend Adapter (MỚI THÊM)
+            if (state.legendItems != null) {
+                legendAdapter.updateData(state.legendItems);
+            }
 
-            for (int i = 0; i < state.top5Categories.size(); i++) {
-                CategorySum cat = state.top5Categories.get(i);
+            //Vẽ biểu đồ gọn
+            ArrayList<PieEntry> entries = new ArrayList<>();
+
+            for (CategorySum cat : state.top5Categories) {
                 if (cat.total > 0) {
                     entries.add(new PieEntry((float) cat.total, cat.categoryName));
-                    colors.add(CHART_COLORS[i % CHART_COLORS.length]);
                 }
             }
 
             if (state.othersTotal > 0) {
-                entries.add(new PieEntry((float) state.othersTotal, "Khác"));
-                colors.add(COLOR_OTHERS);
+                entries.add(new PieEntry((float) state.othersTotal, "Others"));
             }
 
             if (entries.isEmpty()) {
@@ -155,16 +168,20 @@ public class HomeFragment extends Fragment {
                 pieChart.setCenterText("No Expenses");
             } else {
                 PieDataSet dataSet = new PieDataSet(entries, "");
-                dataSet.setColors(colors);
+
+                // Lấy thẳng mảng màu từ ViewModel ném vào
+                dataSet.setColors(state.pieColors);
                 dataSet.setSliceSpace(3f);
                 dataSet.setSelectionShift(5f);
 
                 PieData data = new PieData(dataSet);
-                data.setDrawValues(false);
+                data.setDrawValues(false); // Vẫn tắt value mặc định
 
                 pieChart.setData(data);
-                pieChart.setCenterText("Chi tiêu\nTháng " + (currentCalendar.get(Calendar.MONTH) + 1));
-                pieChart.animateY(700);
+                SimpleDateFormat sdf = new SimpleDateFormat("MMMM", Locale.ENGLISH);
+                String currentMonth = sdf.format(currentCalendar.getTime());
+                pieChart.setCenterText(getString(R.string.chart_center_text, currentMonth));
+                pieChart.setCenterTextSize(20f);
             }
             pieChart.invalidate();
         });
@@ -227,27 +244,92 @@ public class HomeFragment extends Fragment {
     }
 
     private void setupDonutChart() {
-        pieChart.setDrawHoleEnabled(true);
+        pieChart.setDrawHoleEnabled(true); //bật cái lỗ tròn ở giữa mới vẽ được center text
         pieChart.setHoleColor(Color.TRANSPARENT);
         pieChart.setTransparentCircleRadius(0f);
         pieChart.setHoleRadius(65f); // Kích thước lỗ tròn ở giữa
+        pieChart.animateY(700);
 
         pieChart.setDrawEntryLabels(false); // Tắt tên dán đè lên miếng bánh cho đỡ rối
         pieChart.getDescription().setEnabled(false); // Tắt dòng chữ Description góc dưới
 
-        // Text ở giữa cái lỗ
-        pieChart.setCenterText("Total\nExpenses");
-        pieChart.setCenterTextSize(14f);
-        pieChart.setCenterTextColor(Color.parseColor("#111827"));
+        //Ép mọi miếng bánh phải rộng ít nhất 15 độ (tầm này là ngón tay người bấm vừa)
+        pieChart.setMinAngleForSlices(15f);
 
-        // Chú thích (Legend) nằm ở dưới cùng
-        Legend legend = pieChart.getLegend();
-        legend.setVerticalAlignment(Legend.LegendVerticalAlignment.BOTTOM);
-        legend.setHorizontalAlignment(Legend.LegendHorizontalAlignment.CENTER);
-        legend.setOrientation(Legend.LegendOrientation.HORIZONTAL);
-        legend.setWordWrapEnabled(true);
-        legend.setDrawInside(false);
-        legend.setTextSize(12f);
+        pieChart.setUsePercentValues(true);
+
+        // Lấy tên tháng hiện tại (ví dụ: "April")
+        SimpleDateFormat sdf = new SimpleDateFormat("MMMM", Locale.ENGLISH);
+        String monthName = sdf.format(Calendar.getInstance().getTime());
+
+        // Text ở giữa cái lỗ
+        pieChart.setCenterText(getString(R.string.chart_center_text, monthName));
+        pieChart.setCenterTextSize(20f);
+        // Khởi tạo Typeface từ font chữ và màu, không dùng mã font và mã màu thường mà phải dùng resources/context compat
+        Typeface tf = ResourcesCompat.getFont(getContext(), R.font.inter_bold);
+        pieChart.setCenterTextColor(ContextCompat.getColor(getContext(), R.color.brand_primary));
+        pieChart.setCenterTextTypeface(tf);
+
+        //tắt chú thích legend mặc định của piechart đi vì n xấu vkl
+        pieChart.getLegend().setEnabled(false);
+
+        //Bắt sự kiện người dùng lấy tay chọt vào miếng bánh
+        pieChart.setOnChartValueSelectedListener(new com.github.mikephil.charting.listener.OnChartValueSelectedListener() {
+            @Override
+            public void onValueSelected(com.github.mikephil.charting.data.Entry e, com.github.mikephil.charting.highlight.Highlight h) {
+                if (e instanceof PieEntry) {
+                    PieEntry pe = (PieEntry) e;
+
+                    String categoryName = pe.getLabel();
+
+                    float rawAmount = pe.getValue();
+
+                    // CHUẨN CÔNG THỨC: Lấy số tiền miếng bánh chia cho (Tổng tất cả các bánh) * 100
+                    float percentage = (rawAmount / pieChart.getData().getYValueSum()) * 100f;
+
+                    // Chỉ ghép Tên danh mục và %
+                    String centerText = categoryName + "\n" +
+                            String.format(Locale.getDefault(), "%.1f%%", percentage);
+
+                    pieChart.setCenterText(centerText);
+                    pieChart.setCenterTextSize(18f); // Chữ ngắn rồi thì buff size lên xíu cho đẹp
+                }
+            }
+
+            @Override
+            public void onNothingSelected() {
+                // Lấy lại tên tháng từ currentCalendar (tháng người dùng đang xem)
+                SimpleDateFormat sdf = new SimpleDateFormat("MMMM", Locale.ENGLISH);
+                String currentMonth = sdf.format(currentCalendar.getTime());
+
+                // Trả lại nguyên trạng
+                pieChart.setCenterText(getString(R.string.chart_center_text, currentMonth));
+                pieChart.setCenterTextSize(20f);
+            }
+        });
+    }
+
+    // Cục Bottom Sheet
+    private void showOthersDetailBottomSheet() {
+        com.google.android.material.bottomsheet.BottomSheetDialog dialog =
+                new com.google.android.material.bottomsheet.BottomSheetDialog(requireContext());
+
+        View view = getLayoutInflater().inflate(R.layout.layout_others_bottom_sheet, null);
+
+        RecyclerView rvOthers = view.findViewById(R.id.rvOthersDetail);
+        rvOthers.setLayoutManager(new LinearLayoutManager(getContext()));
+
+        LegendAdapter othersAdapter = new LegendAdapter();
+        rvOthers.setAdapter(othersAdapter);
+
+        // Kéo data từ ViewModel ra
+        HomeViewModel.DashboardState state = viewModel.getDashboardData().getValue();
+        if (state != null && state.subOthersList != null) {
+            othersAdapter.updateData(state.subOthersList);
+        }
+
+        dialog.setContentView(view);
+        dialog.show();
     }
 
     private void updateMonthTextAndLoadData() {
@@ -263,11 +345,15 @@ public class HomeFragment extends Fragment {
     private void loadDashboardData() {
         Calendar cal = (Calendar) currentCalendar.clone();
         cal.set(Calendar.DAY_OF_MONTH, 1);
-        cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0); cal.set(Calendar.SECOND, 0);
+        cal.set(Calendar.HOUR_OF_DAY, 0);
+        cal.set(Calendar.MINUTE, 0);
+        cal.set(Calendar.SECOND, 0);
         long startOfMonth = cal.getTimeInMillis();
 
         cal.set(Calendar.DAY_OF_MONTH, cal.getActualMaximum(Calendar.DAY_OF_MONTH));
-        cal.set(Calendar.HOUR_OF_DAY, 23); cal.set(Calendar.MINUTE, 59); cal.set(Calendar.SECOND, 59);
+        cal.set(Calendar.HOUR_OF_DAY, 23);
+        cal.set(Calendar.MINUTE, 59);
+        cal.set(Calendar.SECOND, 59);
         long endOfMonth = cal.getTimeInMillis();
 
         // Kêu ViewModel lấy dữ liệu
