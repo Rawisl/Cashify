@@ -47,8 +47,8 @@ public interface BudgetDao {
     long getMasterSpentAmount(long startDate, long endDate);
 
     // Tính tổng hạn mức của tất cả danh mục KHÁC (loại trừ danh mục đang sửa) để kiểm tra xem có vượt Master Budget hay không
-    @Query("SELECT SUM(limitAmount) FROM budgets WHERE categoryId != -1 AND categoryId != :excludedId AND periodType = :periodType")
-    long getTotalCategoryLimitExcluding(int excludedId, String periodType);
+    @Query("SELECT IFNULL(SUM(limitAmount), 0) FROM budgets WHERE categoryId != -1 AND categoryId != :excludedId AND periodType = :periodType AND startDate = :startTime AND endDate = :endTime")
+    long getTotalCategoryLimitExcluding(int excludedId, String periodType, long startTime, long endTime);
 
     // Lấy các danh mục CÓ chi tiêu nhưng CHƯA có ngân sách (Ngoài kế hoạch)
     @Query("SELECT c.id as categoryId, c.name as categoryName, c.iconName as categoryIcon, SUM(t.amount) as spentAmount, 0 as limitAmount, " +
@@ -62,8 +62,8 @@ public interface BudgetDao {
     List<BudgetWithSpent> getUnplannedExpenses(long startDate, long endDate, long now, String periodType);
 
     // Tính tổng hạn mức của tất cả danh mục con (không bao gồm Master -1)
-    @Query("SELECT IFNULL(SUM(limitAmount), 0) FROM budgets WHERE categoryId != -1 AND periodType = :periodType")
-    long getTotalCategoryLimits(String periodType);
+    @Query("SELECT IFNULL(SUM(limitAmount), 0) FROM budgets WHERE categoryId != -1 AND periodType = :periodType AND startDate = :startTime AND endDate = :endTime")
+    long getTotalCategoryLimits(String periodType, long startTime, long endTime);
 
     //Lấy cái mốc tgian của cái giao dịch đầu tiên để chặn bộ lọc tgian
     @Query("SELECT MIN(startDate) FROM budgets WHERE periodType = :periodType ")
@@ -81,4 +81,22 @@ public interface BudgetDao {
     @Query("SELECT * FROM budgets WHERE periodType = :periodType")
     List<BudgetWithCategory> getAllBudgetsWithCategory(String periodType);
 
+    // Gộp các category budget của tuần thành 1 tháng lớn
+    @Query("SELECT b.categoryId as categoryId, c.name as categoryName, c.iconName as categoryIcon, " +
+            "SUM(b.limitAmount) as limitAmount, " +
+            "(SELECT IFNULL(SUM(t.amount), 0) FROM transactions t WHERE t.categoryId = b.categoryId AND t.type = 0 AND t.timestamp BETWEEN :monthStart AND :monthEnd) as spentAmount, " +
+            "0 as id, :monthStart as startDate, :monthEnd as endDate, 'MONTH_LINKED' as periodType " +
+            "FROM budgets b " +
+            "LEFT JOIN categories c ON b.categoryId = c.id " +
+            "WHERE b.periodType = :weekPeriod AND b.categoryId != -1 AND b.startDate >= :monthStart AND b.startDate <= :monthEnd " +
+            "GROUP BY b.categoryId")
+    List<BudgetWithSpent> getLinkedMonthlyCategoryBudgets(long monthStart, long monthEnd, String weekPeriod);
+
+    // Lấy tổng tất cả limitAmount của danh mục tuần trong 1 tháng (Để kiểm tra lúc set Master Tháng)
+    @Query("SELECT IFNULL(SUM(limitAmount), 0) FROM budgets WHERE periodType = :weekPeriod AND categoryId != -1 AND startDate >= :monthStart AND startDate <= :monthEnd")
+    long getSumLinkedWeeklyCategoryLimits(long monthStart, long monthEnd, String weekPeriod);
+
+    // Lấy tổng tất cả limitAmount của Master tuần trong 1 tháng (Để kiểm tra lúc set Master Tuần không vượt Tháng)
+    @Query("SELECT IFNULL(SUM(limitAmount), 0) FROM budgets WHERE periodType = :weekPeriod AND categoryId = -1 AND startDate >= :monthStart AND startDate <= :monthEnd AND startDate != :currentWeekStart")
+    long getSumOtherWeeklyMasterLimits(long monthStart, long monthEnd, long currentWeekStart, String weekPeriod);
 }

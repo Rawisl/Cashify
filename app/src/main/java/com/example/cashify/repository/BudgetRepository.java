@@ -47,6 +47,34 @@ public class BudgetRepository {
         executor.execute(() -> callback.onResult(budgetDao.getActiveBudgetsWithSpent(now, periodType)));
     }
 
+    public void getLinkedMonthlyCategoryBudgets(long monthStart, long monthEnd, String weekPeriod, Callback<List<BudgetWithSpent>> callback) {
+        executor.execute(() -> callback.onResult(budgetDao.getLinkedMonthlyCategoryBudgets(monthStart, monthEnd, weekPeriod)));
+    }
+
+    public void getSumLinkedWeeklyCategoryLimits(long monthStart, long monthEnd, String weekPeriod, Callback<Long> callback) {
+        executor.execute(() -> callback.onResult(budgetDao.getSumLinkedWeeklyCategoryLimits(monthStart, monthEnd, weekPeriod)));
+    }
+
+    public void getSumOtherWeeklyMasterLimits(long monthStart, long monthEnd, long currentWeekStart, String weekPeriod, Callback<Long> callback) {
+        executor.execute(() -> callback.onResult(budgetDao.getSumOtherWeeklyMasterLimits(monthStart, monthEnd, currentWeekStart, weekPeriod)));
+    }
+
+    public void getMasterSpentAmount(long startDate, long endDate, Callback<Long> callback) {
+        executor.execute(() -> callback.onResult(budgetDao.getMasterSpentAmount(startDate, endDate)));
+    }
+
+    public void getTotalCategoryLimits(String periodType, long startTime, long endTime, Callback<Long> callback) {
+        executor.execute(() -> callback.onResult(budgetDao.getTotalCategoryLimits(periodType, startTime, endTime)));
+    }
+
+    public void getTotalCategoryLimitExcluding(int excludedId, String periodType, long startTime, long endTime, Callback<Long> callback) {
+        executor.execute(() -> callback.onResult(budgetDao.getTotalCategoryLimitExcluding(excludedId, periodType, startTime, endTime)));
+    }
+
+    public void getUnplannedExpenses(long startDate, long endDate, long now, String periodType, Callback<List<BudgetWithSpent>> callback) {
+        executor.execute(() -> callback.onResult(budgetDao.getUnplannedExpenses(startDate, endDate, now, periodType)));
+    }
+
     public interface Callback<T> {
         void onResult(T result);
     }
