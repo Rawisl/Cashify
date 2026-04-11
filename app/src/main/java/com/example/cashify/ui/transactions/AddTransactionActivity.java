@@ -19,6 +19,7 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
+import com.example.cashify.database.Category;
 import com.example.cashify.utils.NumpadBottomSheet;
 import com.example.cashify.utils.CurrencyFormatter;
 import com.example.cashify.viewmodel.AddTransactionViewModel;
@@ -42,25 +43,34 @@ public class AddTransactionActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // 1. Gán Layout trước để tránh NullPointerException khi findViewById
         setContentView(R.layout.add_transaction);
 
-        // 1. Kiểm tra ID để xác định chế độ Sửa hay Thêm
+        // 2. Kiểm tra ID từ Intent ngay lập tức để xác định chế độ (Add hay Edit)
         editTransactionId = getIntent().getIntExtra("TRANSACTION_ID", -1);
         isEditMode = (editTransactionId != -1);
 
-        // 2. Khởi tạo ViewModel
+        // Log/Toast để debug nhanh (có thể xóa sau khi đã chạy ổn)
+        if (isEditMode) {
+            Toast.makeText(this, "Chế độ: Chỉnh sửa (ID: " + editTransactionId + ")", Toast.LENGTH_SHORT).show();
+        }
+
+        // 3. Khởi tạo ViewModel
         viewModel = new ViewModelProvider(this).get(AddTransactionViewModel.class);
 
-        initViews();
-        setupObservers();
-        setupListeners();
+        // 4. Khởi tạo Giao diện và Gán sự kiện
+        initViews();       // Đã bao gồm logic đổi Title sang "Edit Transaction"
+        setupObservers();   // Quan sát dữ liệu từ ViewModel
+        setupListeners();   // Lắng nghe sự kiện click nút bấm
 
-        // 3. Load dữ liệu ban đầu
+        // 5. Nạp dữ liệu khởi tạo
         if (isEditMode) {
-            //setupEditUI();
+            // Mode EDIT: Bảo ViewModel tìm lại giao dịch cũ để đổ vào Form
             viewModel.loadTransactionForEdit(editTransactionId);
         } else {
-            viewModel.loadCategories(0); // Mặc định load category Chi (type 0)
+            // Mode ADD: Mặc định load danh mục Chi (Type 0)
+            viewModel.loadCategories(0);
         }
     }
 
@@ -73,7 +83,9 @@ public class AddTransactionActivity extends AppCompatActivity {
         tabChi = findViewById(R.id.tabChi);
         tabThu = findViewById(R.id.tabThu);
         tvDate = findViewById(R.id.tvDate);
+
         tvTitle = findViewById(R.id.tvTitle);
+
         btnCash = findViewById(R.id.btnPayCash);
         btnCard = findViewById(R.id.btnPayCard);
         btnBank = findViewById(R.id.btnPayBank);
@@ -82,6 +94,16 @@ public class AddTransactionActivity extends AppCompatActivity {
         btnBack = findViewById(R.id.btnBack);
         rvCategories = findViewById(R.id.rvCategories);
         rvCategories.setLayoutManager(new GridLayoutManager(this, 4));
+
+        if (tvTitle != null) {
+            if (isEditMode) {
+                tvTitle.setText("Edit Transaction");
+                if (btnDelete != null) btnDelete.setVisibility(View.VISIBLE);
+            } else {
+                tvTitle.setText("Add Transaction");
+                if (btnDelete != null) btnDelete.setVisibility(View.GONE);
+            }
+        }
     }
 
 
@@ -121,6 +143,8 @@ public class AddTransactionActivity extends AppCompatActivity {
             if (t != null) {
                 edtAmount.setText(CurrencyFormatter.formatDoubleToVND((double) t.amount));
                 edtNote.setText(t.note);
+
+
             }
         });
 
@@ -165,17 +189,24 @@ public class AddTransactionActivity extends AppCompatActivity {
         String amountStr = edtAmount.getText().toString();
         double amount = CurrencyFormatter.parseVNDToDouble(amountStr);
 
+        // Kiểm tra số tiền hợp lệ
         if (amount <= 0) {
             edtAmount.setBackgroundResource(R.drawable.bg_input_error);
             Toast.makeText(this, getString(R.string.error_invalid_money_amount), Toast.LENGTH_SHORT).show();
             return;
         }
 
-        if (viewModel.selectedCategory.getValue() == null) {
+        // Logic xử lý Danh mục (Category)
+        Category selected = viewModel.selectedCategory.getValue();
+
+        // Nếu là mode THÊM MỚI mà chưa chọn Category thì mới chặn
+        // Nếu là mode EDIT mà chưa chọn cái mới, hệ thống sẽ tự lấy cái cũ trong ViewModel/DB
+        if (!isEditMode && selected == null) {
             Toast.makeText(this, getString(R.string.error_transaction_empty_category), Toast.LENGTH_SHORT).show();
             return;
         }
 
+        // Thực hiện lưu hoặc cập nhật
         viewModel.saveOrUpdate(String.valueOf((long)amount), edtNote.getText().toString().trim());
     }
 

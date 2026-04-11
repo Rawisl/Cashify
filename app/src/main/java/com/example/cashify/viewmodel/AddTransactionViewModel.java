@@ -68,29 +68,49 @@ public class AddTransactionViewModel extends AndroidViewModel {
 
     // --- LOGIC LƯU / CẬP NHẬT ---
     public void saveOrUpdate(String amountStr, String note) {
-        if (amountStr.isEmpty() || selectedCategory.getValue() == null) return;
+        // 1. Kiểm tra tiền trước
+        if (amountStr.isEmpty()) return;
 
+        Category selected = selectedCategory.getValue();
+        Transaction existing = existingTransaction.getValue();
+        boolean editMode = Boolean.TRUE.equals(isEditMode.getValue());
+
+        // 2. Chốt ID Category (Đây là đoạn quan trọng nhất)
+        int finalCategoryId;
+        if (selected != null) {
+            // Nếu người dùng có bấm chọn cái mới -> Lấy cái mới
+            finalCategoryId = selected.id;
+        } else if (editMode && existing != null) {
+            // Nếu đang sửa và không chọn cái mới -> Lấy lại ID cũ từ database
+            finalCategoryId = existing.categoryId;
+        } else {
+            // Trường hợp thêm mới mà không chọn gì -> Dừng lại
+            return;
+        }
+
+        // 3. Chuẩn bị Object để lưu
         Transaction t;
-        if (Boolean.TRUE.equals(isEditMode.getValue()) && existingTransaction.getValue() != null) {
-            t = existingTransaction.getValue(); // Lấy object cũ để giữ nguyên ID
+        if (editMode && existing != null) {
+            t = existing; // Dùng lại object cũ (giữ nguyên ID gốc)
         } else {
             t = new Transaction();
         }
 
         t.amount = Long.parseLong(amountStr);
         t.note = note;
-        t.categoryId = selectedCategory.getValue().id;
+        t.categoryId = finalCategoryId; // Gán ID đã chốt ở trên
         t.timestamp = calendar.getValue().getTimeInMillis();
         t.type = Boolean.TRUE.equals(isExpense.getValue()) ? 0 : 1;
-        // t.paymentMethod = selectedPayment.getValue(); // Nếu Entity có field này
 
-        if (Boolean.TRUE.equals(isEditMode.getValue())) {
-            transRepo.update(t);
+        // 4. Thực thi vào Database
+        new Thread(() -> {
+            if (editMode) {
+                transRepo.update(t);
+            } else {
+                transRepo.insert(t);
+            }
             saveSuccess.postValue(true);
-        } else {
-            transRepo.insert(t);
-            saveSuccess.postValue(true);
-        }
+        }).start();
     }
 
     public void deleteCurrentTransaction() {
