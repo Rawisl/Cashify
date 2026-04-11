@@ -71,4 +71,8 @@ public class CurrencyFormatter
             return 0;
         }
     }
+    public static String formatDoubleToVND(double amount) {
+        // Sử dụng khuôn format có dấu phân cách hàng ngàn (VD: 50.000)
+        return dfNormal.format(amount);
+    }
 }
