@@ -15,7 +15,7 @@ import androidx.navigation.ui.NavigationUI;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.example.cashify.AddTransaction.AddTransactionActivity;
+import com.example.cashify.ui.transactions.AddTransactionActivity;
 import com.example.cashify.R;
 import com.example.cashify.database.Category;
 import com.example.cashify.database.CategoryDao;
@@ -24,7 +24,6 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.example.cashify.database.AppDatabase;
 import com.example.cashify.database.DatabaseSeeder;
 import com.example.cashify.database.FakeDataSeeder;
-import com.example.cashify.viewmodel.TransactionViewModel;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.List;

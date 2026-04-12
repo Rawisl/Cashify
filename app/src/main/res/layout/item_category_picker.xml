@@ -6,7 +6,7 @@
     android:gravity="center"
     android:orientation="vertical"
     android:padding="8dp"
-    android:background="?attr/selectableItemBackgroundBorderless"
+    android:background="@android:color/transparent"
     android:clickable="true"
     android:focusable="true">
 

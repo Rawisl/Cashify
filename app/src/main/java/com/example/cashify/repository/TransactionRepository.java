@@ -66,6 +66,15 @@ public class TransactionRepository {
     public void countTransactionByDay(long startOfDay, long endOfDay, Callback<Integer> callback){
         executor.execute(()-> callback.onResult(transactionDao.countTransactionsByDay(startOfDay, endOfDay)));
     }
+    public void getById(int id, Callback<Transaction> callback) {
+        executor.execute(() -> {
+            Transaction t = transactionDao.getById(id);
+            // Trả kết quả về cho ViewModel
+            if (callback != null) {
+                callback.onResult(t);
+            }
+        });
+    }
 
     //interface giúp trả kqua về UI thread
     public interface Callback<T>{

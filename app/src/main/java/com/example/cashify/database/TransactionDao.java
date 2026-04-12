@@ -64,7 +64,8 @@ public interface TransactionDao {
     @Query("SELECT * FROM transactions ORDER BY timestamp DESC LIMIT :limit")
     List<Transaction> getRecentTransaction(int limit);
 
-
+    @Query("SELECT * FROM transactions WHERE id = :id LIMIT 1")
+    Transaction getById(int id);
     //tính sô dư trọn đời
     @Query("SELECT (SELECT IFNULL(SUM(amount), 0) FROM transactions WHERE type = 1) - " + "(SELECT IFNULL(SUM(amount), 0) FROM transactions WHERE type = 0)")
     long getActualBalance();
@@ -89,6 +90,7 @@ public interface TransactionDao {
     // (Tùy chọn) Nếu sau này bạn muốn lọc Income/Expense trong một khoảng thời gian cụ thể
     @Query("SELECT * FROM transactions WHERE type = :type AND timestamp BETWEEN :start AND :end ORDER BY timestamp DESC")
     List<Transaction> getTransactionsByTypeAndDate(int type, long start, long end);
+
 
 
     @Query("DELETE FROM transactions")
