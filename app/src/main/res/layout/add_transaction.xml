@@ -30,11 +30,12 @@
                 android:background="?attr/selectableItemBackgroundBorderless"/>
 
             <TextView
+                android:id="@+id/tvTitle"
                 style="@style/screen_title"
                 android:layout_width="wrap_content"
-                android:layout_centerInParent="true"
-                android:text="Add transaction"
-                android:textSize="20sp" />
+                android:layout_height="wrap_content"
+                android:text="Add Transaction"
+                android:layout_centerInParent="true"/>
         </RelativeLayout>
 
         <LinearLayout
@@ -73,7 +74,7 @@
             style="@style/section_header"
             android:layout_marginTop="10dp"
             android:letterSpacing="0.1"
-            android:text="SỐ TIỀN"
+            android:text="AMOUNT"
             android:textSize="12sp" />
 
         <RelativeLayout
@@ -84,7 +85,7 @@
             <EditText
                 android:id="@+id/edtAmount"
                 android:layout_width="match_parent"
-                android:layout_height="80dp"
+                android:layout_height="60dp"
                 android:hint="0"
                 android:inputType="numberDecimal"
                 android:paddingStart="16dp"
@@ -277,8 +278,8 @@
             android:id="@+id/btnConfirm"
             android:layout_width="match_parent"
             android:layout_height="62dp"
-            android:layout_marginTop="10dp"
-            android:layout_marginBottom="32dp"
+            android:layout_marginTop="30dp"
+            android:layout_marginBottom="15dp"
             android:text="CONFIRM"
             android:textSize="16sp"
             android:fontFamily="@font/inter_bold"
