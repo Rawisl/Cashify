@@ -110,6 +110,19 @@ public class TransactionFragment extends Fragment {
     private void setupSwipeToDelete() {
         new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
             @Override
+            public int getMovementFlags(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
+                int position = viewHolder.getAdapterPosition();
+                TransactionViewModel.HistoryItem item = adapter.getItemAt(position);
+
+                // HARD FIX: If it's a header, set swipe direction to 0
+                if (item.getType() == TransactionViewModel.HistoryItem.TYPE_DATE_HEADER) {
+                    return makeMovementFlags(0, 0);
+                }
+
+                // Otherwise, allow swiping to the LEFT
+                return makeMovementFlags(0, ItemTouchHelper.LEFT);
+            }
+            @Override
             public boolean onMove(@NonNull RecyclerView r, @NonNull RecyclerView.ViewHolder v, @NonNull RecyclerView.ViewHolder t) {
                 return false;
             }

@@ -40,7 +40,7 @@
             android:background="@drawable/bg_search"
             android:drawableStart="@android:drawable/ic_menu_search"
             android:drawablePadding="12dp"
-            android:hint="Tìm kiếm giao dịch..."
+            android:hint="Search transactions..."
             android:paddingHorizontal="16dp"
             android:textSize="14sp"
             android:fontFamily="@font/inter_regular" />
@@ -98,7 +98,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
-                    android:text="Chưa có giao dịch nào"
+                    android:text="No transaction yet"
                     android:textAlignment="center" />
 
                 <TextView
@@ -106,17 +106,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:text="Hãy bắt đầu ghi chép chi tiêu để quản lý tiền bạc hiệu quả hơn."
+                    android:text="Start add transactions to manage finance effectively."
                     android:textAlignment="center" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnEmptyAdd"
-                    style="@style/Widget.Material3.Button.TextButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:text="+ Thêm giao dịch đầu tiên"
-                    android:textColor="@color/brand_primary" />
 
             </LinearLayout>
         </FrameLayout>
