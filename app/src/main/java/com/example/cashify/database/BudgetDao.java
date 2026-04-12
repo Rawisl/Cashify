@@ -33,7 +33,7 @@ public interface BudgetDao {
     Budget getMasterBudget(long now, String periodType);
 
     //progress bar ngân sách (Đã chỉnh sửa)
-    @Query("SELECT b.*, c.name as categoryName, c.iconName as categoryIcon, IFNULL(SUM(t.amount), 0) as spentAmount " +
+    @Query("SELECT b.*, c.name as categoryName, c.iconName as categoryIcon, c.colorCode as categoryColor, IFNULL(SUM(t.amount), 0) as spentAmount " +
             "FROM budgets b " +
             "LEFT JOIN categories c ON b.categoryId = c.id " +
             "LEFT JOIN transactions t ON t.categoryId = b.categoryId " +
@@ -51,7 +51,7 @@ public interface BudgetDao {
     long getTotalCategoryLimitExcluding(int excludedId, String periodType, long startTime, long endTime);
 
     // Lấy các danh mục CÓ chi tiêu nhưng CHƯA có ngân sách (Ngoài kế hoạch)
-    @Query("SELECT c.id as categoryId, c.name as categoryName, c.iconName as categoryIcon, SUM(t.amount) as spentAmount, 0 as limitAmount, " +
+    @Query("SELECT c.id as categoryId, c.name as categoryName, c.iconName as categoryIcon, c.colorCode as categoryColor, SUM(t.amount) as spentAmount, 0 as limitAmount, " +
             "0 as id, :startDate as startDate, :endDate as endDate " +
             "FROM categories c " +
             "JOIN transactions t ON c.id = t.categoryId " +

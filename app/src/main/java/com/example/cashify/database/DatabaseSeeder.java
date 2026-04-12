@@ -25,30 +25,30 @@ public class    DatabaseSeeder {
 
 //--thu vao--//
 
-                dao.insert(makeCategory("Lương", "ic_salary", "#000000", 1, 1));
+                dao.insert(makeCategory("Lương", "ic_salary", "#AD78B4", 1, 1));
 
-                dao.insert(makeCategory("Gia đình cho", "ic_family", "#000000", 1, 1));
+                dao.insert(makeCategory("Gia đình cho", "ic_family", "#81949D", 1, 1));
 
-                dao.insert(makeCategory("Thưởng", "ic_bonus", "#000000", 1, 1));
+                dao.insert(makeCategory("Thưởng", "ic_bonus", "#9B8077", 1, 1));
 
 
 //--chi ra--//
 
-                dao.insert(makeCategory("Ăn uống", "ic_food", "#FF5722", 0, 1));
+                dao.insert(makeCategory("Ăn uống", "ic_food", "#E96565", 0, 1));
 
-                dao.insert(makeCategory("Di chuyển", "ic_transport", "#000000", 0, 1));
+                dao.insert(makeCategory("Di chuyển", "ic_transport", "#FDA664", 0, 1));
 
-                dao.insert(makeCategory("Mua sắm", "ic_shopping", "#000000", 0, 1));
+                dao.insert(makeCategory("Mua sắm", "ic_shopping", "#F675A1", 0, 1));
 
-                dao.insert(makeCategory("Hóa đơn", "ic_bill", "#000000", 0, 1));
+                dao.insert(makeCategory("Hóa đơn", "ic_bill", "#559DE4", 0, 1));
 
-                dao.insert(makeCategory("Cafe", "ic_cafe", "#000000", 0, 1));
+                dao.insert(makeCategory("Cafe", "ic_cafe", "#6CD0D0", 0, 1));
 
-                dao.insert(makeCategory("Giải trí", "ic_entertain", "#000000", 0, 1));
+                dao.insert(makeCategory("Giải trí", "ic_entertain", "#847FF0", 0, 1));
 
-                dao.insert(makeCategory("Xăng xe", "ic_fuel", "#000000", 0, 1));
+                dao.insert(makeCategory("Xăng xe", "ic_fuel", "#87D18C", 0, 1));
 
-                dao.insert(makeCategory("Tiền trọ", "ic_house", "#000000", 0, 1));
+                dao.insert(makeCategory("Tiền trọ", "ic_house", "#93CE9D", 0, 1));
 
                 dao.insert(makeCategory("Khác", "ic_other", "#000000", 0, 1));
 

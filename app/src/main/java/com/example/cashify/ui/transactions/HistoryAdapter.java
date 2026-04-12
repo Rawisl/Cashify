@@ -109,7 +109,18 @@ public class HistoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             if (tHolder.ivIcon != null) {
                 int iconResId = holder.itemView.getContext().getResources().getIdentifier(
                         item.getCategoryIcon(), "drawable", holder.itemView.getContext().getPackageName());
-                tHolder.ivIcon.setImageResource(iconResId != 0 ? iconResId : R.drawable.ic_other);
+                tHolder.ivIcon.setImageResource(iconResId != 0 ? iconResId : R.drawable.ic_food);
+
+                try {
+                    int originColor = Color.parseColor(item.getCategoryColor()); // ← dùng màu từ category
+                    int pastelColor = Color.argb(51, Color.red(originColor), Color.green(originColor), Color.blue(originColor));
+                    tHolder.ivIcon.setBackgroundTintList(ColorStateList.valueOf(pastelColor));
+                    tHolder.ivIcon.setImageTintList(ColorStateList.valueOf(originColor));
+                } catch (Exception e) {
+                    // Fallback nếu màu lỗi
+                    int colorRes = (trans.type == 1) ? R.color.status_background_green : R.color.status_background_red;
+                    tHolder.ivIcon.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(holder.itemView.getContext(), colorRes)));
+                }
             }
 
             // 5. [QUAN TRỌNG] Sự kiện Click mở màn hình Edit

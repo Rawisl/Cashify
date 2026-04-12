@@ -22,6 +22,7 @@ public class TransactionViewModel extends AndroidViewModel {
 
     private final TransactionDao transactionDao;
     private final CategoryDao categoryDao;
+    private String categoryColor;
 
     // Quản lý trạng thái hiện tại để khi Delete/Undo không bị nhảy filter
     private String currentFilter = "ALL";
@@ -89,10 +90,11 @@ public class TransactionViewModel extends AndroidViewModel {
 
                 // Lấy thông tin Category để hiển thị Icon/Name
                 Category cat = categoryDao.getCategoryById(trans.categoryId);
-                String catName = (cat != null) ? cat.name : "Other";
+                String catName = (cat != null) ? cat.name : "Unknown";
+                String catColor= (cat != null) ? cat.colorCode: "#000000";
                 String catIcon = (cat != null) ? cat.iconName : "ic_other";
 
-                uiModels.add(new HistoryItem(trans, catName, catIcon));
+                uiModels.add(new HistoryItem(trans, catName, catIcon, catColor));
             }
 
             _historyItems.postValue(uiModels);
@@ -140,19 +142,18 @@ public class TransactionViewModel extends AndroidViewModel {
         private Transaction transaction;
         private String categoryName;
         private String categoryIcon;
-
-        // Constructor cho Header ngày
+        private String categoryColor;
         public HistoryItem(String date) {
             this.type = TYPE_DATE_HEADER;
             this.date = date;
         }
 
-        // Constructor cho Transaction
-        public HistoryItem(Transaction transaction, String categoryName, String categoryIcon) {
+        public HistoryItem(Transaction transaction, String categoryName, String categoryIcon, String categoryColor) {
             this.type = TYPE_TRANSACTION;
             this.transaction = transaction;
-            this.categoryName = (categoryName != null) ? categoryName : "Other";
-            this.categoryIcon = (categoryIcon != null) ? categoryIcon : "ic_other";
+            this.categoryName = categoryName;
+            this.categoryColor = categoryColor;
+            this.categoryIcon = categoryIcon;
         }
 
         public int getType() { return type; }
@@ -160,5 +161,6 @@ public class TransactionViewModel extends AndroidViewModel {
         public Transaction getTransaction() { return transaction; }
         public String getCategoryName() { return categoryName; }
         public String getCategoryIcon() { return categoryIcon; }
+        public String getCategoryColor(){return categoryColor;}
     }
 }

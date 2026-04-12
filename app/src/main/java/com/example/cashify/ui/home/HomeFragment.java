@@ -130,8 +130,9 @@ public class HomeFragment extends Fragment {
                 for (TransactionWithCategory item : transWithCatList) {
                     String catName = (item.category != null) ? item.category.name : "Chưa phân loại";
                     String catIcon = (item.category != null) ? item.category.iconName : "ic_food";
+                    String catColor = (item.category != null) ? item.category.colorCode : "#000000";
 
-                    recentItems.add(new TransactionViewModel.HistoryItem(item.transaction, catName, catIcon));
+                    recentItems.add(new TransactionViewModel.HistoryItem(item.transaction, catName, catIcon, catColor));
                 }
 
                 adapter.updateData(recentItems);
