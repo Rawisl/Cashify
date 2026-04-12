@@ -1,4 +1,4 @@
-package com.example.cashify.AddTransaction;
+package com.example.cashify.ui.transactions;
 
 import android.content.Context;
 import android.content.res.ColorStateList;
@@ -88,6 +88,20 @@ public class CategoryPickerAdapter extends RecyclerView.Adapter<CategoryPickerAd
             notifyItemChanged(selectedPosition);
             listener.onCategoryClick(item);
         });
+    }
+
+    public void setSelectedById(int categoryId) {
+        for (int i = 0; i < list.size(); i++) {
+            if (list.get(i).id == categoryId) {
+                int oldPos = selectedPosition;
+                selectedPosition = i;
+                notifyItemChanged(oldPos);
+                notifyItemChanged(selectedPosition);
+                // Cập nhật listener để Activity/ViewModel biết category này đã được chọn
+                listener.onCategoryClick(list.get(i));
+                break;
+            }
+        }
     }
 
     @Override

@@ -69,8 +69,8 @@ public class RecentTransactionAdapter extends RecyclerView.Adapter<RecentTransac
         if (trans == null) return;
 
         // 1. Gán Note (Tiêu đề)
-        if (holder.tvTitle != null) {
-            holder.tvTitle.setText(trans.note != null && !trans.note.isEmpty() ? trans.note : "Giao dịch");
+        if (holder.tvMainTitle != null) {
+            holder.tvMainTitle.setText(trans.note != null && !trans.note.isEmpty() ? trans.note : "Giao dịch");
         }
 
         // 2. Gán Subtitle (Category • Time) - Học y chang HistoryAdapter
@@ -121,13 +121,13 @@ public class RecentTransactionAdapter extends RecyclerView.Adapter<RecentTransac
     public static class TransactionViewHolder extends RecyclerView.ViewHolder {
         LinearLayout itemContainer;
         ShapeableImageView ivCategoryIcon;
-        TextView tvTitle, tvSubtitle, tvAmount;
+        TextView tvMainTitle, tvSubtitle, tvAmount;
 
         public TransactionViewHolder(@NonNull View itemView) {
             super(itemView);
             itemContainer = itemView.findViewById(R.id.itemContainer);
             ivCategoryIcon = itemView.findViewById(R.id.ivCategoryIcon);
-            tvTitle = itemView.findViewById(R.id.tvTitle);
+            tvMainTitle = itemView.findViewById(R.id.tvMainTitle);
             tvSubtitle = itemView.findViewById(R.id.tvSubtitle);
             tvAmount = itemView.findViewById(R.id.tvAmount);
         }

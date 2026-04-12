@@ -24,8 +24,9 @@ public class TransactionViewModel extends AndroidViewModel {
     private final CategoryDao categoryDao;
     private String categoryColor;
 
-    // 1. Biến này dùng để ghi nhớ tab hiện tại (ALL, INCOME, hay EXPENSE)
+    // Quản lý trạng thái hiện tại để khi Delete/Undo không bị nhảy filter
     private String currentFilter = "ALL";
+    private String currentSearchQuery = "";
 
     private final MutableLiveData<List<HistoryItem>> _historyItems = new MutableLiveData<>();
     public LiveData<List<HistoryItem>> getGroupedTransactions() { return _historyItems; }
@@ -37,18 +38,17 @@ public class TransactionViewModel extends AndroidViewModel {
         categoryDao = db.categoryDao();
     }
 
-    private String currentSearchQuery = ""; // Thêm biến này để lưu từ khóa tìm kiếm
-
-    // --- HÀM FETCH CHÍNH (Cập nhật để hỗ trợ Search) ---
+    /**
+     * Hàm fetch dữ liệu chính, gom nhóm theo ngày và hỗ trợ Search + Filter
+     */
     public void fetchHistoryData(String filterType, String query) {
         this.currentFilter = filterType;
-        this.currentSearchQuery = query; // Lưu lại từ khóa
+        this.currentSearchQuery = query;
 
         new Thread(() -> {
             List<Transaction> transactions;
 
-            // 1. Lấy dữ liệu theo Filter và Search Query
-            // Lưu ý: Nếu bạn chưa viết hàm search trong DAO, ta sẽ lọc bằng code Java ở dưới
+            // 1. Lấy dữ liệu từ DAO theo Type
             switch (filterType) {
                 case "INCOME":
                     transactions = transactionDao.getTransactionsByType(1);
@@ -62,33 +62,33 @@ public class TransactionViewModel extends AndroidViewModel {
             }
 
             List<HistoryItem> uiModels = new ArrayList<>();
-
             if (transactions == null || transactions.isEmpty()) {
                 _historyItems.postValue(uiModels);
                 return;
             }
 
-            // 2. LỌC THEO TỪ KHÓA (Search Logic)
+            // 2. Search Logic (Case-insensitive)
             List<Transaction> filteredList = new ArrayList<>();
             for (Transaction t : transactions) {
-                // Nếu từ khóa trống HOẶC ghi chú chứa từ khóa (không phân biệt hoa thường)
                 if (query.isEmpty() || (t.note != null && t.note.toLowerCase().contains(query.toLowerCase()))) {
                     filteredList.add(t);
                 }
             }
 
-            // 3. Chuyển đổi sang UI Model (HistoryItem)
+            // 3. Gom nhóm theo ngày để tạo Header
             SimpleDateFormat sdf = new SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault());
             String lastDate = "";
 
             for (Transaction trans : filteredList) {
                 String currentDate = sdf.format(new Date(trans.timestamp));
 
+                // Nếu sang ngày mới, thêm một Header vào List
                 if (!currentDate.equals(lastDate)) {
                     uiModels.add(new HistoryItem(currentDate));
                     lastDate = currentDate;
                 }
 
+                // Lấy thông tin Category để hiển thị Icon/Name
                 Category cat = categoryDao.getCategoryById(trans.categoryId);
                 String catName = (cat != null) ? cat.name : "Unknown";
                 String catColor= (cat != null) ? cat.colorCode: "#000000";
@@ -101,36 +101,43 @@ public class TransactionViewModel extends AndroidViewModel {
         }).start();
     }
 
-    // --- HÀM OVERLOAD (Để không bị lỗi code cũ) ---
-    public void fetchHistoryData(String filterType) {
-        fetchHistoryData(filterType, ""); // Mặc định search trống
+    // --- OVERLOADS ---
+    public void fetchHistoryData(String filterType) { fetchHistoryData(filterType, currentSearchQuery); }
+    public void fetchHistoryData() { fetchHistoryData(currentFilter, currentSearchQuery); }
+
+    /**
+     * YÊU CẦU 3: Xóa nhanh (dùng cho Swipe to Delete)
+     */
+    public void deleteOnly(Transaction transaction) {
+        new Thread(() -> {
+            transactionDao.delete(transaction);
+            fetchHistoryData(); // Refresh lại danh sách sau khi xóa
+        }).start();
     }
 
-    public void fetchHistoryData() {
-        fetchHistoryData(currentFilter, currentSearchQuery);
+    /**
+     * YÊU CẦU 3: Chèn lại (dùng cho nút UNDO trên Snackbar)
+     */
+    public void insertOnly(Transaction transaction) {
+        new Thread(() -> {
+            transactionDao.insert(transaction);
+            fetchHistoryData(); // Refresh lại danh sách sau khi Undo
+        }).start();
     }
 
     public void updateAndRefresh(Transaction transaction) {
         new Thread(() -> {
             transactionDao.update(transaction);
-            // Giờ đây gọi fetchHistoryData() sẽ không bị báo lỗi nữa
             fetchHistoryData();
         }).start();
     }
 
-    public void deleteAndRefresh(Transaction transaction) {
-        new Thread(() -> {
-            transactionDao.delete(transaction);
-            fetchHistoryData();
-        }).start();
-    }
-
-    // --- INNER CLASS ---
+    // --- INNER CLASS CHO RECYCLERVIEW MULTI-TYPE ---
     public static class HistoryItem {
         public static final int TYPE_DATE_HEADER = 0;
         public static final int TYPE_TRANSACTION = 1;
 
-        private int type;
+        private final int type;
         private String date;
         private Transaction transaction;
         private String categoryName;
