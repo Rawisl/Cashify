@@ -99,4 +99,8 @@ public interface BudgetDao {
     // Lấy tổng tất cả limitAmount của Master tuần trong 1 tháng (Để kiểm tra lúc set Master Tuần không vượt Tháng)
     @Query("SELECT IFNULL(SUM(limitAmount), 0) FROM budgets WHERE periodType = :weekPeriod AND categoryId = -1 AND startDate >= :monthStart AND startDate <= :monthEnd AND startDate != :currentWeekStart")
     long getSumOtherWeeklyMasterLimits(long monthStart, long monthEnd, long currentWeekStart, String weekPeriod);
+
+    //tẩy trắng time
+    @Query("DELETE FROM budgets")
+    void deleteAllBudgets();
 }
