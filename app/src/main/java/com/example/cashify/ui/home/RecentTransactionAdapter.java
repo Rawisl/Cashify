@@ -98,9 +98,20 @@ public class RecentTransactionAdapter extends RecyclerView.Adapter<RecentTransac
                     item.getCategoryIcon(), "drawable", holder.itemView.getContext().getPackageName());
             holder.ivCategoryIcon.setImageResource(iconResId != 0 ? iconResId : R.drawable.ic_food);
 
-            int colorRes = (trans.type == 1) ? R.color.status_background_green : R.color.status_background_red;
-            holder.ivCategoryIcon.setBackgroundTintList(ColorStateList.valueOf(
-                    ContextCompat.getColor(holder.itemView.getContext(), colorRes)));
+            try {
+                String colorStr = item.getCategoryColor();
+                if (colorStr == null || colorStr.isEmpty()) colorStr = "#4CAF50"; // Màu cua dự phòng (Xanh lá)
+                int originColor = Color.parseColor(colorStr);
+
+                int pastelColor = Color.argb(51, Color.red(originColor), Color.green(originColor), Color.blue(originColor));
+                holder.ivCategoryIcon.setBackgroundTintList(ColorStateList.valueOf(pastelColor));
+
+                holder.ivCategoryIcon.setImageTintList(ColorStateList.valueOf(originColor));
+
+            } catch (Exception e) {
+                holder.ivCategoryIcon.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#EEEEEE"))); // Xám siêu nhẹ
+                holder.ivCategoryIcon.setImageTintList(ColorStateList.valueOf(Color.GRAY)); // Icon xám
+            }
         }
 
         // 5. Sự kiện Click

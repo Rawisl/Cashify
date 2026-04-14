@@ -20,10 +20,10 @@ public class Transaction {
     public int categoryId; // Liên kết với bảng Danh mục
     public String note;
     public long timestamp; // Lưu ngày tháng bằng số Long để tính toán/lọc cho nhanh
-
+    public String paymentMethod; //"cash", "bank", "card", "ewallet"
     public int type; // 0=chi, 1=thu (lưu lại để truy vấn nhanh, khỏi join)
+
     public Transaction() {
-        // Để trống cũng được, nhưng phải có nó!
     }
 
 }
