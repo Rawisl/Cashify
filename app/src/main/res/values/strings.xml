@@ -42,6 +42,11 @@
 
     <string name="budget_title">Budget</string>
     <string name="budget_subtitle">Track your spending limits</string>
+    <string name="budget_linked_mode_title">Link Weekly &amp; Monthly</string>
+    <string name="budget_month_format">Month %1$d/%2$d</string>
+    <string name="budget_week_format">Week %1$d (%2$d/%3$d - %4$d/%5$d)</string>
+    <string name="budget_date_picker_month">Select Month</string>
+    <string name="budget_date_picker_week">Select Week</string>
     <string name="budget_main_card_title_monthly">Monthly Master Budget</string>
     <string name="budget_main_card_title_weekly">Weekly Master Budget</string>
     <string name="budget_tips">💡 Budget Tips</string>
@@ -82,8 +87,8 @@
     <string name="dashboard_recent_transactions">Recent Transactions</string>
     <string name="dashboard_spending_by_category">Spending by Category</string>
 
-    <string name="dashboard_month_format">Tháng %1$d/%2$d</string>
-    <string name="dashboard_month_default">Tháng 3/2026</string>
+    <string name="dashboard_month_format">%1$d/%2$d</string>
+    <string name="dashboard_month_default">3/2026</string>
 
 
     <string name="category_title_manage">Category management</string>

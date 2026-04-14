@@ -25,12 +25,12 @@ public interface BudgetDao {
     List<Budget> getActiveBudgets(long now);
 
     //lấy ngân sách của 1 danh mục cụ thể
-    @Query("SELECT * FROM budgets WHERE categoryId = :category_id AND startDate <= :now AND endDate >= :now AND periodType = :periodType LIMIT 1")
-    Budget getBudgetByCategory(int category_id, long now, String periodType);
+    @Query("SELECT * FROM budgets WHERE categoryId = :category_id AND startDate = :startTime AND endDate = :endTime AND periodType = :periodType LIMIT 1")
+    Budget getBudgetByCategory(int category_id, long startTime, long endTime, String periodType);
 
     //Lấy ngân sách tổng (category=-1)
-    @Query("SELECT * FROM budgets WHERE categoryId = -1 AND startDate <= :now AND endDate >= :now AND periodType = :periodType LIMIT 1")
-    Budget getMasterBudget(long now, String periodType);
+    @Query("SELECT * FROM budgets WHERE categoryId = -1 AND startDate = :startTime AND endDate = :endTime AND periodType = :periodType LIMIT 1")
+    Budget getMasterBudget(long startTime, long endTime, String periodType);
 
     //progress bar ngân sách (Đã chỉnh sửa)
     @Query("SELECT b.*, c.name as categoryName, c.iconName as categoryIcon, c.colorCode as categoryColor, IFNULL(SUM(t.amount), 0) as spentAmount " +
@@ -38,9 +38,9 @@ public interface BudgetDao {
             "LEFT JOIN categories c ON b.categoryId = c.id " +
             "LEFT JOIN transactions t ON t.categoryId = b.categoryId " +
             "AND t.type = 0 AND t.timestamp BETWEEN b.startDate AND b.endDate " +
-            "WHERE b.startDate <= :now AND b.endDate >= :now AND b.periodType = :periodType " +
+            "WHERE b.startDate = :startTime AND b.endDate = :endTime AND b.periodType = :periodType " +
             "GROUP BY b.id")
-    List<BudgetWithSpent> getActiveBudgetsWithSpent(long now, String periodType);
+    List<BudgetWithSpent> getActiveBudgetsWithSpent(long startTime, long endTime, String periodType);
 
     // Tính tổng tất cả khoản chi (type = 0) trong khoảng thời gian để dành riêng cho Master Budget (Mới them)
     @Query("SELECT IFNULL(SUM(amount), 0) FROM transactions WHERE type = 0 AND timestamp BETWEEN :startDate AND :endDate")
@@ -55,11 +55,11 @@ public interface BudgetDao {
             "0 as id, :startDate as startDate, :endDate as endDate " +
             "FROM categories c " +
             "JOIN transactions t ON c.id = t.categoryId " +
-            "WHERE t.type = 0 " + // Chỉ lấy loại Chi (Expense)
+            "WHERE t.type = 0 " +
             "AND t.timestamp BETWEEN :startDate AND :endDate " +
-            "AND c.id NOT IN (SELECT categoryId FROM budgets WHERE startDate <= :now AND endDate >= :now AND periodType = :periodType) " +
+            "AND c.id NOT IN (SELECT categoryId FROM budgets WHERE startDate = :startDate AND endDate = :endDate AND periodType = :periodType) " +
             "GROUP BY c.id")
-    List<BudgetWithSpent> getUnplannedExpenses(long startDate, long endDate, long now, String periodType);
+    List<BudgetWithSpent> getUnplannedExpenses(long startDate, long endDate, String periodType);
 
     // Tính tổng hạn mức của tất cả danh mục con (không bao gồm Master -1)
     @Query("SELECT IFNULL(SUM(limitAmount), 0) FROM budgets WHERE categoryId != -1 AND periodType = :periodType AND startDate = :startTime AND endDate = :endTime")
@@ -82,7 +82,7 @@ public interface BudgetDao {
     List<BudgetWithCategory> getAllBudgetsWithCategory(String periodType);
 
     // Gộp các category budget của tuần thành 1 tháng lớn
-    @Query("SELECT b.categoryId as categoryId, c.name as categoryName, c.iconName as categoryIcon, " +
+    @Query("SELECT b.categoryId as categoryId, c.name as categoryName, c.iconName as categoryIcon, c.colorCode as categoryColor, " +
             "SUM(b.limitAmount) as limitAmount, " +
             "(SELECT IFNULL(SUM(t.amount), 0) FROM transactions t WHERE t.categoryId = b.categoryId AND t.type = 0 AND t.timestamp BETWEEN :monthStart AND :monthEnd) as spentAmount, " +
             "0 as id, :monthStart as startDate, :monthEnd as endDate, 'MONTH_LINKED' as periodType " +

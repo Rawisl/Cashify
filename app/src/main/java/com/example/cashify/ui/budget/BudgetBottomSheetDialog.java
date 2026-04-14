@@ -263,6 +263,25 @@ public class BudgetBottomSheetDialog extends BottomSheetDialogFragment {
                 selectedPos = holder.getAdapterPosition();
                 selectedCategoryIdFromDropdown = cat.id; // Gán ID để lưu Database
 
+                // Lấy tên và đổi chữ "Add Budget" thành "Add [Tên danh mục]"
+                TextView tvTitle = getDialog().findViewById(R.id.tvTitle);
+                if (tvTitle != null) {
+                    tvTitle.setText("Add " + cat.name);
+                }
+
+                // Cập nhật lại cái Icon lớn trên cùng góc trái
+                if (ivIcon != null) {
+                    String currentIconName = (cat.iconName != null && !cat.iconName.isEmpty()) ? cat.iconName : "ic_food";
+                    int currentResId = holder.itemView.getContext().getResources().getIdentifier(currentIconName, "drawable", holder.itemView.getContext().getPackageName());
+                    ivIcon.setImageResource(currentResId != 0 ? currentResId : R.drawable.ic_food);
+
+                    try {
+                        String colorStr = (cat.colorCode != null && !cat.colorCode.isEmpty()) ? cat.colorCode : "#4C6FFF";
+                        ivIcon.setImageTintList(ColorStateList.valueOf(Color.parseColor(colorStr)));
+                    } catch (Exception e) {
+                        ivIcon.setImageTintList(ColorStateList.valueOf(Color.GRAY));
+                    }
+                }
                 // Cập nhật lại UI để hiện viền đen cho cục mới
                 notifyItemChanged(oldPos);
                 notifyItemChanged(selectedPos);
