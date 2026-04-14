@@ -35,16 +35,16 @@ public class BudgetRepository {
         executor.execute(() -> callback.onResult(budgetDao.getActiveBudgets(now)));
     }
 
-    public void getBudgetByCategory(int categoryId, long now, String periodType, Callback<Budget> callback) {
-        executor.execute(() -> callback.onResult(budgetDao.getBudgetByCategory(categoryId, now, periodType)));
+    public void getBudgetByCategory(int categoryId, long startTime, long endTime, String periodType, Callback<Budget> callback) {
+        executor.execute(() -> callback.onResult(budgetDao.getBudgetByCategory(categoryId, startTime, endTime, periodType)));
     }
 
-    public void getMasterBudget(long now, String periodType, Callback<Budget> callback) {
-        executor.execute(() -> callback.onResult(budgetDao.getMasterBudget(now, periodType)));
+    public void getMasterBudget(long startTime, long endTime, String periodType, Callback<Budget> callback) {
+        executor.execute(() -> callback.onResult(budgetDao.getMasterBudget(startTime, endTime, periodType)));
     }
 
-    public void getActiveBudgetsWithSpent(long now, String periodType, Callback<List<BudgetWithSpent>> callback) {
-        executor.execute(() -> callback.onResult(budgetDao.getActiveBudgetsWithSpent(now, periodType)));
+    public void getActiveBudgetsWithSpent(long startTime, long endTime, String periodType, Callback<List<BudgetWithSpent>> callback) {
+        executor.execute(() -> callback.onResult(budgetDao.getActiveBudgetsWithSpent(startTime, endTime, periodType)));
     }
 
     public void getLinkedMonthlyCategoryBudgets(long monthStart, long monthEnd, String weekPeriod, Callback<List<BudgetWithSpent>> callback) {
@@ -71,8 +71,8 @@ public class BudgetRepository {
         executor.execute(() -> callback.onResult(budgetDao.getTotalCategoryLimitExcluding(excludedId, periodType, startTime, endTime)));
     }
 
-    public void getUnplannedExpenses(long startDate, long endDate, long now, String periodType, Callback<List<BudgetWithSpent>> callback) {
-        executor.execute(() -> callback.onResult(budgetDao.getUnplannedExpenses(startDate, endDate, now, periodType)));
+    public void getUnplannedExpenses(long startDate, long endDate, String periodType, Callback<List<BudgetWithSpent>> callback) {
+        executor.execute(() -> callback.onResult(budgetDao.getUnplannedExpenses(startDate, endDate, periodType)));
     }
 
     public interface Callback<T> {
