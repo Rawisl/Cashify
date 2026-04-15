@@ -24,14 +24,6 @@ public abstract class AppDatabase extends RoomDatabase {
             instance = Room.databaseBuilder(context.getApplicationContext(),
                             AppDatabase.class, "money_manager_db")
                     .fallbackToDestructiveMigration()
-                    .addCallback(new RoomDatabase.Callback() {
-                        @Override
-                        public void onOpen(@NonNull androidx.sqlite.db.SupportSQLiteDatabase db) {
-                            super.onOpen(db);
-                            // Mỗi lần mở DB, gọi Seeder để kiểm tra xem có trống không
-                            DatabaseSeeder.seedIfEmpty(context);
-                        }
-                    })
                     .build();
         }
         return instance;
