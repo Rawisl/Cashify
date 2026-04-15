@@ -109,4 +109,12 @@ public interface TransactionDao {
     @androidx.room.Transaction
     @Query("SELECT * FROM transactions ORDER BY timestamp DESC LIMIT 5")
     LiveData<List<TransactionWithCategory>> getRecentTransactionsWithCategory();
+
+    //lọc giao dịch theo phương thức:
+    @Query("SELECT * FROM transactions WHERE paymentMethod = :method ORDER BY timestamp DESC")
+    List<Transaction> getTransactionsByPaymentMethod(String method);
+
+    //lọc giao dịch theo phương thức và theo ngày
+    @Query("SELECT * FROM transactions WHERE paymentMethod = :method AND timestamp BETWEEN :start AND :end ORDER BY timestamp DESC")
+    List<Transaction> getTransactionsByPaymentMethodAndDate(String method, long start, long end);
 }

@@ -4,22 +4,26 @@ package com.example.cashify.database;
 
 import android.content.Context;
 
+import java.util.List;
 import java.util.concurrent.Executors;
 
 
 
-public class    DatabaseSeeder {
+public class DatabaseSeeder {
 
-    public static void seedIfEmpty(Context context) {
+    public static void seedIfEmpty(Context context){
 
 //Gọi hàm execute này tránh làm đơ màn hình khi chèn dữ liệu
 
-            CategoryDao dao = AppDatabase.getInstance(context).categoryDao();
+        Executors.newSingleThreadExecutor().execute(() ->{
+
+            CategoryDao dao=AppDatabase.getInstance(context).categoryDao();
+
 
 
 //Check isEmpty để chèn chỉ khi trống dữ liệu, tránh bị trùng lặp, hoan hô Thu An
 
-            if (dao.getCategoriesByType(0).isEmpty() && dao.getCategoriesByType(1).isEmpty()) {
+            if(dao.getCategoriesByType(0).isEmpty()&&dao.getCategoriesByType(1).isEmpty()){
 
 //Danh sách này chứa các danh mục phổ biến
 
@@ -30,6 +34,7 @@ public class    DatabaseSeeder {
                 dao.insert(makeCategory("Gia đình cho", "ic_family", "#81949D", 1, 1));
 
                 dao.insert(makeCategory("Thưởng", "ic_bonus", "#9B8077", 1, 1));
+
 
 
 //--chi ra--//
@@ -51,9 +56,14 @@ public class    DatabaseSeeder {
                 dao.insert(makeCategory("Tiền trọ", "ic_house", "#93CE9D", 0, 1));
 
                 dao.insert(makeCategory("Khác", "ic_other", "#000000", 0, 1));
+                List<Category> categories = dao.getAll(); // hoặc getCategories()
+
+                FakeDataSeeder.seed(context, categories);
 
 
             }
+
+        });
 
     }
 
