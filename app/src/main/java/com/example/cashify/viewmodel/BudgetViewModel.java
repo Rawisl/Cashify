@@ -159,10 +159,25 @@ public class BudgetViewModel extends AndroidViewModel {
                     repository.getTotalCategoryLimits(actualPeriod, startTime, endTime, totalCatLimits -> {
                         BudgetUIState state = new BudgetUIState();
                         List<BudgetWithSpent> displayList = new ArrayList<>();
+
+                        List<Integer> plannedCategoryIds = new ArrayList<>();
+
                         if (plannedData != null) {
-                            for (BudgetWithSpent b : plannedData) if (b.categoryId != -1) displayList.add(b);
+                            for (BudgetWithSpent b : plannedData) {
+                                if (b.categoryId != -1) {
+                                    displayList.add(b);
+                                    plannedCategoryIds.add(b.categoryId); // Ghi nhớ ID này lại
+                                }
+                            }
                         }
-                        if (unplannedData != null) displayList.addAll(unplannedData);
+
+                        if (unplannedData != null) {
+                            for (BudgetWithSpent u : unplannedData) {
+                                if (!plannedCategoryIds.contains(u.categoryId)) {
+                                    displayList.add(u);
+                                }
+                            }
+                        }
 
                         state.displayList = displayList;
                         state.masterBudget = master;
