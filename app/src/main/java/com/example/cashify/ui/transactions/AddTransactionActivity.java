@@ -45,7 +45,7 @@ public class AddTransactionActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         // 1. Gán Layout trước để tránh NullPointerException khi findViewById
-        setContentView(R.layout.add_transaction);
+        setContentView(R.layout.activity_add_transaction);
 
         // 2. Kiểm tra ID từ Intent ngay lập tức để xác định chế độ (Add hay Edit)
         editTransactionId = getIntent().getIntExtra("TRANSACTION_ID", -1);

@@ -20,36 +20,36 @@
                 android:id="@+id/ivIcon"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
+                android:contentDescription="@string/category_choose_icon"
                 android:padding="10dp"
-                android:src="@android:drawable/ic_menu_agenda"
-                app:tint="#4C6FFF"
-                android:importantForAccessibility="no"
-                tools:ignore="ImageContrastCheck" />
+                android:src="@android:drawable/ic_menu_agenda" />
 
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
                 android:layout_marginStart="16dp"
                 android:layout_toEndOf="@id/ivIcon"
-                android:layout_centerVertical="true"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                tools:ignore="RelativeOverlap">
 
                 <TextView
                     android:id="@+id/tvTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    tools:text="Food"
-                    android:textColor="#000000"
+                    android:fontFamily="@font/inter_bold"
+                    android:textColor="@color/brand_primary"
                     android:textSize="20sp"
-                    android:textStyle="bold" />
+                    tools:text="Food" />
 
                 <TextView
                     android:id="@+id/tvSubtitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    tools:text="Edit budget limits"
-                    android:textColor="#757575"
-                    android:textSize="12sp" />
+                    android:fontFamily="@font/inter_semibold"
+                    android:textColor="@color/screen_subtitle"
+                    android:textSize="12sp"
+                    tools:text="Edit budget limits" />
             </LinearLayout>
 
             <ImageButton
@@ -59,29 +59,12 @@
                 android:layout_alignParentEnd="true"
                 android:layout_centerVertical="true"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Đóng"
+                android:contentDescription="@string/action_cancel"
                 android:padding="12dp"
                 android:scaleType="centerInside"
                 android:src="@android:drawable/ic_menu_close_clear_cancel"
                 app:tint="#9E9E9E" />
         </RelativeLayout>
-
-        <LinearLayout
-            android:id="@+id/layoutMasterInfo"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:background="#FFF0F5"
-            android:padding="12dp"
-            android:visibility="gone"
-            tools:visibility="visible">
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Master Budget sets the total amount you want to spend across all categories. Make sure your category budgets don't exceed this amount."
-                android:textColor="#9C27B0"
-                android:textSize="12sp" />
-        </LinearLayout>
 
         <LinearLayout
             android:id="@+id/layoutCategorySelector"
@@ -93,21 +76,22 @@
             tools:visibility="visible">
 
             <TextView
+                style="@style/section_header"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Select Category"
+                android:layout_marginBottom="8dp"
+                android:text="@string/settings_item_category"
+                android:textAllCaps="false"
                 android:textColor="@color/item_title"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="8dp" />
+                android:textSize="14sp" />
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvCategoryPicker"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="#F5F5F5"
-                android:padding="8dp"
                 android:nestedScrollingEnabled="false"
+                android:padding="8dp"
                 app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
                 app:spanCount="4"
                 tools:listitem="@layout/item_category_picker" />
@@ -115,29 +99,34 @@
 
         <TextView
             android:id="@+id/tvCurrentSpendingLabel"
+            style="@style/section_header"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
-            android:text="Current Spending"
-            android:textColor="#757575"
-            android:textSize="12sp" />
-        <TextView
-            android:id="@+id/tvCurrentSpending"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            tools:text="450.000 VNĐ"
-            android:textColor="#121212"
-            android:textSize="24sp"
-            android:textStyle="bold" />
+            android:text="@string/budget_category_current_spending"
+            android:textAllCaps="false"
+            android:textColor="@color/item_title"
+            android:textSize="14sp" />
 
         <TextView
+            android:id="@+id/tvCurrentSpending"
+            style="@style/item_budget_money_amount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="0dp"
+            android:textColor="#121212"
+            android:textSize="24sp"
+            tools:text="450.000 VND" />
+
+        <TextView
+            style="@style/section_header"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:text="Budget Amount"
-            android:textColor="#555555"
-            android:textStyle="bold"
-            android:textSize="14sp"/>
+            android:text="@string/budget_category_budget_amount"
+            android:textAllCaps="false"
+            android:textColor="@color/item_title"
+            android:textSize="14sp" />
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/layoutInputAmount"
@@ -149,28 +138,23 @@
             app:boxCornerRadiusBottomStart="12dp"
             app:boxCornerRadiusTopEnd="12dp"
             app:boxCornerRadiusTopStart="12dp"
-            app:boxStrokeColor="#4C6FFF"
-            app:suffixText=" VNĐ">
+            app:boxStrokeColor="@color/cat_pastel_gray"
+            app:hintEnabled="false"
+            app:suffixText="@string/VND_currency">
+
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/edtBudgetAmount"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Enter amount"
+                android:hint="@string/action_enter_amount"
                 android:inputType="numberDecimal" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <Button
             android:id="@+id/btnSaveBudget"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:layout_marginTop="32dp"
+            style="@style/btn_bottom"
             android:layout_marginBottom="24dp"
-            android:backgroundTint="#4C6FFF"
-            android:text="Save Budget"
-            android:textAllCaps="false"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            app:cornerRadius="16dp" />
+            android:text="@string/action_save" />
 
         <Button
             android:id="@+id/btnDeleteBudget"
@@ -178,12 +162,15 @@
             android:layout_width="match_parent"
             android:layout_height="56dp"
             android:layout_marginBottom="24dp"
-            android:text="Delete Budget"
-            android:textColor="#E53935"
-            app:strokeColor="#E53935"
-            app:cornerRadius="16dp"
+            android:fontFamily="@font/inter_bold"
+            android:text="@string/action_delete"
+            android:textAllCaps="false"
+            android:textColor="@color/status_red"
+            android:textSize="24sp"
             android:visibility="gone"
-            tools:visibility="visible"/>
+            app:cornerRadius="16dp"
+            app:strokeColor="@color/status_red"
+            tools:visibility="visible" />
 
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

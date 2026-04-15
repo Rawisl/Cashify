@@ -14,7 +14,7 @@
         android:layout_marginBottom="25dp"
         android:fontFamily="@font/outfit_bold"
         android:gravity="center"
-        android:text="0đ"
+        android:text="0 VND"
         android:textColor="@color/brand_primary"
         android:textSize="28sp" />
 
@@ -87,9 +87,10 @@
         <ImageView
             android:id="@+id/btn_backspace"
             android:padding="19dp"
-            android:src="@drawable/delete"
+            android:src="@drawable/ic_delete"
             app:tint="@color/status_red"
-            style="@style/numpad_key" />
+            style="@style/numpad_key"
+            android:contentDescription="@string/action_delete"/>
 
     </androidx.gridlayout.widget.GridLayout>
 

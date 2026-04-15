@@ -1,4 +1,5 @@
 package com.example.cashify.utils;
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -23,6 +24,7 @@ public class NumpadBottomSheet extends BottomSheetDialogFragment
     private TextView tvAmount;
 
     //Danh sách hàm xử lý nhập, xóa, format số
+    @SuppressLint("SetTextI18n")
     private void updateAmountDisplay() {
         try {
             // 1. Ép chuỗi thô thành số nguyên (Long để chứa được nghìn tỷ)
@@ -85,8 +87,7 @@ public class NumpadBottomSheet extends BottomSheetDialogFragment
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle saveInstanceState)
     {
         //load .xml layout
-        View view = inflater.inflate(R.layout.layout_bottom_sheet_numpad, container,false);
-        return view;
+        return inflater.inflate(R.layout.layout_bottom_sheet_numpad, container,false);
     }
 
     @Override

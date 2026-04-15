@@ -4,7 +4,6 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFFFFF"
     android:fitsSystemWindows="true">
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -22,19 +21,19 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
+        <TextView
+            android:id="@+id/tvDashboard_subtitle"
+            style="@style/screen_subtitle"
+            android:text="@string/dashboard_subtitle"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvDashboard" />
+
         <androidx.cardview.widget.CardView
             android:id="@+id/cardDateSelector"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            style="@style/pickdate_cardview"
             android:layout_marginTop="12dp"
-            android:clickable="true"
-            android:focusable="true"
-            android:foreground="?attr/selectableItemBackground"
-            app:cardBackgroundColor="@color/brand_primary"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="2dp"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvDashboard">
+            app:layout_constraintTop_toBottomOf="@id/tvDashboard_subtitle">
 
             <LinearLayout
                 android:layout_width="wrap_content"
@@ -88,7 +87,7 @@
                 <TextView
                     android:id="@+id/total_money_amount"
                     style="@style/main_money_amount"
-                    android:text="0 VNĐ" />
+                    android:text="0 VND" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -111,7 +110,7 @@
                         <TextView
                             android:id="@+id/expenses_money_amount"
                             style="@style/main_card_left_money_amount"
-                            android:text="0 VNĐ" />
+                            android:text="0 VND" />
                     </LinearLayout>
 
                     <LinearLayout
@@ -130,7 +129,7 @@
                             style="@style/main_card_right_money_amount"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="0 VNĐ" />
+                            android:text="0 VND" />
                     </LinearLayout>
                 </LinearLayout>
             </LinearLayout>
@@ -150,12 +149,12 @@
                 android:background="@color/bg_main"
                 android:orientation="vertical"
                 android:padding="24dp">
+
                 <TextView
                     android:id="@+id/tvCategoryLabel"
-                    android:text="@string/dashboard_spending_by_category"
-                    android:textSize="18sp"
                     style="@style/screen_title"
-                    />
+                    android:text="@string/dashboard_spending_by_category"
+                    android:textSize="18sp" />
 
                 <com.github.mikephil.charting.charts.PieChart
                     android:id="@+id/pieChart"
@@ -168,7 +167,7 @@
                     android:id="@+id/rvLegend"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    tools:listitem="@layout/item_chart_legend"/>
+                    tools:listitem="@layout/item_chart_legend" />
 
             </LinearLayout>
         </androidx.cardview.widget.CardView>
@@ -187,6 +186,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:clickable="true"
+            android:focusable="true"
             android:padding="8dp"
             android:text="@string/action_see_all"
             android:textColor="#4C6FFF"

@@ -91,7 +91,6 @@ public class TransactionFragment extends Fragment {
         filterIncome.setOnClickListener(v -> handleFilterClick("INCOME"));
         filterExpense.setOnClickListener(v -> handleFilterClick("EXPENSE"));
 
-        view.findViewById(R.id.btnBack).setOnClickListener(v -> requireActivity().onBackPressed());
 
         // Search logic
         EditText etSearch = view.findViewById(R.id.etSearch);

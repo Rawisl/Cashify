@@ -40,7 +40,7 @@
         android:layout_width="40dp"
         android:layout_height="40dp"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:src="@drawable/pencil_regular"
+        android:src="@drawable/ic_pencil_regular"
         android:padding="10dp"
         android:scaleType="centerInside"
         app:tint="@color/status_green" />
@@ -51,7 +51,7 @@
         android:layout_height="40dp"
         android:layout_marginStart="8dp"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:src="@drawable/trash_regularsvg"
+        android:src="@drawable/ic_trash_regular"
         android:padding="10dp"
         android:scaleType="centerInside"
         app:tint="@color/status_red" />

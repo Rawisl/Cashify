@@ -1,43 +1,44 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     style="@style/cardview_buttons"
     android:clickable="true"
     android:focusable="true"
     android:foreground="?attr/selectableItemBackground">
+
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#FFFFFF"
+        android:background="@color/cardview_light_background"
         android:padding="16dp">
 
         <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/ivCategoryIcon"
             style="@style/btn_main_icon"
             android:background="@color/icon_setting_background"
-            app:srcCompat="@drawable/security_regular"
-            app:tint="@color/brand_primary"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent"
+            app:srcCompat="@drawable/ic_security_regular"
+            app:tint="@color/brand_primary" />
 
         <TextView
             android:id="@+id/tvPercent"
             style="@style/item_budget_percent"
             android:layout_width="wrap_content"
-            tools:text="75%"
+            app:layout_constraintBottom_toTopOf="@id/ivEdit"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="@id/ivCategoryIcon"
-            app:layout_constraintBottom_toTopOf="@id/ivEdit"
-            app:layout_constraintVertical_chainStyle="packed" />
+            app:layout_constraintVertical_chainStyle="packed"
+            tools:text="75%" />
 
         <ImageView
-        android:id="@+id/ivEdit"
-        style="@style/item_budget_edit"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvPercent"
-        app:layout_constraintBottom_toBottomOf="@id/ivCategoryIcon" />
+            android:id="@+id/ivEdit"
+            style="@style/item_budget_edit"
+            android:contentDescription="@string/action_edit"
+            app:layout_constraintBottom_toBottomOf="@id/ivCategoryIcon"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvPercent" />
 
         <TextView
             android:id="@+id/tvCategoryName"
@@ -45,23 +46,23 @@
             android:layout_width="0dp"
             android:layout_marginStart="12dp"
             android:layout_marginEnd="12dp"
-            tools:text="Food"
-            app:layout_constraintStart_toEndOf="@id/ivCategoryIcon"
-            app:layout_constraintEnd_toStartOf="@id/tvPercent"
-            app:layout_constraintTop_toTopOf="@id/ivCategoryIcon"
             app:layout_constraintBottom_toTopOf="@id/tvSpentAndLimit"
-            app:layout_constraintVertical_chainStyle="packed" />
+            app:layout_constraintEnd_toStartOf="@id/tvPercent"
+            app:layout_constraintStart_toEndOf="@id/ivCategoryIcon"
+            app:layout_constraintTop_toTopOf="@id/ivCategoryIcon"
+            app:layout_constraintVertical_chainStyle="packed"
+            tools:text="Food" />
 
         <TextView
             android:id="@+id/tvSpentAndLimit"
             style="@style/item_budget_money_amount"
             android:layout_width="0dp"
             android:layout_marginEnd="12dp"
-            tools:text="100.000 of 600.000 VNĐ"
-            app:layout_constraintStart_toStartOf="@id/tvCategoryName"
+            app:layout_constraintBottom_toBottomOf="@id/ivCategoryIcon"
             app:layout_constraintEnd_toStartOf="@id/tvPercent"
+            app:layout_constraintStart_toStartOf="@id/tvCategoryName"
             app:layout_constraintTop_toBottomOf="@id/tvCategoryName"
-            app:layout_constraintBottom_toBottomOf="@id/ivCategoryIcon" />
+            tools:text="100.000 of 600.000 VNĐ" />
 
         <ProgressBar
             android:id="@+id/pbBudget"
@@ -69,10 +70,10 @@
             android:layout_width="0dp"
             android:layout_marginTop="16dp"
             android:progressTint="@color/cat_pastel_orange"
-            tools:progress="75"
-            app:layout_constraintTop_toBottomOf="@id/ivCategoryIcon"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
+            app:layout_constraintTop_toBottomOf="@id/ivCategoryIcon"
+            tools:progress="75" />
 
         <TextView
             android:id="@+id/tvAlertMessage"
@@ -82,12 +83,12 @@
             android:fontFamily="@font/inter_semibold"
             android:textSize="12sp"
             android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/pbBudget"
             tools:text="100.000 VNĐ available"
             tools:textColor="#FF9800"
-            tools:visibility="visible"
-            app:layout_constraintTop_toBottomOf="@id/pbBudget"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
+            tools:visibility="visible" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.cardview.widget.CardView>

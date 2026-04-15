@@ -4,7 +4,6 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F8F9FA"
     android:fitsSystemWindows="true">
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -15,7 +14,7 @@
         <TextView
             android:id="@+id/tvTitleBudget"
             style="@style/screen_title"
-            android:text="Budget"
+            android:text="@string/nav_budget"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -98,14 +97,7 @@
 
             <androidx.cardview.widget.CardView
                 android:id="@+id/cardMonthSelector"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?attr/selectableItemBackground"
-                app:cardBackgroundColor="@color/brand_primary"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="2dp">
+                style="@style/pickdate_cardview">
 
                 <LinearLayout
                     android:layout_width="wrap_content"
@@ -136,15 +128,8 @@
 
             <androidx.cardview.widget.CardView
                 android:id="@+id/cardWeekSelector"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
                 android:layout_marginStart="12dp"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?attr/selectableItemBackground"
-                app:cardBackgroundColor="@color/brand_primary"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="2dp">
+                style="@style/pickdate_cardview">
 
                 <LinearLayout
                     android:layout_width="wrap_content"
@@ -178,8 +163,8 @@
             android:id="@+id/cardMaster"
             style="@style/main_card"
             android:layout_marginTop="24dp"
-            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/layoutDateSelectors">
 
             <LinearLayout
@@ -215,14 +200,15 @@
                 <TextView
                     android:id="@+id/tvMasterLimit"
                     style="@style/main_money_amount"
-                    android:text="0 VNĐ" />
+                    android:text="0 VND" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:orientation="horizontal"
-                    android:weightSum="2">
+                    android:weightSum="2"
+                    android:baselineAligned="false">
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -247,7 +233,7 @@
                         <TextView
                             android:id="@+id/tvMasterSpent"
                             style="@style/main_card_left_money_amount"
-                            android:text="0 VNĐ" />
+                            android:text="0 VND" />
                     </LinearLayout>
 
 
@@ -274,7 +260,7 @@
                         <TextView
                             android:id="@+id/tvMasterRemaining"
                             style="@style/main_card_right_money_amount"
-                            android:text="0 VNĐ" />
+                            android:text="0 VND" />
                     </LinearLayout>
 
                 </LinearLayout>
@@ -315,7 +301,7 @@
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Add new budget"
+            android:contentDescription="@string/action_add_new_budget"
             android:padding="8dp"
             android:scaleType="centerInside"
             android:src="@android:drawable/ic_input_add"
@@ -356,7 +342,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:fontFamily="@font/inter_bold"
-                    android:text="💡 Budget Tips"
+                    android:text="@string/budget_tips"
                     android:textColor="@color/tips_text_color" />
             </LinearLayout>
         </androidx.cardview.widget.CardView>

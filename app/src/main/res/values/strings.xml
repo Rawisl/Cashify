@@ -10,6 +10,20 @@
     <string name="action_update">Update</string>
     <string name="action_search">Search…</string>
     <string name="action_reset">Reset</string>
+    <string name="action_confirm">Confirm</string>
+    <string name="action_back">Confirm</string>
+    <string name="action_add_new_budget">Add new budget</string>
+    <string name="action_enter_amount">Enter amount</string>
+
+    <string name="hint_buy_something">Buy something…</string>
+    <string name="section_date">Date</string>
+    <string name="section_payment">Payment</string>
+
+    <string name="method_cash">Cash</string>
+    <string name="method_card">Card</string>
+    <string name="method_bank">Bank</string>
+
+    <string name="VND_currency">VND</string>
 
     <string name="action_add_transaction">Add transaction</string>
     <string name="action_add_category">Add category</string>
@@ -28,6 +42,7 @@
 
     <string name="tab_income">Income</string>
     <string name="tab_expense">Expense</string>
+    <string name="tab_all">All</string>
 
     <string name="tab_monthly">Monthly</string>
     <string name="tab_weekly">Weekly</string>
@@ -53,8 +68,11 @@
     <string name="budget_label_spent">Spent</string>
     <string name="budget_label_remaining">Remaining</string>
     <string name="budget_type_spent">Remaining</string>
+    <string name="budget_category_warning">Master Budget sets the total amount you want to spend across all categories. Make sure your category budgets don\'t exceed this amount.</string>
 
     <string name="budget_category">Category Budgets</string>
+    <string name="budget_category_current_spending">Current Spending</string>
+    <string name="budget_category_budget_amount">Budget Amount</string>
 
 
     <string name="home_main_card_title_total">Total Balance</string>
@@ -84,6 +102,7 @@
     <string name="settings_item_darkmode">Dark mode</string>
 
     <string name="dashboard_title">DashBoard</string>
+    <string name="dashboard_subtitle">Keep your spending on track</string>
     <string name="dashboard_recent_transactions">Recent Transactions</string>
     <string name="dashboard_spending_by_category">Spending by Category</string>
 
@@ -103,18 +122,22 @@
     <string name="category_popup_edit">Edit category</string>
     <string name="category_popup_category_name">Category name</string>
 
+    <string name="trans_title">Transaction History</string>
+    <string name="trans_subtitle">Manage all your transactions</string>
     <string name="trans_title_add">Add transaction</string>
     <string name="trans_input_amount">Amount</string>
     <string name="trans_input_note">Note (Optional)</string>
     <string name="trans_input_date">Today, 24/10/2023</string>
     <string name="trans_choose_category">Choose category</string>
+    <string name="trans_empty_noti">No transaction yet</string>
+    <string name="trans_empty_desc">Start add transactions to manage finance effectively.</string>
+
     <string name="trans_btn_save">SAVE TRANSACTION</string>
+
+    <string name="trans_description">Description</string>
 
     <string name="chart_center_text">Total expenses\nin %s</string>
     <string name="chart_other_detail">Other detail</string>
-
-
-
 
 
 </resources>

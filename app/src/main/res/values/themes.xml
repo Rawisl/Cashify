@@ -172,7 +172,7 @@
         <item name="android:layout_width">24dp</item>
         <item name="android:layout_height">match_parent</item>
         <item name="android:layout_weight">0</item>
-        <item name="srcCompat">@drawable/angle_right_next</item>
+        <item name="srcCompat">@drawable/ic_angle_right_next</item>
         <item name="tint">@color/material_dynamic_neutral50</item>
     </style>
 
@@ -180,7 +180,7 @@
         <item name="android:layout_width">45dp</item>
         <item name="android:layout_height">45dp</item>
         <item name="android:padding">4dp</item>
-        <item name="srcCompat">@drawable/arrow_left_back</item>
+        <item name="srcCompat">@drawable/ic_arrow_left_back</item>
         <item name="tint">@color/icon_inactive</item>
         <item name="shapeAppearanceOverlay">@style/circle</item>
         <item name="android:layout_gravity">left</item>
@@ -371,5 +371,16 @@
         <item name="android:textColor">@color/item_description</item>
         <item name="android:fontFamily">@font/inter_regular</item>
         <item name="android:textSize">14sp</item>
+    </style>
+
+    <style name="pickdate_cardview">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:foreground">?attr/selectableItemBackground</item>
+        <item name="cardBackgroundColor">@color/brand_primary</item>
+        <item name="cardCornerRadius">16dp</item>
+        <item name="cardElevation">0.5dp</item>
     </style>
 </resources>
