@@ -13,6 +13,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.recyclerview.widget.RecyclerView;
 
 import androidx.annotation.NonNull;
@@ -40,14 +41,16 @@ public class BudgetBottomSheetDialog extends BottomSheetDialogFragment {
 
     private List<Integer> disabledCategoryIds = new ArrayList<>();
     private OnBudgetActionListener actionListener;
+
     public interface OnBudgetActionListener {
         void onSave(int selectedCategoryId, double limitAmount);
+
         void onDelete(int categoryId);
     }
 
     private TextInputEditText edtBudgetAmount;
     private TextInputLayout layoutInputAmount;
-    private LinearLayout layoutCategorySelector, layoutMasterInfo;
+    private LinearLayout layoutCategorySelector;
     private Button btnSaveBudget, btnDeleteBudget;
     private ImageView ivIcon;
     private int selectedCategoryIdFromDropdown = -1;
@@ -94,7 +97,6 @@ public class BudgetBottomSheetDialog extends BottomSheetDialogFragment {
         layoutInputAmount = view.findViewById(R.id.layoutInputAmount);
 
         layoutCategorySelector = view.findViewById(R.id.layoutCategorySelector);
-        layoutMasterInfo = view.findViewById(R.id.layoutMasterInfo);
 
         btnSaveBudget = view.findViewById(R.id.btnSaveBudget);
         btnDeleteBudget = view.findViewById(R.id.btnDeleteBudget);
@@ -131,31 +133,21 @@ public class BudgetBottomSheetDialog extends BottomSheetDialogFragment {
             numpad.show(getParentFragmentManager(), "NumpadFromCategory");
         });
 
-        if (categoryId == -1) {
-            // Giao diện Master Budget
-            layoutCategorySelector.setVisibility(View.GONE);
-            layoutMasterInfo.setVisibility(View.VISIBLE);
-            ivIcon.setImageResource(android.R.drawable.ic_menu_sort_by_size);
-            ivIcon.setImageTintList(ColorStateList.valueOf(Color.parseColor("#E91E63")));
-            btnSaveBudget.setText("Save Master Budget");
-            btnSaveBudget.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#E91E63")));
-        } else {
-            // Giao diện Category Budget
-            layoutMasterInfo.setVisibility(View.GONE);
+        ivIcon.setImageTintList(ColorStateList.valueOf(Color.parseColor("#FF9800")));
+        btnSaveBudget.setText(R.string.action_save);
 
-            if (categoryId == 0) {
-                layoutCategorySelector.setVisibility(View.VISIBLE);
-                loadCategoriesFromDB();
-            } else {
-                layoutCategorySelector.setVisibility(View.GONE);
-            }
-            btnSaveBudget.setText("Save Budget");
-            btnSaveBudget.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#4C6FFF")));
-            ivIcon.setImageTintList(ColorStateList.valueOf(Color.parseColor("#FF9800")));
+        //thêm mới
+        if (categoryId == 0) {
+            layoutCategorySelector.setVisibility(View.VISIBLE);
+            loadCategoriesFromDB();
+        } else/*sửa*/{
+            layoutCategorySelector.setVisibility(View.GONE);
         }
+        int blueColor = ContextCompat.getColor(requireContext(), R.color.brand_primary);
+        btnSaveBudget.setBackgroundTintList(ColorStateList.valueOf(blueColor));
 
         tvTitle.setText(title);
-        tvCurrentSpending.setText(String.format("%,.0f VNĐ", currentSpending));
+        tvCurrentSpending.setText(String.format("%,.0f VND", currentSpending));
 
         if (currentLimit > 0) {
             edtBudgetAmount.setText(String.format("%.0f", currentLimit));
@@ -167,12 +159,12 @@ public class BudgetBottomSheetDialog extends BottomSheetDialogFragment {
             String amountVal = edtBudgetAmount.getText().toString().trim();
             if (TextUtils.isEmpty(amountVal)) {
                 layoutInputAmount.setBoxStrokeColor(ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark));
-                Toast.makeText(getContext(), "Vui lòng nhập số tiền", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Please enter the valid money amount!", Toast.LENGTH_SHORT).show();
                 return;
             }
 
             if (categoryId == 0 && selectedCategoryIdFromDropdown == -1) {
-                Toast.makeText(getContext(), "Vui lòng chọn một danh mục!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Please pick a category!", Toast.LENGTH_SHORT).show();
                 return;
             }
 

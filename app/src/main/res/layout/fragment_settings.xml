@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true"
-    android:requiresFadingEdge="vertical"
     android:fadingEdgeLength="24dp"
-    android:fitsSystemWindows="true">
+    android:fillViewport="true"
+    android:fitsSystemWindows="true"
+    android:requiresFadingEdge="vertical">
     <!-- 2 dòng fading edge để hỗ trợ việc scroll mượt hơn (content bị fade dần) -->
 
     <LinearLayout
@@ -50,7 +49,7 @@
                         android:id="@+id/iv_ic_security"
                         style="@style/btn_main_icon"
                         android:background="@color/icon_setting_background"
-                        app:srcCompat="@drawable/security_regular"
+                        app:srcCompat="@drawable/ic_security_regular"
                         app:tint="@color/brand_primary" />
 
                     <!-- 2 dòng title + mô tả -->
@@ -70,7 +69,8 @@
                     <!-- Icon next -->
                     <ImageView
                         android:id="@+id/iv_ic_next"
-                        style="@style/btn_next_icon" />
+                        style="@style/btn_next_icon"
+                        android:contentDescription="@string/action_next" />
 
                 </LinearLayout>
             </LinearLayout>
@@ -98,7 +98,7 @@
                         android:id="@+id/iv_ic_category"
                         style="@style/btn_main_icon"
                         android:background="@color/icon_setting_background"
-                        app:srcCompat="@drawable/category_regular"
+                        app:srcCompat="@drawable/ic_category_regular"
                         app:tint="@color/brand_primary" />
 
                     <!-- 2 dòng title + mô tả -->
@@ -116,7 +116,9 @@
                     </LinearLayout>
 
                     <!-- Nút next -->
-                    <ImageView style="@style/btn_next_icon" />
+                    <ImageView
+                        style="@style/btn_next_icon"
+                        android:contentDescription="@string/action_next" />
                 </LinearLayout>
 
                 <!-- Devider giữa 2 nút -->
@@ -132,7 +134,7 @@
                         android:id="@+id/iv_ic_notification"
                         style="@style/btn_main_icon"
                         android:background="@color/icon_setting_background"
-                        app:srcCompat="@drawable/notification_regular"
+                        app:srcCompat="@drawable/ic_notification_regular"
                         app:tint="@color/brand_primary" />
 
                     <!-- 2 dòng title + mô tả-->
@@ -149,7 +151,9 @@
                             android:text="@string/settings_item_notifications_desc" />
                     </LinearLayout>
                     <!-- nút next -->
-                    <ImageView style="@style/btn_next_icon" />
+                    <ImageView
+                        style="@style/btn_next_icon"
+                        android:contentDescription="@string/action_next" />
                 </LinearLayout>
 
 
@@ -166,7 +170,7 @@
                         android:id="@+id/iv_ic_language"
                         style="@style/btn_main_icon"
                         android:background="@color/icon_setting_background"
-                        app:srcCompat="@drawable/language_exchange_regular"
+                        app:srcCompat="@drawable/ic_language_exchange_regular"
                         app:tint="@color/brand_primary" />
 
                     <!-- 2 dòng title + mô tả-->
@@ -184,7 +188,9 @@
                     </LinearLayout>
 
                     <!-- nút next -->
-                    <ImageView style="@style/btn_next_icon" />
+                    <ImageView
+                        style="@style/btn_next_icon"
+                        android:contentDescription="@string/action_next" />
                 </LinearLayout>
 
 
@@ -233,7 +239,9 @@
                     </LinearLayout>
 
                     <!-- Icon next -->
-                    <ImageView style="@style/btn_next_icon" />
+                    <ImageView
+                        style="@style/btn_next_icon"
+                        android:contentDescription="@string/action_next" />
 
                 </LinearLayout>
 
@@ -264,7 +272,7 @@
                         android:id="@+id/iv_ic_logout"
                         style="@style/btn_main_icon"
                         android:background="@color/status_background_red"
-                        app:srcCompat="@drawable/logout_regular"
+                        app:srcCompat="@drawable/ic_logout_regular"
                         app:tint="@color/status_red" />
 
                     <!-- 2 dòng title + mô tả -->
@@ -282,7 +290,9 @@
                     </LinearLayout>
 
                     <!-- Icon next -->
-                    <ImageView style="@style/btn_next_icon" />
+                    <ImageView
+                        style="@style/btn_next_icon"
+                        android:contentDescription="@string/action_next" />
 
                 </LinearLayout>
 

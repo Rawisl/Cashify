@@ -1,37 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bg_main"
-    android:fitsSystemWindows="true">
+    android:fadingEdgeLength="24dp"
+    android:fillViewport="true"
+    android:fitsSystemWindows="true"
+    android:requiresFadingEdge="vertical">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:padding="20dp">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:layout_marginBottom="16dp">
+        <TextView
+            style="@style/screen_title"
+            android:text="@string/trans_title" />
 
-            <ImageView
-                android:id="@+id/btnBack"
-                style="@style/btn_back_icon"
-                android:layout_width="32dp"
-                android:layout_height="32dp" />
-
-            <TextView
-                style="@style/screen_title"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:text="ALL TRANSACTIONS" />
-        </LinearLayout>
+        <TextView
+            style="@style/screen_subtitle"
+            android:text="@string/trans_subtitle" />
 
         <EditText
             android:id="@+id/etSearch"
@@ -40,40 +29,42 @@
             android:background="@drawable/bg_search"
             android:drawableStart="@android:drawable/ic_menu_search"
             android:drawablePadding="12dp"
-            android:hint="Search transactions..."
+            android:fontFamily="@font/inter_regular"
+            android:hint="@string/action_search"
+            android:imeOptions="actionSearch"
             android:paddingHorizontal="16dp"
-            android:textSize="14sp"
-            android:fontFamily="@font/inter_regular" />
+            android:textSize="14sp" />
 
         <LinearLayout
-            style="@style/filter_tab_container">
+            style="@style/filter_tab_container"
+            android:layout_marginTop="16dp">
 
             <TextView
                 android:id="@+id/filterAll"
                 style="@style/filter_tab_item.Active"
-                android:text="All" />
+                android:text="@string/tab_all" />
 
             <TextView
                 android:id="@+id/filterIncome"
                 style="@style/filter_tab_item.Inactive"
-                android:text="Income" />
+                android:text="@string/tab_income" />
 
             <TextView
                 android:id="@+id/filterExpense"
                 style="@style/filter_tab_item.Inactive"
-                android:text="Expense" />
-
+                android:text="@string/tab_expense" />
         </LinearLayout>
 
         <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:layout_marginTop="16dp">
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvHistory"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false"
                 android:clipToPadding="false"
                 android:overScrollMode="never" />
 
@@ -90,6 +81,7 @@
                     android:layout_width="150dp"
                     android:layout_height="150dp"
                     android:alpha="0.5"
+                    android:contentDescription="@string/trans_empty_noti"
                     android:src="@drawable/ic_empty"
                     app:tint="@color/brand_primary" />
 
@@ -98,7 +90,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
-                    android:text="No transaction yet"
+                    android:text="@string/trans_empty_noti"
                     android:textAlignment="center" />
 
                 <TextView
@@ -106,10 +98,10 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:text="Start add transactions to manage finance effectively."
+                    android:text="@string/trans_empty_desc"
                     android:textAlignment="center" />
 
             </LinearLayout>
         </FrameLayout>
     </LinearLayout>
-</FrameLayout>
+</androidx.core.widget.NestedScrollView>

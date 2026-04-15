@@ -196,7 +196,7 @@ public class CategoryManagement extends AppCompatActivity {
         background.setColor(ContextCompat.getColor(CategoryManagement.this, R.color.status_red));
         background.setCornerRadius(16 * density);
 
-        Drawable deleteIcon = ContextCompat.getDrawable(CategoryManagement.this, R.drawable.trash_regularsvg);
+        Drawable deleteIcon = ContextCompat.getDrawable(CategoryManagement.this, R.drawable.ic_trash_regular);
         if (deleteIcon != null) {
             deleteIcon.setColorFilter(Color.WHITE, PorterDuff.Mode.SRC_ATOP);
         }

@@ -27,12 +27,9 @@ import com.example.cashify.utils.CurrencyFormatter;
 import com.example.cashify.viewmodel.HomeViewModel;
 import com.example.cashify.viewmodel.TransactionViewModel;
 import com.github.mikephil.charting.charts.PieChart;
-import com.github.mikephil.charting.components.Legend;
 import com.github.mikephil.charting.data.PieData;
 import com.github.mikephil.charting.data.PieDataSet;
 import com.github.mikephil.charting.data.PieEntry;
-
-import org.w3c.dom.Text;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -315,7 +312,7 @@ public class HomeFragment extends Fragment {
         com.google.android.material.bottomsheet.BottomSheetDialog dialog =
                 new com.google.android.material.bottomsheet.BottomSheetDialog(requireContext());
 
-        View view = getLayoutInflater().inflate(R.layout.layout_others_bottom_sheet, null);
+        View view = getLayoutInflater().inflate(R.layout.layout_bottom_sheet_others, null);
 
         RecyclerView rvOthers = view.findViewById(R.id.rvOthersDetail);
         rvOthers.setLayoutManager(new LinearLayoutManager(getContext()));
