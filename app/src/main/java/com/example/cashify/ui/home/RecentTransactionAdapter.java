@@ -68,9 +68,13 @@ public class RecentTransactionAdapter extends RecyclerView.Adapter<RecentTransac
 
         if (trans == null) return;
 
-        // 1. Gán Note (Tiêu đề)
+        // 1. Gán Tiêu đề (Ưu tiên Note, nếu rỗng thì dùng Tên danh mục)
         if (holder.tvMainTitle != null) {
-            holder.tvMainTitle.setText(trans.note != null && !trans.note.isEmpty() ? trans.note : "Giao dịch");
+            String title = (trans.note != null && !trans.note.isEmpty())
+                    ? trans.note
+                    : item.getCategoryName();
+
+            holder.tvMainTitle.setText(title);
         }
 
         // 2. Gán Subtitle (Category • Time) - Học y chang HistoryAdapter

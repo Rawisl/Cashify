@@ -76,7 +76,7 @@ public class TransactionViewModel extends AndroidViewModel {
             }
 
             // 3. Gom nhóm theo ngày để tạo Header
-            SimpleDateFormat sdf = new SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault());
+            SimpleDateFormat sdf = new SimpleDateFormat("MMMM dd, yyyy", Locale.ENGLISH);
             String lastDate = "";
 
             for (Transaction trans : filteredList) {

@@ -101,7 +101,7 @@ public class AddTransactionViewModel extends AndroidViewModel {
         t.categoryId = finalCategoryId; // Gán ID đã chốt ở trên
         t.timestamp = calendar.getValue().getTimeInMillis();
         t.type = Boolean.TRUE.equals(isExpense.getValue()) ? 0 : 1;
-
+        t.paymentMethod = selectedPayment.getValue();
         // 4. Thực thi vào Database
         new Thread(() -> {
             if (editMode) {

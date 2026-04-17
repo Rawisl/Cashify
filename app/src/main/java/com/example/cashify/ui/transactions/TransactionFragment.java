@@ -113,12 +113,10 @@ public class TransactionFragment extends Fragment {
                 int position = viewHolder.getAdapterPosition();
                 TransactionViewModel.HistoryItem item = adapter.getItemAt(position);
 
-                // HARD FIX: If it's a header, set swipe direction to 0
                 if (item.getType() == TransactionViewModel.HistoryItem.TYPE_DATE_HEADER) {
                     return makeMovementFlags(0, 0);
                 }
 
-                // Otherwise, allow swiping to the LEFT
                 return makeMovementFlags(0, ItemTouchHelper.LEFT);
             }
             @Override
