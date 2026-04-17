@@ -6,7 +6,9 @@ import androidx.room.Dao;
 import androidx.room.Delete;
 import androidx.room.Insert;
 import androidx.room.Query;
+import androidx.room.RawQuery;
 import androidx.room.Update;
+import androidx.sqlite.db.SupportSQLiteQuery;
 
 import com.example.cashify.database.Transaction;
 import java.util.List;
@@ -117,4 +119,8 @@ public interface TransactionDao {
     //lọc giao dịch theo phương thức và theo ngày
     @Query("SELECT * FROM transactions WHERE paymentMethod = :method AND timestamp BETWEEN :start AND :end ORDER BY timestamp DESC")
     List<Transaction> getTransactionsByPaymentMethodAndDate(String method, long start, long end);
+
+    // --- LỌC ĐỘNG KẾT HỢP NHIỀU ĐIỀU KIỆN (THAY THẾ CÁC HÀM LỌC CŨ) ---
+    @RawQuery
+    List<Transaction> getFilteredTransactions(SupportSQLiteQuery query);
 }

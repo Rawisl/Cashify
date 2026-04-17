@@ -1,38 +1,52 @@
 package com.example.cashify.ui.transactions;
 
 import android.content.Intent;
-import android.graphics.Color;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ListView;
+import android.widget.PopupMenu;
 import android.widget.TextView;
 
+import androidx.core.content.ContextCompat;
+import androidx.core.util.Pair;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
+import com.example.cashify.database.AppDatabase;
+import com.example.cashify.database.Category;
 import com.example.cashify.database.Transaction;
 import com.example.cashify.viewmodel.TransactionViewModel;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.android.material.snackbar.Snackbar;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
 
 public class TransactionFragment extends Fragment {
 
     private TransactionViewModel viewModel;
-    private HistoryAdapter adapter;
-    private RecyclerView rvHistory;
+    private HistoryAdapter historyAdapter;
+    private FilterChipAdapter chipAdapter;
+    private RecyclerView rvHistory, rvFilterChips;
     private LinearLayout layoutEmpty;
-
-    private TextView filterAll, filterIncome, filterExpense;
-    private String currentFilter = "ALL";
 
     public TransactionFragment() {}
 
@@ -46,7 +60,7 @@ public class TransactionFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         initViews(view);
-        setupRecyclerView();
+        setupRecyclerViews();
         setupObservers();
         setupListeners(view);
         setupSwipeToDelete();
@@ -55,28 +69,74 @@ public class TransactionFragment extends Fragment {
     private void initViews(View view) {
         rvHistory = view.findViewById(R.id.rvHistory);
         layoutEmpty = view.findViewById(R.id.layoutEmpty);
-        filterAll = view.findViewById(R.id.filterAll);
-        filterIncome = view.findViewById(R.id.filterIncome);
-        filterExpense = view.findViewById(R.id.filterExpense);
+
+        // CHÚ Ý: Bạn nhớ thêm RecyclerView này vào fragment_transaction.xml nhé
+        rvFilterChips = view.findViewById(R.id.rvFilterChips);
     }
 
-    private void setupRecyclerView() {
-        adapter = new HistoryAdapter();
+    private void setupRecyclerViews() {
+        // 1. Setup History List
+        historyAdapter = new HistoryAdapter();
         rvHistory.setLayoutManager(new LinearLayoutManager(getContext()));
-        rvHistory.setAdapter(adapter);
+        rvHistory.setAdapter(historyAdapter);
 
-
-        adapter.setOnTransactionClickListener(transaction -> {
+        historyAdapter.setOnTransactionClickListener(transaction -> {
             openEditScreen(transaction.id);
         });
+
+        // 2. Setup Filter Chips
+        chipAdapter = new FilterChipAdapter(new FilterChipAdapter.OnChipClickListener() {
+            @Override
+            public void onChipClick(FilterChip chip, int position, View anchorView) {
+                switch (chip.getType()) {
+                    case DATE:
+                        showDatePicker(chip, position);
+                        break;
+                    case TYPE:
+                        showTypeFilterPopup(anchorView, chip, position);
+                        break;
+                    case METHOD:
+                        showMethodFilterPopup(anchorView, chip, position);
+                        break;
+                    case CATEGORY:
+                        showCategoryBottomSheet(chip, position);
+                        break;
+                }
+            }
+
+            @Override
+            public void onChipClearClick(FilterChip chip, int position) {
+                // Hủy filter trên ViewModel tương ứng
+                switch (chip.getType()) {
+                    case DATE: viewModel.selectedDateRange.setValue(null); break;
+                    case TYPE: viewModel.selectedType.setValue(null); break;
+                    case METHOD: viewModel.selectedMethod.setValue(null); break;
+                    case CATEGORY: viewModel.selectedCategoryId.setValue(null); break;
+                }
+
+                // Trả UI Chip về trạng thái cũ
+                chip.setActive(false);
+                chip.setActiveLabel(chip.getFilLabel());
+                chipAdapter.notifyItemChanged(position);
+
+                // Lấy lại danh sách với query (nếu đang search dở)
+                EditText etSearch = getView().findViewById(R.id.etSearch);
+                String query = (etSearch != null) ? etSearch.getText().toString().trim() : "";
+                viewModel.fetchHistoryData(query);
+            }
+        });
+
+        rvFilterChips.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
+        rvFilterChips.setAdapter(chipAdapter);
     }
 
     private void setupObservers() {
         viewModel = new ViewModelProvider(requireActivity()).get(TransactionViewModel.class);
 
+        // Lắng nghe dữ liệu Giao dịch
         viewModel.getGroupedTransactions().observe(getViewLifecycleOwner(), items -> {
             if (items != null && !items.isEmpty()) {
-                adapter.setHistoryData(items);
+                historyAdapter.setHistoryData(items);
                 rvHistory.setVisibility(View.VISIBLE);
                 layoutEmpty.setVisibility(View.GONE);
             } else {
@@ -84,39 +144,165 @@ public class TransactionFragment extends Fragment {
                 layoutEmpty.setVisibility(View.VISIBLE);
             }
         });
+
+        // Lắng nghe dữ liệu danh sách Chip
+        viewModel.getFilterChips().observe(getViewLifecycleOwner(), chips -> {
+            chipAdapter.setChips(chips);
+        });
     }
 
     private void setupListeners(View view) {
-        filterAll.setOnClickListener(v -> handleFilterClick("ALL"));
-        filterIncome.setOnClickListener(v -> handleFilterClick("INCOME"));
-        filterExpense.setOnClickListener(v -> handleFilterClick("EXPENSE"));
-
-
-        // Search logic
+        // Cập nhật lại Search logic: Chỉ cần truyền query, ViewModel tự kết hợp với các Filter state
         EditText etSearch = view.findViewById(R.id.etSearch);
         etSearch.addTextChangedListener(new android.text.TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                viewModel.fetchHistoryData(currentFilter, s.toString().trim());
+                viewModel.fetchHistoryData(s.toString().trim());
             }
             @Override
             public void afterTextChanged(android.text.Editable s) {}
         });
     }
 
+    // --- POPUP MENU CHO CHIP ---
+    private void showDatePicker(FilterChip chip, int position) {
+        // Khởi tạo MaterialDatePicker cho Date Range
+        MaterialDatePicker<Pair<Long, Long>> datePicker =
+                MaterialDatePicker.Builder.dateRangePicker()
+                        .setTitleText("Select Date Range")
+                        .build();
+
+        datePicker.addOnPositiveButtonClickListener(selection -> {
+            Long startDate = selection.first;
+            Long endDate = selection.second;
+
+            if (startDate != null && endDate != null) {
+                // Format ngày để hiển thị trên Chip (VD: "Oct 01 - Oct 31")
+                SimpleDateFormat sdf = new SimpleDateFormat("MMM dd", Locale.ENGLISH);
+                String label = sdf.format(new Date(startDate)) + " - " + sdf.format(new Date(endDate));
+
+                // Cập nhật UI của Chip
+                chip.setActive(true);
+                chip.setActiveLabel(label);
+                chipAdapter.notifyItemChanged(position);
+
+                // Cập nhật ViewModel & Load data
+                viewModel.selectedDateRange.setValue(new long[]{startDate, endDate});
+                viewModel.fetchHistoryData();
+            }
+        });
+
+        datePicker.show(getParentFragmentManager(), "DATE_PICKER");
+    }
+    private void showTypeFilterPopup(View anchorView, FilterChip chip, int position) {
+        PopupMenu popup = new PopupMenu(requireContext(), anchorView);
+        popup.getMenu().add(0, 1, 0, "💰 Income");
+        popup.getMenu().add(0, 0, 0, "💸 Expense");
+
+        popup.setOnMenuItemClickListener(item -> {
+            int typeId = item.getItemId(); // 1 là Thu, 0 là Chi
+
+            // Cập nhật UI Chip
+            chip.setActive(true);
+            chip.setActiveLabel(item.getTitle().toString());
+            chipAdapter.notifyItemChanged(position);
+
+            // Cập nhật ViewModel & Load data
+            viewModel.selectedType.setValue(typeId);
+            viewModel.fetchHistoryData();
+            return true;
+        });
+        popup.show();
+    }
+
+    private void showMethodFilterPopup(View anchorView, FilterChip chip, int position) {
+        PopupMenu popup = new PopupMenu(requireContext(), anchorView);
+        // Tham số thứ 2 chính là itemId (0, 1, 2)
+        popup.getMenu().add(0, 0, 0, "💵 Cash");
+        popup.getMenu().add(0, 1, 0, "💳 Card");
+        popup.getMenu().add(0, 2, 0, "🏦 Bank");
+
+        popup.setOnMenuItemClickListener(item -> {
+            // Chuỗi này có chứa Emoji, dùng để hiển thị cho đẹp trên UI
+            String displayLabel = item.getTitle().toString();
+
+            // Chuỗi này nguyên bản, dùng để truy vấn Database
+            String filterValue = "";
+            switch (item.getItemId()) {
+                case 0: filterValue = "Cash"; break;
+                case 1: filterValue = "Card"; break;
+                case 2: filterValue = "Bank"; break;
+            }
+
+            // 1. Cập nhật UI Chip (Sẽ hiện "💵 Cash")
+            chip.setActive(true);
+            chip.setActiveLabel(displayLabel);
+            chipAdapter.notifyItemChanged(position);
+
+            // 2. Cập nhật ViewModel & Load data (Chỉ truyền "Cash" xuống)
+            viewModel.selectedMethod.setValue(filterValue);
+            viewModel.fetchHistoryData();
+            return true;
+        });
+        popup.show();
+    }
+    private void showCategoryBottomSheet(FilterChip chip, int position) {
+        BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(requireContext());
+
+        // 1. Gọi giao diện XML
+        View bottomSheetView = getLayoutInflater().inflate(R.layout.bottom_sheet_filter, null);
+
+        // Ánh xạ RecyclerView thay vì ListView
+        RecyclerView rvCategories = bottomSheetView.findViewById(R.id.rvCategoryFilter);
+
+        // Cài đặt dạng Grid 4 cột giống y hệt màn Add Transaction
+        rvCategories.setLayoutManager(new GridLayoutManager(requireContext(), 4));
+
+        new Thread(() -> {
+            AppDatabase db = AppDatabase.getInstance(requireContext());
+            List<Category> categories = db.categoryDao().getAll();
+
+            requireActivity().runOnUiThread(() -> {
+                if (categories == null || categories.isEmpty()) return;
+
+                // 2. TÁI SỬ DỤNG CategoryPickerAdapter đã có sẵn màu và hiệu ứng siêu đẹp
+                CategoryPickerAdapter adapter = new CategoryPickerAdapter(requireContext(), categories, selectedCat -> {
+                    // Xử lý khi user bấm chọn 1 danh mục
+                    chip.setActive(true);
+                    chip.setActiveLabel(selectedCat.name);
+
+                    int resId = getContext().getResources().getIdentifier(selectedCat.iconName, "drawable", getContext().getPackageName());
+                    if (resId != 0) chip.setIconRes(resId);
+
+                    chipAdapter.notifyItemChanged(position);
+
+                    viewModel.selectedCategoryId.setValue(selectedCat.id);
+                    viewModel.fetchHistoryData();
+
+                    // Đóng Bottom Sheet tự động
+                    bottomSheetDialog.dismiss();
+                });
+
+                rvCategories.setAdapter(adapter);
+
+                // Gắn View vào Bottom Sheet và hiển thị
+                bottomSheetDialog.setContentView(bottomSheetView);
+                bottomSheetDialog.show();
+            });
+        }).start();
+    }
     private void setupSwipeToDelete() {
         new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
             @Override
             public int getMovementFlags(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
                 int position = viewHolder.getAdapterPosition();
-                TransactionViewModel.HistoryItem item = adapter.getItemAt(position);
+                TransactionViewModel.HistoryItem item = historyAdapter.getItemAt(position);
 
                 if (item.getType() == TransactionViewModel.HistoryItem.TYPE_DATE_HEADER) {
                     return makeMovementFlags(0, 0);
                 }
-
                 return makeMovementFlags(0, ItemTouchHelper.LEFT);
             }
             @Override
@@ -127,62 +313,34 @@ public class TransactionFragment extends Fragment {
             @Override
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
                 int position = viewHolder.getAdapterPosition();
-                TransactionViewModel.HistoryItem item = adapter.getItemAt(position);
+                TransactionViewModel.HistoryItem item = historyAdapter.getItemAt(position);
 
                 if (item.getType() == TransactionViewModel.HistoryItem.TYPE_TRANSACTION) {
                     Transaction deletedTrans = item.getTransaction();
-
-                    // Xóa trong Database và UI ngay lập tức
                     viewModel.deleteOnly(deletedTrans);
 
-                    // Hiển thị Snackbar với nút Undo (Yêu cầu 3)
                     Snackbar.make(rvHistory, "Transaction deleted", Snackbar.LENGTH_LONG)
                             .setAction("Undo", v -> {
-                                viewModel.insertOnly(deletedTrans); // Khôi phục lại
+                                viewModel.insertOnly(deletedTrans);
                             }).show();
                 } else {
-                    adapter.notifyItemChanged(position); // Không cho xóa header ngày
+                    historyAdapter.notifyItemChanged(position);
                 }
             }
         }).attachToRecyclerView(rvHistory);
     }
 
     private void openEditScreen(int transactionId) {
-        // Chuyển hướng sang AddTransactionActivity với ID để kích hoạt Edit Mode
         Intent intent = new Intent(getContext(), AddTransactionActivity.class);
         intent.putExtra("TRANSACTION_ID", transactionId);
         startActivity(intent);
     }
 
-    private void handleFilterClick(String type) {
-        if (currentFilter.equals(type)) return;
-        currentFilter = type;
-        updateFilterUI();
-        viewModel.fetchHistoryData(type);
-    }
-
-    private void updateFilterUI() {
-        setFilterStyle(filterAll, currentFilter.equals("ALL"));
-        setFilterStyle(filterIncome, currentFilter.equals("INCOME"));
-        setFilterStyle(filterExpense, currentFilter.equals("EXPENSE"));
-    }
-
-    private void setFilterStyle(TextView view, boolean isActive) {
-        if (isActive) {
-            view.setBackgroundResource(R.drawable.bg_filter_active);
-            view.setTextColor(Color.WHITE);
-        } else {
-            view.setBackgroundResource(R.drawable.bg_filter_inactive);
-            view.setTextColor(ContextCompat.getColor(requireContext(), R.color.item_title));
-        }
-    }
-
     @Override
     public void onResume() {
         super.onResume();
-        // Luôn làm mới dữ liệu khi quay lại từ màn hình Sửa
         EditText etSearch = getView().findViewById(R.id.etSearch);
         String query = (etSearch != null) ? etSearch.getText().toString().trim() : "";
-        viewModel.fetchHistoryData(currentFilter, query);
+        viewModel.fetchHistoryData(query);
     }
 }

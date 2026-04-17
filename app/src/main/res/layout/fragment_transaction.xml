@@ -35,25 +35,14 @@
             android:paddingHorizontal="16dp"
             android:textSize="14sp" />
 
-        <LinearLayout
-            style="@style/filter_tab_container"
-            android:layout_marginTop="16dp">
-
-            <TextView
-                android:id="@+id/filterAll"
-                style="@style/filter_tab_item.Active"
-                android:text="@string/tab_all" />
-
-            <TextView
-                android:id="@+id/filterIncome"
-                style="@style/filter_tab_item.Inactive"
-                android:text="@string/tab_income" />
-
-            <TextView
-                android:id="@+id/filterExpense"
-                style="@style/filter_tab_item.Inactive"
-                android:text="@string/tab_expense" />
-        </LinearLayout>
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvFilterChips"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:clipToPadding="false"
+            android:orientation="horizontal"
+            android:overScrollMode="never" />
 
         <FrameLayout
             android:layout_width="match_parent"
