@@ -28,27 +28,27 @@ public class FakeDataSeeder {
         Calendar cal = Calendar.getInstance();
         cal.set(2026, Calendar.FEBRUARY, 1, 9, 0, 0);
         // Lương nhận qua thẻ, chi tiêu linh hoạt các ví
-        dao.insert(makeTransaction(15000000L, 1, idLuong, "Lương tháng 02", getMillis(cal, 5), "Thẻ ngân hàng"));
-        dao.insert(makeTransaction(2000000L, 1, idGiaDinh, "Ba mẹ gửi tiền phòng", getMillis(cal, 1), "Chuyển khoản"));
-        dao.insert(makeTransaction(3500000L, 0, idTienTro, "Tiền thuê nhà tháng 2", getMillis(cal, 2), "Chuyển khoản"));
-        dao.insert(makeTransaction(450000L, 0, idHoaDon, "Hóa đơn Điện & Nước", getMillis(cal, 10), "Chuyển khoản"));
-        dao.insert(makeTransaction(35000L, 0, idAnUong, "Cơm tấm Quận 4", getMillis(cal, 3), "Tiền mặt"));
-        dao.insert(makeTransaction(45000L, 0, idCafe, "Phê La", getMillis(cal, 5), "Thẻ ngân hàng"));
-        dao.insert(makeTransaction(500000L, 0, idMuaSam, "Quần áo Shopee", getMillis(cal, 14), "Ví điện tử"));
+        dao.insert(makeTransaction(15000000L, 1, idLuong, "Lương tháng 02", getMillis(cal, 5), "Bank"));
+        dao.insert(makeTransaction(2000000L, 1, idGiaDinh, "Ba mẹ gửi tiền phòng", getMillis(cal, 1), "Card"));
+        dao.insert(makeTransaction(3500000L, 0, idTienTro, "Tiền thuê nhà tháng 2", getMillis(cal, 2), "Card"));
+        dao.insert(makeTransaction(450000L, 0, idHoaDon, "Hóa đơn Điện & Nước", getMillis(cal, 10), "Card"));
+        dao.insert(makeTransaction(35000L, 0, idAnUong, "Cơm tấm Quận 4", getMillis(cal, 3), "Cash"));
+        dao.insert(makeTransaction(45000L, 0, idCafe, "Phê La", getMillis(cal, 5), "Bank"));
+        dao.insert(makeTransaction(500000L, 0, idMuaSam, "Quần áo Shopee", getMillis(cal, 14), "Bank"));
 
         // THÁNG 3/2026
         cal.set(2026, Calendar.MARCH, 1, 9, 0, 0);
-        dao.insert(makeTransaction(15000000L, 1, idLuong, "Lương tháng 03", getMillis(cal, 5), "Thẻ ngân hàng"));
-        dao.insert(makeTransaction(55000L, 0, idAnUong, "Bún đậu mắm tôm", getMillis(cal, 3), "Tiền mặt"));
-        dao.insert(makeTransaction(200000L, 0, idXangXe, "Bảo trì xe máy", getMillis(cal, 12), "Tiền mặt"));
-        dao.insert(makeTransaction(2000000L, 0, idMuaSam, "Tai nghe Bluetooth", getMillis(cal, 20), "Thẻ ngân hàng"));
-        dao.insert(makeTransaction(120000L, 0, idAnUong, "Lẩu Kichi Kichi", getMillis(cal, 25), "Thẻ ngân hàng"));
+        dao.insert(makeTransaction(15000000L, 1, idLuong, "Lương tháng 03", getMillis(cal, 5), "Bank"));
+        dao.insert(makeTransaction(55000L, 0, idAnUong, "Bún đậu mắm tôm", getMillis(cal, 3), "Cash"));
+        dao.insert(makeTransaction(200000L, 0, idXangXe, "Bảo trì xe máy", getMillis(cal, 12), "Cash"));
+        dao.insert(makeTransaction(2000000L, 0, idMuaSam, "Tai nghe Bluetooth", getMillis(cal, 20), "Bank"));
+        dao.insert(makeTransaction(120000L, 0, idAnUong, "Lẩu Kichi Kichi", getMillis(cal, 25), "Card"));
 
         // THÁNG 4/2026
         cal.set(2026, Calendar.APRIL, 1, 9, 0, 0);
-        dao.insert(makeTransaction(15000000L, 1, idLuong, "Lương tháng 04", getMillis(cal, 5), "Thẻ ngân hàng"));
-        dao.insert(makeTransaction(3500000L, 0, idTienTro, "Tiền thuê nhà 4", getMillis(cal, 2), "Chuyển khoản"));
-        dao.insert(makeTransaction(35000L, 0, idAnUong, "Cơm tấm sáng", getMillis(cal, 4), "Tiền mặt"));
+        dao.insert(makeTransaction(15000000L, 1, idLuong, "Lương tháng 04", getMillis(cal, 5), "Card"));
+        dao.insert(makeTransaction(3500000L, 0, idTienTro, "Tiền thuê nhà 4", getMillis(cal, 2), "Bank"));
+        dao.insert(makeTransaction(35000L, 0, idAnUong, "Cơm tấm sáng", getMillis(cal, 4), "Cash"));
 
         Log.d("BACKEND_TEST", "Seed xong " + dao.countTransactions() + " giao dịch kèm Phương thức thanh toán!");
     }

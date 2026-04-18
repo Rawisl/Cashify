@@ -91,8 +91,22 @@ public class HistoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             if (tHolder.tvCategory != null) {
                 SimpleDateFormat sdf = new SimpleDateFormat("h:mm a", Locale.ENGLISH);
                 String timeStr = sdf.format(new Date(trans.timestamp));
-                tHolder.tvCategory.setText(String.format("%s • %s", item.getCategoryName(), timeStr));
+                // Lấy icon tương ứng với phương thức thanh toán
+                String paymentIcon;
+                if (trans.paymentMethod == null) {
+                    paymentIcon = "💵";
+                } else {
+                    switch (trans.paymentMethod) {
+                        case "Card": paymentIcon = "💳"; break;
+                        case "Bank": paymentIcon = "🏦"; break;
+                        default:     paymentIcon = "💵"; break;
+                    }
+                }
+                tHolder.tvCategory.setText(
+                        String.format("%s • %s • %s", item.getCategoryName(), timeStr, paymentIcon)
+                );
             }
+
 
             // 3. Số tiền và Màu sắc (Xanh cho Thu, Đỏ cho Chi)
             if (tHolder.tvAmount != null) {

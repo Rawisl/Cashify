@@ -143,8 +143,9 @@ public class AddTransactionActivity extends AppCompatActivity {
             if (t != null) {
                 edtAmount.setText(CurrencyFormatter.formatDoubleToVND((double) t.amount));
                 edtNote.setText(t.note);
-
-
+                if (t.paymentMethod != null) {
+                    viewModel.setPayment(t.paymentMethod);
+                }
             }
         });
 

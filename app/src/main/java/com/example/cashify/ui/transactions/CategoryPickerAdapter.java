@@ -36,6 +36,7 @@ public class CategoryPickerAdapter extends RecyclerView.Adapter<CategoryPickerAd
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        // Giữ nguyên layout item cũ của bạn
         return new ViewHolder(LayoutInflater.from(context).inflate(R.layout.item_category_picker, parent, false));
     }
 
@@ -48,46 +49,70 @@ public class CategoryPickerAdapter extends RecyclerView.Adapter<CategoryPickerAd
         int resId = context.getResources().getIdentifier(item.iconName, "drawable", context.getPackageName());
         holder.imgIcon.setImageResource(resId != 0 ? resId : R.drawable.ic_other);
 
-        // --- 2. XỬ LÝ MÀU SẮC (FIX CRASH TẠI ĐÂY) ---
+        // --- 2. XỬ LÝ MÀU SẮC GỐC ---
         int color;
         try {
-            // Chuyển chuỗi ID từ DB thành số nguyên, sau đó lấy màu thực tế từ Resource
-            int colorResId = Integer.parseInt(item.colorCode);
-            color = ContextCompat.getColor(context, colorResId);
+            color = Color.parseColor(item.colorCode);
         } catch (Exception e) {
-            // Phòng hờ dữ liệu cũ hoặc lỗi, mặc định dùng màu brand_primary hoặc đen
             color = ContextCompat.getColor(context, R.color.brand_primary);
         }
 
-        // Tạo màu Pastel (Alpha = 51 tương đương khoảng 20%)
-        int pastel = Color.argb(51, Color.red(color), Color.green(color), Color.blue(color));
+        // Luôn nhuộm màu icon theo màu gốc của Category
+        holder.imgIcon.setImageTintList(ColorStateList.valueOf(color));
 
+
+        // --- 3. XỬ LÝ BACKGROUND PASTEL KHI ĐƯỢC CHỌN (CHỈNH SỬA CHÍNH TẠI ĐÂY) ---
+
+        // Tạo sẵn một GradientDrawable để làm nền bo tròn
         GradientDrawable shape = new GradientDrawable();
-        shape.setShape(GradientDrawable.OVAL);
-        shape.setColor(pastel);
+        shape.setShape(GradientDrawable.RECTANGLE);
+        shape.setCornerRadius(dpToPx(context, 30)); // Bo tròn góc (ví dụ 12dp)
 
-        // 3. Nếu được chọn thì hiện viền đậm
         if (selectedPosition == position) {
-            shape.setStroke(4, color);
-            holder.tvName.setTextColor(color);
-            holder.tvName.setTypeface(null, android.graphics.Typeface.BOLD); // Làm đậm chữ khi chọn
+            // NẾU ĐƯỢC CHỌN:
+            // TẠO MÀU PASTEL cực nhạt (Alpha thấp, ví dụ 30 hoặc 40 trên 255)
+            int pastelColor = Color.argb(40, Color.red(color), Color.green(color), Color.blue(color));
+
+            shape.setColor(pastelColor); // Đặt màu nền pastel
+            shape.setStroke(0, Color.TRANSPARENT); // Không dùng viền nữa
+
+            holder.tvName.setTextColor(color); // Màu chữ đậm theo màu gốc
+            holder.tvName.setTypeface(null, android.graphics.Typeface.BOLD); // Chữ in đậm
         } else {
+            // NẾU KHÔNG ĐƯỢC CHỌN:
+            shape.setColor(Color.TRANSPARENT); // Nền trong suốt
             shape.setStroke(0, Color.TRANSPARENT);
-            holder.tvName.setTextColor(ContextCompat.getColor(context, R.color.item_description));
-            holder.tvName.setTypeface(null, android.graphics.Typeface.NORMAL);
+
+            holder.tvName.setTextColor(ContextCompat.getColor(context, R.color.item_description)); // Màu chữ mặc định
+            holder.tvName.setTypeface(null, android.graphics.Typeface.NORMAL); // Chữ bình thường
         }
 
-        holder.imgIcon.setBackground(shape);
-        holder.imgIcon.setImageTintList(ColorStateList.valueOf(color));
+        // ĐIỂM QUAN TRỌNG: Gán background này cho itemView (toàn bộ ô), KHÔNG phải imgIcon
+        holder.itemView.setBackground(shape);
+
+        // Xóa background cũ của icon (nếu lúc trước item_category_picker.xml có đặt)
+        holder.imgIcon.setBackground(null);
+
 
         // 4. Click listener
         holder.itemView.setOnClickListener(v -> {
             int oldPos = selectedPosition;
             selectedPosition = holder.getAdapterPosition();
-            notifyItemChanged(oldPos);
+
+            // Chỉ notify những item thay đổi trạng thái để tối ưu hiệu năng
+            if (oldPos != -1) {
+                notifyItemChanged(oldPos);
+            }
             notifyItemChanged(selectedPosition);
+
             listener.onCategoryClick(item);
         });
+    }
+
+    // Hàm tiện ích để đổi dp sang px cho CornerRadius
+    private int dpToPx(Context context, int dp) {
+        float density = context.getResources().getDisplayMetrics().density;
+        return Math.round((float) dp * density);
     }
 
     public void setSelectedById(int categoryId) {
@@ -95,9 +120,12 @@ public class CategoryPickerAdapter extends RecyclerView.Adapter<CategoryPickerAd
             if (list.get(i).id == categoryId) {
                 int oldPos = selectedPosition;
                 selectedPosition = i;
-                notifyItemChanged(oldPos);
+
+                if (oldPos != -1) {
+                    notifyItemChanged(oldPos);
+                }
                 notifyItemChanged(selectedPosition);
-                // Cập nhật listener để Activity/ViewModel biết category này đã được chọn
+
                 listener.onCategoryClick(list.get(i));
                 break;
             }

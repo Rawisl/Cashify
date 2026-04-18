@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/white"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <TextView
+        android:id="@+id/tvPopupTitle"
+        style="@style/popup_category_title"
+        android:text="Select Category"
+        android:textSize="24sp" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvCategoryFilter"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:nestedScrollingEnabled="true" />
+
+</LinearLayout>
