@@ -155,7 +155,7 @@ public class BudgetFragment extends Fragment {
                 if (adapter != null && adapter.getBudgets() != null) {
                     for (BudgetWithSpent b : adapter.getBudgets()) existingIds.add(b.categoryId);
                 }
-                BudgetBottomSheetDialog dialog = new BudgetBottomSheetDialog(0, "Add Budget", 0, 0, new BudgetBottomSheetDialog.OnBudgetActionListener() {
+                BudgetBottomSheetDialog dialog = new BudgetBottomSheetDialog(0, "Add Budget", 0, 0, "", "", new BudgetBottomSheetDialog.OnBudgetActionListener() {
                     @Override public void onSave(int id, double limit) { triggerSaveBudget(id, limit); }
                     @Override public void onDelete(int id) {}
                 });
@@ -178,7 +178,8 @@ public class BudgetFragment extends Fragment {
             }
 
             String title = (item.categoryName != null) ? item.categoryName : "Category " + item.categoryId;
-            BudgetBottomSheetDialog dialog = new BudgetBottomSheetDialog(item.categoryId, title, item.spentAmount, item.limitAmount, new BudgetBottomSheetDialog.OnBudgetActionListener() {
+
+            BudgetBottomSheetDialog dialog = new BudgetBottomSheetDialog(item.categoryId, title, item.spentAmount, item.limitAmount, item.categoryIcon, item.categoryColor, new BudgetBottomSheetDialog.OnBudgetActionListener() {
                 @Override public void onSave(int id, double limit) { triggerSaveBudget(id, limit); }
                 @Override public void onDelete(int id) { triggerDeleteBudget(id); }
             });

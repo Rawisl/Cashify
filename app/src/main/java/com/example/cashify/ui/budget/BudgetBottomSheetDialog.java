@@ -56,11 +56,16 @@ public class BudgetBottomSheetDialog extends BottomSheetDialogFragment {
     private int selectedCategoryIdFromDropdown = -1;
     private List<Category> expenseCategories;
 
-    public BudgetBottomSheetDialog(int categoryId, String title, double currentSpending, double currentLimit, OnBudgetActionListener listener) {
+    private String iconName;
+    private String colorCode;
+
+    public BudgetBottomSheetDialog(int categoryId, String title, double currentSpending, double currentLimit, String iconName, String colorCode, OnBudgetActionListener listener) {
         this.categoryId = categoryId;
         this.title = title;
         this.currentSpending = currentSpending;
         this.currentLimit = currentLimit;
+        this.iconName = iconName;
+        this.colorCode = colorCode;
         this.actionListener = listener;
     }
 
@@ -103,8 +108,20 @@ public class BudgetBottomSheetDialog extends BottomSheetDialogFragment {
 
         if (categoryId > 0) {
             btnDeleteBudget.setVisibility(View.VISIBLE);
+
+            String currentIconName = (iconName != null && !iconName.isEmpty()) ? iconName : "ic_food";
+            int currentResId = getContext().getResources().getIdentifier(currentIconName, "drawable", getContext().getPackageName());
+            ivIcon.setImageResource(currentResId != 0 ? currentResId : R.drawable.ic_food);
+
+            try {
+                String cCode = (colorCode != null && !colorCode.isEmpty()) ? colorCode : "#4C6FFF";
+                ivIcon.setImageTintList(ColorStateList.valueOf(Color.parseColor(cCode)));
+            } catch (Exception e) {
+                ivIcon.setImageTintList(ColorStateList.valueOf(Color.GRAY));
+            }
         } else {
             btnDeleteBudget.setVisibility(View.GONE);
+            ivIcon.setImageTintList(ColorStateList.valueOf(Color.parseColor("#FF9800")));
         }
 
         btnDeleteBudget.setOnClickListener(v -> {
@@ -133,7 +150,6 @@ public class BudgetBottomSheetDialog extends BottomSheetDialogFragment {
             numpad.show(getParentFragmentManager(), "NumpadFromCategory");
         });
 
-        ivIcon.setImageTintList(ColorStateList.valueOf(Color.parseColor("#FF9800")));
         btnSaveBudget.setText(R.string.action_save);
 
         //thêm mới
@@ -245,7 +261,7 @@ public class BudgetBottomSheetDialog extends BottomSheetDialogFragment {
                 holder.imgCatIcon.setBackgroundResource(R.drawable.bg_circle_icon);
             }
 
-            // Xóa hiệu ứng làm mờ để các icon luôn rõ nét 100% giống hình mẫu
+            // Xóa hiệu ứng làm mờ để các icon luôn rõ nét
             holder.itemView.setAlpha(1.0f);
             // =========================================================================
 
