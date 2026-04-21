@@ -21,8 +21,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
-import com.example.cashify.database.Category;
-import com.example.cashify.viewmodel.CategoryViewModel;
+import com.example.cashify.data.model.Category;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 

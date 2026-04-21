@@ -24,11 +24,10 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
-import com.example.cashify.database.Budget;
-import com.example.cashify.database.BudgetWithSpent;
+import com.example.cashify.data.model.Budget;
+import com.example.cashify.data.local.BudgetWithSpent;
 import com.example.cashify.utils.NumpadBottomSheet;
 import com.example.cashify.utils.CurrencyFormatter;
-import com.example.cashify.viewmodel.BudgetViewModel;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.materialswitch.MaterialSwitch;

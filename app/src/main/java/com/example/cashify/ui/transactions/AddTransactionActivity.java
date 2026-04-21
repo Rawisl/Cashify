@@ -19,10 +19,9 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
-import com.example.cashify.database.Category;
+import com.example.cashify.data.model.Category;
 import com.example.cashify.utils.NumpadBottomSheet;
 import com.example.cashify.utils.CurrencyFormatter;
-import com.example.cashify.viewmodel.AddTransactionViewModel;
 
 import java.util.Calendar;
 import java.util.Locale;

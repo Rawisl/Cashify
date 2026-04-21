@@ -21,8 +21,8 @@ import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 
 import com.example.cashify.R;
-import com.example.cashify.database.AppDatabase;
-import com.example.cashify.database.Category;
+import com.example.cashify.data.local.AppDatabase;
+import com.example.cashify.data.model.Category;
 import com.example.cashify.utils.NumpadBottomSheet;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;

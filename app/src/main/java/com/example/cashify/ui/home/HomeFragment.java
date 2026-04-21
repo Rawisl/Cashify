@@ -20,12 +20,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.cashify.R;
-import com.example.cashify.database.CategorySum;
-import com.example.cashify.database.TransactionWithCategory;
-import com.example.cashify.ui.adapter.LegendAdapter;
+import com.example.cashify.data.local.CategorySum;
+import com.example.cashify.data.local.TransactionWithCategory;
 import com.example.cashify.utils.CurrencyFormatter;
-import com.example.cashify.viewmodel.HomeViewModel;
-import com.example.cashify.viewmodel.TransactionViewModel;
+import com.example.cashify.ui.transactions.TransactionViewModel;
 import com.github.mikephil.charting.charts.PieChart;
 import com.github.mikephil.charting.data.PieData;
 import com.github.mikephil.charting.data.PieDataSet;
@@ -36,7 +34,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
-
+//TODO: Nếu user đổi sang "Quỹ Nhóm", Home phải tự load lại data của Quỹ đó.
 public class HomeFragment extends Fragment {
 
     private PieChart pieChart;

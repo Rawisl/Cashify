@@ -1,20 +1,17 @@
 package com.example.cashify.ui.transactions;
 
-import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.cashify.R;
-import com.example.cashify.database.Transaction;
+import com.example.cashify.data.model.Transaction;
 import com.example.cashify.utils.CurrencyFormatter;
-import com.example.cashify.viewmodel.TransactionViewModel;
 import com.google.android.material.imageview.ShapeableImageView;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
