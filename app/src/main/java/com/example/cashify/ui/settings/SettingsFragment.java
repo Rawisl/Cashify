@@ -13,7 +13,7 @@ import android.widget.LinearLayout;
 
 import com.example.cashify.ui.category.CategoryManagement;
 import com.example.cashify.R;
-import com.example.cashify.database.AppDatabase;
+import com.example.cashify.data.local.AppDatabase;
 
 import java.util.concurrent.Executors;
 
