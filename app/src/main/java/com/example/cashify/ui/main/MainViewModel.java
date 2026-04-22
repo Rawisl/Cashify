@@ -115,14 +115,14 @@ public class MainViewModel extends ViewModel {
                             c.isDeleted = 0;
                             db.categoryDao().insert(c);
                         }
-                        Log.d("SYNC", "1. Đã tải " + catDocs.size() + " danh mục.");
+                        Log.d("SYNC", "Downloaded " + catDocs.size() + " category");
 
                         // Sau khi xong Category mới tải tiếp 2 cái kia
                         fetchBudgets(appContext);
                         fetchTransactions(appContext);
 
                     } catch (Exception e) {
-                        Log.e("SYNC", "Lỗi tải Category: " + e.getMessage());
+                        Log.e("SYNC", "Category sync error: " + e.getMessage());
                     }
                 });
             }
@@ -148,9 +148,9 @@ public class MainViewModel extends ViewModel {
                             b.periodType = doc.getString("periodType");
                             db.budgetDao().insert(b);
                         }
-                        Log.d("SYNC", "2. Đã tải " + documents.size() + " hạn mức ngân sách.");
+                        Log.d("SYNC", "Downloaded " + documents.size() + " budgets.");
                     } catch (Exception e) {
-                        Log.e("SYNC", "Lỗi tải Budget: " + e.getMessage());
+                        Log.e("SYNC", "Budget sync error: " + e.getMessage());
                     }
                 });
             }
@@ -189,11 +189,11 @@ public class MainViewModel extends ViewModel {
 
                             db.transactionDao().insert(t);
                         }
-                        Log.d("SYNC", "3. Đã tải " + documents.size() + " giao dịch.");
+                        Log.d("SYNC", "Downloaded " + documents.size() + " transactions.");
                         _isLoading.postValue(false);
                         syncCompleted.postValue(true);
                     } catch (Exception e) {
-                        Log.e("SYNC", "Lỗi tải Transaction: " + e.getMessage());
+                        Log.e("SYNC", "Transaction sync error: " + e.getMessage());
                         _isLoading.postValue(false);
                     }
                 });
@@ -220,12 +220,12 @@ public class MainViewModel extends ViewModel {
         firebaseManager.syncLocalToCloud("transactions", docId, data, new FirebaseManager.DataCallback<Void>() {
             @Override
             public void onSuccess(Void result) {
-                Log.d("FIREBASE_SYNC", "Đã lưu giao dịch " + docId + " lên mây thành công!");
+                Log.d("FIREBASE_SYNC", "Upload transaction " + docId + " to cloud successfully!");
             }
 
             @Override
             public void onError(String message) {
-                Log.e("FIREBASE_SYNC", "Lỗi đẩy dữ liệu: " + message);
+                Log.e("FIREBASE_SYNC", "Uploading transaction to cloud failed: " + message);
             }
         });
     }

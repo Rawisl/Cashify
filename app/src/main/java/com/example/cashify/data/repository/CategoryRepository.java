@@ -70,12 +70,12 @@ public class CategoryRepository {
         firebaseManager.syncLocalToCloud("categories", String.valueOf(category.id), data, new FirebaseManager.DataCallback<Void>() {
             @Override
             public void onSuccess(Void result) {
-                Log.d("FIREBASE_SYNC", "Đồng bộ danh mục thành công: " + category.name);
+                Log.d("FIREBASE_SYNC", "Synchronous success: " + category.name);
             }
 
             @Override
             public void onError(String message) {
-                Log.e("FIREBASE_SYNC", "Lỗi đồng bộ danh mục: " + message);
+                Log.e("FIREBASE_SYNC", "Synchronous failed: " + message);
             }
         });
     }

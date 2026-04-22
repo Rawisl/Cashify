@@ -18,7 +18,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
             android:layout_marginBottom="8dp"
-            android:text="Create Account"
+            android:text="@string/auth_create_account"
             android:textColor="#333333"
             android:textSize="28sp"
             android:textStyle="bold" />
@@ -27,7 +27,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="32dp"
-            android:text="Sign up to start managing your cash"
+            android:text="@string/auth_sign_up_desc"
             android:textColor="#757575"
             android:textSize="14sp" />
 
@@ -36,7 +36,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            android:hint="Full Name">
+            android:hint="@string/auth_full_name">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/edtName"
@@ -50,7 +50,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            android:hint="Email Address">
+            android:hint="@string/auth_email_hint">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/edtEmail"
@@ -64,7 +64,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            android:hint="Password"
+            android:hint="@string/auth_password"
             app:passwordToggleEnabled="true">
 
             <com.google.android.material.textfield.TextInputEditText
@@ -79,7 +79,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="32dp"
-            android:hint="Confirm Password"
+            android:hint="@string/auth_confirm_password"
             app:passwordToggleEnabled="true">
 
             <com.google.android.material.textfield.TextInputEditText
@@ -94,7 +94,7 @@
             android:layout_width="match_parent"
             android:layout_height="56dp"
             android:layout_marginBottom="16dp"
-            android:text="Register"
+            android:text="@string/auth_register"
             app:cornerRadius="12dp" />
 
         <TextView
@@ -102,7 +102,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="8dp"
-            android:text="Already have an account? Login"
+            android:text="@string/auth_already_have_account"
             android:textColor="#4C6FFF"
             android:textStyle="bold" />
 

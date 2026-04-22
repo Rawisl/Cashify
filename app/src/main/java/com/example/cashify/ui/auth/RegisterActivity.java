@@ -63,25 +63,25 @@ public class RegisterActivity extends AppCompatActivity {
 
             // Kiểm tra rỗng (Thêm confirmPass vào check cho kỹ)
             if (name.isEmpty() || email.isEmpty() || pass.isEmpty() || confirmPass.isEmpty()) {
-                Toast.makeText(this, "Vui lòng nhập đầy đủ thông tin", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show();
                 return;
             }
 
             // THIẾU Ở ĐÂY: Kiểm tra định dạng Email hợp lệ (có @ và domain)
             if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-                Toast.makeText(this, "Email không đúng định dạng!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Email is invalid! (Ex: abc@gmail.com)", Toast.LENGTH_SHORT).show();
                 return;
             }
 
             // Kiểm tra độ dài mật khẩu
             if (pass.length() < 6) {
-                Toast.makeText(this, "Mật khẩu phải từ 6 ký tự trở lên", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Password must be at least 6 characters", Toast.LENGTH_SHORT).show();
                 return;
             }
 
             // Kiểm tra khớp mật khẩu
             if (!pass.equals(confirmPass)) {
-                Toast.makeText(this, "Mật khẩu xác nhận không khớp", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Confirm password does not match", Toast.LENGTH_SHORT).show();
                 return;
             }
 

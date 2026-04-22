@@ -171,7 +171,7 @@ public class FirebaseManager {
                         String foundUid = queryDocumentSnapshots.getDocuments().get(0).getString("uid");
                         callback.onSuccess(foundUid);
                     } else {
-                        callback.onError("Không tìm thấy người dùng này!");
+                        callback.onError("User not found");
                     }
                 })
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
@@ -242,7 +242,7 @@ public class FirebaseManager {
     public void getAllTransactionsFromCloud(DataCallback<List<DocumentSnapshot>> callback) {
         String uid = getCurrentUserId();
         if (uid == null) {
-            callback.onError("Chưa đăng nhập!");
+            callback.onError("Not logged in!");
             return;
         }
 

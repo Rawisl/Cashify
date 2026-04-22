@@ -49,7 +49,7 @@ public class BudgetRepository {
         executor.execute(() -> {
             budgetDao.delete(budget);
             // Gửi yêu cầu xóa document trên cloud (nếu FirebaseManager hỗ trợ) Hoặc đơn giản là sync một Map rỗng/đánh dấu xóa
-            Log.d("FIREBASE_SYNC", "Đã xóa ngân sách tại máy.");
+            Log.d("FIREBASE_SYNC", "The budget has been cleared from the machine.");
         });
     }
 
@@ -64,12 +64,12 @@ public class BudgetRepository {
         firebaseManager.syncLocalToCloud("budgets", String.valueOf(budget.id), data, new FirebaseManager.DataCallback<Void>() {
             @Override
             public void onSuccess(Void result) {
-                Log.d("FIREBASE_SYNC", "Đồng bộ Budget " + budget.id + " thành công!");
+                Log.d("FIREBASE_SYNC", "Synchronize budget " + budget.id + " successfully!");
             }
 
             @Override
             public void onError(String message) {
-                Log.e("FIREBASE_SYNC", "Lỗi đồng bộ Budget: " + message);
+                Log.e("FIREBASE_SYNC", "Synchronize budget " + budget.id + " failed: " + message);
             }
         });
     }

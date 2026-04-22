@@ -23,7 +23,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="32dp"
-            android:text="Welcome Back"
+            android:text="@string/auth_welcome_back"
             android:textColor="#333333"
             android:textSize="28sp"
             android:textStyle="bold" />
@@ -33,7 +33,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            android:hint="Email">
+            android:hint="@string/auth_email">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/edtEmail"
@@ -46,7 +46,7 @@
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Password"
+            android:hint="@string/auth_password"
             app:passwordToggleEnabled="true">
 
             <com.google.android.material.textfield.TextInputEditText
@@ -64,7 +64,7 @@
             android:layout_marginTop="8dp"
             android:layout_marginBottom="24dp"
             android:padding="8dp"
-            android:text="Forgot Password?"
+            android:text="@string/auth_forgot_password"
             android:textColor="#4C6FFF"
             android:textStyle="bold" />
 
@@ -73,14 +73,14 @@
             android:layout_width="match_parent"
             android:layout_height="56dp"
             android:layout_marginBottom="16dp"
-            android:text="Login"
+            android:text="@string/auth_login"
             app:cornerRadius="12dp" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            android:text="OR"
+            android:text="@string/auth_or"
             android:textColor="#757575" />
 
         <com.google.android.material.button.MaterialButton
@@ -89,7 +89,7 @@
             android:layout_width="match_parent"
             android:layout_height="56dp"
             android:layout_marginBottom="16dp"
-            android:text="Sign in with Google"
+            android:text="@string/auth_sign_in_google"
             android:textColor="#333333"
             app:cornerRadius="12dp"
             app:strokeColor="#BDBDBD" />
@@ -99,7 +99,7 @@
             style="@style/Widget.MaterialComponents.Button.TextButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Don't have an account? Register"
+            android:text="@string/auth_dont_have_account"
             android:textColor="#4C6FFF" />
 
     </LinearLayout>

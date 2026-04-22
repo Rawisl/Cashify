@@ -122,7 +122,7 @@ public class MainActivity extends AppCompatActivity {
 
                     // Lưu lại UID mới này để lần sau không xóa nữa
                     prefs.edit().putString("last_uid", currentUserId).apply();
-                    android.util.Log.d("AUTH_FLOW", "Phát hiện User mới! Đã dọn dẹp Database.");
+                    android.util.Log.d("AUTH_FLOW", "New user detected! Destroying old data");
                 }
 
                 // --- NẠP CATEGORY (DANH MỤC) ---

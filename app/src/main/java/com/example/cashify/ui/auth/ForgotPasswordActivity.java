@@ -50,13 +50,13 @@ public class ForgotPasswordActivity extends AppCompatActivity {
 
             // Kiểm tra rỗng
             if (email.isEmpty()) {
-                Toast.makeText(this, "Vui lòng nhập Email", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Please enter your email", Toast.LENGTH_SHORT).show();
                 return;
             }
 
             // Kiểm tra định dạng Email hợp lệ (có @, domain...)
             if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-                Toast.makeText(this, "Email không đúng định dạng", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Email is invalid", Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -84,20 +84,20 @@ public class ForgotPasswordActivity extends AppCompatActivity {
         // Trạng thái Loading
         authViewModel.isLoading.observe(this, isLoading -> {
             btnSendReset.setEnabled(!isLoading);
-            btnSendReset.setText(isLoading ? "Đang gửi..." : "Gửi yêu cầu");
+            btnSendReset.setText(isLoading ? "Sending..." : "Send Reset");
         });
 
         // Trạng thái Lỗi
         authViewModel.errorMessage.observe(this, error -> {
             if (error != null && !error.isEmpty()) {
-                Toast.makeText(this, "Lỗi: " + error, Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "Error: " + error, Toast.LENGTH_LONG).show();
             }
         });
 
         // Trạng thái Thành công (Lưu ý: Gọi đúng biến isResetMailSent)
         authViewModel.isResetMailSent.observe(this, isSent -> {
             if (isSent) {
-                Toast.makeText(this, "Vui lòng kiểm tra email để đặt lại mật khẩu", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "Check your email to reset password", Toast.LENGTH_LONG).show();
                 // Tự động đóng màn hình sau khi gửi thành công để về lại Login
                 finish();
             }
