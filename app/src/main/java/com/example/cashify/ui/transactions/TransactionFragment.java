@@ -23,6 +23,7 @@ import com.example.cashify.R;
 import com.example.cashify.data.local.AppDatabase;
 import com.example.cashify.data.model.Category;
 import com.example.cashify.data.model.Transaction;
+import com.example.cashify.ui.main.MainViewModel;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.android.material.snackbar.Snackbar;
@@ -140,6 +141,16 @@ public class TransactionFragment extends Fragment {
         // Lắng nghe dữ liệu danh sách Chip
         viewModel.getFilterChips().observe(getViewLifecycleOwner(), chips -> {
             chipAdapter.setChips(chips);
+        });
+
+        MainViewModel mainViewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
+        mainViewModel.syncCompleted.observe(getViewLifecycleOwner(), isDone -> {
+            if (isDone != null && isDone) {
+                EditText etSearch = getView().findViewById(R.id.etSearch);
+                String query = (etSearch != null) ? etSearch.getText().toString().trim() : "";
+
+                viewModel.fetchHistoryData(query);
+            }
         });
     }
 

@@ -12,7 +12,7 @@ import java.util.List;
 @Dao
 public interface CategoryDao {
     @Insert
-    void insert(Category c);
+    long insert(Category c);
 
     @Update
     void update(Category c);

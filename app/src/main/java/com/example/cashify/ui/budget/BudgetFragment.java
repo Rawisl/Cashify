@@ -26,6 +26,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.cashify.R;
 import com.example.cashify.data.model.Budget;
 import com.example.cashify.data.local.BudgetWithSpent;
+import com.example.cashify.ui.main.MainViewModel;
 import com.example.cashify.utils.NumpadBottomSheet;
 import com.example.cashify.utils.CurrencyFormatter;
 import com.google.android.material.button.MaterialButton;
@@ -188,6 +189,13 @@ public class BudgetFragment extends Fragment {
 
         // Kích nổ lần đầu
         triggerLoadData();
+
+        MainViewModel mainViewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
+        mainViewModel.syncCompleted.observe(getViewLifecycleOwner(), isDone -> {
+            if (isDone) {
+                triggerLoadData();
+            }
+        });
     }
 
     private void triggerLoadData() {

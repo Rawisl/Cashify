@@ -20,6 +20,9 @@ public class AuthViewModel extends ViewModel {
     private final MutableLiveData<Boolean> _isAuthSuccess = new MutableLiveData<>(false);
     public LiveData<Boolean> isAuthSuccess = _isAuthSuccess;
 
+    private final MutableLiveData<Boolean> _isResetMailSent = new MutableLiveData<>(false);
+    public LiveData<Boolean> isResetMailSent = _isResetMailSent;
+
     public AuthViewModel() {
         this.firebaseManager = FirebaseManager.getInstance();
     }
@@ -33,7 +36,22 @@ public class AuthViewModel extends ViewModel {
     // - Kết thúc: set _isLoading = false.
     // ============================================================
     public void login(String email, String password) {
-        // Viết code vào đây
+        _isLoading.setValue(true);
+
+        // Dùng AuthCallback thay cho addOnSuccessListener
+        firebaseManager.loginWithEmail(email, password, new FirebaseManager.AuthCallback() {
+            @Override
+            public void onSuccess(String uid) {
+                _isLoading.setValue(false);
+                _isAuthSuccess.setValue(true);
+            }
+
+            @Override
+            public void onError(String message) {
+                _isLoading.setValue(false);
+                _errorMessage.setValue(message);
+            }
+        });
     }
 
     // ============================================================
@@ -44,7 +62,23 @@ public class AuthViewModel extends ViewModel {
     //   Workspace "PERSONAL" mặc định cho user đó.
     // ============================================================
     public void register(String email, String password, String name) {
-        // Viết code vào đây
+        _isLoading.setValue(true);
+
+        // Lưu ý: Tên hàm bên FirebaseManager giờ là registerWithEmail
+        firebaseManager.registerWithEmail(email, password, new FirebaseManager.AuthCallback() {
+            @Override
+            public void onSuccess(String uid) {
+                _isLoading.setValue(false);
+                _isAuthSuccess.setValue(true);
+                // Việc tạo Document "User" trong Firestore đã được xử lý ngầm ngay bên trong hàm registerWithEmail của FirebaseManager
+            }
+
+            @Override
+            public void onError(String message) {
+                _isLoading.setValue(false);
+                _errorMessage.setValue(message);
+            }
+        });
     }
 
     // ============================================================
@@ -53,7 +87,21 @@ public class AuthViewModel extends ViewModel {
     // - Gọi firebaseManager.loginWithGoogle(idToken).
     // ============================================================
     public void loginWithGoogle(String idToken) {
-        // Viết code vào đây
+        _isLoading.setValue(true);
+
+        firebaseManager.loginWithGoogle(idToken, new FirebaseManager.AuthCallback() {
+            @Override
+            public void onSuccess(String uid) {
+                _isLoading.setValue(false);
+                _isAuthSuccess.setValue(true);
+            }
+
+            @Override
+            public void onError(String message) {
+                _isLoading.setValue(false);
+                _errorMessage.setValue(message);
+            }
+        });
     }
 
     // ============================================================
@@ -62,6 +110,17 @@ public class AuthViewModel extends ViewModel {
     // - Báo thành công để Activity hiển thị Toast thông báo check mail.
     // ============================================================
     public void resetPassword(String email) {
-        // Viết code vào đây
+        _isLoading.setValue(true);
+
+        // Gọi trực tiếp getAuth() từ FirebaseManager
+        firebaseManager.getAuth().sendPasswordResetEmail(email)
+                .addOnSuccessListener(aVoid -> {
+                    _isLoading.setValue(false);
+                    _isResetMailSent.setValue(true);
+                })
+                .addOnFailureListener(e -> {
+                    _isLoading.setValue(false);
+                    _errorMessage.setValue(e.getMessage());
+                });
     }
 }

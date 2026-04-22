@@ -12,7 +12,20 @@
           "package_name": "com.example.cashify"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "195049395718-8gvml229ac6m7e3aq77ua31jf05o1nmk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.cashify",
+            "certificate_hash": "941b9d27d818c7f5f4ac0ea52bcc2d44e8a88680"
+          }
+        },
+        {
+          "client_id": "195049395718-bagas4hvn2onafmdvd0dqdntsj81o9ef.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyA4zxmrWzTvQYo5LSrtidGXNzEJceFfJUA"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "195049395718-bagas4hvn2onafmdvd0dqdntsj81o9ef.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
