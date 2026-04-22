@@ -1,6 +1,7 @@
 package com.example.cashify.data.repository;
 
 import android.content.Context;
+import android.util.Log;
 
 import androidx.lifecycle.LiveData;
 
@@ -9,27 +10,44 @@ import com.example.cashify.data.local.CategorySum;
 import com.example.cashify.data.model.Transaction;
 import com.example.cashify.data.local.TransactionDao;
 import com.example.cashify.data.local.TransactionWithCategory;
+import com.example.cashify.data.remote.FirebaseManager;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class TransactionRepository {
     private final TransactionDao transactionDao;
+    private final FirebaseManager firebaseManager;
     private final ExecutorService executor;
 
     public TransactionRepository(Context context){
         transactionDao=AppDatabase.getInstance(context).transactionDao();
+        firebaseManager = FirebaseManager.getInstance();
         executor=Executors.newSingleThreadExecutor();
     }
-    public void insert(Transaction transaction){
-        executor.execute(() -> transactionDao.insert(transaction));
+    public void insert(Transaction transaction) {
+        executor.execute(() -> {
+            long id = transactionDao.insert(transaction);
+            transaction.id = (int) id;
+            syncTransactionToCloud(transaction);
+        });
     }
-    public void update(Transaction transaction){
-        executor.execute(() -> transactionDao.update(transaction));
+
+    public void update(Transaction transaction) {
+        executor.execute(() -> {
+            transactionDao.update(transaction);
+            syncTransactionToCloud(transaction);
+        });
     }
-    public void delete(Transaction transaction){
-        executor.execute(() -> transactionDao.delete(transaction));
+
+    public void delete(Transaction transaction) {
+        executor.execute(() -> {
+            transactionDao.delete(transaction);
+            // Logic xóa trên Firebase có thể gọi hàm xóa document riêng trong FirebaseManager
+        });
     }
     public void getAll(Callback<List<Transaction>> callback){
         executor.execute(() ->callback.onResult(transactionDao.getAll()));
@@ -65,6 +83,28 @@ public class TransactionRepository {
     public void countTransactionByDay(long startOfDay, long endOfDay, Callback<Integer> callback){
         executor.execute(()-> callback.onResult(transactionDao.countTransactionsByDay(startOfDay, endOfDay)));
     }
+
+    private void syncTransactionToCloud(Transaction t) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("amount", t.amount);
+        data.put("categoryId", t.categoryId);
+        data.put("note", t.note);
+        data.put("timestamp", t.timestamp);
+        data.put("paymentMethod", t.paymentMethod);
+        data.put("type", t.type);
+
+        firebaseManager.syncLocalToCloud("transactions", String.valueOf(t.id), data, new FirebaseManager.DataCallback<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                Log.d("SYNC_OK", "Transaction " + t.id + " Uploaded to cloud!");
+            }
+            @Override
+            public void onError(String message) {
+                Log.e("SYNC_FAIL", "Error uploading transaction: " + message);
+            }
+        });
+    }
+
     public void getById(int id, Callback<Transaction> callback) {
         executor.execute(() -> {
             Transaction t = transactionDao.getById(id);

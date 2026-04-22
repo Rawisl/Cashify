@@ -5,6 +5,7 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 import com.example.cashify.data.model.User;
+import com.example.cashify.data.remote.FirebaseManager;
 
 public class SettingsViewModel extends ViewModel {
     //(Bộ não xử lý hiện Avatar, Tên, Logout)
@@ -40,7 +41,11 @@ public class SettingsViewModel extends ViewModel {
     // - Set _isLoggedOut = true để Fragment biết mà "đá" user về Login.
     // ============================================================
     public void logout() {
-        // Viết code đăng xuất ở đây
+        //  Đăng xuất khỏi Firebase
+        FirebaseManager.getInstance().logout();
+
+        //  Báo cho Fragment biết là đã đăng xuất xong
+        _isLoggedOut.setValue(true);
     }
 
     // ============================================================

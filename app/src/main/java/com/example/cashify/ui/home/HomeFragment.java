@@ -22,6 +22,7 @@ import android.widget.Toast;
 import com.example.cashify.R;
 import com.example.cashify.data.local.CategorySum;
 import com.example.cashify.data.local.TransactionWithCategory;
+import com.example.cashify.ui.main.MainViewModel;
 import com.example.cashify.utils.CurrencyFormatter;
 import com.example.cashify.ui.transactions.TransactionViewModel;
 import com.github.mikephil.charting.charts.PieChart;
@@ -213,6 +214,16 @@ public class HomeFragment extends Fragment {
             if (bottomNav != null) {
                 // Lệnh này tương đương với việc người dùng lấy tay bấm vào tab Transaction
                 bottomNav.setSelectedItemId(R.id.nav_transaction);
+            }
+        });
+
+        MainViewModel mainViewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
+        mainViewModel.syncCompleted.observe(getViewLifecycleOwner(), isDone -> {
+            if (isDone != null && isDone) {
+                updateMonthTextAndLoadData();
+
+                // Optional: Nếu muốn nó chỉ load 1 lần rồi thôi thì set lại cờ
+                // mainViewModel.syncCompleted.setValue(false);
             }
         });
 

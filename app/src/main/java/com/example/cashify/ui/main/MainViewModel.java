@@ -1,13 +1,25 @@
 package com.example.cashify.ui.main;
 
+import android.content.Context;
+import android.util.Log;
+
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
+import com.example.cashify.data.local.AppDatabase;
+import com.example.cashify.data.model.Category;
+import com.example.cashify.data.model.Budget;
+import com.example.cashify.data.model.Transaction;
 import com.example.cashify.data.model.Workspace;
+import com.example.cashify.data.remote.FirebaseManager;
 import com.example.cashify.data.repository.IWorkspaceRepo;
+import com.google.firebase.firestore.DocumentSnapshot;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Executors;
 
 public class MainViewModel extends ViewModel {
     //Cần một biến MutableLiveData<Workspace> currentWorkspace.
@@ -18,7 +30,8 @@ public class MainViewModel extends ViewModel {
     //Cơ chế "Loa phóng thanh": Khi MainActivity và các Fragment (Home, History, Budget) cùng sử dụng chung một instance của MainViewModel (dùng requireActivity() khi khởi tạo ViewModel trong Fragment), chúng sẽ luôn nhìn thấy cùng một currentWorkspace.
     //Trải nghiệm người dùng: Nhắc bạn dev UI là khi currentWorkspace thay đổi, nên có một hiệu ứng chuyển cảnh nhẹ hoặc ProgressBar để user thấy app đang tải lại dữ liệu của quỹ mới.
     //Lưu trạng thái: Nếu muốn xịn hơn, hãy lưu ID của Workspace cuối cùng user chọn vào SharedPreferences. Lần sau mở app, nó sẽ tự động vào đúng quỹ đó luôn mà không cần chờ load lại từ đầu.
-    private final IWorkspaceRepo workspaceRepo;
+    private IWorkspaceRepo workspaceRepo;
+    private final FirebaseManager firebaseManager;
 
     // Danh sách tất cả Workspace để hiển thị lên Side Bar
     private final MutableLiveData<List<Workspace>> _workspaces = new MutableLiveData<>();
@@ -31,9 +44,16 @@ public class MainViewModel extends ViewModel {
     private final MutableLiveData<Boolean> _isLoading = new MutableLiveData<>(false);
     public LiveData<Boolean> isLoading = _isLoading;
 
+    public final MutableLiveData<Boolean> syncCompleted = new MutableLiveData<>(false);
+
+    public MainViewModel() {
+        this.firebaseManager = FirebaseManager.getInstance();
+    }
+
     // TODO 1: Inject IWorkspaceRepo (Remote hoặc Local tùy cấu hình) vào Constructor
     public MainViewModel(IWorkspaceRepo repo) {
         this.workspaceRepo = repo;
+        this.firebaseManager = FirebaseManager.getInstance();
     }
 
     // ============================================================
@@ -66,4 +86,147 @@ public class MainViewModel extends ViewModel {
     // - Viết hàm cập nhật lại số dư của currentWorkspace sau khi
     //   User thêm/xóa giao dịch ở các Fragment con.
     // ============================================================
+
+    // ============================================================
+    // TODO Bonus: Lấy data từ server
+    // ============================================================
+
+
+    public void syncAllDataFromServer(Context context) {
+        Context appContext = context.getApplicationContext();
+        _isLoading.postValue(true);
+
+        // Tải Categories tự tạo trước
+        firebaseManager.getAllCategoriesFromCloud(new FirebaseManager.DataCallback<List<DocumentSnapshot>>() {
+            @Override
+            public void onSuccess(List<DocumentSnapshot> catDocs) {
+                Executors.newSingleThreadExecutor().execute(() -> {
+                    try {
+                        AppDatabase db = AppDatabase.getInstance(appContext);
+                        for (DocumentSnapshot doc : catDocs) {
+                            Category c = new Category();
+                            c.id = Integer.parseInt(doc.getId()); // Lấy ID từ tên Document
+                            c.name = doc.getString("name");
+                            c.iconName = doc.getString("iconName");
+                            c.colorCode = doc.getString("colorCode");
+                            Long type = doc.getLong("type");
+                            c.type = (type != null) ? type.intValue() : 0;
+                            c.isDefault = 0;
+                            c.isDeleted = 0;
+                            db.categoryDao().insert(c);
+                        }
+                        Log.d("SYNC", "Downloaded " + catDocs.size() + " category");
+
+                        // Sau khi xong Category mới tải tiếp 2 cái kia
+                        fetchBudgets(appContext);
+                        fetchTransactions(appContext);
+
+                    } catch (Exception e) {
+                        Log.e("SYNC", "Category sync error: " + e.getMessage());
+                    }
+                });
+            }
+            @Override
+            public void onError(String message) { _isLoading.postValue(false); }
+        });
+    }
+
+    private void fetchBudgets(Context context) {
+        firebaseManager.getAllBudgetsFromCloud(new FirebaseManager.DataCallback<List<DocumentSnapshot>>() {
+            @Override
+            public void onSuccess(List<DocumentSnapshot> documents) {
+                Executors.newSingleThreadExecutor().execute(() -> {
+                    try {
+                        AppDatabase db = AppDatabase.getInstance(context);
+                        for (DocumentSnapshot doc : documents) {
+                            Budget b = new Budget();
+                            b.id = Integer.parseInt(doc.getId());
+                            b.limitAmount = doc.getLong("limitAmount") != null ? doc.getLong("limitAmount") : 0L;
+                            b.categoryId = doc.getLong("categoryId") != null ? doc.getLong("categoryId").intValue() : -1;
+                            b.startDate = doc.getLong("startDate") != null ? doc.getLong("startDate") : 0L;
+                            b.endDate = doc.getLong("endDate") != null ? doc.getLong("endDate") : 0L;
+                            b.periodType = doc.getString("periodType");
+                            db.budgetDao().insert(b);
+                        }
+                        Log.d("SYNC", "Downloaded " + documents.size() + " budgets.");
+                    } catch (Exception e) {
+                        Log.e("SYNC", "Budget sync error: " + e.getMessage());
+                    }
+                });
+            }
+            @Override
+            public void onError(String m) {}
+        });
+    }
+
+    private void fetchTransactions(Context context) {
+        firebaseManager.getAllTransactionsFromCloud(new FirebaseManager.DataCallback<List<DocumentSnapshot>>() {
+            @Override
+            public void onSuccess(List<DocumentSnapshot> documents) {
+                Executors.newSingleThreadExecutor().execute(() -> {
+                    try {
+                        AppDatabase db = AppDatabase.getInstance(context);
+                        for (DocumentSnapshot doc : documents) {
+                            Transaction t = new Transaction();
+                            t.id = Integer.parseInt(doc.getId());
+
+                            Number amount = (Number) doc.get("amount");
+                            t.amount = (amount != null) ? amount.longValue() : 0L;
+
+                            Number catId = (Number) doc.get("categoryId");
+                            t.categoryId = (catId != null) ? catId.intValue() : 1;
+
+                            t.note = doc.getString("note");
+
+                            Number timestamp = (Number) doc.get("timestamp");
+                            t.timestamp = (timestamp != null) ? timestamp.longValue() : System.currentTimeMillis();
+
+                            t.paymentMethod = doc.getString("paymentMethod");
+                            if (t.paymentMethod == null) t.paymentMethod = "cash";
+
+                            Number type = (Number) doc.get("type");
+                            t.type = (type != null) ? type.intValue() : 0;
+
+                            db.transactionDao().insert(t);
+                        }
+                        Log.d("SYNC", "Downloaded " + documents.size() + " transactions.");
+                        _isLoading.postValue(false);
+                        syncCompleted.postValue(true);
+                    } catch (Exception e) {
+                        Log.e("SYNC", "Transaction sync error: " + e.getMessage());
+                        _isLoading.postValue(false);
+                    }
+                });
+            }
+            @Override
+            public void onError(String m) { _isLoading.postValue(false); }
+        });
+    }
+
+    public void uploadTransactionToFirebase(Transaction t) {
+        // Chuyển đổi Object Transaction sang Map để Firebase hiểu được
+        Map<String, Object> data = new HashMap<>();
+        data.put("amount", t.amount);
+        data.put("note", t.note);
+        data.put("categoryId", t.categoryId);
+        data.put("timestamp", t.timestamp);
+        data.put("paymentMethod", t.paymentMethod);
+        data.put("type", t.type);
+
+        // Đẩy lên Firestore theo đường dẫn: users -> {uid} -> transactions -> {id_tự_sinh}
+        // Dùng cái ID của Transaction làm Document ID luôn cho dễ quản lý
+        String docId = String.valueOf(t.id);
+
+        firebaseManager.syncLocalToCloud("transactions", docId, data, new FirebaseManager.DataCallback<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                Log.d("FIREBASE_SYNC", "Upload transaction " + docId + " to cloud successfully!");
+            }
+
+            @Override
+            public void onError(String message) {
+                Log.e("FIREBASE_SYNC", "Uploading transaction to cloud failed: " + message);
+            }
+        });
+    }
 }

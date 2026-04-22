@@ -234,6 +234,7 @@ public class CategoryBottomSheet extends BottomSheetDialogFragment {
         c.iconName = selectedIconName;
         c.colorCode = selectedColorCode;
         c.type = isExpense ? 0 : 1;
+        c.isDefault = 0;
         c.isDeleted = 0;
 
         if (editCat != null) {

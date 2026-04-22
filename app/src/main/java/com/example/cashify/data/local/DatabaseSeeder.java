@@ -17,8 +17,6 @@ public class DatabaseSeeder {
 
 //Gọi hàm execute này tránh làm đơ màn hình khi chèn dữ liệu
 
-        Executors.newSingleThreadExecutor().execute(() ->{
-
             CategoryDao dao=AppDatabase.getInstance(context).categoryDao();
 
 
@@ -31,47 +29,47 @@ public class DatabaseSeeder {
 
 //--thu vao--//
 
-                dao.insert(makeCategory("Lương", "ic_salary", "#AD78B4", 1, 1));
+                dao.insert(makeCategory(1, "Lương", "ic_salary", "#AD78B4", 1, 1));
 
-                dao.insert(makeCategory("Gia đình cho", "ic_family", "#81949D", 1, 1));
+                dao.insert(makeCategory(2, "Gia đình cho", "ic_family", "#81949D", 1, 1));
 
-                dao.insert(makeCategory("Thưởng", "ic_bonus", "#9B8077", 1, 1));
+                dao.insert(makeCategory(3, "Thưởng", "ic_bonus", "#9B8077", 1, 1));
 
 
 
 //--chi ra--//
 
-                dao.insert(makeCategory("Ăn uống", "ic_food", "#E96565", 0, 1));
+                dao.insert(makeCategory(4, "Ăn uống", "ic_food", "#E96565", 0, 1));
 
-                dao.insert(makeCategory("Di chuyển", "ic_transport", "#FDA664", 0, 1));
+                dao.insert(makeCategory(5, "Di chuyển", "ic_transport", "#FDA664", 0, 1));
 
-                dao.insert(makeCategory("Mua sắm", "ic_shopping", "#F675A1", 0, 1));
+                dao.insert(makeCategory(6, "Mua sắm", "ic_shopping", "#F675A1", 0, 1));
 
-                dao.insert(makeCategory("Hóa đơn", "ic_bill", "#559DE4", 0, 1));
+                dao.insert(makeCategory(7, "Hóa đơn", "ic_bill", "#559DE4", 0, 1));
 
-                dao.insert(makeCategory("Cafe", "ic_cafe", "#6CD0D0", 0, 1));
+                dao.insert(makeCategory(8, "Cafe", "ic_cafe", "#6CD0D0", 0, 1));
 
-                dao.insert(makeCategory("Giải trí", "ic_entertain", "#847FF0", 0, 1));
+                dao.insert(makeCategory(9, "Giải trí", "ic_entertain", "#847FF0", 0, 1));
 
-                dao.insert(makeCategory("Xăng xe", "ic_fuel", "#87D18C", 0, 1));
+                dao.insert(makeCategory(10, "Xăng xe", "ic_fuel", "#87D18C", 0, 1));
 
-                dao.insert(makeCategory("Tiền trọ", "ic_house", "#93CE9D", 0, 1));
+                dao.insert(makeCategory(11, "Tiền trọ", "ic_house", "#93CE9D", 0, 1));
 
-                dao.insert(makeCategory("Khác", "ic_other", "#000000", 0, 1));
+                dao.insert(makeCategory(12, "Khác", "ic_other", "#000000", 0, 1));
                 List<Category> categories = dao.getAll(); // hoặc getCategories()
 
-                FakeDataSeeder.seed(context, categories);
+//                FakeDataSeeder.seed(context, categories);
 
 
             }
 
-        });
-
     }
 
-    private static Category makeCategory(String name, String icon, String color, int type, int isDefault){
+    private static Category makeCategory(int id, String name, String icon, String color, int type, int isDefault){
 
         Category c=new Category();
+
+        c.id = id;
 
         c.name=name;
 
@@ -81,7 +79,7 @@ public class DatabaseSeeder {
 
         c.type=type;
 
-        c.isDefault=isDefault;
+        c.isDefault=1;
 
         c.isDeleted=0;
 

@@ -1,9 +1,11 @@
 package com.example.cashify.ui.main;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 
 import androidx.core.splashscreen.SplashScreen;
 
@@ -14,6 +16,10 @@ import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.NavigationUI;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.lifecycle.ViewModelProvider;
+
+import com.example.cashify.ui.auth.LoginActivity;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 import com.example.cashify.ui.transactions.AddTransactionActivity;
 import com.example.cashify.R;
@@ -32,6 +38,7 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
     // Tạo một lá cờ hiệu
     boolean keepSplash = true;
+    private MainViewModel mainViewModel;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
@@ -42,45 +49,100 @@ public class MainActivity extends AppCompatActivity {
         SplashScreen splashScreen = SplashScreen.installSplashScreen(this);
         TransactionViewModel viewModel = new ViewModelProvider(this).get(TransactionViewModel.class);
         super.onCreate(savedInstanceState);
+
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            // NẾU CHƯA ĐĂNG NHẬP:
+            //  Chuyển hướng sang màn hình Login
+            startActivity(new Intent(this, LoginActivity.class));
+            //  Đóng MainActivity lại để user không bấm Back về đây được
+            finish();
+            //  Quan trọng nhất: Gọi return để DỪNG NGAY mọi code phía dưới (không chạy DB, không load UI)
+            return;
+        }
+
+        mainViewModel = new ViewModelProvider(this).get(MainViewModel.class);
+
+        // Nếu đã lọt qua if (tức là đã đăng nhập), lấy UID ra xài
+        String currentUserId = currentUser.getUid();
+        android.util.Log.d("AUTH_FLOW", "Signed in successfully! UID: " + currentUserId);
+
         //reset và seed data - chạy ngầm
         new Thread(() -> {
+//            try {
+//                AppDatabase db = AppDatabase.getInstance(MainActivity.this);
+//                CategoryDao categoryDao = db.categoryDao();
+//
+//                // nếu muốn reset database, bật 2 dòng này chạy 1 lần
+//                // db.transactionDao().deleteAllTransactions();
+//                //categoryDao.deleteAllCategories();
+//
+//                // Nạp Category trước - chờ xong mới đi tiếp
+//                DatabaseSeeder.seedIfEmpty(MainActivity.this);
+//
+//                // Lấy danh sách category để kiểm tra + lấy ID thực tế
+//                List<Category> checkList = categoryDao.getAllActive();
+//
+//                // Log ID thực tế để debug
+//                if (checkList != null) {
+//                    for (Category c : checkList) {
+//                        android.util.Log.d("BACKEND_TEST", "Category ID: " + c.id + " | Name: " + c.name + " | Type: " + c.type);
+//                    }
+//                }
+//
+//                if (checkList != null && !checkList.isEmpty()) {
+//                    int count = db.transactionDao().countTransactions();
+//                    if (count == 0) {
+//                        // Truyền checkList vào FakeDataSeeder để dùng ID thực tế
+//                        FakeDataSeeder.seed(MainActivity.this, checkList);
+//                        android.util.Log.d("BACKEND_TEST", "Đã nạp giao dịch mẫu!");
+//                        viewModel.fetchHistoryData();
+//                    } else {
+//                        android.util.Log.d("BACKEND_TEST", "Đã có " + count + " giao dịch. Bỏ qua seed!");
+//                        viewModel.fetchHistoryData();
+//                    }
+//                } else {
+//                    android.util.Log.e("BACKEND_TEST", "LỖI: Danh mục vẫn trống rỗng!");
+//                }
+//            } catch (Exception e) {
+//                android.util.Log.e("BACKEND_TEST", "Có biến rồi An ơi: " + e.getMessage());
+//            }
+
             try {
                 AppDatabase db = AppDatabase.getInstance(MainActivity.this);
-                CategoryDao categoryDao = db.categoryDao();
 
-                // nếu muốn reset database, bật 2 dòng này chạy 1 lần
-                 db.transactionDao().deleteAllTransactions();
-                 categoryDao.deleteAllCategories();
+                // --- KIỂM TRA XEM CÓ ĐỔI NGƯỜI DÙNG KHÔNG ---
+                SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+                String lastUserId = prefs.getString("last_uid", "");
 
-                // Nạp Category trước - chờ xong mới đi tiếp
+                if (!lastUserId.equals(currentUserId)) {
+                    // Nếu UID khác UID lần trước đăng nhập -> Đây là người mới hoặc đổi acc
+                    // Dọn sạch bàn làm việc để đón khách mới
+                    db.clearAllTables();
+
+                    // Lưu lại UID mới này để lần sau không xóa nữa
+                    prefs.edit().putString("last_uid", currentUserId).apply();
+                    android.util.Log.d("AUTH_FLOW", "New user detected! Destroying old data");
+                }
+
+                // --- NẠP CATEGORY (DANH MỤC) ---
+                // Phải nạp cái này trước thì các giao dịch tải về mới có ID để liên kết (Foreign Key)
                 DatabaseSeeder.seedIfEmpty(MainActivity.this);
 
-                // Lấy danh sách category để kiểm tra + lấy ID thực tế
-                List<Category> checkList = categoryDao.getAllActive();
-
-                // Log ID thực tế để debug
-                if (checkList != null) {
-                    for (Category c : checkList) {
-                        android.util.Log.d("BACKEND_TEST", "Category ID: " + c.id + " | Name: " + c.name + " | Type: " + c.type);
-                    }
-                }
-
-                if (checkList != null && !checkList.isEmpty()) {
-                    int count = db.transactionDao().countTransactions();
-                    if (count == 0) {
-                        // Truyền checkList vào FakeDataSeeder để dùng ID thực tế
-                        FakeDataSeeder.seed(MainActivity.this, checkList);
-                        android.util.Log.d("BACKEND_TEST", "Đã nạp giao dịch mẫu!");
-                        viewModel.fetchHistoryData();
-                    } else {
-                        android.util.Log.d("BACKEND_TEST", "Đã có " + count + " giao dịch. Bỏ qua seed!");
-                        viewModel.fetchHistoryData();
-                    }
+                // --- ĐỒNG BỘ DỮ LIỆU ---
+                int count = db.transactionDao().countTransactions();
+                if (count == 0) {
+                    // Nếu máy trống rỗng -> Lên Firebase lấy về
+                    Log.d("AUTH_FLOW", "Database is empty. Fetching data from server...");
+                    mainViewModel.syncAllDataFromServer(MainActivity.this);
                 } else {
-                    android.util.Log.e("BACKEND_TEST", "LỖI: Danh mục vẫn trống rỗng!");
+                    // Nếu đã có data (người cũ quay lại) -> Chỉ cần làm mới UI
+                    Log.d("AUTH_FLOW", "Data already exists.");
+                    viewModel.fetchHistoryData();
                 }
+
             } catch (Exception e) {
-                android.util.Log.e("BACKEND_TEST", "Có biến rồi An ơi: " + e.getMessage());
+                Log.e("AUTH_FLOW", "Database error: " + e.getMessage());
             }
         }).start();
         //Cài đồng hồ đếm ngược cho splash screen 2000 ms

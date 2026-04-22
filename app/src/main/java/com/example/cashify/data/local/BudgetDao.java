@@ -14,7 +14,7 @@ import java.util.List;
 @Dao
 public interface BudgetDao {
     @Insert
-    void insert(Budget budget);
+    long insert(Budget budget);
 
     @Update
     void update(Budget budget);
