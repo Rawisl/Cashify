@@ -156,6 +156,12 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
 
+        authViewModel.infoMessage.observe(this, info -> {
+            if (info != null && !info.isEmpty()) {
+                Toast.makeText(this, info, Toast.LENGTH_LONG).show();
+            }
+        });
+
         authViewModel.isAuthSuccess.observe(this, isSuccess -> {
             if (isSuccess) {
                 Toast.makeText(this, "Login successful!", Toast.LENGTH_SHORT).show();
