@@ -117,12 +117,20 @@ public class RegisterActivity extends AppCompatActivity {
             }
         });
 
-        authViewModel.isAuthSuccess.observe(this, isSuccess -> {
-            if (isSuccess) {
-                Toast.makeText(this, "Register successful!", Toast.LENGTH_SHORT).show();
-                startActivity(new Intent(this, MainActivity.class));
-                finishAffinity(); // Đóng hết tất cả màn hình Login/Register
+        authViewModel.infoMessage.observe(this, info -> {
+            if (info != null && !info.isEmpty()) {
+                Toast.makeText(this, info, Toast.LENGTH_LONG).show();
+                finish();
             }
         });
+
+//        Để dành cái này sau phát triển
+//        authViewModel.isAuthSuccess.observe(this, isSuccess -> {
+//            if (isSuccess) {
+//                Toast.makeText(this, "Register successful!", Toast.LENGTH_SHORT).show();
+//                startActivity(new Intent(this, MainActivity.class));
+//                finishAffinity(); // Đóng hết tất cả màn hình Login/Register
+//            }
+//        });
     }
 }

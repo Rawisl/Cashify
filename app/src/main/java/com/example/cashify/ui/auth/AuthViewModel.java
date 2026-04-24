@@ -5,6 +5,7 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 import com.example.cashify.data.remote.FirebaseManager;
+import com.google.firebase.auth.FirebaseUser;
 
 public class AuthViewModel extends ViewModel {
     //Bộ não của cả cụm auth. Nó sẽ gọi qua FirebaseManager để hỏi thông tin đăng nhập, sau đó báo kết quả lại cho Activity để chuyển màn hình.
@@ -16,6 +17,9 @@ public class AuthViewModel extends ViewModel {
 
     private final MutableLiveData<String> _errorMessage = new MutableLiveData<>();
     public LiveData<String> errorMessage = _errorMessage;
+
+    private final MutableLiveData<String> _infoMessage = new MutableLiveData<>();
+    public LiveData<String> infoMessage = _infoMessage;
 
     private final MutableLiveData<Boolean> _isAuthSuccess = new MutableLiveData<>(false);
     public LiveData<Boolean> isAuthSuccess = _isAuthSuccess;
@@ -42,8 +46,21 @@ public class AuthViewModel extends ViewModel {
         firebaseManager.loginWithEmail(email, password, new FirebaseManager.AuthCallback() {
             @Override
             public void onSuccess(String uid) {
-                _isLoading.setValue(false);
-                _isAuthSuccess.setValue(true);
+                FirebaseUser user = firebaseManager.getAuth().getCurrentUser();
+                if (user != null) {
+                    // ÉP FIREBASE TẢI LẠI DỮ LIỆU MỚI NHẤT (Đề phòng user vừa mới click link trong mail xong)
+                    user.reload().addOnCompleteListener(task -> {
+                        _isLoading.setValue(false);
+
+                        // KIỂM TRA HÀNG REAL: Đã xác thực mail chưa?
+                        if (user.isEmailVerified()) {
+                            _isAuthSuccess.setValue(true); // Pass! Cho vào nhà
+                        } else {
+                            firebaseManager.logout(); // Chưa xác thực -> Đăng xuất ngay lập tức
+                            _errorMessage.setValue("Account is not verified! Please check your email.");
+                        }
+                    });
+                }
             }
 
             @Override
@@ -68,9 +85,17 @@ public class AuthViewModel extends ViewModel {
         firebaseManager.registerWithEmail(email, password, new FirebaseManager.AuthCallback() {
             @Override
             public void onSuccess(String uid) {
-                _isLoading.setValue(false);
-                _isAuthSuccess.setValue(true);
-                // Việc tạo Document "User" trong Firestore đã được xử lý ngầm ngay bên trong hàm registerWithEmail của FirebaseManager
+                FirebaseUser user = firebaseManager.getAuth().getCurrentUser();
+                if (user != null) {
+                    // LỆNH BẮN EMAIL XÁC THỰC ĐẾN NGƯỜI DÙNG
+                    user.sendEmailVerification().addOnCompleteListener(task -> {
+                        _isLoading.setValue(false);
+                        firebaseManager.logout();
+
+                        // Báo cho UI hiện chữ thành công
+                        _infoMessage.setValue("Register successful! Please check your email to verify.");
+                    });
+                }
             }
 
             @Override
