@@ -1,11 +1,16 @@
 package com.example.cashify.ui.settings;
 
+import android.content.Context;
+
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 import com.example.cashify.data.model.User;
 import com.example.cashify.data.remote.FirebaseManager;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 
 public class SettingsViewModel extends ViewModel {
     //(Bộ não xử lý hiện Avatar, Tên, Logout)
@@ -40,12 +45,20 @@ public class SettingsViewModel extends ViewModel {
     // - Xóa trắng các thông tin cache nếu cần (SharedPreferences).
     // - Set _isLoggedOut = true để Fragment biết mà "đá" user về Login.
     // ============================================================
-    public void logout() {
-        //  Đăng xuất khỏi Firebase
+    public void logout(Context context) {
+        // Đăng xuất khỏi Firebase
         FirebaseManager.getInstance().logout();
 
-        //  Báo cho Fragment biết là đã đăng xuất xong
-        _isLoggedOut.setValue(true);
+        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestIdToken("195049395718-bagas4hvn2onafmdvd0dqdntsj81o9ef.apps.googleusercontent.com")
+                .requestEmail()
+                .build();
+
+        GoogleSignInClient googleClient = GoogleSignIn.getClient(context, gso);
+
+        googleClient.signOut().addOnCompleteListener(task -> {
+            _isLoggedOut.setValue(true);
+        });
     }
 
     // ============================================================
