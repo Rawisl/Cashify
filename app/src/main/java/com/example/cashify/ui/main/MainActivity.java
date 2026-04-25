@@ -1,12 +1,18 @@
 package com.example.cashify.ui.main;
 
+import android.Manifest;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.core.content.ContextCompat;
 import androidx.core.splashscreen.SplashScreen;
 
 import androidx.activity.EdgeToEdge;
@@ -32,6 +38,8 @@ import com.example.cashify.data.local.AppDatabase;
 import com.example.cashify.data.local.DatabaseSeeder;
 import com.example.cashify.data.local.FakeDataSeeder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.example.cashify.data.remote.FirebaseManager;
+import com.example.cashify.utils.WorkScheduler;
 
 import java.util.List;
 
@@ -39,6 +47,14 @@ public class MainActivity extends AppCompatActivity {
     // Tạo một lá cờ hiệu
     boolean keepSplash = true;
     private MainViewModel mainViewModel;
+    private final ActivityResultLauncher<String> requestPermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
+                if (isGranted) {
+                    setupNotifications();
+                } else {
+                    Log.w("NOTIF", "Người dùng đã từ chối quyền thông báo.");
+                }
+            });
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
@@ -216,6 +232,12 @@ public class MainActivity extends AppCompatActivity {
                 fabAddTransaction.show(); // Hiện lên ở các tab quản lý thu chi
             }
         });
+
+        // ============================================================
+        // TODO 5: SETUP NOTIFICATIONS (Kiểm tra quyền & Lập lịch)
+        // Gọi ở cuối onCreate, chỉ khi user đã đăng nhập hợp lệ
+        // ============================================================
+        checkNotificationPermission();
     }
     private void initSidebar() {
         // ============================================================
@@ -236,5 +258,42 @@ public class MainActivity extends AppCompatActivity {
         // TODO 4: KẾT NỐI SIDE BAR VỚI NÚT MENU
         // - Nếu ghệ có nút "3 gạch" ở Toolbar, hãy code để khi bấm nó mở drawerLayout ra.
         // ============================================================
+    }
+
+    // ============================================================
+    // CÁC HÀM XỬ LÝ NOTIFICATION ĐƯỢC THÊM MỚI
+    // ============================================================
+    private void checkNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+                // Đã có quyền -> Bật thông báo
+                setupNotifications();
+            } else {
+                // Chưa có quyền -> Xin quyền từ user
+                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
+            }
+        } else {
+            // Android 12 trở xuống mặc định có quyền
+            setupNotifications();
+        }
+    }
+
+    private void setupNotifications() {
+        // 1. Kích hoạt WorkManager nhắc nhở mỗi ngày (Offline)
+        WorkScheduler.scheduleDailyReminder(this);
+        Log.d("NOTIF", "Đã lên lịch nhắc nhở nhập chi tiêu.");
+
+        // 2. Lấy FCM Token mới nhất lưu lên Firestore để nhận Push Notification (Online)
+        FirebaseManager.getInstance().getFcmToken(new FirebaseManager.DataCallback<String>() {
+            @Override
+            public void onSuccess(String token) {
+                Log.d("NOTIF", "Cập nhật FCM Token thành công lên Firestore.");
+            }
+
+            @Override
+            public void onError(String message) {
+                Log.e("NOTIF", "Lỗi khi lấy FCM Token: " + message);
+            }
+        });
     }
 }

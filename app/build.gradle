@@ -66,4 +66,10 @@ dependencies {
 
     // Thư viện cho chức năng Đăng nhập Google
     implementation 'com.google.android.gms:play-services-auth:21.1.1'
+
+    // WorkManager cho Java (Local Notification)
+    implementation "androidx.work:work-runtime:2.9.0"
+
+    // Firebase Cloud Messaging (Push Notification)
+    implementation "com.google.firebase:firebase-messaging:23.4.1"
 }
