@@ -14,7 +14,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.cashify.R;
-import com.example.cashify.database.BudgetWithSpent;
+import com.example.cashify.data.local.BudgetWithSpent;
 import com.example.cashify.utils.CurrencyFormatter;
 
 import java.util.ArrayList;

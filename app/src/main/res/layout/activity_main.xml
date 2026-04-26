@@ -6,7 +6,7 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".viewmodel.MainActivity">
+    tools:context=".ui.main.MainActivity">
 
     <!-- Dòng fitsSystemWindows để tự padding Header của fragment theo từng dòng máy, đồ có sẵn của Google-->
 

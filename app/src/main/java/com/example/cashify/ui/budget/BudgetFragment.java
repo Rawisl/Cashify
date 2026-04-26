@@ -24,11 +24,11 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
-import com.example.cashify.database.Budget;
-import com.example.cashify.database.BudgetWithSpent;
+import com.example.cashify.data.model.Budget;
+import com.example.cashify.data.local.BudgetWithSpent;
+import com.example.cashify.ui.main.MainViewModel;
 import com.example.cashify.utils.NumpadBottomSheet;
 import com.example.cashify.utils.CurrencyFormatter;
-import com.example.cashify.viewmodel.BudgetViewModel;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.materialswitch.MaterialSwitch;
@@ -155,7 +155,7 @@ public class BudgetFragment extends Fragment {
                 if (adapter != null && adapter.getBudgets() != null) {
                     for (BudgetWithSpent b : adapter.getBudgets()) existingIds.add(b.categoryId);
                 }
-                BudgetBottomSheetDialog dialog = new BudgetBottomSheetDialog(0, "Add Budget", 0, 0, new BudgetBottomSheetDialog.OnBudgetActionListener() {
+                BudgetBottomSheetDialog dialog = new BudgetBottomSheetDialog(0, "Add Budget", 0, 0, "", "", new BudgetBottomSheetDialog.OnBudgetActionListener() {
                     @Override public void onSave(int id, double limit) { triggerSaveBudget(id, limit); }
                     @Override public void onDelete(int id) {}
                 });
@@ -178,7 +178,8 @@ public class BudgetFragment extends Fragment {
             }
 
             String title = (item.categoryName != null) ? item.categoryName : "Category " + item.categoryId;
-            BudgetBottomSheetDialog dialog = new BudgetBottomSheetDialog(item.categoryId, title, item.spentAmount, item.limitAmount, new BudgetBottomSheetDialog.OnBudgetActionListener() {
+
+            BudgetBottomSheetDialog dialog = new BudgetBottomSheetDialog(item.categoryId, title, item.spentAmount, item.limitAmount, item.categoryIcon, item.categoryColor, new BudgetBottomSheetDialog.OnBudgetActionListener() {
                 @Override public void onSave(int id, double limit) { triggerSaveBudget(id, limit); }
                 @Override public void onDelete(int id) { triggerDeleteBudget(id); }
             });
@@ -188,6 +189,13 @@ public class BudgetFragment extends Fragment {
 
         // Kích nổ lần đầu
         triggerLoadData();
+
+        MainViewModel mainViewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
+        mainViewModel.syncCompleted.observe(getViewLifecycleOwner(), isDone -> {
+            if (isDone) {
+                triggerLoadData();
+            }
+        });
     }
 
     private void triggerLoadData() {

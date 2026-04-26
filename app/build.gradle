@@ -55,8 +55,7 @@ dependencies {
     implementation libs.fragment
     implementation libs.navigation.fragment.ktx
     implementation libs.navigation.ui.ktx
-
-    // SplashScreen chính chủ
+    //Sử dụng SplashScreen chính chủ của Google
     implementation("androidx.core:core-splashscreen:1.2.0")
     implementation libs.gridlayout
     implementation libs.recyclerview
@@ -74,23 +73,27 @@ dependencies {
     // Thư viện hỗ trợ vẽ chart
     implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
 
-    // Firebase (Đã gộp gọn gàng, không bị trùng lặp Messaging)
+    //Thư viện firebase
     implementation platform('com.google.firebase:firebase-bom:34.12.0')
-    implementation 'com.google.firebase:firebase-auth'
-    implementation 'com.google.firebase:firebase-firestore'
+    implementation('com.google.firebase:firebase-auth')
+    implementation('com.google.firebase:firebase-firestore')
     implementation 'com.google.firebase:firebase-messaging'
+
+    // Thư viện cho chức năng Đăng nhập Google
     implementation 'com.google.android.gms:play-services-auth:21.1.1'
 
-    // WorkManager
+    // WorkManager cho Java (Local Notification)
     implementation "androidx.work:work-runtime:2.9.0"
 
-    // --- TÍNH NĂNG SCAN HÓA ĐƠN (Giữ lại đầy đủ cho An) ---
+    // Firebase Cloud Messaging (Push Notification)
+    implementation "com.google.firebase:firebase-messaging:23.4.1"
+    
+    // scan hóa đơn
     implementation 'com.google.mlkit:text-recognition:16.0.0'
     implementation 'androidx.camera:camera-view:1.3.0'
     implementation 'androidx.camera:camera-lifecycle:1.3.0'
 }
 
-// CHIÊU CUỐI: Ép phiên bản để trị lỗi Aar Dependency (đảm bảo Build Successful)
 configurations.all {
     resolutionStrategy {
         force 'com.google.android.gms:play-services-tasks:18.1.0'
