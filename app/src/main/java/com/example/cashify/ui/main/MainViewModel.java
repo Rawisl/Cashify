@@ -229,4 +229,133 @@ public class MainViewModel extends ViewModel {
             }
         });
     }
+
+    // ============================================================
+    // TÍNH NĂNG ĐỒNG BỘ REAL-TIME ĐA THIẾT BỊ
+    // ============================================================
+    public void startRealTimeSync(Context context) {
+        Context appContext = context.getApplicationContext();
+
+        // LẮNG NGHE GIAO DỊCH (TRANSACTIONS)
+        firebaseManager.listenToPersonalChanges("transactions", new FirebaseManager.DataCallback<List<DocumentSnapshot>>() {
+            @Override
+            public void onSuccess(List<DocumentSnapshot> documents) {
+                Executors.newSingleThreadExecutor().execute(() -> {
+                    try {
+                        AppDatabase db = AppDatabase.getInstance(appContext);
+                        for (DocumentSnapshot doc : documents) {
+                            Transaction t = new Transaction();
+                            t.id = Integer.parseInt(doc.getId());
+
+                            Number amount = (Number) doc.get("amount");
+                            t.amount = (amount != null) ? amount.longValue() : 0L;
+
+                            Number catId = (Number) doc.get("categoryId");
+                            t.categoryId = (catId != null) ? catId.intValue() : 1;
+
+                            t.note = doc.getString("note");
+
+                            Number timestamp = (Number) doc.get("timestamp");
+                            t.timestamp = (timestamp != null) ? timestamp.longValue() : System.currentTimeMillis();
+
+                            t.paymentMethod = doc.getString("paymentMethod");
+                            if (t.paymentMethod == null) t.paymentMethod = "cash";
+
+                            Number type = (Number) doc.get("type");
+                            t.type = (type != null) ? type.intValue() : 0;
+
+                            // Insert với replace sẽ tự động cập nhật nếu dữ liệu đã tồn tại
+                            db.transactionDao().insert(t);
+                        }
+                        // Bóp còi để màn hình Home và History tự động load lại dữ liệu mới
+                        syncCompleted.postValue(true);
+                    } catch (Exception e) {
+                        Log.e("REALTIME_SYNC", "Transaction sync error: " + e.getMessage());
+                    }
+                });
+            }
+
+            @Override
+            public void onError(String message) {
+                Log.e("REALTIME_SYNC", "Firebase sync error: " + message);
+            }
+        });
+
+        // LẮNG NGHE DANH MỤC (CATEGORIES)
+        firebaseManager.listenToPersonalChanges("categories", new FirebaseManager.DataCallback<List<DocumentSnapshot>>() {
+            @Override
+            public void onSuccess(List<DocumentSnapshot> documents) {
+                Executors.newSingleThreadExecutor().execute(() -> {
+                    try {
+                        AppDatabase db = AppDatabase.getInstance(appContext);
+                        for (DocumentSnapshot doc : documents) {
+                            Category c = new Category();
+                            c.id = Integer.parseInt(doc.getId());
+                            c.name = doc.getString("name");
+                            c.iconName = doc.getString("iconName");
+                            c.colorCode = doc.getString("colorCode");
+
+                            Number type = (Number) doc.get("type");
+                            c.type = (type != null) ? type.intValue() : 0;
+
+                            c.isDefault = 0; // Các danh mục trên mây đều là do user tự tạo
+                            c.isDeleted = 0;
+
+                            db.categoryDao().insert(c);
+                        }
+                        // Bóp còi để màn hình tự load lại (nếu có dùng)
+                        syncCompleted.postValue(true);
+                    } catch (Exception e) {
+                        Log.e("REALTIME_SYNC", "Category sync error: " + e.getMessage());
+                    }
+                });
+            }
+
+            @Override
+            public void onError(String message) {
+                Log.e("REALTIME_SYNC", "Category sync error: " + message);
+            }
+        });
+
+        // LẮNG NGHE NGÂN SÁCH (BUDGETS)
+        firebaseManager.listenToPersonalChanges("budgets", new FirebaseManager.DataCallback<List<DocumentSnapshot>>() {
+            @Override
+            public void onSuccess(List<DocumentSnapshot> documents) {
+                Executors.newSingleThreadExecutor().execute(() -> {
+                    try {
+                        AppDatabase db = AppDatabase.getInstance(appContext);
+                        for (DocumentSnapshot doc : documents) {
+                            Budget b = new Budget();
+                            b.id = Integer.parseInt(doc.getId());
+
+                            Number limitAmount = (Number) doc.get("limitAmount");
+                            b.limitAmount = (limitAmount != null) ? limitAmount.longValue() : 0L;
+
+                            Number catId = (Number) doc.get("categoryId");
+                            b.categoryId = (catId != null) ? catId.intValue() : -1;
+
+                            Number startDate = (Number) doc.get("startDate");
+                            b.startDate = (startDate != null) ? startDate.longValue() : 0L;
+
+                            Number endDate = (Number) doc.get("endDate");
+                            b.endDate = (endDate != null) ? endDate.longValue() : 0L;
+
+                            b.periodType = doc.getString("periodType");
+
+                            db.budgetDao().insert(b);
+                        }
+                        // Bóp còi để màn hình Ngân sách tự vẽ lại
+                        syncCompleted.postValue(true);
+                    } catch (Exception e) {
+                        Log.e("REALTIME_SYNC", "Budget sync error: " + e.getMessage());
+                    }
+                });
+            }
+
+            @Override
+            public void onError(String message) {
+                Log.e("REALTIME_SYNC", "Budget sync error: " + message);
+            }
+        });
+    }
 }

@@ -157,6 +157,8 @@ public class MainActivity extends AppCompatActivity {
                     viewModel.fetchHistoryData();
                 }
 
+                mainViewModel.startRealTimeSync(MainActivity.this);
+
             } catch (Exception e) {
                 Log.e("AUTH_FLOW", "Database error: " + e.getMessage());
             }
