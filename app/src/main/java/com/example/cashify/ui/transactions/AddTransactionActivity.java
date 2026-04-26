@@ -2,6 +2,7 @@ package com.example.cashify.ui.transactions;
 
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
+import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.view.View;
@@ -12,6 +13,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
@@ -39,6 +41,9 @@ public class AddTransactionActivity extends AppCompatActivity {
 
     private int editTransactionId = -1;
     private boolean isEditMode = false;
+
+    private static final int REQUEST_IMAGE_CAPTURE = 1;
+    private com.google.mlkit.vision.text.TextRecognizer recognizer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,6 +77,8 @@ public class AddTransactionActivity extends AppCompatActivity {
             // Mode ADD: Mặc định load danh mục Chi (Type 0)
             viewModel.loadCategories(0);
         }
+        recognizer = com.google.mlkit.vision.text.TextRecognition.getClient(
+                com.google.mlkit.vision.text.latin.TextRecognizerOptions.DEFAULT_OPTIONS);
     }
 
     private void initViews() {
@@ -130,11 +137,36 @@ public class AddTransactionActivity extends AppCompatActivity {
             }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show();
         });
 
+        ImageView btnScan = findViewById(R.id.btnScan);
+        if (btnScan != null) {
+            btnScan.setOnClickListener(v -> showImageSourceOptions());
+        }
+
         btnCash.setOnClickListener(v -> viewModel.setPayment("Cash"));
         btnCard.setOnClickListener(v -> viewModel.setPayment("Card"));
         btnBank.setOnClickListener(v -> viewModel.setPayment("Bank"));
 
         btnConfirm.setOnClickListener(v -> validateAndSave());
+
+    }
+    private void showImageSourceOptions() {
+        String[] options = {"Chụp ảnh hóa đơn", "Chọn ảnh từ thư viện"};
+        new AlertDialog.Builder(this)
+                .setTitle("Quét hóa đơn")
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) {
+                        dispatchTakePictureIntent(); // Gọi hàm mở camera cũ
+                    } else {
+                        openGalleryIntent(); // Gọi hàm mở thư viện mới
+                    }
+                })
+                .show();
+    }
+
+    private void openGalleryIntent() {
+        Intent intent = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        // Mình dùng số 2 (REQUEST_PICK_IMAGE) để phân biệt với camera (số 1)
+        startActivityForResult(intent, 2);
     }
 
     private void setupObservers() {
@@ -254,6 +286,76 @@ public class AddTransactionActivity extends AppCompatActivity {
         numpad.show(getSupportFragmentManager(), "NumpadBottomSheet");
     }
 
+    //mở cam me ra
+    private void dispatchTakePictureIntent() {
+        Intent takePictureIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
+        if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+            startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
+        }
+    }
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (resultCode == RESULT_OK && data != null) {
+            if (requestCode == REQUEST_IMAGE_CAPTURE) {
+                //  1: Chụp trực tiếp
+                Bundle extras = data.getExtras();
+                android.graphics.Bitmap imageBitmap = (android.graphics.Bitmap) extras.get("data");
+                processImage(imageBitmap);
+
+            } else if (requestCode == 2) { // 2 là mã của Gallery
+                // 2: Chọn từ máy (Uri)
+                android.net.Uri imageUri = data.getData();
+                try {
+                    // Chuyển từ "Địa chỉ ảnh" sang "Dữ liệu ảnh Bitmap" để ML Kit đọc
+                    android.graphics.Bitmap bitmap = android.provider.MediaStore.Images.Media.getBitmap(this.getContentResolver(), imageUri);
+                    processImage(bitmap);
+                } catch (java.io.IOException e) {
+                    Toast.makeText(this, "Lỗi không lấy được ảnh!", Toast.LENGTH_SHORT).show();
+                }
+            }
+        }
+    }
+
+    private void extractDataFromText(String text) {
+        // Tách các dòng ra thành danh sách
+        String[] lines = text.split("\n");
+        double maxAmount = 0;
+
+        for (String line : lines) {
+            // Xóa các ký tự như "đ", "VND", dấu phẩy... chỉ giữ lại số
+            String cleanLine = line.replaceAll("[^0-9]", "");
+            if (!cleanLine.isEmpty()) {
+                try {
+                    double amount = Double.parseDouble(cleanLine);
+                    if (amount > maxAmount) {
+                        maxAmount = amount; // Cập nhật số tiền lớn nhất
+                    }
+                } catch (NumberFormatException e) { }
+            }
+        }
+
+        // Cuối cùng, An điền số tiền lớn nhất tìm được vào ô Edittext
+        if (maxAmount > 0) {
+            edtAmount.setText(String.valueOf((int)maxAmount));
+            Toast.makeText(this, "Đã tìm thấy tổng tiền: " + maxAmount, Toast.LENGTH_SHORT).show();
+        }
+    }
+    private void processImage(android.graphics.Bitmap bitmap) {
+        com.google.mlkit.vision.common.InputImage image =
+                com.google.mlkit.vision.common.InputImage.fromBitmap(bitmap, 0);
+
+        recognizer.process(image)
+                .addOnSuccessListener(visionText -> {
+                    // Chữ trong hóa đơn nằm ở đây nè An!
+                    String resultText = visionText.getText();
+                    extractDataFromText(resultText); // Hàm này để tìm số tiền
+                })
+                .addOnFailureListener(e -> {
+                    android.util.Log.e("OCR_ERROR", "Không đọc được chữ: " + e.getMessage());
+                });
+    }
     @Override
     public void finish() {
         super.finish();
