@@ -2,19 +2,13 @@ package com.example.cashify.ui.transactions;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ListView;
 import android.widget.PopupMenu;
-import android.widget.TextView;
 
-import androidx.core.content.ContextCompat;
 import androidx.core.util.Pair;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -26,20 +20,19 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
-import com.example.cashify.database.AppDatabase;
-import com.example.cashify.database.Category;
-import com.example.cashify.database.Transaction;
-import com.example.cashify.viewmodel.TransactionViewModel;
+import com.example.cashify.data.local.AppDatabase;
+import com.example.cashify.data.model.Category;
+import com.example.cashify.data.model.Transaction;
+import com.example.cashify.ui.main.MainViewModel;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.android.material.snackbar.Snackbar;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-
+//TODO: Nếu user đổi sang "Quỹ Nhóm", History phải tự load lại data của Quỹ đó.
 public class TransactionFragment extends Fragment {
 
     private TransactionViewModel viewModel;
@@ -148,6 +141,16 @@ public class TransactionFragment extends Fragment {
         // Lắng nghe dữ liệu danh sách Chip
         viewModel.getFilterChips().observe(getViewLifecycleOwner(), chips -> {
             chipAdapter.setChips(chips);
+        });
+
+        MainViewModel mainViewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
+        mainViewModel.syncCompleted.observe(getViewLifecycleOwner(), isDone -> {
+            if (isDone != null && isDone) {
+                EditText etSearch = getView().findViewById(R.id.etSearch);
+                String query = (etSearch != null) ? etSearch.getText().toString().trim() : "";
+
+                viewModel.fetchHistoryData(query);
+            }
         });
     }
 

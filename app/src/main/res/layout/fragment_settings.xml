@@ -129,7 +129,6 @@
                     android:id="@+id/btn_notification"
                     style="@style/btn_component_layout">
 
-                    <!-- icon -->
                     <com.google.android.material.imageview.ShapeableImageView
                         android:id="@+id/iv_ic_notification"
                         style="@style/btn_main_icon"
@@ -137,9 +136,7 @@
                         app:srcCompat="@drawable/ic_notification_regular"
                         app:tint="@color/brand_primary" />
 
-                    <!-- 2 dòng title + mô tả-->
                     <LinearLayout style="@style/btn_text_layout">
-
                         <TextView
                             android:id="@+id/tv_notification"
                             style="@style/btn_item_title"
@@ -150,10 +147,17 @@
                             style="@style/btn_item_description"
                             android:text="@string/settings_item_notifications_desc" />
                     </LinearLayout>
-                    <!-- nút next -->
-                    <ImageView
-                        style="@style/btn_next_icon"
-                        android:contentDescription="@string/action_next" />
+
+                    <!-- Xóa ImageView next, thêm Toggle vào đây -->
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/toggle_notification"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_vertical"
+                        android:clickable="false"
+                        android:focusable="false" />
+                    <!-- clickable=false để LinearLayout cha bắt click, tránh toggle ăn mất event -->
+
                 </LinearLayout>
 
 
