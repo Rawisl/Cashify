@@ -22,6 +22,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
 import com.example.cashify.database.Category;
+import com.example.cashify.utils.InvoiceParser;
 import com.example.cashify.utils.NumpadBottomSheet;
 import com.example.cashify.utils.CurrencyFormatter;
 import com.example.cashify.viewmodel.AddTransactionViewModel;
@@ -318,43 +319,105 @@ public class AddTransactionActivity extends AppCompatActivity {
         }
     }
 
-    private void extractDataFromText(String text) {
-        // Tách các dòng ra thành danh sách
-        String[] lines = text.split("\n");
-        double maxAmount = 0;
+    private void extractDataFromText(String ocrText) {
+        InvoiceParser.parse(ocrText, new InvoiceParser.ParseCallback() {
 
-        for (String line : lines) {
-            // Xóa các ký tự như "đ", "VND", dấu phẩy... chỉ giữ lại số
-            String cleanLine = line.replaceAll("[^0-9]", "");
-            if (!cleanLine.isEmpty()) {
-                try {
-                    double amount = Double.parseDouble(cleanLine);
-                    if (amount > maxAmount) {
-                        maxAmount = amount; // Cập nhật số tiền lớn nhất
-                    }
-                } catch (NumberFormatException e) { }
+            @Override
+            public void onSuccess(InvoiceParser.ParsedInvoice result) {
+                runOnUiThread(() -> fillFormAndConfirm(result));
             }
+
+            @Override
+            public void onFailure(String error) {
+                runOnUiThread(() -> {
+                    btnConfirm.setEnabled(true);
+                    Toast.makeText(AddTransactionActivity.this,
+                            "Lỗi phân tích: " + error, Toast.LENGTH_LONG).show();
+                });
+            }
+        });
+    }
+    private void fillFormAndConfirm(InvoiceParser.ParsedInvoice result) {
+        // 1. Điền các thông tin cơ bản trước
+        if (result.amount > 0) {
+            edtAmount.setText(CurrencyFormatter.formatDoubleToVND((double) result.amount));
+        }
+        if (result.description != null) {
+            edtNote.setText(result.description);
+        }
+        if (result.paymentMethod != null) {
+            viewModel.setPayment(result.paymentMethod);
         }
 
-        // Cuối cùng, An điền số tiền lớn nhất tìm được vào ô Edittext
-        if (maxAmount > 0) {
-            edtAmount.setText(String.valueOf((int)maxAmount));
-            Toast.makeText(this, "Đã tìm thấy tổng tiền: " + maxAmount, Toast.LENGTH_SHORT).show();
-        }
+        // 2. Chuyển sang tab Chi (Type 0)
+        viewModel.setType(true);
+
+        // 3. Quan sát danh sách Category đổ về từ DB
+        // Chúng ta dùng "observe" để khi nào DB trả về dữ liệu mới bắt đầu khớp tên
+        viewModel.categories.observe(this, new androidx.lifecycle.Observer<java.util.List<Category>>() {
+            @Override
+            public void onChanged(java.util.List<Category> categories) {
+                if (categories == null || categories.isEmpty()) return;
+
+                boolean found = false;
+                for (Category cat : categories) {
+                    if (cat.name.equalsIgnoreCase(result.categoryName)) {
+                        viewModel.selectedCategory.setValue(cat);
+                        found = true;
+                        break;
+                    }
+                }
+
+                // Fallback nếu không tìm thấy tên khớp
+                if (!found) {
+                    for (Category cat : categories) {
+                        if (cat.name.contains("Khác")) {
+                            viewModel.selectedCategory.setValue(cat);
+                            break;
+                        }
+                    }
+                }
+
+                // Hủy quan sát ngay sau khi khớp xong để tránh chạy lại nhiều lần
+                viewModel.categories.removeObserver(this);
+
+                // 4. Cho phép lưu
+                btnConfirm.setEnabled(true);
+                Toast.makeText(AddTransactionActivity.this, "✅ Đã khớp danh mục!", Toast.LENGTH_SHORT).show();
+
+                // Tự động lưu sau 1s nếu muốn
+                edtAmount.postDelayed(() -> validateAndSave(), 1000);
+            }
+        });
     }
     private void processImage(android.graphics.Bitmap bitmap) {
+        // Hiện loading cho user biết đang xử lý
+        Toast.makeText(this, "Đang quét hóa đơn...", Toast.LENGTH_SHORT).show();
+        btnConfirm.setEnabled(false);
+
         com.google.mlkit.vision.common.InputImage image =
                 com.google.mlkit.vision.common.InputImage.fromBitmap(bitmap, 0);
 
         recognizer.process(image)
                 .addOnSuccessListener(visionText -> {
-                    // Chữ trong hóa đơn nằm ở đây nè An!
-                    String resultText = visionText.getText();
-                    extractDataFromText(resultText); // Hàm này để tìm số tiền
+                    String ocrText = visionText.getText();
+                    if (ocrText == null || ocrText.trim().isEmpty()) {
+                        runOnUiThread(() -> {
+                            btnConfirm.setEnabled(true);
+                            Toast.makeText(this,
+                                    "Không đọc được chữ trong ảnh. Thử ảnh khác!",
+                                    Toast.LENGTH_SHORT).show();
+                        });
+                        return;
+                    }
+                    // Gửi OCR text lên Claude để parse thông minh
+                    extractDataFromText(ocrText);
                 })
-                .addOnFailureListener(e -> {
-                    android.util.Log.e("OCR_ERROR", "Không đọc được chữ: " + e.getMessage());
-                });
+                .addOnFailureListener(e -> runOnUiThread(() -> {
+                    btnConfirm.setEnabled(true);
+                    Toast.makeText(this, "OCR thất bại: " + e.getMessage(),
+                            Toast.LENGTH_SHORT).show();
+                }));
     }
     @Override
     public void finish() {
