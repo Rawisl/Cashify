@@ -2,10 +2,16 @@ package com.example.cashify.ui.settings;
 
 import android.app.AlertDialog;
 import android.content.Intent;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.app.NotificationManagerCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -18,16 +24,40 @@ import com.example.cashify.ui.category.CategoryManagement;
 import com.example.cashify.R;
 import com.example.cashify.data.local.AppDatabase;
 import com.example.cashify.ui.auth.LoginActivity;
+import com.google.android.material.switchmaterial.SwitchMaterial;
 
 import java.util.concurrent.Executors;
 
 public class SettingsFragment extends Fragment {
 
     private SettingsViewModel settingsViewModel;
+    private SwitchMaterial toggleNotification; // THÊM MỚI
 
     public SettingsFragment() {
         // Required empty public constructor
     }
+    // THÊM MỚI: Launcher xin permission Android 13+
+    private final ActivityResultLauncher<String> requestPermissionLauncher =
+            registerForActivityResult(
+                    new ActivityResultContracts.RequestPermission(),
+                    isGranted -> {
+                        if (isGranted) {
+                            // User cho phép -> Bật toggle
+                            syncToggleWithSystem();
+                        } else {
+                            // User từ chối, hoặc hệ thống chặn popup (Permanently Denied)
+                            // -> Bật Settings hệ thống để họ tự gạt công tắc
+                            openAppNotificationSettings();
+                        }
+                    }
+            );
+
+    // THÊM MỚI: Launcher chờ quay về từ System Settings
+    private final ActivityResultLauncher<Intent> systemSettingsLauncher =
+            registerForActivityResult(
+                    new ActivityResultContracts.StartActivityForResult(),
+                    result -> syncToggleWithSystem()
+            );
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -36,6 +66,19 @@ public class SettingsFragment extends Fragment {
 
         settingsViewModel = new ViewModelProvider(this).get(SettingsViewModel.class);
 
+        // THÊM MỚI: Notification toggle
+        toggleNotification = view.findViewById(R.id.toggle_notification);
+        LinearLayout btnNotification = view.findViewById(R.id.btn_notification);
+        syncToggleWithSystem();
+        btnNotification.setOnClickListener(v -> {
+            if (isNotificationEnabled()) {
+                openAppNotificationSettings(); // đang BẬT → mở Settings để tắt
+            } else {
+                requestNotificationPermission(); // đang TẮT → xin bật
+            }
+        });
+
+        // GỮ NGUYÊN: Categories
         LinearLayout btnCategories = view.findViewById(R.id.btn_categories);
         btnCategories.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -45,6 +88,7 @@ public class SettingsFragment extends Fragment {
             }
         });
 
+        // GỮ NGUYÊN: Reset transaction
         LinearLayout btnResetTransaction = view.findViewById(R.id.btn_reset_transaction);
         btnResetTransaction.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -63,6 +107,7 @@ public class SettingsFragment extends Fragment {
             }
         });
 
+        // GỮ NGUYÊN: Logout
         LinearLayout btnLogout = view.findViewById(R.id.btn_logout);
         btnLogout.setOnClickListener(v -> {
             // Dọn sạch rác trong Room Database trước (viết luồng phụ cho khỏi đơ máy)
@@ -97,5 +142,43 @@ public class SettingsFragment extends Fragment {
                 // settingsViewModel.isLoggedOut.setValue(false); (Tùy chọn)
             }
         });
+    }
+
+    // THÊM MỚI: Đồng bộ khi quay về từ System Settings
+    @Override
+    public void onResume() {
+        super.onResume();
+        syncToggleWithSystem();
+    }
+
+    // ── THÊM MỚI: Helpers notification ────────────────────────
+
+    private boolean isNotificationEnabled() {
+        return NotificationManagerCompat.from(requireContext()).areNotificationsEnabled();
+    }
+
+    private void syncToggleWithSystem() {
+        if (toggleNotification == null) return;
+        toggleNotification.setChecked(isNotificationEnabled());
+    }
+
+    private void requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            requestPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS);
+        } else {
+            openAppNotificationSettings();
+        }
+    }
+
+    private void openAppNotificationSettings() {
+        Intent intent = new Intent();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            intent.setAction(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+            intent.putExtra(Settings.EXTRA_APP_PACKAGE, requireContext().getPackageName());
+        } else {
+            intent.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+            intent.setData(Uri.fromParts("package", requireContext().getPackageName(), null));
+        }
+        systemSettingsLauncher.launch(intent);
     }
 }

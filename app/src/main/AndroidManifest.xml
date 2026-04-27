@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- THÊM MỚI: Bắt buộc cho Android 13+ để hiện thông báo -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -40,7 +43,6 @@
 
         <activity
             android:name=".ui.category.CategoryManagement"/>
-
 
         <activity
             android:name=".ui.transactions.AddTransactionActivity"
