@@ -11,6 +11,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.cashify.R;
+import com.example.cashify.utils.ToastHelper;
 
 public class ForgotPasswordActivity extends AppCompatActivity {
     private AuthViewModel authViewModel;
@@ -50,13 +51,13 @@ public class ForgotPasswordActivity extends AppCompatActivity {
 
             // Kiểm tra rỗng
             if (email.isEmpty()) {
-                Toast.makeText(this, "Please enter your email", Toast.LENGTH_SHORT).show();
+                ToastHelper.show(this, "Please enter your email");
                 return;
             }
 
             // Kiểm tra định dạng Email hợp lệ (có @, domain...)
             if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-                Toast.makeText(this, "Email is invalid", Toast.LENGTH_SHORT).show();
+                ToastHelper.show(this, "Email is invalid");
                 return;
             }
 
@@ -90,14 +91,14 @@ public class ForgotPasswordActivity extends AppCompatActivity {
         // Trạng thái Lỗi
         authViewModel.errorMessage.observe(this, error -> {
             if (error != null && !error.isEmpty()) {
-                Toast.makeText(this, "Error: " + error, Toast.LENGTH_LONG).show();
+                ToastHelper.show(this, "Error: " + error);
             }
         });
 
         // Trạng thái Thành công (Lưu ý: Gọi đúng biến isResetMailSent)
         authViewModel.isResetMailSent.observe(this, isSent -> {
             if (isSent) {
-                Toast.makeText(this, "Check your email to reset password", Toast.LENGTH_LONG).show();
+                ToastHelper.show(this, "Check your email to reset password");
                 // Tự động đóng màn hình sau khi gửi thành công để về lại Login
                 finish();
             }

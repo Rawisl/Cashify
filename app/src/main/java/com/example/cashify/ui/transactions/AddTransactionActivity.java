@@ -21,10 +21,11 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
-import com.example.cashify.utils.InvoiceParser;
 import com.example.cashify.data.model.Category;
+import com.example.cashify.utils.InvoiceParser;
 import com.example.cashify.utils.NumpadBottomSheet;
 import com.example.cashify.utils.CurrencyFormatter;
+import com.example.cashify.utils.ToastHelper;
 
 import java.util.Calendar;
 import java.util.Locale;
@@ -55,11 +56,6 @@ public class AddTransactionActivity extends AppCompatActivity {
         // 2. Kiểm tra ID từ Intent ngay lập tức để xác định chế độ (Add hay Edit)
         editTransactionId = getIntent().getIntExtra("TRANSACTION_ID", -1);
         isEditMode = (editTransactionId != -1);
-
-        // Log/Toast để debug nhanh (có thể xóa sau khi đã chạy ổn)
-        if (isEditMode) {
-            Toast.makeText(this, "Chế độ: Chỉnh sửa (ID: " + editTransactionId + ")", Toast.LENGTH_SHORT).show();
-        }
 
         // 3. Khởi tạo ViewModel
         viewModel = new ViewModelProvider(this).get(AddTransactionViewModel.class);
@@ -163,9 +159,9 @@ public class AddTransactionActivity extends AppCompatActivity {
 
     }
     private void showImageSourceOptions() {
-        String[] options = {"Chụp ảnh hóa đơn", "Chọn ảnh từ thư viện"};
+        String[] options = {"Capture a receipt", "Select photo from library"};
         new AlertDialog.Builder(this)
-                .setTitle("Quét hóa đơn")
+                .setTitle("Scan the receipt")
                 .setItems(options, (dialog, which) -> {
                     if (which == 0) {
                         dispatchTakePictureIntent(); // Gọi hàm mở camera cũ
@@ -225,7 +221,7 @@ public class AddTransactionActivity extends AppCompatActivity {
         // Observe kết quả lưu thành công
         viewModel.saveSuccess.observe(this, success -> {
             if (success) {
-                Toast.makeText(this, isEditMode ? "Updated!" : "Saved!", Toast.LENGTH_SHORT).show();
+                ToastHelper.show(this, isEditMode ? "Updated!" : "Saved!");
                 finish();
             }
         });
@@ -238,7 +234,7 @@ public class AddTransactionActivity extends AppCompatActivity {
         // Kiểm tra số tiền hợp lệ
         if (amount <= 0) {
             edtAmount.setBackgroundResource(R.drawable.bg_input_error);
-            Toast.makeText(this, getString(R.string.error_invalid_money_amount), Toast.LENGTH_SHORT).show();
+            ToastHelper.show(this, getString(R.string.error_invalid_money_amount));
             return;
         }
 
@@ -248,7 +244,7 @@ public class AddTransactionActivity extends AppCompatActivity {
         // Nếu là mode THÊM MỚI mà chưa chọn Category thì mới chặn
         // Nếu là mode EDIT mà chưa chọn cái mới, hệ thống sẽ tự lấy cái cũ trong ViewModel/DB
         if (!isEditMode && selected == null) {
-            Toast.makeText(this, getString(R.string.error_transaction_empty_category), Toast.LENGTH_SHORT).show();
+            ToastHelper.show(this, getString(R.string.error_transaction_empty_category));
             return;
         }
 
@@ -325,7 +321,7 @@ public class AddTransactionActivity extends AppCompatActivity {
                     android.graphics.Bitmap bitmap = android.provider.MediaStore.Images.Media.getBitmap(this.getContentResolver(), imageUri);
                     processImage(bitmap);
                 } catch (java.io.IOException e) {
-                    Toast.makeText(this, "Lỗi không lấy được ảnh!", Toast.LENGTH_SHORT).show();
+                    ToastHelper.show(this, "Failed to load image!");
                 }
             }
         }
@@ -343,8 +339,8 @@ public class AddTransactionActivity extends AppCompatActivity {
             public void onFailure(String error) {
                 runOnUiThread(() -> {
                     btnConfirm.setEnabled(true);
-                    Toast.makeText(AddTransactionActivity.this,
-                            "Lỗi phân tích: " + error, Toast.LENGTH_LONG).show();
+                     ToastHelper.show(AddTransactionActivity.this,
+                            "Analysis error: " + error);
                 });
             }
         });
@@ -395,16 +391,17 @@ public class AddTransactionActivity extends AppCompatActivity {
 
                 // 4. Cho phép lưu
                 btnConfirm.setEnabled(true);
-                Toast.makeText(AddTransactionActivity.this, "✅ Đã khớp danh mục!", Toast.LENGTH_SHORT).show();
+
+               ToastHelper.show(AddTransactionActivity.this, "✅ Scanning finished! Please check again.");
 
                 // Tự động lưu sau 1s nếu muốn
-                edtAmount.postDelayed(() -> validateAndSave(), 1000);
+//                edtAmount.postDelayed(() -> validateAndSave(), 1000);
             }
         });
     }
     private void processImage(android.graphics.Bitmap bitmap) {
         // Hiện loading cho user biết đang xử lý
-        Toast.makeText(this, "Đang quét hóa đơn...", Toast.LENGTH_SHORT).show();
+        ToastHelper.show(this, "Scanning...");
         btnConfirm.setEnabled(false);
 
         com.google.mlkit.vision.common.InputImage image =
@@ -416,9 +413,8 @@ public class AddTransactionActivity extends AppCompatActivity {
                     if (ocrText == null || ocrText.trim().isEmpty()) {
                         runOnUiThread(() -> {
                             btnConfirm.setEnabled(true);
-                            Toast.makeText(this,
-                                    "Không đọc được chữ trong ảnh. Thử ảnh khác!",
-                                    Toast.LENGTH_SHORT).show();
+                            ToastHelper.show(this,
+                                    "Text not recognized. Try another photo!");
                         });
                         return;
                     }
@@ -427,8 +423,7 @@ public class AddTransactionActivity extends AppCompatActivity {
                 })
                 .addOnFailureListener(e -> runOnUiThread(() -> {
                     btnConfirm.setEnabled(true);
-                    Toast.makeText(this, "OCR thất bại: " + e.getMessage(),
-                            Toast.LENGTH_SHORT).show();
+                    ToastHelper.show(this, "OCR failed: " + e.getMessage());
                 }));
     }
     @Override
