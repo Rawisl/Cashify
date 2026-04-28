@@ -12,6 +12,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.bumptech.glide.Glide;
 import com.example.cashify.R;
+import com.example.cashify.utils.ImageHelper;
 import com.example.cashify.utils.ToastHelper;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
@@ -37,8 +38,7 @@ public class EditProfileActivity extends AppCompatActivity {
                 if (uri != null) {
                     selectedImageUri = uri;
                     // Dùng Glide load ngay tấm ảnh vừa chọn lên hình tròn cho user xem trước
-                    Glide.with(this).load(uri).into(imgEditAvatar);
-                }
+                    ImageHelper.loadAvatar(uri, imgEditAvatar);                }
             });
 
     @Override
@@ -69,10 +69,7 @@ public class EditProfileActivity extends AppCompatActivity {
             }
             if (currentUser.getPhotoUrl() != null) {
                 // Glide sẽ tự động tải ảnh từ Firebase và bo tròn vào imgEditAvatar
-                Glide.with(this)
-                        .load(currentUser.getPhotoUrl())
-                        .placeholder(R.mipmap.ic_launcher) // Hiển thị ảnh nháp trong lúc chờ mạng tải
-                        .into(imgEditAvatar);
+                ImageHelper.loadAvatar(currentUser.getPhotoUrl(), imgEditAvatar);
             }
         }
 
@@ -80,7 +77,7 @@ public class EditProfileActivity extends AppCompatActivity {
         viewModel.getIsLoading().observe(this, isLoading -> {
             // Khi đang tải: Khóa nút lại và đổi chữ
             btnSaveProfile.setEnabled(!isLoading);
-            btnSaveProfile.setText(isLoading ? "ĐANG LƯU..." : "LƯU THAY ĐỔI");
+            btnSaveProfile.setText(isLoading ? "SAVING..." : "SAVE CHANGE");
         });
 
         viewModel.getMessage().observe(this, msg -> {
@@ -88,7 +85,6 @@ public class EditProfileActivity extends AppCompatActivity {
                 ToastHelper.show(this, msg);
                 // Reset thông báo về null để tránh lỗi spam Toast khi xoay màn hình
                 viewModel.clearMessage();
-
 
                 // Cập nhật thành công thì đóng màn hình lại (quay về Home)
                 if (msg.equals("Update profile successfully!")) {

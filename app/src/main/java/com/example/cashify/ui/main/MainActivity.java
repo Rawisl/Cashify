@@ -35,6 +35,7 @@ import androidx.drawerlayout.widget.DrawerLayout; // Thêm thư viện này
 import com.bumptech.glide.Glide;
 import com.example.cashify.ui.auth.EditProfileActivity;
 import com.example.cashify.ui.auth.LoginActivity;
+import com.example.cashify.utils.ImageHelper;
 import com.example.cashify.utils.ToastHelper;
 import com.google.android.material.navigation.NavigationView; // Thêm thư viện này
 import com.google.android.material.navigation.NavigationView;
@@ -71,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
                 if (isGranted) {
                     setupNotifications();
                 } else {
-                    Log.w("NOTIF", "Người dùng đã từ chối quyền thông báo.");
+                    Log.w("NOTIF", "User rejected notification access.");
                 }
             });
     @Override
@@ -400,13 +401,9 @@ public class MainActivity extends AppCompatActivity {
                     tvEmail.setText(currentUser.getEmail());
                 }
 
-                // Cập nhật Avatar bằng Glide
+                // Load ảnh trực tiếp qua ImageHelper chuẩn gọn
                 if (imgAvatarHeader != null && currentUser.getPhotoUrl() != null) {
-                    Glide.with(this)
-                            .load(currentUser.getPhotoUrl())
-                            .placeholder(R.drawable.ic_logo_splash) // Nếu id logo của ghệ khác thì sửa ở đây nhé
-                            .error(R.drawable.ic_logo_splash)
-                            .into(imgAvatarHeader);
+                    ImageHelper.loadAvatar(currentUser.getPhotoUrl(), imgAvatarHeader);
                 }
             }
         }
