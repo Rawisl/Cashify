@@ -101,8 +101,11 @@ public class TransactionRepository {
         data.put("timestamp", t.timestamp);
         data.put("paymentMethod", t.paymentMethod);
         data.put("type", t.type);
+        data.put("workspaceId", t.workspaceId); // Nên đẩy cả ID này lên mây để dễ quản lý
 
-        firebaseManager.syncLocalToCloud("transactions", String.valueOf(t.id), data, new FirebaseManager.DataCallback<Void>() {
+        String currentWorkspaceId = (t.workspaceId != null) ? t.workspaceId : "PERSONAL";
+
+        firebaseManager.syncLocalToCloud(currentWorkspaceId, "transactions", String.valueOf(t.id), data, new FirebaseManager.DataCallback<Void>() {
             @Override
             public void onSuccess(Void result) {
                 Log.d("SYNC_OK", "Transaction " + t.id + " Uploaded to cloud!");

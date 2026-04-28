@@ -61,7 +61,10 @@ public class BudgetRepository {
         data.put("endDate", budget.endDate);
         data.put("periodType", budget.periodType);
 
-        firebaseManager.syncLocalToCloud("budgets", String.valueOf(budget.id), data, new FirebaseManager.DataCallback<Void>() {
+
+        String currentWorkspaceId = (budget.workspaceId != null) ? budget.workspaceId : "PERSONAL";
+
+        firebaseManager.syncLocalToCloud(currentWorkspaceId, "budgets", String.valueOf(budget.id), data, new FirebaseManager.DataCallback<Void>() {
             @Override
             public void onSuccess(Void result) {
                 Log.d("FIREBASE_SYNC", "Synchronize budget " + budget.id + " successfully!");

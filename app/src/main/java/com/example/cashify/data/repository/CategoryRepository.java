@@ -67,7 +67,10 @@ public class CategoryRepository {
         data.put("isDefault", 0);
         data.put("isDeleted", category.isDeleted);
 
-        firebaseManager.syncLocalToCloud("categories", String.valueOf(category.id), data, new FirebaseManager.DataCallback<Void>() {
+        String currentWorkspaceId = (category.workspaceId != null) ? category.workspaceId : "PERSONAL";
+        data.put("workspaceId", currentWorkspaceId);
+
+        firebaseManager.syncLocalToCloud(currentWorkspaceId, "categories", String.valueOf(category.id), data, new FirebaseManager.DataCallback<Void>() {
             @Override
             public void onSuccess(Void result) {
                 Log.d("FIREBASE_SYNC", "Synchronous success: " + category.name);

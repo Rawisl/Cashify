@@ -103,7 +103,7 @@ public class SettingsFragment extends Fragment {
                         .setMessage(msg)
                         .setPositiveButton(getString(R.string.action_reset), (d, w) -> {
                             // Dọn dẹp Firebase trước
-                            FirebaseManager.getInstance().deleteAllTransactionsFromCloud(new FirebaseManager.DataCallback<Void>() {
+                            FirebaseManager.getInstance().deleteAllTransactionsFromCloud("PERSONAL", new FirebaseManager.DataCallback<Void>() {
                                 @Override
                                 public void onSuccess(Void data) {
                                     // Nếu xóa Cloud thành công, mới dọn tiếp Room Database

@@ -160,7 +160,7 @@ public class MainViewModel extends ViewModel {
     }
 
     private void fetchTransactions(Context context) {
-        firebaseManager.getAllTransactionsFromCloud(new FirebaseManager.DataCallback<List<DocumentSnapshot>>() {
+        firebaseManager.getAllTransactionsFromCloud("PERSONAL", new FirebaseManager.DataCallback<List<DocumentSnapshot>>() {
             @Override
             public void onSuccess(List<DocumentSnapshot> documents) {
                 Executors.newSingleThreadExecutor().execute(() -> {
@@ -220,7 +220,7 @@ public class MainViewModel extends ViewModel {
         // Dùng cái ID của Transaction làm Document ID luôn cho dễ quản lý
         String docId = String.valueOf(t.id);
 
-        firebaseManager.syncLocalToCloud("transactions", docId, data, new FirebaseManager.DataCallback<Void>() {
+        firebaseManager.syncLocalToCloud(t.workspaceId, "transactions", docId, data, new FirebaseManager.DataCallback<Void>() {
             @Override
             public void onSuccess(Void result) {
                 Log.d("FIREBASE_SYNC", "Upload transaction " + docId + " to cloud successfully!");
@@ -240,7 +240,7 @@ public class MainViewModel extends ViewModel {
         Context appContext = context.getApplicationContext();
 
         // LẮNG NGHE GIAO DỊCH (TRANSACTIONS)
-        firebaseManager.listenToPersonalChanges("transactions", new FirebaseManager.DataCallback<List<DocumentSnapshot>>() {
+        firebaseManager.listenToChanges("PERSONAL", "transactions", new FirebaseManager.DataCallback<List<DocumentSnapshot>>() {
             @Override
             public void onSuccess(List<DocumentSnapshot> documents) {
                 Executors.newSingleThreadExecutor().execute(() -> {
@@ -295,7 +295,7 @@ public class MainViewModel extends ViewModel {
         });
 
         // LẮNG NGHE DANH MỤC (CATEGORIES)
-        firebaseManager.listenToPersonalChanges("categories", new FirebaseManager.DataCallback<List<DocumentSnapshot>>() {
+        firebaseManager.listenToChanges("PERSONAL", "categories", new FirebaseManager.DataCallback<List<DocumentSnapshot>>() {
             @Override
             public void onSuccess(List<DocumentSnapshot> documents) {
                 Executors.newSingleThreadExecutor().execute(() -> {
@@ -331,7 +331,7 @@ public class MainViewModel extends ViewModel {
         });
 
         // LẮNG NGHE NGÂN SÁCH (BUDGETS)
-        firebaseManager.listenToPersonalChanges("budgets", new FirebaseManager.DataCallback<List<DocumentSnapshot>>() {
+        firebaseManager.listenToChanges("PERSONAL", "budgets", new FirebaseManager.DataCallback<List<DocumentSnapshot>>() {
             @Override
             public void onSuccess(List<DocumentSnapshot> documents) {
                 Executors.newSingleThreadExecutor().execute(() -> {

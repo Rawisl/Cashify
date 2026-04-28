@@ -114,65 +114,77 @@ public class FirebaseManager {
     }
 
     // Hàm đẩy 1 Giao dịch từ SQLite lên Firestore
-    public void syncLocalToCloud(String collection, String docId, Map<String, Object> data, DataCallback<Void> callback) {
+    public void syncLocalToCloud(String workspaceId, String collection, String docId, Map<String, Object> data, DataCallback<Void> callback) {
         String uid = getCurrentUserUid();
-
         if (uid == null) {
             if (callback != null) callback.onError("Not logged in!");
             return;
         }
 
-        db.collection("users").document(uid)
-                .collection(collection).document(docId)
-                .set(data)
+        com.google.firebase.firestore.DocumentReference docRef;
+        if (workspaceId == null || workspaceId.equals("PERSONAL")) {
+            // Quỹ cá nhân -> Lưu vào nhà riêng của User
+            docRef = db.collection("users").document(uid).collection(collection).document(docId);
+        } else {
+            // Quỹ nhóm -> Lưu vào không gian chung của Workspace
+            docRef = db.collection("workspaces").document(workspaceId).collection(collection).document(docId);
+        }
+
+        docRef.set(data)
                 .addOnSuccessListener(aVoid -> {
-                    if (callback != null) {
-                        callback.onSuccess(null);
-                    }
+                    if (callback != null) callback.onSuccess(null);
                     Log.d("FIREBASE", "Synchronous success: " + collection);
                 })
                 .addOnFailureListener(e -> {
-                    if (callback != null) {
-                        callback.onError(e.getMessage());
-                    }
+                    if (callback != null) callback.onError(e.getMessage());
                     Log.e("FIREBASE", "Synchronous failed: " + e.getMessage());
                 });
     }
 
     // Lắng nghe dữ liệu thay đổi trên Cloud để tải về máy
-    public void listenToPersonalChanges(String collectionName, DataCallback<List<DocumentSnapshot>> callback) {
+    public void listenToChanges(String workspaceId, String collectionName, DataCallback<List<DocumentSnapshot>> callback) {
         String uid = getCurrentUserId();
         if (uid == null) return;
 
-        db.collection("users").document(uid).collection(collectionName)
-                .addSnapshotListener((value, error) -> {
-                    if (error != null) {
-                        callback.onError(error.getMessage());
-                        return;
-                    }
-                    if (value != null) {
-                        callback.onSuccess(value.getDocuments());
-                    }
-                });
+        com.google.firebase.firestore.CollectionReference colRef;
+        if (workspaceId == null || workspaceId.equals("PERSONAL")) {
+            colRef = db.collection("users").document(uid).collection(collectionName);
+        } else {
+            colRef = db.collection("workspaces").document(workspaceId).collection(collectionName);
+        }
+
+        colRef.addSnapshotListener((value, error) -> {
+            if (error != null) {
+                callback.onError(error.getMessage());
+                return;
+            }
+            if (value != null) {
+                callback.onSuccess(value.getDocuments());
+            }
+        });
     }
 
-    public void deleteAllTransactionsFromCloud(DataCallback<Void> callback) {
+    public void deleteAllTransactionsFromCloud(String workspaceId, DataCallback<Void> callback) {
         String uid = getCurrentUserUid();
         if (uid == null) return;
 
-        db.collection("users").document(uid).collection("transactions")
-                .get()
+        com.google.firebase.firestore.CollectionReference colRef;
+        if (workspaceId == null || workspaceId.equals("PERSONAL")) {
+            colRef = db.collection("users").document(uid).collection("transactions");
+        } else {
+            colRef = db.collection("workspaces").document(workspaceId).collection("transactions");
+        }
+
+        colRef.get()
                 .addOnSuccessListener(querySnapshot -> {
                     if (querySnapshot.isEmpty()) {
                         callback.onSuccess(null);
                         return;
                     }
-
                     com.google.firebase.firestore.WriteBatch batch = db.batch();
                     for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
                         batch.delete(doc.getReference());
                     }
-
                     batch.commit()
                             .addOnSuccessListener(aVoid -> callback.onSuccess(null))
                             .addOnFailureListener(e -> callback.onError(e.getMessage()));
@@ -263,18 +275,22 @@ public class FirebaseManager {
     // ============================================================
 
     // Hàm lấy toàn bộ giao dịch từ Firestore của User
-    public void getAllTransactionsFromCloud(DataCallback<List<DocumentSnapshot>> callback) {
+    public void getAllTransactionsFromCloud(String workspaceId, DataCallback<List<DocumentSnapshot>> callback) {
         String uid = getCurrentUserId();
         if (uid == null) {
             callback.onError("Not logged in!");
             return;
         }
 
-        db.collection("users").document(uid).collection("transactions")
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    callback.onSuccess(queryDocumentSnapshots.getDocuments());
-                })
+        com.google.firebase.firestore.CollectionReference colRef;
+        if (workspaceId == null || workspaceId.equals("PERSONAL")) {
+            colRef = db.collection("users").document(uid).collection("transactions");
+        } else {
+            colRef = db.collection("workspaces").document(workspaceId).collection("transactions");
+        }
+
+        colRef.get()
+                .addOnSuccessListener(queryDocumentSnapshots -> callback.onSuccess(queryDocumentSnapshots.getDocuments()))
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
