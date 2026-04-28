@@ -25,6 +25,7 @@ import com.example.cashify.data.local.TransactionWithCategory;
 import com.example.cashify.ui.main.MainViewModel;
 import com.example.cashify.utils.CurrencyFormatter;
 import com.example.cashify.ui.transactions.TransactionViewModel;
+import com.example.cashify.utils.ToastHelper;
 import com.github.mikephil.charting.charts.PieChart;
 import com.github.mikephil.charting.data.PieData;
 import com.github.mikephil.charting.data.PieDataSet;
@@ -100,7 +101,7 @@ public class HomeFragment extends Fragment {
         // Setup Click cho từng dòng (Mới học được từ bên History)
         adapter.setOnItemClickListener(transaction -> {
             // Tạm thời hiện Toast, sau này bác có thể mở Dialog Edit hoặc xem chi tiết
-            Toast.makeText(getContext(), "Giao dịch: " + transaction.amount, Toast.LENGTH_SHORT).show();
+            ToastHelper.show(getContext(), "Giao dịch: " + transaction.amount);
         });
 
         //Setup giao diện chuẩn Donut Chart
@@ -185,7 +186,7 @@ public class HomeFragment extends Fragment {
 
         viewModel.getAvailableMonths().observe(getViewLifecycleOwner(), monthMap -> {
             if (monthMap == null || monthMap.isEmpty()) {
-                Toast.makeText(getContext(), "Chưa có dữ liệu giao dịch nào!", Toast.LENGTH_SHORT).show();
+                ToastHelper.show(getContext(), "No transaction data available!");
                 return;
             }
 
@@ -193,7 +194,7 @@ public class HomeFragment extends Fragment {
             String[] displayArray = displayList.toArray(new String[0]);
 
             new android.app.AlertDialog.Builder(requireContext())
-                    .setTitle("Chọn tháng")
+                    .setTitle("Select Month")
                     .setItems(displayArray, (dialog, which) -> {
                         String selectedLabel = displayArray[which];
                         Calendar selectedCal = monthMap.get(selectedLabel);
@@ -229,7 +230,7 @@ public class HomeFragment extends Fragment {
 
 //        //Bắt sự kiện click chọn tháng (Tạm thời để Toast, Khang ráp DatePicker vào sau nhé)
 //        tvDate.setOnClickListener(v -> {
-//            Toast.makeText(getContext(), "Tính năng chọn tháng sẽ mở BottomSheet!", Toast.LENGTH_SHORT).show();
+//           ToastHelper.show(getContext(), "Tính năng chọn tháng sẽ mở BottomSheet!");
 //            // Test lùi lại 1 tháng:
 //            // currentCalendar.add(Calendar.MONTH, -1);
 //            // updateMonthTextAndLoadData();

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <group android:id="@+id/group_workspaces" android:checkableBehavior="single">
+
+        <item
+            android:id="@+id/nav_workspace_personal"
+            android:icon="@android:drawable/ic_menu_myplaces"
+            android:title="Personal" />
+
+        <item
+            android:id="@+id/nav_workspace_dummy"
+            android:icon="@android:drawable/ic_menu_compass"
+            android:title="Group 2" />
+
+        <item
+            android:id="@+id/nav_add_workspace"
+            android:icon="@android:drawable/ic_input_add"
+            android:title="Add group" />
+
+    </group>
+
+    <group android:id="@+id/group_social">
+
+        <item
+            android:id="@+id/nav_friends"
+            android:icon="@android:drawable/ic_menu_agenda"
+            android:title="Friends" />
+
+    </group>
+
+</menu>

@@ -24,6 +24,7 @@ import com.example.cashify.R;
 import com.example.cashify.data.model.Category;
 import com.example.cashify.utils.NumpadBottomSheet;
 import com.example.cashify.utils.CurrencyFormatter;
+import com.example.cashify.utils.ToastHelper;
 
 import java.util.Calendar;
 import java.util.Locale;
@@ -54,11 +55,6 @@ public class AddTransactionActivity extends AppCompatActivity {
         // 2. Kiểm tra ID từ Intent ngay lập tức để xác định chế độ (Add hay Edit)
         editTransactionId = getIntent().getIntExtra("TRANSACTION_ID", -1);
         isEditMode = (editTransactionId != -1);
-
-        // Log/Toast để debug nhanh (có thể xóa sau khi đã chạy ổn)
-        if (isEditMode) {
-            Toast.makeText(this, "Chế độ: Chỉnh sửa (ID: " + editTransactionId + ")", Toast.LENGTH_SHORT).show();
-        }
 
         // 3. Khởi tạo ViewModel
         viewModel = new ViewModelProvider(this).get(AddTransactionViewModel.class);
@@ -211,7 +207,7 @@ public class AddTransactionActivity extends AppCompatActivity {
         // Observe kết quả lưu thành công
         viewModel.saveSuccess.observe(this, success -> {
             if (success) {
-                Toast.makeText(this, isEditMode ? "Updated!" : "Saved!", Toast.LENGTH_SHORT).show();
+                ToastHelper.show(this, isEditMode ? "Updated!" : "Saved!");
                 finish();
             }
         });
@@ -224,7 +220,7 @@ public class AddTransactionActivity extends AppCompatActivity {
         // Kiểm tra số tiền hợp lệ
         if (amount <= 0) {
             edtAmount.setBackgroundResource(R.drawable.bg_input_error);
-            Toast.makeText(this, getString(R.string.error_invalid_money_amount), Toast.LENGTH_SHORT).show();
+            ToastHelper.show(this, getString(R.string.error_invalid_money_amount));
             return;
         }
 
@@ -234,7 +230,7 @@ public class AddTransactionActivity extends AppCompatActivity {
         // Nếu là mode THÊM MỚI mà chưa chọn Category thì mới chặn
         // Nếu là mode EDIT mà chưa chọn cái mới, hệ thống sẽ tự lấy cái cũ trong ViewModel/DB
         if (!isEditMode && selected == null) {
-            Toast.makeText(this, getString(R.string.error_transaction_empty_category), Toast.LENGTH_SHORT).show();
+            ToastHelper.show(this, getString(R.string.error_transaction_empty_category));
             return;
         }
 
@@ -311,7 +307,7 @@ public class AddTransactionActivity extends AppCompatActivity {
                     android.graphics.Bitmap bitmap = android.provider.MediaStore.Images.Media.getBitmap(this.getContentResolver(), imageUri);
                     processImage(bitmap);
                 } catch (java.io.IOException e) {
-                    Toast.makeText(this, "Lỗi không lấy được ảnh!", Toast.LENGTH_SHORT).show();
+                    ToastHelper.show(this, "Failed to load image!");
                 }
             }
         }
@@ -338,7 +334,7 @@ public class AddTransactionActivity extends AppCompatActivity {
         // Cuối cùng, An điền số tiền lớn nhất tìm được vào ô Edittext
         if (maxAmount > 0) {
             edtAmount.setText(String.valueOf((int)maxAmount));
-            Toast.makeText(this, "Đã tìm thấy tổng tiền: " + maxAmount, Toast.LENGTH_SHORT).show();
+            ToastHelper.show(this, "Total amount found: ");
         }
     }
     private void processImage(android.graphics.Bitmap bitmap) {

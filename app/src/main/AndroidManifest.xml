@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <application
+        android:name=".ui.main.MyApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -46,6 +47,11 @@
             android:name=".ui.transactions.AddTransactionActivity"
             android:windowSoftInputMode="adjustResize"
             android:screenOrientation="portrait"/>
+
+        <activity
+            android:name=".ui.auth.EditProfileActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
 
         <service
             android:name=".data.remote.FirebaseMessagingServices"

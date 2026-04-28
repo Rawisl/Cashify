@@ -24,7 +24,9 @@ import com.example.cashify.R;
 import com.example.cashify.data.local.AppDatabase;
 import com.example.cashify.data.model.Category;
 import com.example.cashify.utils.NumpadBottomSheet;
+import com.example.cashify.utils.ToastHelper;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
@@ -76,9 +78,11 @@ public class BudgetBottomSheetDialog extends BottomSheetDialogFragment {
     @Override
     public void onStart() {
         super.onStart();
-        View bottomSheet = getDialog().findViewById(com.google.android.material.R.id.design_bottom_sheet);
-        if (bottomSheet != null) {
-            BottomSheetBehavior.from(bottomSheet).setState(BottomSheetBehavior.STATE_EXPANDED);
+// Kiểm tra và ép kiểu Dialog về BottomSheetDialog
+        if (getDialog() instanceof BottomSheetDialog) {
+            com.google.android.material.bottomsheet.BottomSheetDialog dialog =
+                    (com.google.android.material.bottomsheet.BottomSheetDialog) getDialog();
+            dialog.getBehavior().setState(com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED);
         }
     }
 
@@ -175,12 +179,12 @@ public class BudgetBottomSheetDialog extends BottomSheetDialogFragment {
             String amountVal = edtBudgetAmount.getText().toString().trim();
             if (TextUtils.isEmpty(amountVal)) {
                 layoutInputAmount.setBoxStrokeColor(ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark));
-                Toast.makeText(getContext(), "Please enter the valid money amount!", Toast.LENGTH_SHORT).show();
+                ToastHelper.show(getContext(), "Please enter the valid money amount!");
                 return;
             }
 
             if (categoryId == 0 && selectedCategoryIdFromDropdown == -1) {
-                Toast.makeText(getContext(), "Please pick a category!", Toast.LENGTH_SHORT).show();
+                ToastHelper.show(getContext(), "Please pick a category!");
                 return;
             }
 

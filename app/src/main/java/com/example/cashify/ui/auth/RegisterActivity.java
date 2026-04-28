@@ -13,6 +13,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.example.cashify.ui.main.MainActivity;
 import com.example.cashify.R;
+import com.example.cashify.utils.ToastHelper;
 
 public class RegisterActivity extends AppCompatActivity {
     //màn hình đăng ký
@@ -63,25 +64,25 @@ public class RegisterActivity extends AppCompatActivity {
 
             // Kiểm tra rỗng (Thêm confirmPass vào check cho kỹ)
             if (name.isEmpty() || email.isEmpty() || pass.isEmpty() || confirmPass.isEmpty()) {
-                Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show();
+                ToastHelper.show(this, "Please fill all fields");
                 return;
             }
 
             // THIẾU Ở ĐÂY: Kiểm tra định dạng Email hợp lệ (có @ và domain)
             if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-                Toast.makeText(this, "Email is invalid! (Ex: abc@gmail.com)", Toast.LENGTH_SHORT).show();
+                ToastHelper.show(this, "Email is invalid! (Ex: abc@gmail.com)");
                 return;
             }
 
             // Kiểm tra độ dài mật khẩu
             if (pass.length() < 6) {
-                Toast.makeText(this, "Password must be at least 6 characters", Toast.LENGTH_SHORT).show();
+                ToastHelper.show(this, "Password must be at least 6 characters");
                 return;
             }
 
             // Kiểm tra khớp mật khẩu
             if (!pass.equals(confirmPass)) {
-                Toast.makeText(this, "Confirm password does not match", Toast.LENGTH_SHORT).show();
+                ToastHelper.show(this, "Confirm password does not match");
                 return;
             }
 
@@ -113,13 +114,13 @@ public class RegisterActivity extends AppCompatActivity {
 
         authViewModel.errorMessage.observe(this, error -> {
             if (error != null && !error.isEmpty()) {
-                Toast.makeText(this, "Error: " + error, Toast.LENGTH_LONG).show();
+                ToastHelper.show(this, "Error: " + error);
             }
         });
 
         authViewModel.infoMessage.observe(this, info -> {
             if (info != null && !info.isEmpty()) {
-                Toast.makeText(this, info, Toast.LENGTH_LONG).show();
+                ToastHelper.show(this, info);
                 finish();
             }
         });
@@ -127,7 +128,7 @@ public class RegisterActivity extends AppCompatActivity {
 //        Để dành cái này sau phát triển
 //        authViewModel.isAuthSuccess.observe(this, isSuccess -> {
 //            if (isSuccess) {
-//                Toast.makeText(this, "Register successful!", Toast.LENGTH_SHORT).show();
+//               ToastHelper.show(this, "Register successful!");
 //                startActivity(new Intent(this, MainActivity.class));
 //                finishAffinity(); // Đóng hết tất cả màn hình Login/Register
 //            }
