@@ -22,7 +22,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
 public class HomeViewModel extends AndroidViewModel {
     private final TransactionRepository repository;
     private final TransactionDao dao;
@@ -59,8 +58,8 @@ public class HomeViewModel extends AndroidViewModel {
     }
 
     // Lấy list kèm Category
-    public LiveData<List<TransactionWithCategory>> getRecentTransactionsWithCategory() {
-        return repository.getRecentTransactionsWithCategory();
+    public LiveData<List<TransactionWithCategory>> getRecentTransactionsWithCategory(String workspaceId) {
+        return repository.getRecentTransactionsWithCategory(workspaceId);
     }
 
     public LiveData<DashboardState> getDashboardData() {
@@ -71,14 +70,14 @@ public class HomeViewModel extends AndroidViewModel {
         return availableMonths;
     }
 
-    public void loadDashboardData(long startOfMonth, long endOfMonth) {
+    public void loadDashboardData(String workspaceId, long startOfMonth, long endOfMonth) {
         executor.execute(() -> {
             DashboardState state = new DashboardState();
-            state.actualBalance = dao.getMonthlyBalance(startOfMonth, endOfMonth);
-            state.totalIncome = dao.getTotalIncome(startOfMonth, endOfMonth);
-            state.totalExpense = dao.getTotalExpense(startOfMonth, endOfMonth);
-            state.top5Categories = dao.getTop5ExpenseCategories(startOfMonth, endOfMonth);
-            state.othersTotal = dao.getOtherExpenseTotal(startOfMonth, endOfMonth);
+            state.actualBalance = dao.getMonthlyBalance(workspaceId, startOfMonth, endOfMonth);
+            state.totalIncome = dao.getTotalIncome(workspaceId, startOfMonth, endOfMonth);
+            state.totalExpense = dao.getTotalExpense(workspaceId, startOfMonth, endOfMonth);
+            state.top5Categories = dao.getTop5ExpenseCategories(workspaceId, startOfMonth, endOfMonth);
+            state.othersTotal = dao.getOtherExpenseTotal(workspaceId, startOfMonth, endOfMonth);
 
             //Xử lý màu sắc và Legend
             List<LegendItem> legends = new ArrayList<>();
@@ -102,7 +101,7 @@ public class HomeViewModel extends AndroidViewModel {
                 legends.add(new LegendItem(COLOR_OTHERS, "Others", CurrencyFormatter.formatCompactVND(state.othersTotal)));
 
                 //Lấy chi tiết đám lẻ tẻ nhét vào subOthersList
-                List<CategorySum> othersBreakdown = dao.getOthersBreakdown(startOfMonth, endOfMonth);
+                List<CategorySum> othersBreakdown = dao.getOthersBreakdown(workspaceId, startOfMonth, endOfMonth);
                 List<LegendItem> subLegends = new ArrayList<>();
                 for (CategorySum cat : othersBreakdown) {
                     subLegends.add(new LegendItem(COLOR_OTHERS, cat.categoryName, CurrencyFormatter.formatCompactVND(cat.total)));
@@ -120,9 +119,9 @@ public class HomeViewModel extends AndroidViewModel {
         });
     }
 
-    public void loadAvailableMonths(String formatString) {
+    public void loadAvailableMonths(String workspaceId, String formatString) {
         executor.execute(() -> {
-            List<Long> timestamps = dao.getAllTimestamps();
+            List<Long> timestamps = dao.getAllTimestamps(workspaceId);
             LinkedHashMap<String, Calendar> monthMap = new LinkedHashMap<>();
 
             if (timestamps != null) {

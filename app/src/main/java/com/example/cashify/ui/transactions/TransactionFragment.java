@@ -41,6 +41,8 @@ public class TransactionFragment extends Fragment {
     private RecyclerView rvHistory, rvFilterChips;
     private LinearLayout layoutEmpty;
 
+    private String currentWorkspaceId = "PERSONAL";
+
     public TransactionFragment() {}
 
     @Override
@@ -115,7 +117,7 @@ public class TransactionFragment extends Fragment {
                 // Lấy lại danh sách với query (nếu đang search dở)
                 EditText etSearch = getView().findViewById(R.id.etSearch);
                 String query = (etSearch != null) ? etSearch.getText().toString().trim() : "";
-                viewModel.fetchHistoryData(query);
+                viewModel.fetchHistoryData(currentWorkspaceId, query);
             }
         });
 
@@ -149,7 +151,7 @@ public class TransactionFragment extends Fragment {
                 EditText etSearch = getView().findViewById(R.id.etSearch);
                 String query = (etSearch != null) ? etSearch.getText().toString().trim() : "";
 
-                viewModel.fetchHistoryData(query);
+                viewModel.fetchHistoryData(currentWorkspaceId, query);
             }
         });
     }
@@ -162,7 +164,7 @@ public class TransactionFragment extends Fragment {
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                viewModel.fetchHistoryData(s.toString().trim());
+                viewModel.fetchHistoryData(currentWorkspaceId, s.toString().trim());
             }
             @Override
             public void afterTextChanged(android.text.Editable s) {}
@@ -193,7 +195,7 @@ public class TransactionFragment extends Fragment {
 
                 // Cập nhật ViewModel & Load data
                 viewModel.selectedDateRange.setValue(new long[]{startDate, endDate});
-                viewModel.fetchHistoryData();
+                viewModel.fetchHistoryData(currentWorkspaceId);
             }
         });
 
@@ -214,7 +216,7 @@ public class TransactionFragment extends Fragment {
 
             // Cập nhật ViewModel & Load data
             viewModel.selectedType.setValue(typeId);
-            viewModel.fetchHistoryData();
+            viewModel.fetchHistoryData(currentWorkspaceId);
             return true;
         });
         popup.show();
@@ -246,7 +248,7 @@ public class TransactionFragment extends Fragment {
 
             // 2. Cập nhật ViewModel & Load data (Chỉ truyền "Cash" xuống)
             viewModel.selectedMethod.setValue(filterValue);
-            viewModel.fetchHistoryData();
+            viewModel.fetchHistoryData(currentWorkspaceId);
             return true;
         });
         popup.show();
@@ -282,7 +284,7 @@ public class TransactionFragment extends Fragment {
                     chipAdapter.notifyItemChanged(position);
 
                     viewModel.selectedCategoryId.setValue(selectedCat.id);
-                    viewModel.fetchHistoryData();
+                    viewModel.fetchHistoryData(currentWorkspaceId);
 
                     // Đóng Bottom Sheet tự động
                     bottomSheetDialog.dismiss();
@@ -344,6 +346,6 @@ public class TransactionFragment extends Fragment {
         super.onResume();
         EditText etSearch = getView().findViewById(R.id.etSearch);
         String query = (etSearch != null) ? etSearch.getText().toString().trim() : "";
-        viewModel.fetchHistoryData(query);
+        viewModel.fetchHistoryData(currentWorkspaceId, query);
     }
 }

@@ -52,6 +52,8 @@ public class HomeFragment extends Fragment {
 
     private HomeViewModel viewModel;
 
+    private String currentWorkspaceId = "PERSONAL";
+
     public HomeFragment() {
     }
 
@@ -120,7 +122,7 @@ public class HomeFragment extends Fragment {
         viewModel = new ViewModelProvider(this).get(HomeViewModel.class);
 
         // Dùng câu query lấy sẵn 5 giao dịch + Category từ Room (KHÔNG CẦN VÒNG LẶP NẶNG MÁY)
-        viewModel.getRecentTransactionsWithCategory().observe(getViewLifecycleOwner(), transWithCatList -> {
+        viewModel.getRecentTransactionsWithCategory(currentWorkspaceId).observe(getViewLifecycleOwner(), transWithCatList -> {
             if (transWithCatList != null && !transWithCatList.isEmpty()) {
                 List<TransactionViewModel.HistoryItem> recentItems = new ArrayList<>();
 
@@ -248,7 +250,7 @@ public class HomeFragment extends Fragment {
     }
 
     private void showMonthSelectorDialog() {
-        viewModel.loadAvailableMonths(getString(R.string.dashboard_month_format));
+        viewModel.loadAvailableMonths(currentWorkspaceId, getString(R.string.dashboard_month_format));
     }
 
     private void setupDonutChart() {
@@ -365,7 +367,7 @@ public class HomeFragment extends Fragment {
         long endOfMonth = cal.getTimeInMillis();
 
         // Kêu ViewModel lấy dữ liệu
-        viewModel.loadDashboardData(startOfMonth, endOfMonth);
+        viewModel.loadDashboardData(currentWorkspaceId, startOfMonth, endOfMonth);
     }
 
     @Override

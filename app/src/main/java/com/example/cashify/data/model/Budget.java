@@ -13,6 +13,8 @@ public class Budget {
     public String periodType; //week, month, year
     public long startDate; //timestamp
     public long endDate;//timestamp : mấy má coi cách sử dụng cái mốc tgian này nah
+    public String workspaceId;
+
     public Budget() {
     }
 }

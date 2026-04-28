@@ -37,7 +37,6 @@ import com.example.cashify.ui.auth.EditProfileActivity;
 import com.example.cashify.ui.auth.LoginActivity;
 import com.example.cashify.utils.ImageHelper;
 import com.example.cashify.utils.ToastHelper;
-import com.google.android.material.navigation.NavigationView; // Thêm thư viện này
 import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -63,10 +62,10 @@ public class MainActivity extends AppCompatActivity {
     boolean keepSplash = true;
     private MainViewModel mainViewModel;
 
-    // KHAI BÁO BIẾN CHO SIDEBAR
+    private String currentWorkspaceId = "PERSONAL";
+
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
-
     private final ActivityResultLauncher<String> requestPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
                 if (isGranted) {
@@ -174,7 +173,7 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     // Nếu đã có data (người cũ quay lại) -> Chỉ cần làm mới UI
                     Log.d("AUTH_FLOW", "Data already exists.");
-                    viewModel.fetchHistoryData();
+                    viewModel.fetchHistoryData(currentWorkspaceId);
                 }
 
                 mainViewModel.startRealTimeSync(MainActivity.this);
@@ -227,6 +226,7 @@ public class MainActivity extends AppCompatActivity {
         fabAddTransaction.setOnClickListener(v ->
         {
             Intent intent = new Intent(this, AddTransactionActivity.class);
+            intent.putExtra("WORKSPACE_ID", currentWorkspaceId);
             startActivity(intent);
             // Gọi hiệu ứng trượt LÊN ngay sau khi start
             overridePendingTransition(R.anim.slide_in_up, R.anim.stay);
@@ -308,6 +308,7 @@ public class MainActivity extends AppCompatActivity {
             if (id == R.id.nav_workspace_personal) {
                 ToastHelper.show(this, "Đã chọn Ví Cá Nhân");
                 // TODO: Gọi mainViewModel đổi ID về Cá nhân
+                currentWorkspaceId = "PERSONAL";
             } else if (id == R.id.nav_add_workspace) {
                 ToastHelper.show(this, "Mở form Tạo Quỹ Mới");
             } else if (id == R.id.nav_friends) {
@@ -324,6 +325,7 @@ public class MainActivity extends AppCompatActivity {
         FloatingActionButton fabAddTransaction = findViewById(R.id.fab_add_transaction);
         fabAddTransaction.setOnClickListener(v -> {
             Intent intent = new Intent(this, AddTransactionActivity.class);
+            intent.putExtra("WORKSPACE_ID", currentWorkspaceId);
             startActivity(intent);
             overridePendingTransition(R.anim.slide_in_up, R.anim.stay);
         });
@@ -403,7 +405,7 @@ public class MainActivity extends AppCompatActivity {
 
                 // Load ảnh trực tiếp qua ImageHelper chuẩn gọn
                 if (imgAvatarHeader != null && currentUser.getPhotoUrl() != null) {
-                    ImageHelper.loadAvatar(currentUser.getPhotoUrl(), imgAvatarHeader);
+                    ImageHelper.loadAvatar(currentUser.getPhotoUrl().toString(), imgAvatarHeader);
                 }
             }
         }
