@@ -156,6 +156,30 @@ public class FirebaseManager {
                 });
     }
 
+    public void deleteAllTransactionsFromCloud(DataCallback<Void> callback) {
+        String uid = getCurrentUserUid();
+        if (uid == null) return;
+
+        db.collection("users").document(uid).collection("transactions")
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    if (querySnapshot.isEmpty()) {
+                        callback.onSuccess(null);
+                        return;
+                    }
+
+                    com.google.firebase.firestore.WriteBatch batch = db.batch();
+                    for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                        batch.delete(doc.getReference());
+                    }
+
+                    batch.commit()
+                            .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                            .addOnFailureListener(e -> callback.onError(e.getMessage()));
+                })
+                .addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
+
     // ============================================================
     // TODO 3: CỘNG ĐỒNG (SOCIAL & SHARED WORKSPACE)
     // - Viết logic Tìm kiếm User qua Email

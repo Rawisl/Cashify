@@ -18,6 +18,8 @@ public class AddTransactionViewModel extends AndroidViewModel {
     private final AddTransactionRepository addRepo; // Quản lý Categories
     private final TransactionRepository transRepo; // Quản lý Transactions
 
+    private String currentWorkspaceId = "PERSONAL";
+
     // Trạng thái giao diện
     public MutableLiveData<Boolean> isExpense = new MutableLiveData<>(true);
     public MutableLiveData<Boolean> isEditMode = new MutableLiveData<>(false);
@@ -34,6 +36,13 @@ public class AddTransactionViewModel extends AndroidViewModel {
         super(application);
         this.addRepo = new AddTransactionRepository(application);
         this.transRepo = new TransactionRepository(application);
+    }
+
+    //Hàm để Activity truyền workspaceId vào
+    public void setCurrentWorkspaceId(String workspaceId) {
+        if (workspaceId != null) {
+            this.currentWorkspaceId = workspaceId;
+        }
     }
 
     // --- LOGIC CHO EDIT MODE ---
@@ -102,6 +111,7 @@ public class AddTransactionViewModel extends AndroidViewModel {
         t.timestamp = calendar.getValue().getTimeInMillis();
         t.type = Boolean.TRUE.equals(isExpense.getValue()) ? 0 : 1;
         t.paymentMethod = selectedPayment.getValue();
+        t.workspaceId = this.currentWorkspaceId;
         // 4. Thực thi vào Database
         new Thread(() -> {
             if (editMode) {

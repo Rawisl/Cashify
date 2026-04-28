@@ -21,7 +21,6 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
-import com.example.cashify.database.Category;
 import com.example.cashify.utils.InvoiceParser;
 import com.example.cashify.data.model.Category;
 import com.example.cashify.utils.NumpadBottomSheet;
@@ -64,6 +63,19 @@ public class AddTransactionActivity extends AppCompatActivity {
 
         // 3. Khởi tạo ViewModel
         viewModel = new ViewModelProvider(this).get(AddTransactionViewModel.class);
+
+        String passedWorkspaceId = getIntent().getStringExtra("WORKSPACE_ID");
+        if (passedWorkspaceId != null) {
+            viewModel.setCurrentWorkspaceId(passedWorkspaceId);
+        }
+
+        // Kiểm tra ID từ Intent ngay lập tức để xác định chế độ (Add hay Edit)
+        editTransactionId = getIntent().getIntExtra("TRANSACTION_ID", -1);
+        isEditMode = (editTransactionId != -1);
+
+        if (isEditMode) {
+            Toast.makeText(this, "Chế độ: Chỉnh sửa (ID: " + editTransactionId + ")", Toast.LENGTH_SHORT).show();
+        }
 
         // 4. Khởi tạo Giao diện và Gán sự kiện
         initViews();       // Đã bao gồm logic đổi Title sang "Edit Transaction"

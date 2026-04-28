@@ -22,6 +22,7 @@ public class Transaction {
     public long timestamp; // Lưu ngày tháng bằng số Long để tính toán/lọc cho nhanh
     public String paymentMethod; //"cash", "bank", "card"
     public int type; // 0=chi, 1=thu (lưu lại để truy vấn nhanh, khỏi join)
+    public String workspaceId;
 
     public Transaction() {
     }

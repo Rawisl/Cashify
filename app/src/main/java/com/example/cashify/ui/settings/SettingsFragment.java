@@ -19,7 +19,9 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
+import android.widget.Toast;
 
+import com.example.cashify.data.remote.FirebaseManager;
 import com.example.cashify.ui.category.CategoryManagement;
 import com.example.cashify.R;
 import com.example.cashify.data.local.AppDatabase;
@@ -99,9 +101,27 @@ public class SettingsFragment extends Fragment {
                 new AlertDialog.Builder(requireContext())
                         .setTitle(getString(R.string.action_reset_transactions))
                         .setMessage(msg)
-                        .setPositiveButton(getString(R.string.action_reset), (d, w) -> Executors.newSingleThreadExecutor().execute(() -> {
-                            db.transactionDao().deleteAllTransactions();
-                        }))
+                        .setPositiveButton(getString(R.string.action_reset), (d, w) -> {
+                            // Dọn dẹp Firebase trước
+                            FirebaseManager.getInstance().deleteAllTransactionsFromCloud(new FirebaseManager.DataCallback<Void>() {
+                                @Override
+                                public void onSuccess(Void data) {
+                                    // Nếu xóa Cloud thành công, mới dọn tiếp Room Database
+                                    Executors.newSingleThreadExecutor().execute(() -> {
+                                        AppDatabase.getInstance(requireContext()).transactionDao().deleteAllTransactions();
+
+                                        // Hiện thông báo thành công
+                                        requireActivity().runOnUiThread(() ->
+                                                Toast.makeText(requireContext(), "All transactions have been deleted!", Toast.LENGTH_SHORT).show()
+                                        );
+                                    });
+                                }
+                                @Override
+                                public void onError(String message) {
+                                    Toast.makeText(requireContext(), "Cloud deleting error: " + message, Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                        })
                         .setNegativeButton(getString(R.string.action_cancel), null)
                         .show();
             }

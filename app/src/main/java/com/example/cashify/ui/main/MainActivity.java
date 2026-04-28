@@ -47,6 +47,8 @@ public class MainActivity extends AppCompatActivity {
     // Tạo một lá cờ hiệu
     boolean keepSplash = true;
     private MainViewModel mainViewModel;
+
+    private String currentWorkspaceId = "PERSONAL";
     private final ActivityResultLauncher<String> requestPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
                 if (isGranted) {
@@ -154,7 +156,7 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     // Nếu đã có data (người cũ quay lại) -> Chỉ cần làm mới UI
                     Log.d("AUTH_FLOW", "Data already exists.");
-                    viewModel.fetchHistoryData();
+                    viewModel.fetchHistoryData(currentWorkspaceId);
                 }
 
                 mainViewModel.startRealTimeSync(MainActivity.this);
@@ -207,6 +209,7 @@ public class MainActivity extends AppCompatActivity {
         fabAddTransaction.setOnClickListener(v ->
         {
             Intent intent = new Intent(this, AddTransactionActivity.class);
+            intent.putExtra("WORKSPACE_ID", currentWorkspaceId);
             startActivity(intent);
             // Gọi hiệu ứng trượt LÊN ngay sau khi start
             overridePendingTransition(R.anim.slide_in_up, R.anim.stay);

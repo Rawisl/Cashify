@@ -187,6 +187,9 @@ public class MainViewModel extends ViewModel {
                             Number type = (Number) doc.get("type");
                             t.type = (type != null) ? type.intValue() : 0;
 
+                            t.workspaceId = doc.getString("workspaceId");
+                            if (t.workspaceId == null) t.workspaceId = "PERSONAL";
+
                             db.transactionDao().insert(t);
                         }
                         Log.d("SYNC", "Downloaded " + documents.size() + " transactions.");
@@ -243,6 +246,13 @@ public class MainViewModel extends ViewModel {
                 Executors.newSingleThreadExecutor().execute(() -> {
                     try {
                         AppDatabase db = AppDatabase.getInstance(appContext);
+
+                        if (documents == null || documents.isEmpty()) {
+                            db.transactionDao().deleteAllTransactions();
+                            syncCompleted.postValue(true);
+                            return;
+                        }
+
                         for (DocumentSnapshot doc : documents) {
                             Transaction t = new Transaction();
                             t.id = Integer.parseInt(doc.getId());
@@ -263,6 +273,9 @@ public class MainViewModel extends ViewModel {
 
                             Number type = (Number) doc.get("type");
                             t.type = (type != null) ? type.intValue() : 0;
+
+                            t.workspaceId = doc.getString("workspaceId");
+                            if (t.workspaceId == null) t.workspaceId = "PERSONAL";
 
                             // Insert với replace sẽ tự động cập nhật nếu dữ liệu đã tồn tại
                             db.transactionDao().insert(t);

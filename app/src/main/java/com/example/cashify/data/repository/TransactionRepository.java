@@ -49,39 +49,48 @@ public class TransactionRepository {
             // Logic xóa trên Firebase có thể gọi hàm xóa document riêng trong FirebaseManager
         });
     }
-    public void getAll(Callback<List<Transaction>> callback){
-        executor.execute(() ->callback.onResult(transactionDao.getAll()));
-    }
-    public void getByDateRange(long start, long end, Callback<List<Transaction>> callback){
-        executor.execute(() -> callback.onResult(transactionDao.getByDateRange(start, end)));
-    }
-    public void getTotalIncome(long start, long end, Callback<Long> callback){
-        executor.execute(() -> callback.onResult(transactionDao.getTotalIncome(start, end)));
-    }
-    public void getTotalExpense(long start, long end, Callback<Long> callback){
-        executor.execute(() -> callback.onResult(transactionDao.getTotalExpense(start, end)));
-    }
-    public void getActualBalance(Callback<Long> callback){
-        executor.execute(() -> callback.onResult(transactionDao.getActualBalance()));
-    }
-    public void getMonthlyBalance(long startDate, long endDate, Callback<Long> callback) {
-        executor.execute(() -> callback.onResult(transactionDao.getMonthlyBalance(startDate, endDate)));
+    public void getAll(String workspaceId, Callback<List<Transaction>> callback){
+        executor.execute(() -> callback.onResult(transactionDao.getAll(workspaceId)));
     }
 
-    public LiveData<List<TransactionWithCategory>> getRecentTransactionsWithCategory() {
-        return transactionDao.getRecentTransactionsWithCategory();
+    public void getByDateRange(String workspaceId, long start, long end, Callback<List<Transaction>> callback){
+        executor.execute(() -> callback.onResult(transactionDao.getByDateRange(workspaceId, start, end)));
     }
-    public void getTop5ExpenseCategories(long start, long end, Callback<List<CategorySum>> callback){
-        executor.execute(()-> callback.onResult(transactionDao.getTop5ExpenseCategories(start, end)));
+
+    public void getTotalIncome(String workspaceId, long start, long end, Callback<Long> callback){
+        executor.execute(() -> callback.onResult(transactionDao.getTotalIncome(workspaceId, start, end)));
     }
-    public void getOtherExpenseTotal(long start, long end, Callback<Long> callback){
-        executor.execute(()->callback.onResult(transactionDao.getOtherExpenseTotal(start, end)));
+
+    public void getTotalExpense(String workspaceId, long start, long end, Callback<Long> callback){
+        executor.execute(() -> callback.onResult(transactionDao.getTotalExpense(workspaceId, start, end)));
     }
-    public void getTotalExpenseByCategory(int catergoryId, long start, long end, Callback<Long> callback){
-        executor.execute(()->callback.onResult(transactionDao.getTotalExpenseByCategory(catergoryId, start, end)));
+
+    public void getActualBalance(String workspaceId, Callback<Long> callback){
+        executor.execute(() -> callback.onResult(transactionDao.getActualBalance(workspaceId)));
     }
-    public void countTransactionByDay(long startOfDay, long endOfDay, Callback<Integer> callback){
-        executor.execute(()-> callback.onResult(transactionDao.countTransactionsByDay(startOfDay, endOfDay)));
+
+    public void getMonthlyBalance(String workspaceId, long startDate, long endDate, Callback<Long> callback) {
+        executor.execute(() -> callback.onResult(transactionDao.getMonthlyBalance(workspaceId, startDate, endDate)));
+    }
+
+    public LiveData<List<TransactionWithCategory>> getRecentTransactionsWithCategory(String workspaceId) {
+        return transactionDao.getRecentTransactionsWithCategory(workspaceId);
+    }
+
+    public void getTop5ExpenseCategories(String workspaceId, long start, long end, Callback<List<CategorySum>> callback){
+        executor.execute(() -> callback.onResult(transactionDao.getTop5ExpenseCategories(workspaceId, start, end)));
+    }
+
+    public void getOtherExpenseTotal(String workspaceId, long start, long end, Callback<Long> callback){
+        executor.execute(() -> callback.onResult(transactionDao.getOtherExpenseTotal(workspaceId, start, end)));
+    }
+
+    public void getTotalExpenseByCategory(String workspaceId, int catergoryId, long start, long end, Callback<Long> callback){
+        executor.execute(() -> callback.onResult(transactionDao.getTotalExpenseByCategory(workspaceId, catergoryId, start, end)));
+    }
+
+    public void countTransactionByDay(String workspaceId, long startOfDay, long endOfDay, Callback<Integer> callback){
+        executor.execute(() -> callback.onResult(transactionDao.countTransactionsByDay(workspaceId, startOfDay, endOfDay)));
     }
 
     private void syncTransactionToCloud(Transaction t) {

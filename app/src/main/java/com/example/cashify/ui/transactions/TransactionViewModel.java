@@ -23,6 +23,8 @@ public class TransactionViewModel extends AndroidViewModel {
     private final TransactionDao transactionDao;
     private final CategoryDao categoryDao;
 
+    private String currentWorkspaceId = "PERSONAL";
+
     // Chỉ giữ lại Search Query, bỏ currentFilter cũ vì đã dùng LiveData Multi-Filter
     private String currentSearchQuery = "";
 
@@ -63,18 +65,19 @@ public class TransactionViewModel extends AndroidViewModel {
         selectedMethod.setValue(null);
         selectedCategoryId.setValue(null);
         initDefaultChips();
-        fetchHistoryData();
+        fetchHistoryData(currentWorkspaceId);
     }
 
     /**
      * Hàm fetch dữ liệu: Lấy tất cả, sau đó lọc kết hợp Search + 4 loại Filter
      */
-    public void fetchHistoryData(String query) {
+    public void fetchHistoryData(String workspaceId, String query) {
+        this.currentWorkspaceId = workspaceId != null ? workspaceId : "PERSONAL";
         this.currentSearchQuery = query != null ? query : "";
 
         new Thread(() -> {
             // Lấy tất cả dữ liệu từ DB (Chưa cần đổi DAO, lọc in-memory vẫn rất nhanh)
-            List<Transaction> transactions = transactionDao.getAll();
+            List<Transaction> transactions = transactionDao.getAll(currentWorkspaceId);
 
             List<HistoryItem> uiModels = new ArrayList<>();
             if (transactions == null || transactions.isEmpty()) {
@@ -140,7 +143,7 @@ public class TransactionViewModel extends AndroidViewModel {
     }
 
     // --- OVERLOADS ---
-    public void fetchHistoryData() { fetchHistoryData(currentSearchQuery); }
+    public void fetchHistoryData(String workspaceId) { fetchHistoryData(workspaceId, currentSearchQuery); }
 
     /**
      * Xóa nhanh (dùng cho Swipe to Delete)
@@ -148,7 +151,7 @@ public class TransactionViewModel extends AndroidViewModel {
     public void deleteOnly(Transaction transaction) {
         new Thread(() -> {
             transactionDao.delete(transaction);
-            fetchHistoryData(); // Refresh lại danh sách (giữ nguyên filter đang chọn)
+            fetchHistoryData(currentWorkspaceId); // Refresh lại danh sách (giữ nguyên filter đang chọn)
         }).start();
     }
 
@@ -158,14 +161,14 @@ public class TransactionViewModel extends AndroidViewModel {
     public void insertOnly(Transaction transaction) {
         new Thread(() -> {
             transactionDao.insert(transaction);
-            fetchHistoryData();
+            fetchHistoryData(currentWorkspaceId);
         }).start();
     }
 
     public void updateAndRefresh(Transaction transaction) {
         new Thread(() -> {
             transactionDao.update(transaction);
-            fetchHistoryData();
+            fetchHistoryData(currentWorkspaceId);
         }).start();
     }
 
