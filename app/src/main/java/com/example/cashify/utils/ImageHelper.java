@@ -22,9 +22,8 @@ public class ImageHelper {
 
         Glide.with(target.getContext())
                 .load(url)
-                // Hiện tại đang xài ic_logo_splash, mốt design xong ic_default_avatar thì đổi ở đây nhé
-                .placeholder(R.drawable.ic_logo_splash)
-                .error(R.drawable.ic_logo_splash)
+                .placeholder(R.drawable.ic_default_user)
+                .error(R.drawable.ic_default_user)
                 .circleCrop()
                 .into(target);
     }
