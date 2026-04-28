@@ -1,6 +1,8 @@
 package com.example.cashify.utils;
 
 import android.widget.ImageView;
+import com.bumptech.glide.Glide;
+import com.example.cashify.R;
 
 /**
  * Utility bọc thư viện Glide để xử lý ảnh tập trung.
@@ -13,16 +15,18 @@ public class ImageHelper {
     //Firebase URLs: Link ảnh từ Firebase Storage thường rất dài và có token. Glide xử lý cái này rất ngon, nhưng nhắc bạn dev là khi lưu vào Firestore, hãy lưu cái Download URL (link trực tiếp) chứ đừng lưu cái Path trong Storage nhé.
     //Performance: Glide mặc định sẽ cache ảnh vào bộ nhớ máy. Điều này giúp user lần sau mở app là thấy ảnh ngay, không tốn thêm 1 byte dung lượng 4G nào để load lại.
 
-    // ============================================================
-    // TODO 1: LOAD ẢNH AVATAR BO TRÒN (CIRCLE CROP)
-    // - Nhận vào: String url, ImageView target.
-    // - Sử dụng Glide.with(target.getContext()).load(url).
-    // - Áp dụng .circleCrop() để ảnh tự động tròn, không cần chỉnh layout.
-    // - Thêm .placeholder(R.drawable.ic_default_avatar) để hiện lúc đang load.
-    // - Thêm .error(R.drawable.ic_default_avatar) để hiện khi link ảnh bị lỗi.
-    // ============================================================
-    public static void loadAvatar(String url, ImageView target) {
-        // Viết code Glide ở đây
+    // Hàm load Avatar đã được xử lý (Nhận Object để tương thích cả String và Uri)
+    public static void loadAvatar(Object url, ImageView target) {
+        // Bọc giáp chống crash nếu lỡ truyền View rỗng vào
+        if (target == null || target.getContext() == null) return;
+
+        Glide.with(target.getContext())
+                .load(url)
+                // Hiện tại đang xài ic_logo_splash, mốt design xong ic_default_avatar thì đổi ở đây nhé
+                .placeholder(R.drawable.ic_logo_splash)
+                .error(R.drawable.ic_logo_splash)
+                .circleCrop()
+                .into(target);
     }
 
     // ============================================================

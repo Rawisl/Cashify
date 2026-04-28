@@ -15,6 +15,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.example.cashify.ui.main.MainActivity;
 import com.example.cashify.R;
+import com.example.cashify.utils.ToastHelper;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
@@ -70,7 +71,7 @@ public class LoginActivity extends AppCompatActivity {
                                 authViewModel.loginWithGoogle(account.getIdToken());
                             }
                         } catch (ApiException e) {
-                            Toast.makeText(this, "Google sign in failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            ToastHelper.show(this, "Google sign in failed: " + e.getMessage());
                         }
                     } else {
                         // User bấm nút Back hủy đăng nhập, có thể tắt Loading nếu đang bật
@@ -97,12 +98,12 @@ public class LoginActivity extends AppCompatActivity {
             String email = edtEmail.getText().toString().trim();
             String pass = edtPassword.getText().toString().trim();
             if (email.isEmpty() || pass.isEmpty()) {
-                Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show();
+                ToastHelper.show(this, "Please fill all fields");
                 return;
             }
 
             if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-                Toast.makeText(this, "Email is invalid! (VD: abc@gmail.com)", Toast.LENGTH_SHORT).show();
+                ToastHelper.show(this, "Email is invalid! (VD: abc@gmail.com)");
                 return;
             }
 
@@ -152,19 +153,19 @@ public class LoginActivity extends AppCompatActivity {
 
         authViewModel.errorMessage.observe(this, error -> {
             if (error != null && !error.isEmpty()) {
-                Toast.makeText(this, "Error: " + error, Toast.LENGTH_LONG).show();
+                ToastHelper.show(this, "Error: " + error);
             }
         });
 
         authViewModel.infoMessage.observe(this, info -> {
             if (info != null && !info.isEmpty()) {
-                Toast.makeText(this, info, Toast.LENGTH_LONG).show();
+                ToastHelper.show(this, info);
             }
         });
 
         authViewModel.isAuthSuccess.observe(this, isSuccess -> {
             if (isSuccess) {
-                Toast.makeText(this, "Login successful!", Toast.LENGTH_SHORT).show();
+                ToastHelper.show(this, "Login successful!");
                 startActivity(new Intent(this, MainActivity.class));
                 finish();
             }

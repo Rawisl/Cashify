@@ -22,7 +22,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
 import com.example.cashify.data.model.Category;
+import com.example.cashify.utils.ToastHelper;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 
 import java.io.Serializable;
@@ -225,7 +227,7 @@ public class CategoryBottomSheet extends BottomSheetDialogFragment {
     private void handleSave() {
         String name = edtName.getText().toString().trim();
         if (name.isEmpty()) {
-            Toast.makeText(getContext(), R.string.error_empty_category_name, Toast.LENGTH_SHORT).show();
+            ToastHelper.show(getContext(), R.string.error_empty_category_name);
             return;
         }
 
@@ -248,12 +250,11 @@ public class CategoryBottomSheet extends BottomSheetDialogFragment {
 
     // Hàm này dùng để Bật/Tắt khả năng trượt của BottomSheet
     private void setBottomSheetDraggable(boolean isDraggable) {
-        if (getDialog() != null) {
-            View bottomSheet = getDialog().findViewById(com.google.android.material.R.id.design_bottom_sheet);
-            if (bottomSheet != null) {
-                BottomSheetBehavior<View> behavior = BottomSheetBehavior.from(bottomSheet);
-                behavior.setDraggable(isDraggable);
-            }
+        if (getDialog() instanceof BottomSheetDialog) {
+            BottomSheetDialog dialog = (BottomSheetDialog) getDialog();
+
+            // Lấy thẳng Behavior từ Dialog luôn, không cần tìm View, không dính dáng chữ R nào nữa!
+            dialog.getBehavior().setDraggable(isDraggable);
         }
     }
 }
