@@ -40,7 +40,7 @@ public class AddTransactionActivity extends AppCompatActivity {
     private ImageView btnDelete, btnBack;
     private RecyclerView rvCategories;
 
-    private int editTransactionId = -1;
+    private String editTransactionId = null; // Đổi từ int sang String
     private boolean isEditMode = false;
 
     private static final int REQUEST_IMAGE_CAPTURE = 1;
@@ -50,27 +50,21 @@ public class AddTransactionActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // 1. Gán Layout trước để tránh NullPointerException khi findViewById
+        // Gán Layout trước để tránh NullPointerException khi findViewById
         setContentView(R.layout.activity_add_transaction);
-
-        // 2. Kiểm tra ID từ Intent ngay lập tức để xác định chế độ (Add hay Edit)
-        editTransactionId = getIntent().getIntExtra("TRANSACTION_ID", -1);
-        isEditMode = (editTransactionId != -1);
-
-        // 3. Khởi tạo ViewModel
+        // Khởi tạo ViewModel
         viewModel = new ViewModelProvider(this).get(AddTransactionViewModel.class);
+        // Kiểm tra ID từ Intent ngay lập tức để xác định chế độ (Add hay Edit)
+        editTransactionId = getIntent().getStringExtra("TRANSACTION_ID");
+        isEditMode = (editTransactionId != null);
 
         String passedWorkspaceId = getIntent().getStringExtra("WORKSPACE_ID");
         if (passedWorkspaceId != null) {
             viewModel.setCurrentWorkspaceId(passedWorkspaceId);
         }
 
-        // Kiểm tra ID từ Intent ngay lập tức để xác định chế độ (Add hay Edit)
-        editTransactionId = getIntent().getIntExtra("TRANSACTION_ID", -1);
-        isEditMode = (editTransactionId != -1);
-
         if (isEditMode) {
-            Toast.makeText(this, "Chế độ: Chỉnh sửa (ID: " + editTransactionId + ")", Toast.LENGTH_SHORT).show();
+            ToastHelper.show(this, "Mode: Edit (ID: " + editTransactionId + ")");
         }
 
         // 4. Khởi tạo Giao diện và Gán sự kiện
@@ -123,7 +117,6 @@ public class AddTransactionActivity extends AppCompatActivity {
     }
 
 
-
     private void setupListeners() {
         btnBack.setOnClickListener(v -> finish());
 
@@ -158,6 +151,7 @@ public class AddTransactionActivity extends AppCompatActivity {
         btnConfirm.setOnClickListener(v -> validateAndSave());
 
     }
+
     private void showImageSourceOptions() {
         String[] options = {"Capture a receipt", "Select photo from library"};
         new AlertDialog.Builder(this)
@@ -249,7 +243,7 @@ public class AddTransactionActivity extends AppCompatActivity {
         }
 
         // Thực hiện lưu hoặc cập nhật
-        viewModel.saveOrUpdate(String.valueOf((long)amount), edtNote.getText().toString().trim());
+        viewModel.saveOrUpdate(String.valueOf((long) amount), edtNote.getText().toString().trim());
     }
 
     private void showDeleteConfirmation() {
@@ -274,14 +268,14 @@ public class AddTransactionActivity extends AppCompatActivity {
 
     private void resetPaymentUI(LinearLayout layout, int imgId, int txtId) {
         layout.setActivated(false);
-        ((ImageView)findViewById(imgId)).setImageTintList(ColorStateList.valueOf(ContextCompat.getColor(this, R.color.item_description)));
-        ((TextView)findViewById(txtId)).setTextColor(ContextCompat.getColor(this, R.color.item_description));
+        ((ImageView) findViewById(imgId)).setImageTintList(ColorStateList.valueOf(ContextCompat.getColor(this, R.color.item_description)));
+        ((TextView) findViewById(txtId)).setTextColor(ContextCompat.getColor(this, R.color.item_description));
     }
 
     private void setActivePaymentUI(LinearLayout layout, int imgId, int txtId) {
         layout.setActivated(true);
-        ((ImageView)findViewById(imgId)).setImageTintList(ColorStateList.valueOf(ContextCompat.getColor(this, R.color.brand_primary)));
-        ((TextView)findViewById(txtId)).setTextColor(ContextCompat.getColor(this, R.color.brand_primary));
+        ((ImageView) findViewById(imgId)).setImageTintList(ColorStateList.valueOf(ContextCompat.getColor(this, R.color.brand_primary)));
+        ((TextView) findViewById(txtId)).setTextColor(ContextCompat.getColor(this, R.color.brand_primary));
     }
 
     private void openNumpadBottomSheet() {
@@ -302,6 +296,7 @@ public class AddTransactionActivity extends AppCompatActivity {
             startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
         }
     }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -339,12 +334,13 @@ public class AddTransactionActivity extends AppCompatActivity {
             public void onFailure(String error) {
                 runOnUiThread(() -> {
                     btnConfirm.setEnabled(true);
-                     ToastHelper.show(AddTransactionActivity.this,
+                    ToastHelper.show(AddTransactionActivity.this,
                             "Analysis error: " + error);
                 });
             }
         });
     }
+
     private void fillFormAndConfirm(InvoiceParser.ParsedInvoice result) {
         // 1. Điền các thông tin cơ bản trước
         if (result.amount > 0) {
@@ -392,13 +388,14 @@ public class AddTransactionActivity extends AppCompatActivity {
                 // 4. Cho phép lưu
                 btnConfirm.setEnabled(true);
 
-               ToastHelper.show(AddTransactionActivity.this, "✅ Scanning finished! Please check again.");
+                ToastHelper.show(AddTransactionActivity.this, "Scanning finished! Please check again.");
 
                 // Tự động lưu sau 1s nếu muốn
 //                edtAmount.postDelayed(() -> validateAndSave(), 1000);
             }
         });
     }
+
     private void processImage(android.graphics.Bitmap bitmap) {
         // Hiện loading cho user biết đang xử lý
         ToastHelper.show(this, "Scanning...");
@@ -426,6 +423,7 @@ public class AddTransactionActivity extends AppCompatActivity {
                     ToastHelper.show(this, "OCR failed: " + e.getMessage());
                 }));
     }
+
     @Override
     public void finish() {
         super.finish();

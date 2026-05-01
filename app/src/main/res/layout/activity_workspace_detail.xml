@@ -1,6 +1,171 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/bg_main">
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/bg_main"
+        app:elevation="0dp">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbarWorkspaceDetail"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:navigationIcon="@drawable/ic_arrow_left_back"
+            app:title="Tên Quỹ"
+            app:titleTextColor="@color/brand_primary" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:paddingBottom="80dp"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="20dp">
+
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cardWorkspaceBalance"
+                style="@style/main_card"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@color/brand_primary"
+                    android:orientation="vertical"
+                    android:padding="24dp">
+
+                    <TextView
+                        style="@style/main_card_title"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Fund Balance" />
+
+                    <TextView
+                        android:id="@+id/tvWorkspaceBalance"
+                        style="@style/main_money_amount"
+                        android:text="0 VND" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:baselineAligned="false"
+                        android:orientation="horizontal"
+                        android:weightSum="2">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                style="@style/main_card_left_label"
+                                android:text="↗ Expenses" />
+
+                            <TextView
+                                android:id="@+id/tvWorkspaceExpense"
+                                style="@style/main_card_left_money_amount"
+                                android:text="0 VND" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="end"
+                            android:orientation="vertical">
+
+                            <TextView
+                                style="@style/main_card_right_label"
+                                android:text="↘ Income" />
+
+                            <TextView
+                                android:id="@+id/tvWorkspaceIncome"
+                                style="@style/main_card_right_money_amount"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0 VND" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <TextView
+                android:id="@+id/tvMembersTitle"
+                style="@style/screen_title"
+                android:layout_marginTop="24dp"
+                android:text="Members"
+                android:textSize="18sp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/cardWorkspaceBalance" />
+
+            <TextView
+                android:id="@+id/tvAddMember"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="true"
+                android:focusable="true"
+                android:fontFamily="@font/inter_semibold"
+                android:padding="8dp"
+                android:text="+ Add"
+                android:textColor="@color/brand_primary"
+                android:textSize="15sp"
+                app:layout_constraintBottom_toBottomOf="@id/tvMembersTitle"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@id/tvMembersTitle" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvWorkspaceMembers"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:orientation="horizontal"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                app:layout_constraintTop_toBottomOf="@id/tvMembersTitle"
+                tools:listitem="@layout/item_member_avatar" />
+
+            <TextView
+                android:id="@+id/tvRecentTransactionsTitle"
+                style="@style/screen_title"
+                android:layout_marginTop="24dp"
+                android:text="Transactions"
+                android:textSize="18sp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/rvWorkspaceMembers" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvWorkspaceTransactions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:nestedScrollingEnabled="false"
+                app:layout_constraintTop_toBottomOf="@id/tvRecentTransactionsTitle"
+                tools:listitem="@layout/item_transaction" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabAddWorkspaceTransaction"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="16dp"
+        android:src="@drawable/ic_add_bold"
+        app:backgroundTint="@color/brand_primary"
+        app:tint="@color/white" />
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

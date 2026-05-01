@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "195049395718-bcjfbgqmlf92k6j0gf3fd630i86p74rm.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.cashify",
+            "certificate_hash": "8deb3a2833ea44e1383822c3d4e61d297abcd50d"
+          }
+        },
+        {
           "client_id": "195049395718-bagas4hvn2onafmdvd0dqdntsj81o9ef.apps.googleusercontent.com",
           "client_type": 3
         }

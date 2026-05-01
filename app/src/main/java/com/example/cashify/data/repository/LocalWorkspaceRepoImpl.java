@@ -25,4 +25,18 @@ public class LocalWorkspaceRepoImpl implements IWorkspaceRepo {
     public void addMember(String workspaceId, String memberEmail, OnActionCompleteListener listener) {
         // (Local thường không xử lý mời thành viên, có thể để trống hoặc báo lỗi)
     }
+    @Override
+    public void getWorkspaceById(String workspaceId, OnWorkspaceDetailLoadedListener listener) {
+        // Để trống (Chưa cần thiết lưu cache chi tiết quỹ)
+    }
+
+    @Override
+    public void getWorkspaceMembers(String workspaceId, OnMembersLoadedListener listener) {
+        // Để trống
+    }
+
+    @Override
+    public void getWorkspaceTransactions(String workspaceId, OnTransactionsLoadedListener listener) {
+        // Để trống
+    }
 }

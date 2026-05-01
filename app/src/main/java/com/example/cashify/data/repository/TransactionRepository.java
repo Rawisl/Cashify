@@ -30,8 +30,7 @@ public class TransactionRepository {
     }
     public void insert(Transaction transaction) {
         executor.execute(() -> {
-            long id = transactionDao.insert(transaction);
-            transaction.id = (int) id;
+            transactionDao.insert(transaction);
             syncTransactionToCloud(transaction);
         });
     }
@@ -117,7 +116,7 @@ public class TransactionRepository {
         });
     }
 
-    public void getById(int id, Callback<Transaction> callback) {
+    public void getById(String id, Callback<Transaction> callback) {
         executor.execute(() -> {
             Transaction t = transactionDao.getById(id);
             // Trả kết quả về cho ViewModel

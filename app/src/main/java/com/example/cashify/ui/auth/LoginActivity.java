@@ -6,7 +6,6 @@ import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -22,11 +21,11 @@ import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 public class LoginActivity extends AppCompatActivity {
-    //màn hình login
-    //Vụ Google Login: Nhắc bạn đó phải lấy cái SHA-1 của máy tính bạn đó dán vào Firebase Console thì cái nút Google Login mới chạy được. Không có SHA-1 là nó báo lỗi 12500 hoặc 10 ngay.
-    //UI Thread: Vì mình dùng ViewModel và LiveData rồi nên bạn đó không cần lo lắng về Thread nữa, cứ để LiveData nó "bắn" thông báo về là xong.
+
     private AuthViewModel authViewModel;
     private EditText edtEmail, edtPassword;
     private Button btnLogin, btnRegister, btnGoogleLogin;
@@ -37,7 +36,6 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // TODO 1: setContentView(R.layout.activity_login);
         setContentView(R.layout.activity_login);
 
         initViewModel();
@@ -51,21 +49,18 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void setupGoogleSignIn() {
-        // Cấu hình yêu cầu lấy Email và ID Token từ Google
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestIdToken("195049395718-bagas4hvn2onafmdvd0dqdntsj81o9ef.apps.googleusercontent.com")
                 .requestEmail()
                 .build();
         mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
 
-        // Đăng ký bộ lắng nghe kết quả trả về từ màn hình chọn tài khoản Google
         googleSignInLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
                     if (result.getResultCode() == Activity.RESULT_OK) {
                         Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(result.getData());
                         try {
-                            // Đăng nhập Google thành công -> Lấy Token ném qua ViewModel
                             GoogleSignInAccount account = task.getResult(ApiException.class);
                             if (account != null) {
                                 authViewModel.loginWithGoogle(account.getIdToken());
@@ -74,7 +69,6 @@ public class LoginActivity extends AppCompatActivity {
                             ToastHelper.show(this, "Google sign in failed: " + e.getMessage());
                         }
                     } else {
-                        // User bấm nút Back hủy đăng nhập, có thể tắt Loading nếu đang bật
                         authViewModel.isLoading.observe(this, isLoading -> { /* Tắt loading ở đây nếu cần */ });
                     }
                 });
@@ -87,12 +81,6 @@ public class LoginActivity extends AppCompatActivity {
         btnRegister = findViewById(R.id.btnRegister);
         tvForgotPassword = findViewById(R.id.tvForgotPassword);
         btnGoogleLogin = findViewById(R.id.btnGoogleLogin);
-
-        // ============================================================
-        // TODO 2: XỬ LÝ ĐĂNG NHẬP EMAIL/PASSWORD
-        // - Lấy data từ 2 EditText Email và Password.
-        // - Bắt sự kiện nút Login: Gọi authViewModel.login(email, password).
-        // ============================================================
 
         btnLogin.setOnClickListener(v -> {
             String email = edtEmail.getText().toString().trim();
@@ -110,23 +98,10 @@ public class LoginActivity extends AppCompatActivity {
             authViewModel.login(email, pass);
         });
 
-        // ============================================================
-        // TODO 3: XỬ LÝ ĐĂNG NHẬP GOOGLE
-        // - Khởi tạo GoogleSignInClient (cần Web Client ID từ Firebase Console).
-        // - Bắt sự kiện nút Google Login: Mở Intent chọn tài khoản của Google.
-        // - Trong onActivityResult: Lấy idToken và gọi authViewModel.loginWithGoogle(idToken).
-        // ============================================================
-
         btnGoogleLogin.setOnClickListener(v -> {
             Intent signInIntent = mGoogleSignInClient.getSignInIntent();
             googleSignInLauncher.launch(signInIntent);
         });
-
-        // ============================================================
-        // TODO 4: ĐIỀU HƯỚNG SANG MÀN HÌNH KHÁC
-        // - Nút "Đăng ký ngay": Mở RegisterActivity.
-        // - Chữ "Quên mật khẩu?": Mở ForgotPasswordActivity.
-        // ============================================================
 
         btnRegister.setOnClickListener(v -> {
             startActivity(new Intent(this, RegisterActivity.class));
@@ -138,13 +113,6 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void observeViewModel() {
-        // ============================================================
-        // TODO 5: THEO DÕI TRẠNG THÁI TỪ VIEWMODEL
-        // - isLoading: Hiện/ẩn ProgressBar và vô hiệu hóa (disable) các nút bấm để tránh user bấm liên tục.
-        // - errorMessage: Hiển thị lỗi (ví dụ: Sai mật khẩu) lên giao diện hoặc Toast.
-        // - isAuthSuccess: Nếu TRUE -> Chuyển sang MainActivity và gọi finish() để user không quay lại màn hình Login được nữa.
-        // ============================================================
-
         authViewModel.isLoading.observe(this, isLoading -> {
             btnLogin.setEnabled(!isLoading);
             btnGoogleLogin.setEnabled(!isLoading);
@@ -165,10 +133,39 @@ public class LoginActivity extends AppCompatActivity {
 
         authViewModel.isAuthSuccess.observe(this, isSuccess -> {
             if (isSuccess) {
+                // 🚀 GỌI HÀM LƯU LÊN FIRESTORE NGAY KHI ĐĂNG NHẬP THÀNH CÔNG
+                saveUserToFirestore(FirebaseAuth.getInstance().getCurrentUser());
+
                 ToastHelper.show(this, "Login successful!");
                 startActivity(new Intent(this, MainActivity.class));
                 finish();
             }
         });
+    }
+
+    // ============================================================
+    // HÀM NHẬP HỘ KHẨU USER LÊN FIRESTORE (LƯU TÊN & AVATAR)
+    // ============================================================
+    private void saveUserToFirestore(FirebaseUser firebaseUser) {
+        if (firebaseUser == null) return;
+
+        com.google.firebase.firestore.FirebaseFirestore db = com.google.firebase.firestore.FirebaseFirestore.getInstance();
+
+        java.util.Map<String, Object> userMap = new java.util.HashMap<>();
+        userMap.put("uid", firebaseUser.getUid());
+        userMap.put("email", firebaseUser.getEmail());
+
+        if (firebaseUser.getDisplayName() != null && !firebaseUser.getDisplayName().isEmpty()) {
+            userMap.put("displayName", firebaseUser.getDisplayName());
+        }
+        if (firebaseUser.getPhotoUrl() != null) {
+            userMap.put("avatarUrl", firebaseUser.getPhotoUrl().toString());
+        }
+
+        // Dùng SetOptions.merge() để lưu mà không đè mất data cũ
+        db.collection("users").document(firebaseUser.getUid())
+                .set(userMap, com.google.firebase.firestore.SetOptions.merge())
+                .addOnSuccessListener(aVoid -> android.util.Log.d("AUTH", "Information saved successfully!"))
+                .addOnFailureListener(e -> android.util.Log.e("AUTH", "Firestore save error: " + e.getMessage()));
     }
 }

@@ -1,5 +1,6 @@
 package com.example.cashify.data.model;
 
+import androidx.annotation.NonNull;
 import androidx.room.Entity;
 import androidx.room.ForeignKey;
 import androidx.room.Index;
@@ -14,8 +15,8 @@ import androidx.room.PrimaryKey;
 )
 //TODO: bổ sung workspaceId(?), Nếu không, lúc thêm giao dịch app sẽ không biết tiền này trừ vào quỹ cá nhân hay quỹ nhóm.
 public class Transaction {
-    @PrimaryKey(autoGenerate = true)
-    public int id;
+    @PrimaryKey @NonNull
+    public String id;
     public long amount;
     public int categoryId; // Liên kết với bảng Danh mục
     public String note;
@@ -25,7 +26,10 @@ public class Transaction {
     public String workspaceId;
 
     public Transaction() {
+        // Luôn tạo ID ngẫu nhiên khi khởi tạo để không bao giờ bị null
+        this.id = java.util.UUID.randomUUID().toString();
     }
+
 
 }
 

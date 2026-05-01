@@ -69,7 +69,7 @@ public interface TransactionDao {
     List<Transaction> getRecentTransaction(String workspaceId, int limit);
 
     @Query("SELECT * FROM transactions WHERE id = :id LIMIT 1")
-    Transaction getById(int id);
+    Transaction getById(String id);
     //tính sô dư trọn đời
     @Query("SELECT (SELECT IFNULL(SUM(amount), 0) FROM transactions WHERE workspaceId = :workspaceId AND type = 1) - " + "(SELECT IFNULL(SUM(amount), 0) FROM transactions WHERE workspaceId = :workspaceId AND type = 0)")
     long getActualBalance(String workspaceId);
@@ -97,10 +97,12 @@ public interface TransactionDao {
 
 
 
-    @Query("DELETE FROM transactions")
-    void deleteAllTransactions();
-    @Query("SELECT COUNT(*) FROM transactions")
-    int countTransactions();
+    @Query("DELETE FROM transactions WHERE workspaceId = :workspaceId")
+    void deleteAllTransactions(String workspaceId);
+
+    // Sửa lại: Chỉ đếm giao dịch của ĐÚNG QUỸ ĐÓ
+    @Query("SELECT COUNT(*) FROM transactions WHERE workspaceId = :workspaceId")
+    int countTransactions(String workspaceId);
 
     // Lấy toàn bộ mốc thời gian của tất cả giao dịch (Dùng để gom nhóm tháng)
     @Query("SELECT timestamp FROM transactions WHERE workspaceId = :workspaceId ORDER BY timestamp DESC")
