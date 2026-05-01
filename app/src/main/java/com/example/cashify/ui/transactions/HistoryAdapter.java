@@ -138,6 +138,7 @@ public class HistoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             // Gán vào toàn bộ itemView để dù bấm trúng text hay icon đều mở được
             holder.itemView.setOnClickListener(v -> {
                 if (listener != null) {
+                    // Đảm bảo lúc này trans.id đang là String để intent.putExtra chạy đúng
                     listener.onTransactionClick(trans);
                 }
             });

@@ -14,6 +14,7 @@ import com.example.cashify.data.model.Transaction;
 import com.example.cashify.data.model.Workspace;
 import com.example.cashify.data.remote.FirebaseManager;
 import com.example.cashify.data.repository.IWorkspaceRepo;
+import com.example.cashify.data.repository.RemoteWorkspaceRepoImpl;
 import com.google.firebase.firestore.DocumentSnapshot;
 
 import java.util.HashMap;
@@ -48,8 +49,12 @@ public class MainViewModel extends ViewModel {
 
     public MainViewModel() {
         this.firebaseManager = FirebaseManager.getInstance();
+        this.workspaceRepo = new RemoteWorkspaceRepoImpl();
     }
 
+    public LiveData<List<Workspace>> getWorkspaces() {
+        return workspaces;
+    }
     // TODO 1: Inject IWorkspaceRepo (Remote hoặc Local tùy cấu hình) vào Constructor
     public MainViewModel(IWorkspaceRepo repo) {
         this.workspaceRepo = repo;
@@ -65,8 +70,20 @@ public class MainViewModel extends ViewModel {
     // ============================================================
     public void loadWorkspaces(String userId) {
         _isLoading.setValue(true);
-        // Gọi workspaceRepo.getWorkspaces...
-    }
+        workspaceRepo.getWorkspaces(userId, new IWorkspaceRepo.OnWorkspacesLoadedListener() {
+            @Override
+            public void onSuccess(List<Workspace> list) {
+                _isLoading.postValue(false);
+                // Đẩy danh sách lên cho MainActivity nhận được và vẽ Sidebar
+                _workspaces.postValue(list);
+            }
+
+            @Override
+            public void onError(Exception e) {
+                _isLoading.postValue(false);
+                Log.e("MainViewModel", "Unable to load workspace list: " + e.getMessage());
+            }
+        });    }
 
     // ============================================================
     // TODO 3: LOGIC CHUYỂN ĐỔI WORKSPACE
@@ -126,8 +143,11 @@ public class MainViewModel extends ViewModel {
                     }
                 });
             }
+
             @Override
-            public void onError(String message) { _isLoading.postValue(false); }
+            public void onError(String message) {
+                _isLoading.postValue(false);
+            }
         });
     }
 
@@ -154,8 +174,10 @@ public class MainViewModel extends ViewModel {
                     }
                 });
             }
+
             @Override
-            public void onError(String m) {}
+            public void onError(String m) {
+            }
         });
     }
 
@@ -168,7 +190,7 @@ public class MainViewModel extends ViewModel {
                         AppDatabase db = AppDatabase.getInstance(context);
                         for (DocumentSnapshot doc : documents) {
                             Transaction t = new Transaction();
-                            t.id = Integer.parseInt(doc.getId());
+                            t.id = doc.getId();
 
                             Number amount = (Number) doc.get("amount");
                             t.amount = (amount != null) ? amount.longValue() : 0L;
@@ -201,8 +223,11 @@ public class MainViewModel extends ViewModel {
                     }
                 });
             }
+
             @Override
-            public void onError(String m) { _isLoading.postValue(false); }
+            public void onError(String m) {
+                _isLoading.postValue(false);
+            }
         });
     }
 
@@ -218,7 +243,7 @@ public class MainViewModel extends ViewModel {
 
         // Đẩy lên Firestore theo đường dẫn: users -> {uid} -> transactions -> {id_tự_sinh}
         // Dùng cái ID của Transaction làm Document ID luôn cho dễ quản lý
-        String docId = String.valueOf(t.id);
+        String docId = t.id;
 
         firebaseManager.syncLocalToCloud(t.workspaceId, "transactions", docId, data, new FirebaseManager.DataCallback<Void>() {
             @Override
@@ -234,141 +259,140 @@ public class MainViewModel extends ViewModel {
     }
 
     // ============================================================
-    // TÍNH NĂNG ĐỒNG BỘ REAL-TIME ĐA THIẾT BỊ
+    // TÍNH NĂNG ĐỒNG BỘ REAL-TIME ĐA THIẾT BỊ (ĐÃ CẬP NHẬT SUB-COLLECTION)
     // ============================================================
     public void startRealTimeSync(Context context) {
         Context appContext = context.getApplicationContext();
 
-        // LẮNG NGHE GIAO DỊCH (TRANSACTIONS)
-        firebaseManager.listenToChanges("PERSONAL", "transactions", new FirebaseManager.DataCallback<List<DocumentSnapshot>>() {
-            @Override
-            public void onSuccess(List<DocumentSnapshot> documents) {
-                Executors.newSingleThreadExecutor().execute(() -> {
-                    try {
-                        AppDatabase db = AppDatabase.getInstance(appContext);
+        // 1. Lấy thông tin user hiện tại
+        com.google.firebase.auth.FirebaseAuth auth = com.google.firebase.auth.FirebaseAuth.getInstance();
+        if (auth.getCurrentUser() == null) {
+            Log.e("REALTIME_SYNC", "User chưa đăng nhập, không thể đồng bộ!");
+            return;
+        }
+        String uid = auth.getCurrentUser().getUid();
+        com.google.firebase.firestore.FirebaseFirestore dbCloud = com.google.firebase.firestore.FirebaseFirestore.getInstance();
 
-                        if (documents == null || documents.isEmpty()) {
-                            db.transactionDao().deleteAllTransactions();
-                            syncCompleted.postValue(true);
-                            return;
-                        }
+        // 2. LẮNG NGHE GIAO DỊCH (TRANSACTIONS)
+        // Đường dẫn mới: users/{uid}/transactions
+        dbCloud.collection("users").document(uid).collection("transactions")
+                .addSnapshotListener((snapshots, e) -> {
+                    if (e != null) {
+                        Log.e("REALTIME_SYNC", "Listen failed.", e);
+                        return;
+                    }
+                    if (snapshots != null) {
+                        Executors.newSingleThreadExecutor().execute(() -> {
+                            try {
+                                AppDatabase db = AppDatabase.getInstance(appContext);
 
-                        for (DocumentSnapshot doc : documents) {
-                            Transaction t = new Transaction();
-                            t.id = Integer.parseInt(doc.getId());
+                                if (snapshots.isEmpty()) {
+                                    db.transactionDao().deleteAllTransactions("PERSONAL");
+                                    syncCompleted.postValue(true);
+                                    return;
+                                }
 
-                            Number amount = (Number) doc.get("amount");
-                            t.amount = (amount != null) ? amount.longValue() : 0L;
+                                for (DocumentSnapshot doc : snapshots.getDocuments()) {
+                                    Transaction t = new Transaction();
+                                    t.id = doc.getId();
 
-                            Number catId = (Number) doc.get("categoryId");
-                            t.categoryId = (catId != null) ? catId.intValue() : 1;
+                                    Number amount = (Number) doc.get("amount");
+                                    t.amount = (amount != null) ? amount.longValue() : 0L;
 
-                            t.note = doc.getString("note");
+                                    Number catId = (Number) doc.get("categoryId");
+                                    t.categoryId = (catId != null) ? catId.intValue() : 1;
 
-                            Number timestamp = (Number) doc.get("timestamp");
-                            t.timestamp = (timestamp != null) ? timestamp.longValue() : System.currentTimeMillis();
+                                    t.note = doc.getString("note");
 
-                            t.paymentMethod = doc.getString("paymentMethod");
-                            if (t.paymentMethod == null) t.paymentMethod = "cash";
+                                    Number timestamp = (Number) doc.get("timestamp");
+                                    t.timestamp = (timestamp != null) ? timestamp.longValue() : System.currentTimeMillis();
 
-                            Number type = (Number) doc.get("type");
-                            t.type = (type != null) ? type.intValue() : 0;
+                                    t.paymentMethod = doc.getString("paymentMethod");
+                                    if (t.paymentMethod == null) t.paymentMethod = "cash";
 
-                            t.workspaceId = doc.getString("workspaceId");
-                            if (t.workspaceId == null) t.workspaceId = "PERSONAL";
+                                    Number type = (Number) doc.get("type");
+                                    t.type = (type != null) ? type.intValue() : 0;
 
-                            // Insert với replace sẽ tự động cập nhật nếu dữ liệu đã tồn tại
-                            db.transactionDao().insert(t);
-                        }
-                        // Bóp còi để màn hình Home và History tự động load lại dữ liệu mới
-                        syncCompleted.postValue(true);
-                    } catch (Exception e) {
-                        Log.e("REALTIME_SYNC", "Transaction sync error: " + e.getMessage());
+                                    // Ép cứng ID cá nhân để xuống Room (Local) nó không bị lộn xộn
+                                    t.workspaceId = "PERSONAL";
+
+                                    db.transactionDao().insert(t);
+                                }
+                                syncCompleted.postValue(true);
+                            } catch (Exception ex) {
+                                Log.e("REALTIME_SYNC", "Transaction sync error: " + ex.getMessage());
+                            }
+                        });
                     }
                 });
-            }
 
-            @Override
-            public void onError(String message) {
-                Log.e("REALTIME_SYNC", "Firebase sync error: " + message);
-            }
-        });
+        // 3. LẮNG NGHE DANH MỤC (CATEGORIES)
+        // Đường dẫn mới: users/{uid}/categories
+        dbCloud.collection("users").document(uid).collection("categories")
+                .addSnapshotListener((snapshots, e) -> {
+                    if (e != null) return;
+                    if (snapshots != null) {
+                        Executors.newSingleThreadExecutor().execute(() -> {
+                            try {
+                                AppDatabase db = AppDatabase.getInstance(appContext);
+                                for (DocumentSnapshot doc : snapshots.getDocuments()) {
+                                    Category c = new Category();
+                                    c.id = Integer.parseInt(doc.getId());
+                                    c.name = doc.getString("name");
+                                    c.iconName = doc.getString("iconName");
+                                    c.colorCode = doc.getString("colorCode");
 
-        // LẮNG NGHE DANH MỤC (CATEGORIES)
-        firebaseManager.listenToChanges("PERSONAL", "categories", new FirebaseManager.DataCallback<List<DocumentSnapshot>>() {
-            @Override
-            public void onSuccess(List<DocumentSnapshot> documents) {
-                Executors.newSingleThreadExecutor().execute(() -> {
-                    try {
-                        AppDatabase db = AppDatabase.getInstance(appContext);
-                        for (DocumentSnapshot doc : documents) {
-                            Category c = new Category();
-                            c.id = Integer.parseInt(doc.getId());
-                            c.name = doc.getString("name");
-                            c.iconName = doc.getString("iconName");
-                            c.colorCode = doc.getString("colorCode");
+                                    Number type = (Number) doc.get("type");
+                                    c.type = (type != null) ? type.intValue() : 0;
 
-                            Number type = (Number) doc.get("type");
-                            c.type = (type != null) ? type.intValue() : 0;
+                                    c.isDefault = 0;
+                                    c.isDeleted = 0;
 
-                            c.isDefault = 0; // Các danh mục trên mây đều là do user tự tạo
-                            c.isDeleted = 0;
-
-                            db.categoryDao().insert(c);
-                        }
-                        // Bóp còi để màn hình tự load lại (nếu có dùng)
-                        syncCompleted.postValue(true);
-                    } catch (Exception e) {
-                        Log.e("REALTIME_SYNC", "Category sync error: " + e.getMessage());
+                                    db.categoryDao().insert(c);
+                                }
+                                syncCompleted.postValue(true);
+                            } catch (Exception ex) {
+                                Log.e("REALTIME_SYNC", "Category sync error: " + ex.getMessage());
+                            }
+                        });
                     }
                 });
-            }
 
-            @Override
-            public void onError(String message) {
-                Log.e("REALTIME_SYNC", "Category sync error: " + message);
-            }
-        });
+        // 4. LẮNG NGHE NGÂN SÁCH (BUDGETS)
+        // Đường dẫn mới: users/{uid}/budgets
+        dbCloud.collection("users").document(uid).collection("budgets")
+                .addSnapshotListener((snapshots, e) -> {
+                    if (e != null) return;
+                    if (snapshots != null) {
+                        Executors.newSingleThreadExecutor().execute(() -> {
+                            try {
+                                AppDatabase db = AppDatabase.getInstance(appContext);
+                                for (DocumentSnapshot doc : snapshots.getDocuments()) {
+                                    Budget b = new Budget();
+                                    b.id = Integer.parseInt(doc.getId());
 
-        // LẮNG NGHE NGÂN SÁCH (BUDGETS)
-        firebaseManager.listenToChanges("PERSONAL", "budgets", new FirebaseManager.DataCallback<List<DocumentSnapshot>>() {
-            @Override
-            public void onSuccess(List<DocumentSnapshot> documents) {
-                Executors.newSingleThreadExecutor().execute(() -> {
-                    try {
-                        AppDatabase db = AppDatabase.getInstance(appContext);
-                        for (DocumentSnapshot doc : documents) {
-                            Budget b = new Budget();
-                            b.id = Integer.parseInt(doc.getId());
+                                    Number limitAmount = (Number) doc.get("limitAmount");
+                                    b.limitAmount = (limitAmount != null) ? limitAmount.longValue() : 0L;
 
-                            Number limitAmount = (Number) doc.get("limitAmount");
-                            b.limitAmount = (limitAmount != null) ? limitAmount.longValue() : 0L;
+                                    Number catId = (Number) doc.get("categoryId");
+                                    b.categoryId = (catId != null) ? catId.intValue() : -1;
 
-                            Number catId = (Number) doc.get("categoryId");
-                            b.categoryId = (catId != null) ? catId.intValue() : -1;
+                                    Number startDate = (Number) doc.get("startDate");
+                                    b.startDate = (startDate != null) ? startDate.longValue() : 0L;
 
-                            Number startDate = (Number) doc.get("startDate");
-                            b.startDate = (startDate != null) ? startDate.longValue() : 0L;
+                                    Number endDate = (Number) doc.get("endDate");
+                                    b.endDate = (endDate != null) ? endDate.longValue() : 0L;
 
-                            Number endDate = (Number) doc.get("endDate");
-                            b.endDate = (endDate != null) ? endDate.longValue() : 0L;
+                                    b.periodType = doc.getString("periodType");
 
-                            b.periodType = doc.getString("periodType");
-
-                            db.budgetDao().insert(b);
-                        }
-                        // Bóp còi để màn hình Ngân sách tự vẽ lại
-                        syncCompleted.postValue(true);
-                    } catch (Exception e) {
-                        Log.e("REALTIME_SYNC", "Budget sync error: " + e.getMessage());
+                                    db.budgetDao().insert(b);
+                                }
+                                syncCompleted.postValue(true);
+                            } catch (Exception ex) {
+                                Log.e("REALTIME_SYNC", "Budget sync error: " + ex.getMessage());
+                            }
+                        });
                     }
                 });
-            }
-
-            @Override
-            public void onError(String message) {
-                Log.e("REALTIME_SYNC", "Budget sync error: " + message);
-            }
-        });
     }
 }

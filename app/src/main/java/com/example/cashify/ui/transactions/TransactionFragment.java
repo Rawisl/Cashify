@@ -335,7 +335,7 @@ public class TransactionFragment extends Fragment {
         }).attachToRecyclerView(rvHistory);
     }
 
-    private void openEditScreen(int transactionId) {
+    private void openEditScreen(String transactionId) {
         Intent intent = new Intent(getContext(), AddTransactionActivity.class);
         intent.putExtra("TRANSACTION_ID", transactionId);
         startActivity(intent);

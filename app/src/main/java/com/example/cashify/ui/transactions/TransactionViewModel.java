@@ -149,27 +149,62 @@ public class TransactionViewModel extends AndroidViewModel {
      * Xóa nhanh (dùng cho Swipe to Delete)
      */
     public void deleteOnly(Transaction transaction) {
-        new Thread(() -> {
-            transactionDao.delete(transaction);
-            fetchHistoryData(currentWorkspaceId); // Refresh lại danh sách (giữ nguyên filter đang chọn)
-        }).start();
+        // 1. Xóa trên Firebase trước (hoặc gọi Repo của ghệ)
+        com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                .collection("users")
+                .document(com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser().getUid())
+                .collection("transactions")
+                .document(transaction.id)
+                .delete()
+                .addOnSuccessListener(aVoid -> {
+                    // 2. Firebase xóa thành công thì mới xóa dưới Local
+                    new Thread(() -> {
+                        transactionDao.delete(transaction);
+                        fetchHistoryData(currentWorkspaceId);
+                    }).start();
+                });
     }
 
     /**
      * Chèn lại (dùng cho nút UNDO trên Snackbar)
      */
     public void insertOnly(Transaction transaction) {
-        new Thread(() -> {
-            transactionDao.insert(transaction);
-            fetchHistoryData(currentWorkspaceId);
-        }).start();
+        String uid = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser().getUid();
+        String collectionPath = (transaction.workspaceId == null || transaction.workspaceId.equals("PERSONAL"))
+                ? "users/" + uid + "/transactions"
+                : "workspaces/" + transaction.workspaceId + "/transactions";
+
+        // Cấp ID mới từ Firebase nếu chưa có
+        if (transaction.id == null || transaction.id.isEmpty()) {
+            transaction.id = com.google.firebase.firestore.FirebaseFirestore.getInstance().collection(collectionPath).document().getId();
+        }
+
+        com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                .collection(collectionPath).document(transaction.id)
+                .set(transaction)
+                .addOnSuccessListener(aVoid -> {
+                    new Thread(() -> {
+                        transactionDao.insert(transaction);
+                        fetchHistoryData(currentWorkspaceId);
+                    }).start();
+                });
     }
 
     public void updateAndRefresh(Transaction transaction) {
-        new Thread(() -> {
-            transactionDao.update(transaction);
-            fetchHistoryData(currentWorkspaceId);
-        }).start();
+        String uid = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser().getUid();
+        String collectionPath = (transaction.workspaceId == null || transaction.workspaceId.equals("PERSONAL"))
+                ? "users/" + uid + "/transactions"
+                : "workspaces/" + transaction.workspaceId + "/transactions";
+
+        com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                .collection(collectionPath).document(transaction.id)
+                .set(transaction)
+                .addOnSuccessListener(aVoid -> {
+                    new Thread(() -> {
+                        transactionDao.update(transaction);
+                        fetchHistoryData(currentWorkspaceId);
+                    }).start();
+                });
     }
 
     // --- INNER CLASS CHO RECYCLERVIEW MULTI-TYPE ---

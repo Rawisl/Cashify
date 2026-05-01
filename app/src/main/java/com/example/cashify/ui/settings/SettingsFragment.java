@@ -26,6 +26,7 @@ import com.example.cashify.ui.category.CategoryManagement;
 import com.example.cashify.R;
 import com.example.cashify.data.local.AppDatabase;
 import com.example.cashify.ui.auth.LoginActivity;
+import com.example.cashify.utils.ToastHelper;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 
 import java.util.concurrent.Executors;
@@ -108,17 +109,17 @@ public class SettingsFragment extends Fragment {
                                 public void onSuccess(Void data) {
                                     // Nếu xóa Cloud thành công, mới dọn tiếp Room Database
                                     Executors.newSingleThreadExecutor().execute(() -> {
-                                        AppDatabase.getInstance(requireContext()).transactionDao().deleteAllTransactions();
+                                        AppDatabase.getInstance(requireContext()).transactionDao().deleteAllTransactions("PERSONAL");
 
                                         // Hiện thông báo thành công
                                         requireActivity().runOnUiThread(() ->
-                                                Toast.makeText(requireContext(), "All transactions have been deleted!", Toast.LENGTH_SHORT).show()
+                                                ToastHelper.show(requireContext(), "All transactions have been deleted!")
                                         );
                                     });
                                 }
                                 @Override
                                 public void onError(String message) {
-                                    Toast.makeText(requireContext(), "Cloud deleting error: " + message, Toast.LENGTH_SHORT).show();
+                                    ToastHelper.show(requireContext(), "Cloud deleting error: " + message);
                                 }
                             });
                         })

@@ -40,13 +40,13 @@ public class AddTransactionViewModel extends AndroidViewModel {
 
     //Hàm để Activity truyền workspaceId vào
     public void setCurrentWorkspaceId(String workspaceId) {
-        if (workspaceId != null) {
+        if (workspaceId != null && !workspaceId.isEmpty()) {
             this.currentWorkspaceId = workspaceId;
         }
     }
 
     // --- LOGIC CHO EDIT MODE ---
-    public void loadTransactionForEdit(int transactionId) {
+    public void loadTransactionForEdit(String transactionId) {
         isEditMode.setValue(true);
         transRepo.getById(transactionId, transaction -> {
             if (transaction != null) {

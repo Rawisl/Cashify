@@ -53,7 +53,7 @@ public class FakeDataSeeder {
         dao.insert(makeTransaction(3500000L, 0, idTienTro, "Tiền thuê nhà 4", getMillis(cal, 2), "Bank"));
         dao.insert(makeTransaction(35000L, 0, idAnUong, "Cơm tấm sáng", getMillis(cal, 4), "Cash"));
 
-        Log.d("BACKEND_TEST", "Seed xong " + dao.countTransactions() + " giao dịch kèm Phương thức thanh toán!");
+        Log.d("BACKEND_TEST", "Seed xong " + dao.countTransactions("PERSONAL") + " giao dịch kèm Phương thức thanh toán!");
     }
 
     // Hàm tìm ID theo tên
@@ -80,6 +80,7 @@ public class FakeDataSeeder {
             t.note = note;
             t.timestamp = timestamp;
             t.paymentMethod=method;
+            t.workspaceId = "PERSONAL";
             return t;
         }
     }

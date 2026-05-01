@@ -14,31 +14,23 @@ public class User {
     private String avatarUrl;    // Đường dẫn ảnh từ Firebase Storage hoặc Google
     private String phoneNumber; //nhớ cho người dùng nhập số điện thoại để sau này làm tính năng "Tìm bạn qua SĐT" cho tiện
 
-    // ============================================================
-    // TODO 1: CONSTRUCTOR KHÔNG THAM SỐ (MANDATORY)
-    // - Bắt buộc phải có để Firebase Firestore có thể dùng hàm .toObject(User.class)
-    // - Không được xóa hàm này dù nó để trống.
-    // ============================================================
     public User() {
     }
 
-    // ============================================================
-    // TODO 2: CONSTRUCTOR ĐẦY ĐỦ THÔNG TIN
-    // - Dùng khi tạo User mới lần đầu lúc Đăng ký (Register)
-    // ============================================================
     public User(String uid, String email, String displayName) {
         this.uid = uid;
         this.email = email;
         this.displayName = displayName;
     }
 
-    // ============================================================
-    // TODO 3: GETTERS & SETTERS
-    // - Generate toàn bộ Getter và Setter cho các trường trên.
-    // - Lưu ý: Firestore sẽ dựa vào tên Getter (ví dụ: getDisplayName)
-    //   để map với field "displayName" trên Database.
-    // ============================================================
-
+    //Dùng khi muốn tạo hoặc copy nguyên một User có sẵn - full thông tin
+    public User(String uid, String email, String displayName, String avatarUrl, String phoneNumber) {
+        this.uid = uid;
+        this.email = email;
+        this.displayName = displayName;
+        this.avatarUrl = avatarUrl;
+        this.phoneNumber = phoneNumber;
+    }
     public String getUid() { return uid; }
     public void setUid(String uid) { this.uid = uid; }
 

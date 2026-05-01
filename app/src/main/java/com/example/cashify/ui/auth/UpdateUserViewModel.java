@@ -87,19 +87,40 @@ public class UpdateUserViewModel extends ViewModel {
 
         UserProfileChangeRequest.Builder profileBuilder = new UserProfileChangeRequest.Builder();
 
+        // 1. Tạo một Map để chuẩn bị tống sang Firestore
+        java.util.Map<String, Object> firestoreUpdates = new java.util.HashMap<>();
+
         if (newName != null && !newName.trim().isEmpty()) {
             profileBuilder.setDisplayName(newName.trim());
+            firestoreUpdates.put("displayName", newName.trim()); // Đưa vào mâm cúng Firestore
         }
         if (photoUri != null) {
             profileBuilder.setPhotoUri(photoUri);
+            firestoreUpdates.put("avatarUrl", photoUri.toString()); // Đưa vào mâm cúng Firestore
         }
 
+        // 2. Cập nhật bên Firebase Auth trước
         user.updateProfile(profileBuilder.build())
                 .addOnCompleteListener(task -> {
-                    isLoading.setValue(false);
                     if (task.isSuccessful()) {
-                        message.setValue("Update profile successfully!");
+
+                        // 3. Auth thành công thì CẬP NHẬT TIẾP BÊN FIRESTORE
+                        com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                                .collection("users")
+                                .document(user.getUid())
+                                // Dùng SetOptions.merge() để nếu có lỡ thiếu field nó tự gộp vào chứ ko xóa các field cũ (như email)
+                                .set(firestoreUpdates, com.google.firebase.firestore.SetOptions.merge())
+                                .addOnSuccessListener(aVoid -> {
+                                    isLoading.setValue(false);
+                                    message.setValue("Update profile successfully!");
+                                })
+                                .addOnFailureListener(e -> {
+                                    isLoading.setValue(false);
+                                    message.setValue("Auth updated but Firestore error: " + e.getMessage());
+                                });
+
                     } else {
+                        isLoading.setValue(false);
                         message.setValue("Update error: " + task.getException().getMessage());
                     }
                 });
