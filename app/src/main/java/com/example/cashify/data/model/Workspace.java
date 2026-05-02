@@ -16,19 +16,11 @@ public class Workspace {
     private double balance;      // Số dư hiện tại của quỹ này
     private double totalIncome;  // Tổng tiền đã thu vào quỹ
     private double totalExpense; // Tổng tiền quỹ đã chi ra
+    private String iconName; // Thêm dòng này
 
-    // ============================================================
-    // TODO 1: CONSTRUCTOR KHÔNG THAM SỐ
-    // - Bắt buộc để Firestore map dữ liệu tự động.
-    // ============================================================
     public Workspace() {
     }
 
-    // ============================================================
-    // TODO 2: CONSTRUCTOR KHI TẠO QUỸ MỚI
-    // - Khi tạo quỹ GROUP: ownerId là người tạo, members chứa ownerId ban đầu.
-    // - Khi tạo quỹ PERSONAL: name có thể là "Cá nhân", type là "PERSONAL".
-    // ============================================================
     public Workspace(String id, String name, String type, String ownerId) {
         this.id = id;
         this.name = name;
@@ -38,11 +30,6 @@ public class Workspace {
         this.totalIncome = 0.0;
         this.totalExpense = 0.0;
     }
-
-    // ============================================================
-    // TODO 3: GETTERS & SETTERS
-    // - Generate đầy đủ để các ViewModel có thể truy xuất.
-    // ============================================================
 
     public String getId() {
         return id;
@@ -107,4 +94,6 @@ public class Workspace {
     public void setTotalExpense(double totalExpense) {
         this.totalExpense = totalExpense;
     }
+    public String getIconName() { return iconName; }
+    public void setIconName(String iconName) { this.iconName = iconName; }
 }

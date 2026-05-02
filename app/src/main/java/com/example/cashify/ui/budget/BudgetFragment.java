@@ -306,10 +306,10 @@ public class BudgetFragment extends Fragment {
             cardWeekSelector.setVisibility(currentPeriodType.equals("WEEK") ? View.VISIBLE : View.GONE);
         }
 
-        btnWeekly.setBackgroundTintList(ColorStateList.valueOf(currentPeriodType.equals("WEEK") ? colorGreen : colorTransparent));
+        btnWeekly.setBackgroundTintList(ColorStateList.valueOf(currentPeriodType.equals("WEEK") ? colorBrand : colorTransparent));
         btnWeekly.setTextColor(currentPeriodType.equals("WEEK") ? colorWhite : colorBrand);
 
-        btnMonthly.setBackgroundTintList(ColorStateList.valueOf(currentPeriodType.equals("MONTH") ? colorGreen : colorTransparent));
+        btnMonthly.setBackgroundTintList(ColorStateList.valueOf(currentPeriodType.equals("MONTH") ? colorBrand : colorTransparent));
         btnMonthly.setTextColor(currentPeriodType.equals("MONTH") ? colorWhite : colorBrand);
     }
 
@@ -328,6 +328,7 @@ public class BudgetFragment extends Fragment {
                 }
                 mCurrentToast = Toast.makeText(getContext(), msg, Toast.LENGTH_SHORT);
                 mCurrentToast.show();
+
             });
         }    }
 }

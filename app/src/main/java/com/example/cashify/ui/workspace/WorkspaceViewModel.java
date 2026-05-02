@@ -9,6 +9,8 @@ import com.example.cashify.data.model.Workspace;
 import com.example.cashify.data.repository.RemoteWorkspaceRepoImpl;
 import com.example.cashify.ui.transactions.TransactionViewModel;
 import com.example.cashify.data.repository.IWorkspaceRepo;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FieldValue;
 
 import java.util.List;
 
@@ -116,8 +118,8 @@ public class WorkspaceViewModel extends ViewModel {
     // ============================================================
     // LOGIC TẠO QUỸ MỚI
     // ============================================================
-    public void createNewWorkspace(String name, String type) {
-        com.google.firebase.auth.FirebaseAuth auth = com.google.firebase.auth.FirebaseAuth.getInstance();
+    public void createNewWorkspace(String name, String type, String iconName) {
+        FirebaseAuth auth = FirebaseAuth.getInstance();
         if (auth.getCurrentUser() == null) {
             _errorMessage.setValue("Error: You are not logged in!");
             return;
@@ -130,6 +132,7 @@ public class WorkspaceViewModel extends ViewModel {
         Workspace newWorkspace = new Workspace();
         newWorkspace.setName(name);
         newWorkspace.setType(type); // Tùy thuộc vào model Workspace của ghệ có trường này ko
+        newWorkspace.setIconName(iconName != null ? iconName : "ic_other");
         newWorkspace.setOwnerId(uid); // Đánh dấu chủ quyền
         newWorkspace.setBalance(0L);
         newWorkspace.setTotalIncome(0L);
@@ -178,7 +181,7 @@ public class WorkspaceViewModel extends ViewModel {
 
                     // Bước 2: Nhét UID đó vào mảng "members" của Quỹ
                     db.collection("workspaces").document(workspaceId)
-                            .update("members", com.google.firebase.firestore.FieldValue.arrayUnion(newMemberUid))
+                            .update("members", FieldValue.arrayUnion(newMemberUid))
                             .addOnSuccessListener(aVoid -> {
                                 _actionSuccess.postValue(true);
                                 _isLoading.postValue(false);

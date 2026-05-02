@@ -10,6 +10,7 @@ import android.widget.EditText;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
 import com.example.cashify.utils.ToastHelper;
@@ -20,6 +21,8 @@ public class AddWorkspaceBottomSheet extends BottomSheetDialogFragment {
     private EditText etWorkspaceName;
     private Button btnCreate;
     private WorkspaceViewModel viewModel;
+    private RecyclerView rvIcons;
+    private IconAdapter iconAdapter;
 
     @Nullable
     @Override
@@ -33,19 +36,45 @@ public class AddWorkspaceBottomSheet extends BottomSheetDialogFragment {
 
         etWorkspaceName = view.findViewById(R.id.etWorkspaceName);
         btnCreate = view.findViewById(R.id.btnCreateWorkspace);
+        rvIcons = view.findViewById(R.id.rvIcons);
+
+        java.util.List<String> myIcons = java.util.Arrays.asList(
+                "ic_house", "ic_gift", "ic_food", "ic_salary", "ic_family",
+                "ic_entertain", "ic_transport", "ic_vacation", "ic_freelance", "ic_cafe",
+                "ic_shopping", "ic_health", "ic_education", "ic_bill", "ic_bonus", "ic_other"
+        );
+
+        iconAdapter = new IconAdapter(requireContext(), myIcons);
+        rvIcons.setAdapter(iconAdapter);
 
         // Dùng ViewModel của Activity cha để khi tạo xong, Activity cha tự biết đường update danh sách
         viewModel = new ViewModelProvider(requireActivity()).get(WorkspaceViewModel.class);
 
         btnCreate.setOnClickListener(v -> {
+            if (!isNetworkConnected()) {
+                ToastHelper.show(getContext(), "Please connect to the internet to create a Group Fund!!");
+                return;
+            }
             String name = etWorkspaceName.getText().toString().trim();
             if (name.isEmpty()) {
                 etWorkspaceName.setError("Please fill Group Name!");
                 return;
             }
 
+            viewModel.isLoading.observe(getViewLifecycleOwner(), isLoading -> {
+                if (isLoading) {
+                    btnCreate.setEnabled(false);
+                    btnCreate.setText("Creating..."); // Đổi chữ cho ngầu
+                } else {
+                    btnCreate.setEnabled(true);  // Mở khóa nút
+                    btnCreate.setText("Create"); // Trả lại chữ cũ
+                }
+            });
+
+            String selectedIconName = iconAdapter.getSelectedIconName();
+
             // Gọi hàm tạo quỹ ở ViewModel
-            viewModel.createNewWorkspace(name, "GROUP"); // Truyền Type nếu UI có chỗ chọn
+            viewModel.createNewWorkspace(name, "GROUP", selectedIconName); // Truyền Type nếu UI có chỗ chọn
         });
 
         // Lắng nghe tín hiệu tạo thành công từ ViewModel
@@ -64,5 +93,15 @@ public class AddWorkspaceBottomSheet extends BottomSheetDialogFragment {
                 viewModel.resetActionStatus();
             }
         });
+    }
+
+    // Hàm check kết nối Internet
+    private boolean isNetworkConnected() {
+        android.net.ConnectivityManager cm = (android.net.ConnectivityManager) requireContext().getSystemService(android.content.Context.CONNECTIVITY_SERVICE);
+        if (cm != null) {
+            android.net.NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+            return activeNetwork != null && activeNetwork.isConnectedOrConnecting();
+        }
+        return false;
     }
 }

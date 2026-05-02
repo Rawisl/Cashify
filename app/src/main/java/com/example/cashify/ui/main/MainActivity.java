@@ -280,10 +280,16 @@ public class MainActivity extends AppCompatActivity {
             menuIdToWorkspaceIdMap.put(itemId, w.getId());
 
             // Vẽ lên menu: add(groupId, itemId, order, title)
-            // Nhớ đổi R.drawable.ic_other thành icon Quỹ Nhóm của ghệ cho đẹp
             android.view.MenuItem item = menu.add(WORKSPACE_GROUP_ID, itemId, android.view.Menu.NONE, w.getName());
-            item.setIcon(R.drawable.ic_other); // <--- Đổi icon ở đây
-        }
+            String iconName = w.getIconName();
+            if (iconName == null || iconName.isEmpty()) iconName = "ic_other"; // Chống cháy nếu Quỹ cũ chưa có icon
+
+            int iconResId = getResources().getIdentifier(iconName, "drawable", getPackageName());
+            if (iconResId != 0) {
+                item.setIcon(iconResId);
+            } else {
+                item.setIcon(R.drawable.ic_other); // Fallback nếu tìm không thấy
+            }        }
     }
 
     private void setupNavigationAndFab() {
