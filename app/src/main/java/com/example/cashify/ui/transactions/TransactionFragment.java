@@ -310,6 +310,7 @@ public class TransactionFragment extends Fragment {
                 }
                 return makeMovementFlags(0, ItemTouchHelper.LEFT);
             }
+
             @Override
             public boolean onMove(@NonNull RecyclerView r, @NonNull RecyclerView.ViewHolder v, @NonNull RecyclerView.ViewHolder t) {
                 return false;
@@ -322,13 +323,38 @@ public class TransactionFragment extends Fragment {
 
                 if (item.getType() == TransactionViewModel.HistoryItem.TYPE_TRANSACTION) {
                     Transaction deletedTrans = item.getTransaction();
-                    viewModel.deleteOnly(deletedTrans);
 
-                    Snackbar.make(rvHistory, "Transaction deleted", Snackbar.LENGTH_LONG)
-                            .setAction("Undo", v -> {
-                                viewModel.insertOnly(deletedTrans);
-                            }).show();
+                    // 1. Hiện Dialog Confirm hỏi người dùng (Nút Xóa màu Đỏ)
+                    DialogHelper.showCustomDialog(
+                            requireContext(),
+                            getString(R.string.action_delete), // Bạn có thể thay bằng "Xóa giao dịch"
+                            "Bạn có chắc chắn muốn xóa giao dịch này không? Hành động này không thể hoàn tác.",
+                            "Xóa",
+                            "Hủy",
+                            DialogHelper.DialogType.DANGER, // DANGER để hiện nút đỏ
+                            true, // Cho phép hiện nút Hủy
+                            () -> {
+                                // Sự kiện khi bấm "Xóa":
+                                // A. Tiến hành xóa trong Database
+                                viewModel.deleteOnly(deletedTrans);
+
+                                // B. Xóa xong thì gọi Dialog 1 nút (showSuccess) báo thành công
+                                DialogHelper.showSuccess(
+                                        requireContext(),
+                                        "Thành công",
+                                        "Đã xóa giao dịch thành công!",
+                                        null // Bấm OK tự tắt, không cần làm gì thêm
+                                );
+                            },
+                            () -> {
+                                // Sự kiện khi bấm "Hủy":
+                                // Cập nhật lại UI để item vừa vuốt nảy ngược trở lại vị trí cũ
+                                historyAdapter.notifyItemChanged(position);
+                            }
+                    );
+
                 } else {
+                    // Nếu lỡ vuốt trúng cục Header Ngày Tháng thì cũng nảy ngược lại (ko cho xóa header)
                     historyAdapter.notifyItemChanged(position);
                 }
             }
@@ -349,3 +375,4 @@ public class TransactionFragment extends Fragment {
         viewModel.fetchHistoryData(currentWorkspaceId, query);
     }
 }
+//huhu

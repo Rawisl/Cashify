@@ -106,7 +106,7 @@ public class DialogHelper {
         showCustomDialog(context, title, message, null, null, type, true, onConfirm, null);
     }
 
-    // 2. Dùng cho Báo lỗi / Cảnh báo (Chỉ có 1 nút OK)
+    // 2. Dùng cho Báo lỗi / Cảnh báo (Chỉ có 1 nút OK màu đỏ DANGER)
     public static void showAlert(
             Context context,
             String title,
@@ -114,6 +114,16 @@ public class DialogHelper {
             Runnable onConfirm
     ) {
         showCustomDialog(context, title, message, "OK", null, DialogType.DANGER, false, onConfirm, null);
+    }
+
+    // 3. Dùng cho Thông báo thành công / Info (Chỉ có 1 nút OK màu xanh NORMAL)
+    public static void showSuccess(
+            Context context,
+            String title,
+            String message,
+            Runnable onConfirm
+    ) {
+        showCustomDialog(context, title, message, "OK", null, DialogType.NORMAL, false, onConfirm, null);
     }
 }
 
@@ -176,3 +186,22 @@ public class DialogHelper {
 //        },
 //                null // Nếu bấm Cancel không cần làm gì thêm thì truyền null cho lẹ
 //                );
+// Thông báo xóa thành công, bấm OK là tự tắt dialog, không cần code thêm
+//DialogHelper.showSuccess(
+//        this,
+//                "Thành công",
+//                "Đã xóa danh mục Ăn uống thành công!",
+//                null
+//);
+//
+//// Hoặc nếu muốn làm gì đó sau khi người dùng bấm OK:
+//DialogHelper.showSuccess(
+//        this,
+//                "Thành công",
+//                "Thêm giao dịch mới thành công!",
+//                () -> {
+//// Ví dụ: Load lại danh sách hoặc chuyển về màn hình Home
+//finish();
+//        }
+//                );
+//hehe
