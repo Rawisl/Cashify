@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "195049395718-51v32bs6v99j3sicfpr7nvl3ik73ui9h.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.cashify",
+            "certificate_hash": "d4122031d4e524ba3a1ae1d8b840474e38e2e583"
+          }
+        },
+        {
           "client_id": "195049395718-8gvml229ac6m7e3aq77ua31jf05o1nmk.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

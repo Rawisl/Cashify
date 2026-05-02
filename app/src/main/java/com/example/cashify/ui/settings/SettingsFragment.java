@@ -22,6 +22,7 @@ import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import com.example.cashify.data.remote.FirebaseManager;
+import com.example.cashify.ui.auth.ChangePasswordActivity;
 import com.example.cashify.ui.category.CategoryManagement;
 import com.example.cashify.R;
 import com.example.cashify.data.local.AppDatabase;
@@ -79,6 +80,13 @@ public class SettingsFragment extends Fragment {
             } else {
                 requestNotificationPermission(); // đang TẮT → xin bật
             }
+        });
+
+        // Security -> ChangePasswordActivity
+        LinearLayout btnSecurity = view.findViewById(R.id.btn_security);
+        btnSecurity.setOnClickListener(v -> {
+            Intent intent = new Intent(requireContext(), ChangePasswordActivity.class);
+            startActivity(intent);
         });
 
         // GỮ NGUYÊN: Categories
