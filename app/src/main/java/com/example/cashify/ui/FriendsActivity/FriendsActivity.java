@@ -1,36 +1,51 @@
-package com.example.cashify.ui.FriendsActivity; // Nhớ check lại package name nha An
+package com.example.cashify.ui.FriendsActivity; // Vẫn nhắc lại là check lại cái tên thư mục nha
 
 import android.os.Bundle;
+import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
+
 import com.example.cashify.R;
-import com.example.cashify.databinding.ActivityFriendsBinding;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 public class FriendsActivity extends AppCompatActivity {
-    private ActivityFriendsBinding binding;
+
+    // Khai báo biến truyền thống
+    private BottomNavigationView bottomNavigation;
+    private FloatingActionButton fabAddFriend;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // 1. Khởi tạo ViewBinding
-        binding = ActivityFriendsBinding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());
+        // 1. Dùng setContentView nạp trực tiếp file giao diện XML
+        // Nhớ check lại tên file layout có đúng là activity_friends không nha
+        setContentView(R.layout.activity_friends);
 
-        // 2. Setup Bottom Navigation (Phong cách viên thuốc của An)
-        setupBottomNav();
+        // 2. Ánh xạ các thành phần giao diện (findViewById)
+        bottomNavigation = findViewById(R.id.bottomNavigation); // Đổi ID này cho khớp với file XML của ghệ
+        fabAddFriend = findViewById(R.id.fabAddFriend);          // Đổi ID này cho khớp với file XML của ghệ
 
-        // 3. Mở BottomSheet thêm bạn khi nhấn nút (+)
-        binding.fabAddFriend.setOnClickListener(v -> {
-            // Tạm thời Toast để check, sau đó mình làm class AddFriendBottomSheet nha
-            android.widget.Toast.makeText(this, "Mở form thêm bạn!", android.widget.Toast.LENGTH_SHORT).show();
-        });
+        // 3. Setup Bottom Navigation
+        if (bottomNavigation != null) {
+            setupBottomNav();
+        }
+
+        // 4. Mở form thêm bạn khi nhấn nút (+)
+        if (fabAddFriend != null) {
+            fabAddFriend.setOnClickListener(v -> {
+                // Tạm thời Toast để check, mốt ráp cái BottomSheet vào đây
+                Toast.makeText(this, "Mở form thêm bạn!", Toast.LENGTH_SHORT).show();
+            });
+        }
     }
 
     private void setupBottomNav() {
-        // Tắt cái Indicator mặc định của Material 3 để hiện đúng cái background An des
-        binding.bottomNavigation.setItemActiveIndicatorEnabled(false);
+        // Tắt cái Indicator mặc định của Material 3 để hiện đúng cái background team design
+        bottomNavigation.setItemActiveIndicatorEnabled(false);
 
-        binding.bottomNavigation.setOnItemSelectedListener(item -> {
+        bottomNavigation.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
             if (id == R.id.nav_messages) {
                 // Chỗ này để load Fragment Tin nhắn
@@ -46,6 +61,6 @@ public class FriendsActivity extends AppCompatActivity {
         });
 
         // Mặc định chọn tab Friends cho giống hình mẫu
-        binding.bottomNavigation.setSelectedItemId(R.id.nav_friends);
+        bottomNavigation.setSelectedItemId(R.id.nav_friends);
     }
 }

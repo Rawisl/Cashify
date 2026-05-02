@@ -252,10 +252,9 @@ public class MainActivity extends AppCompatActivity {
                 bottomSheet.show(getSupportFragmentManager(), "AddWorkspaceBottomSheet");
             }
             else if (id == R.id.nav_friends) {
-                ToastHelper.show(this, "Mở danh sách Bạn bè");
+                Intent intent = new Intent(MainActivity.this, com.example.cashify.ui.FriendsActivity.FriendsActivity.class);
+                startActivity(intent);
             }
-            // XÓA cái nav_workspace_dummy cũ đi vì giờ mình xài menu động rồi
-
             drawerLayout.closeDrawer(GravityCompat.START);
             return true;
         });
