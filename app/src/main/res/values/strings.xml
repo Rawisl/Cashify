@@ -159,4 +159,40 @@
     <string name="auth_register">Register</string>
     <string name="auth_already_have_account">Already have an account? Login</string>
 
+    <!-- Change Password Screen -->
+    <string name="change_password_title">Security</string>
+    <string name="change_password_subtitle">Update your password to keep your account safe</string>
+    <string name="change_password_current">Current Password</string>
+    <string name="change_password_current_hint">Enter current password</string>
+    <string name="change_password_new">New Password</string>
+    <string name="change_password_new_hint">At least 6 characters</string>
+    <string name="change_password_confirm">Confirm New Password</string>
+    <string name="change_password_confirm_hint">Re-enter new password</string>
+    <string name="change_password_btn">Change Password</string>
+    <string name="change_password_set_btn">Create a Password</string>
+
+    <!-- Google banner -->
+    <string name="change_password_google_banner">Your account uses Google Sign-In and doesn\'t have a password yet. You can create one to also sign in with email.</string>
+    <string name="change_password_google_linked_banner">Your account is linked with Google. You can still change your email password below.</string>
+
+    <!-- Validation -->
+    <string name="change_password_wrong_current">Current password is incorrect</string>
+    <string name="change_password_too_short">Password must be at least 6 characters</string>
+    <string name="change_password_same_as_old">New password must be different from the current one</string>
+    <string name="change_password_mismatch">Passwords do not match</string>
+
+    <!-- Success -->
+    <string name="change_password_success">Password changed successfully!</string>
+    <string name="change_password_set_success">Password created! You can now sign in with email.</string>
+
+    <!-- Password strength -->
+    <string name="password_strength_weak">Weak</string>
+    <string name="password_strength_medium">Medium</string>
+    <string name="password_strength_strong">Strong</string>
+
+    <!-- Generic (thêm nếu chưa có) -->
+    <string name="error_field_required">This field is required</string>
+    <string name="error_generic">Something went wrong, please try again</string>
+    <string name="loading">Processing…</string>
+
 </resources>

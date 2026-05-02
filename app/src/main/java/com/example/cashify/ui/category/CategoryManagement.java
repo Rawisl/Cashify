@@ -25,6 +25,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
 import com.example.cashify.data.model.Category;
+import com.example.cashify.utils.DialogHelper;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
@@ -77,16 +78,21 @@ public class CategoryManagement extends AppCompatActivity {
         CategoryAdapter.OnCategoryListener listener = new CategoryAdapter.OnCategoryListener() {
             @Override
             public void onDeleteClick(Category category) {
-                // Hiện Dialog xác nhận ở ĐÂY (Activity)
-                new AlertDialog.Builder(CategoryManagement.this)
-                        .setTitle(getString(R.string.action_delete_category))
-                        .setMessage(getString(R.string.confirm_delete, category.name))
-                        .setPositiveButton(getString(R.string.action_delete), (d, w) -> {
+                // Thay thế AlertDialog cũ bằng DialogHelper "trẻ trung"
+                DialogHelper.showCustomDialog(
+                        CategoryManagement.this, // Context
+                        getString(R.string.action_delete_category), // Title: "Delete category"
+                        getString(R.string.confirm_delete, category.name), // Message: "Are you sure..."
+                        getString(R.string.action_delete), // Chữ trên nút Confirm: "Delete"
+                        getString(R.string.action_cancel), // Chữ trên nút Cancel: "Cancel"
+                        DialogHelper.DialogType.DANGER,    // Nút Confirm màu đỏ báo hiệu xóa
+                        true,                              // Cho phép hiện nút Cancel
+                        () -> {
                             // GỌI VIEWMODEL THỰC HIỆN LỆNH XÓA
                             viewModel.deleteCategory(category.id);
-                        })
-                        .setNegativeButton(getString(R.string.action_cancel), null)
-                        .show();
+                        },
+                        null // Không cần làm gì thêm khi bấm Cancel
+                );
             }
 
             @Override
@@ -244,25 +250,25 @@ public class CategoryManagement extends AppCompatActivity {
 
                 Category cat = list.get(pos);
 
-                // 2. Tạo một cái cờ để biết người dùng có CHỐT xóa hay không
-                final boolean[] isDeleted = {false};
-
-                new AlertDialog.Builder(CategoryManagement.this)
-                        .setTitle(R.string.action_delete_category)
-                        .setMessage(getString(R.string.confirm_delete, cat.name))
-                        .setPositiveButton(R.string.action_delete, (d, w) -> {
-                            isDeleted[0] = true; // Phất cờ là "Đã xóa"
+                // 2. Gọi DialogHelper thay cho AlertDialog cũ (Không cần mảng isDeleted nữa)
+                DialogHelper.showCustomDialog(
+                        CategoryManagement.this, // Context
+                        getString(R.string.action_delete_category),
+                        getString(R.string.confirm_delete, cat.name),
+                        getString(R.string.action_delete),
+                        getString(R.string.action_cancel),
+                        DialogHelper.DialogType.DANGER, // Nút Confirm hiện màu Đỏ
+                        true, // Hiện nút Cancel
+                        () -> {
+                            // KHI BẤM XÓA
                             viewModel.deleteCategory(cat.id);
-                        })
-                        .setNegativeButton(R.string.action_cancel, null) // Bấm Hủy thì không làm gì cả, để Dismiss lo
-                        .setOnDismissListener(dialogInterface -> {
-                            // 3. Nếu hộp thoại đóng mà KHÔNG PHẢI do bấm nút Xóa (tức là bấm Cancel hoặc chạm ra ngoài)
-                            if (!isDeleted[0]) {
-                                // Dùng rv.post để đảm bảo UI Thread phục hồi lại view mượt mà
-                                rv.post(() -> adapter.notifyItemChanged(pos));
-                            }
-                        })
-                        .show();
+                        },
+                        () -> {
+                            // KHI BẤM HỦY HOẶC ĐÓNG DIALOG
+                            // Dùng rv.post để đảm bảo UI Thread phục hồi lại view mượt mà
+                            rv.post(() -> adapter.notifyItemChanged(pos));
+                        }
+                );
             }
         };
         new ItemTouchHelper(callback).attachToRecyclerView(rv);
