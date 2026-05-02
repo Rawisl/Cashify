@@ -10,6 +10,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -91,6 +92,8 @@ public class BudgetFragment extends Fragment {
         cardWeekSelector = view.findViewById(R.id.cardWeekSelector);
         tvMonth = view.findViewById(R.id.tvMonth);
         tvWeek = view.findViewById(R.id.tvWeek);
+
+        ImageView btnInfoLink = view.findViewById(R.id.btnInfoLink);
 
         // Quản lý Linked Mode Switch
         SharedPreferences prefs = requireContext().getSharedPreferences("BudgetPrefs", Context.MODE_PRIVATE);
@@ -195,6 +198,16 @@ public class BudgetFragment extends Fragment {
             if (isDone) {
                 triggerLoadData();
             }
+        });
+
+        btnInfoLink.setOnClickListener(v -> {
+            new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("About Linked Mode")
+                    .setMessage("How Weekly & Monthly budgets work:\n\n" +
+                            "• OFF (Independent): Weekly and Monthly budgets operate completely separately. Their limits do not affect each other.\n\n" +
+                            "• ON (Linked): Budgets are connected. You set the overall Master Budget in the Monthly tab, but detailed category allocations must be done in the Weekly tab. The sum of your Weekly Master budgets cannot exceed the Monthly limit.")
+                    .setPositiveButton("Got it", (dialog, which) -> dialog.dismiss())
+                    .show();
         });
     }
 
