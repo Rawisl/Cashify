@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="16dp"
+    android:layout_marginVertical="8dp"
+    app:cardCornerRadius="20dp"
+    app:cardElevation="4dp">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp">
+
+        <!-- Avatar bo góc -->
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/imgAvatar"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:src="@android:drawable/ic_menu_report_image"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:shapeAppearanceOverlay="@style/RoundedAppearance" />
+
+        <!-- Tên và Status -->
+
+        <TextView
+            android:id="@+id/tvFriendName"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:text="Thu An"
+            android:textColor="#1A237E"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="1.0"
+            app:layout_constraintStart_toEndOf="@id/imgAvatar"
+            app:layout_constraintTop_toTopOf="@id/imgAvatar" />
+
+        <TextView
+            android:id="@+id/tvStatus"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Active 2h ago"
+            android:textColor="#757575"
+            android:textSize="12sp"
+            app:layout_constraintStart_toStartOf="@id/tvFriendName"
+            app:layout_constraintTop_toBottomOf="@id/tvFriendName" />
+
+        <!-- Nút Message (Xanh đậm) -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnMessage"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:layout_marginEnd="8dp"
+            android:backgroundTint="#1A237E"
+            android:text="Message"
+            android:textAllCaps="false"
+            app:cornerRadius="12dp"
+            app:icon="@drawable/ic_messages"
+            app:layout_constraintEnd_toStartOf="@+id/btnUnfriend"
+            app:layout_constraintHorizontal_weight="3"
+            app:layout_constraintStart_toStartOf="@id/tvFriendName"
+            app:layout_constraintTop_toBottomOf="@id/tvStatus" />
+
+        <!-- Nút Unfriend (Đỏ nhạt) -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnUnfriend"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:backgroundTint="#EF5350"
+            app:cornerRadius="12dp"
+            app:icon="@drawable/ic_unfriend"
+            app:layout_constraintBottom_toBottomOf="@id/btnMessage"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_weight="1"
+            app:layout_constraintStart_toEndOf="@id/btnMessage"
+            app:layout_constraintTop_toTopOf="@id/btnMessage" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.cardview.widget.CardView>
