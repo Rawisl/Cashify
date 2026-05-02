@@ -4,7 +4,9 @@
 
     <solid android:color="@color/bg_main" />
     <!--set 2 cái corner trên đầu numpad tròn tròn nhìn xinh xinh -->
-    <corners
-        android:topLeftRadius="24dp"
-        android:topRightRadius="24dp" />
+    <corners android:radius="16dp" />
+    <stroke
+        android:width="0.7dp"
+        android:color="@color/brand_primary" />
+
 </shape>
