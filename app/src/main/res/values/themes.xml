@@ -383,4 +383,8 @@
         <item name="cardCornerRadius">16dp</item>
         <item name="cardElevation">0.5dp</item>
     </style>
+
+    <style name="RoundedAppearance">
+        <item name="cornerSize">50%</item>
+    </style>
 </resources>
