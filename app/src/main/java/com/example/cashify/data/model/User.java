@@ -8,12 +8,13 @@ package com.example.cashify.data.model;
 public class User {
     //Phải thêm các trường: avatarUrl, displayName, phoneNumber vào class này.
 
-    private String uid;          // ID duy nhất từ Firebase Auth
+    private String uid;
     private String email;
     private String displayName;
-    private String avatarUrl;    // Đường dẫn ảnh từ Firebase Storage hoặc Google
-    private String phoneNumber; //nhớ cho người dùng nhập số điện thoại để sau này làm tính năng "Tìm bạn qua SĐT" cho tiện
+    private String avatarUrl;
+    private String phoneNumber;
 
+    private int friendStatus = 0;
     public User() {
     }
 
@@ -45,4 +46,21 @@ public class User {
 
     public String getPhoneNumber() { return phoneNumber; }
     public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+    public String getNameToShow() {
+        if (displayName != null && !displayName.isEmpty()) {
+            return displayName;
+        }
+        if (email != null && email.contains("@")) {
+            return email.split("@")[0]; // Lấy phần trước @ của email
+        }
+        return "Người dùng Cashify";
+    }
+    public int getFriendStatus() {
+        return friendStatus;
+    }
+
+    public void setFriendStatus(int friendStatus) {
+        this.friendStatus = friendStatus;
+    }
+
 }

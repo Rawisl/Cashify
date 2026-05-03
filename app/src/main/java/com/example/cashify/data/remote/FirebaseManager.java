@@ -2,7 +2,7 @@ package com.example.cashify.data.remote;
 
 import android.util.Log;
 
-import com.google.android.gms.tasks.Task;
+import com.example.cashify.data.model.User;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -10,15 +10,16 @@ import com.google.firebase.auth.GoogleAuthProvider;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QuerySnapshot;
-import com.google.firebase.messaging.FirebaseMessaging;
+import com.google.firebase.firestore.WriteBatch;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-//Để gọi API Firebase
 public class FirebaseManager {
+    private static final String TAG = "CASHIFY";
+
     private static FirebaseManager instance;
     private final FirebaseAuth auth;
     private final FirebaseFirestore db;
@@ -43,33 +44,27 @@ public class FirebaseManager {
         void onError(String message);
     }
 
-    public FirebaseAuth getAuth() {
-        return auth;
-    }
+    public FirebaseAuth getAuth() { return auth; }
 
     // ============================================================
-    // TODO 1: TÀI KHOẢN (AUTHENTICATION)
-    // - Viết hàm loginWithEmail(email, password)
-    // - Viết hàm loginWithGoogle(idToken)
-    // - Viết hàm getCurrentUserId() để lấy UID làm mỏ neo dữ liệu
+    // AUTHENTICATION
     // ============================================================
 
     public void loginWithEmail(String email, String password, AuthCallback callback) {
         auth.signInWithEmailAndPassword(email, password)
-                .addOnSuccessListener(authResult -> callback.onSuccess(authResult.getUser().getUid()))
+                .addOnSuccessListener(r -> callback.onSuccess(r.getUser().getUid()))
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
-    public void registerWithEmail(String email, String password, AuthCallback callback) {
+    public void registerWithEmail(String email, String password, String name, AuthCallback callback) {
         auth.createUserWithEmailAndPassword(email, password)
-                .addOnSuccessListener(authResult -> {
-                    String uid = authResult.getUser().getUid();
-                    // Tạo ngay một Document chứa thông tin User trên Firestore
+                .addOnSuccessListener(r -> {
+                    String uid = r.getUser().getUid();
                     Map<String, Object> userMap = new HashMap<>();
                     userMap.put("email", email);
                     userMap.put("uid", uid);
+                    userMap.put("displayName", name);
                     db.collection("users").document(uid).set(userMap);
-
                     callback.onSuccess(uid);
                 })
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
@@ -78,14 +73,12 @@ public class FirebaseManager {
     public void loginWithGoogle(String idToken, AuthCallback callback) {
         AuthCredential credential = GoogleAuthProvider.getCredential(idToken, null);
         auth.signInWithCredential(credential)
-                .addOnSuccessListener(authResult -> {
-                    String uid = authResult.getUser().getUid();
-                    // Lưu thông tin user Google vào Firestore nếu chưa có
+                .addOnSuccessListener(r -> {
+                    String uid = r.getUser().getUid();
                     Map<String, Object> userMap = new HashMap<>();
-                    userMap.put("email", authResult.getUser().getEmail());
+                    userMap.put("email", r.getUser().getEmail());
                     userMap.put("uid", uid);
-                    db.collection("users").document(uid).set(userMap); // set tự động ghi đè hoặc tạo mới
-
+                    db.collection("users").document(uid).set(userMap);
                     callback.onSuccess(uid);
                 })
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
@@ -93,122 +86,75 @@ public class FirebaseManager {
 
     public String getCurrentUserId() {
         FirebaseUser user = auth.getCurrentUser();
-        return user != null ? user.getUid() : null;
+        if (user == null) { Log.e(TAG, "getCurrentUserId: chưa đăng nhập!"); return null; }
+        return user.getUid();
     }
 
-    public void logout() {
-        auth.signOut();
-    }
+    public void logout() { auth.signOut(); }
 
     // ============================================================
-    // TODO 2: ĐỒNG BỘ CÁ NHÂN (PERSONAL DATA)
-    // - Viết hàm syncLocalToCloud(): Đẩy data từ SQLite lên Firestore
-    // - Viết hàm listenToPersonalChanges(): Lắng nghe data cá nhân real-time
+    // PERSONAL DATA SYNC
     // ============================================================
 
-    public String getCurrentUserUid() {
-        if (auth.getCurrentUser() != null) {
-            return auth.getCurrentUser().getUid();
-        }
-        return null;
-    }
-
-    // Hàm đẩy 1 Giao dịch từ SQLite lên Firestore
     public void syncLocalToCloud(String workspaceId, String collection, String docId, Map<String, Object> data, DataCallback<Void> callback) {
-        String uid = getCurrentUserUid();
-        if (uid == null) {
-            if (callback != null) callback.onError("Not logged in!");
-            return;
-        }
+        String uid = getCurrentUserId();
+        if (uid == null) { if (callback != null) callback.onError("Chưa đăng nhập!"); return; }
 
         com.google.firebase.firestore.DocumentReference docRef;
         if (workspaceId == null || workspaceId.equals("PERSONAL")) {
-            // Quỹ cá nhân -> Lưu vào nhà riêng của User
             docRef = db.collection("users").document(uid).collection(collection).document(docId);
         } else {
-            // Quỹ nhóm -> Lưu vào không gian chung của Workspace
             docRef = db.collection("workspaces").document(workspaceId).collection(collection).document(docId);
         }
 
         docRef.set(data)
-                .addOnSuccessListener(aVoid -> {
-                    if (callback != null) callback.onSuccess(null);
-                    Log.d("FIREBASE", "Synchronous success: " + collection);
-                })
-                .addOnFailureListener(e -> {
-                    if (callback != null) callback.onError(e.getMessage());
-                    Log.e("FIREBASE", "Synchronous failed: " + e.getMessage());
-                });
+                .addOnSuccessListener(v -> { if (callback != null) callback.onSuccess(null); })
+                .addOnFailureListener(e -> { if (callback != null) callback.onError(e.getMessage()); });
     }
 
-    // Lắng nghe dữ liệu thay đổi trên Cloud để tải về máy
     public void listenToChanges(String workspaceId, String collectionName, DataCallback<List<DocumentSnapshot>> callback) {
         String uid = getCurrentUserId();
         if (uid == null) return;
-
         com.google.firebase.firestore.CollectionReference colRef;
         if (workspaceId == null || workspaceId.equals("PERSONAL")) {
             colRef = db.collection("users").document(uid).collection(collectionName);
         } else {
             colRef = db.collection("workspaces").document(workspaceId).collection(collectionName);
         }
-
         colRef.addSnapshotListener((value, error) -> {
-            if (error != null) {
-                callback.onError(error.getMessage());
-                return;
-            }
-            if (value != null) {
-                callback.onSuccess(value.getDocuments());
-            }
+            if (error != null) { callback.onError(error.getMessage()); return; }
+            if (value != null) callback.onSuccess(value.getDocuments());
         });
     }
 
     public void deleteAllTransactionsFromCloud(String workspaceId, DataCallback<Void> callback) {
-        String uid = getCurrentUserUid();
+        String uid = getCurrentUserId();
         if (uid == null) return;
-
         com.google.firebase.firestore.CollectionReference colRef;
         if (workspaceId == null || workspaceId.equals("PERSONAL")) {
             colRef = db.collection("users").document(uid).collection("transactions");
         } else {
             colRef = db.collection("workspaces").document(workspaceId).collection("transactions");
         }
-
-        colRef.get()
-                .addOnSuccessListener(querySnapshot -> {
-                    if (querySnapshot.isEmpty()) {
-                        callback.onSuccess(null);
-                        return;
-                    }
-                    com.google.firebase.firestore.WriteBatch batch = db.batch();
-                    for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
-                        batch.delete(doc.getReference());
-                    }
-                    batch.commit()
-                            .addOnSuccessListener(aVoid -> callback.onSuccess(null))
-                            .addOnFailureListener(e -> callback.onError(e.getMessage()));
-                })
-                .addOnFailureListener(e -> callback.onError(e.getMessage()));
+        colRef.get().addOnSuccessListener(snap -> {
+            if (snap.isEmpty()) { callback.onSuccess(null); return; }
+            WriteBatch batch = db.batch();
+            for (DocumentSnapshot doc : snap.getDocuments()) batch.delete(doc.getReference());
+            batch.commit()
+                    .addOnSuccessListener(v -> callback.onSuccess(null))
+                    .addOnFailureListener(e -> callback.onError(e.getMessage()));
+        }).addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
     // ============================================================
-    // TODO 3: CỘNG ĐỒNG (SOCIAL & SHARED WORKSPACE)
-    // - Viết logic Tìm kiếm User qua Email
-    // - Viết hàm createSharedWorkspace(): Tạo quỹ chung
-    // - Viết hàm joinWorkspace(): Thêm thành viên vào quỹ
+    // SOCIAL & WORKSPACE
     // ============================================================
 
     public void searchUserByEmail(String email, DataCallback<String> callback) {
         db.collection("users").whereEqualTo("email", email).get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    if (!queryDocumentSnapshots.isEmpty()) {
-                        // Trả về UID của người tìm thấy
-                        String foundUid = queryDocumentSnapshots.getDocuments().get(0).getString("uid");
-                        callback.onSuccess(foundUid);
-                    } else {
-                        callback.onError("User not found");
-                    }
+                .addOnSuccessListener(snap -> {
+                    if (!snap.isEmpty()) callback.onSuccess(snap.getDocuments().get(0).getString("uid"));
+                    else callback.onError("Không tìm thấy người dùng");
                 })
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
@@ -216,81 +162,63 @@ public class FirebaseManager {
     public void createSharedWorkspace(String workspaceName, List<String> memberIds, DataCallback<String> callback) {
         String uid = getCurrentUserId();
         if (uid == null) return;
-
-        memberIds.add(uid); // Tự động thêm bản thân mình vào danh sách thành viên
-
+        memberIds.add(uid);
         Map<String, Object> workspace = new HashMap<>();
         workspace.put("name", workspaceName);
         workspace.put("ownerId", uid);
         workspace.put("members", memberIds);
-
         db.collection("workspaces").add(workspace)
-                .addOnSuccessListener(documentReference -> callback.onSuccess(documentReference.getId())) // Trả về ID của Workspace mới
+                .addOnSuccessListener(ref -> callback.onSuccess(ref.getId()))
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
     public void joinWorkspace(String workspaceId, String userId, DataCallback<Void> callback) {
-        // Cập nhật mảng 'members' trong Workspace: Thêm userId vào
         db.collection("workspaces").document(workspaceId)
                 .update("members", FieldValue.arrayUnion(userId))
-                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                .addOnSuccessListener(v -> callback.onSuccess(null))
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
     // ============================================================
-    // TODO 4: THÔNG BÁO (FCM)
-    // - Hàm lấy Firebase Cloud Messaging Token
-    // - Hàm gửi yêu cầu "Nhắc nợ" đến UID cụ thể
+    // FCM
     // ============================================================
 
     public void getFcmToken(DataCallback<String> callback) {
-        FirebaseMessaging.getInstance().getToken()
+        com.google.firebase.messaging.FirebaseMessaging.getInstance().getToken()
                 .addOnSuccessListener(token -> {
-                    // Lưu token vào Firestore để sau này server biết đường gửi tới máy này
                     String uid = getCurrentUserId();
-                    if (uid != null) {
-                        db.collection("users").document(uid).update("fcmToken", token);
-                    }
+                    if (uid != null) db.collection("users").document(uid).update("fcmToken", token);
                     callback.onSuccess(token);
                 })
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
-    // Để gửi thông báo từ máy Client sang máy Client khác, thường phải thông qua "Trạm trung chuyển" (Cloud Functions).
-    // Ở đây, ta ghi một yêu cầu (Request) vào Firestore, Cloud Functions sẽ đọc cái này và bắn FCM đi.
-    public void sendPaymentReminder(String targetUid, String messageTitle, String messageBody, DataCallback<Void> callback) {
-        Map<String, Object> notificationReq = new HashMap<>();
-        notificationReq.put("toUid", targetUid);
-        notificationReq.put("title", messageTitle);
-        notificationReq.put("body", messageBody);
-        notificationReq.put("timestamp", FieldValue.serverTimestamp());
-
-        db.collection("notification_requests").add(notificationReq)
-                .addOnSuccessListener(documentReference -> callback.onSuccess(null))
+    public void sendPaymentReminder(String targetUid, String title, String body, DataCallback<Void> callback) {
+        Map<String, Object> req = new HashMap<>();
+        req.put("toUid", targetUid);
+        req.put("title", title);
+        req.put("body", body);
+        req.put("timestamp", FieldValue.serverTimestamp());
+        db.collection("notification_requests").add(req)
+                .addOnSuccessListener(ref -> callback.onSuccess(null))
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
     // ============================================================
-    // TODO Bonus: Xử lý dữ liệu của cá nhân
+    // USER DATA
     // ============================================================
 
-    // Hàm lấy toàn bộ giao dịch từ Firestore của User
     public void getAllTransactionsFromCloud(String workspaceId, DataCallback<List<DocumentSnapshot>> callback) {
         String uid = getCurrentUserId();
-        if (uid == null) {
-            callback.onError("Not logged in!");
-            return;
-        }
-
+        if (uid == null) { callback.onError("Chưa đăng nhập!"); return; }
         com.google.firebase.firestore.CollectionReference colRef;
         if (workspaceId == null || workspaceId.equals("PERSONAL")) {
             colRef = db.collection("users").document(uid).collection("transactions");
         } else {
             colRef = db.collection("workspaces").document(workspaceId).collection("transactions");
         }
-
         colRef.get()
-                .addOnSuccessListener(queryDocumentSnapshots -> callback.onSuccess(queryDocumentSnapshots.getDocuments()))
+                .addOnSuccessListener(q -> callback.onSuccess(q.getDocuments()))
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
@@ -298,7 +226,7 @@ public class FirebaseManager {
         String uid = getCurrentUserId();
         if (uid == null) return;
         db.collection("users").document(uid).collection("budgets").get()
-                .addOnSuccessListener(queryDocumentSnapshots -> callback.onSuccess(queryDocumentSnapshots.getDocuments()))
+                .addOnSuccessListener(q -> callback.onSuccess(q.getDocuments()))
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
@@ -306,7 +234,196 @@ public class FirebaseManager {
         String uid = getCurrentUserId();
         if (uid == null) return;
         db.collection("users").document(uid).collection("categories").get()
-                .addOnSuccessListener(queryDocumentSnapshots -> callback.onSuccess(queryDocumentSnapshots.getDocuments()))
+                .addOnSuccessListener(q -> callback.onSuccess(q.getDocuments()))
+                .addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
+
+    public void getAllUsers(DataCallback<List<User>> callback) {
+        String myUid = getCurrentUserId();
+        Log.e(TAG, "getAllUsers: myUid = " + myUid);
+        if (myUid == null) { callback.onError("Chưa đăng nhập!"); return; }
+
+        db.collection("users").get()
+                .addOnSuccessListener(snap -> {
+                    List<User> users = new ArrayList<>();
+                    for (DocumentSnapshot doc : snap) {
+                        User user = doc.toObject(User.class);
+                        if (user != null && !myUid.equals(user.getUid())) users.add(user);
+                    }
+                    Log.e(TAG, "getAllUsers: " + users.size() + " users");
+                    callback.onSuccess(users);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "getAllUsers thất bại: " + e.getMessage());
+                    callback.onError(e.getMessage());
+                });
+    }
+
+    // ============================================================
+    // FRIEND REQUEST SYSTEM
+    // ============================================================
+
+    /**
+     * Lấy danh sách UID bạn bè đã kết bạn thành công
+     */
+    public void getFriendIds(String uid, DataCallback<List<String>> callback) {
+        db.collection("users").document(uid).collection("friends").get()
+                .addOnSuccessListener(snap -> {
+                    List<String> ids = new ArrayList<>();
+                    for (DocumentSnapshot doc : snap) ids.add(doc.getId());
+                    Log.e(TAG, "getFriendIds: " + ids.size() + " bạn");
+                    callback.onSuccess(ids);
+                })
+                .addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
+
+    /**
+     * Lấy danh sách UID đang gửi lời mời kết bạn cho mình
+     */
+    public void getIncomingRequestIds(DataCallback<List<String>> callback) {
+        String myUid = getCurrentUserId();
+        if (myUid == null) { callback.onError("Chưa đăng nhập!"); return; }
+
+        db.collection("users").document(myUid).collection("friend_requests").get()
+                .addOnSuccessListener(snap -> {
+                    List<String> ids = new ArrayList<>();
+                    for (DocumentSnapshot doc : snap) ids.add(doc.getId());
+                    Log.e(TAG, "getIncomingRequestIds: " + ids.size() + " lời mời đến");
+                    callback.onSuccess(ids);
+                })
+                .addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
+
+    /**
+     * Lấy danh sách UID mình đã gửi lời mời đi (chưa được accept)
+     */
+    public void getSentRequestIds(DataCallback<List<String>> callback) {
+        String myUid = getCurrentUserId();
+        if (myUid == null) { callback.onError("Chưa đăng nhập!"); return; }
+
+        db.collection("users").document(myUid).collection("sent_requests").get()
+                .addOnSuccessListener(snap -> {
+                    List<String> ids = new ArrayList<>();
+                    for (DocumentSnapshot doc : snap) ids.add(doc.getId());
+                    Log.e(TAG, "getSentRequestIds: " + ids.size() + " lời mời đã gửi");
+                    callback.onSuccess(ids);
+                })
+                .addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
+
+    /**
+     * Gửi lời mời kết bạn tới targetUid
+     */
+    public void sendFriendRequest(String targetUid, DataCallback<Void> callback) {
+        String myUid = getCurrentUserId();
+        if (myUid == null) { callback.onError("Chưa đăng nhập!"); return; }
+
+        WriteBatch batch = db.batch();
+
+        Map<String, Object> requestData = new HashMap<>();
+        requestData.put("fromUid", myUid);
+        requestData.put("timestamp", FieldValue.serverTimestamp());
+
+        // Ghi vào inbox của người kia
+        batch.set(
+                db.collection("users").document(targetUid).collection("friend_requests").document(myUid),
+                requestData
+        );
+
+        // Track phía mình đã gửi
+        Map<String, Object> sentData = new HashMap<>();
+        sentData.put("toUid", targetUid);
+        sentData.put("timestamp", FieldValue.serverTimestamp());
+        batch.set(
+                db.collection("users").document(myUid).collection("sent_requests").document(targetUid),
+                sentData
+        );
+
+        batch.commit()
+                .addOnSuccessListener(v -> {
+                    Log.e(TAG, "sendFriendRequest tới " + targetUid + " thành công");
+                    callback.onSuccess(null);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "sendFriendRequest thất bại: " + e.getMessage());
+                    callback.onError(e.getMessage());
+                });
+    }
+
+    /**
+     * Huỷ lời mời đã gửi
+     */
+    public void cancelFriendRequest(String targetUid, DataCallback<Void> callback) {
+        String myUid = getCurrentUserId();
+        if (myUid == null) { callback.onError("Chưa đăng nhập!"); return; }
+
+        WriteBatch batch = db.batch();
+        batch.delete(db.collection("users").document(targetUid).collection("friend_requests").document(myUid));
+        batch.delete(db.collection("users").document(myUid).collection("sent_requests").document(targetUid));
+
+        batch.commit()
+                .addOnSuccessListener(v -> callback.onSuccess(null))
+                .addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
+
+    /**
+     * Chấp nhận lời mời kết bạn
+     */
+    public void acceptFriendRequest(String requesterUid, DataCallback<Void> callback) {
+        String myUid = getCurrentUserId();
+        if (myUid == null) { callback.onError("Chưa đăng nhập!"); return; }
+
+        WriteBatch batch = db.batch();
+
+        // Thêm bạn 2 chiều
+        batch.set(db.collection("users").document(myUid).collection("friends").document(requesterUid), new HashMap<>());
+        batch.set(db.collection("users").document(requesterUid).collection("friends").document(myUid), new HashMap<>());
+
+        // Xoá request
+        batch.delete(db.collection("users").document(myUid).collection("friend_requests").document(requesterUid));
+
+        // Xoá sent_request của người kia
+        batch.delete(db.collection("users").document(requesterUid).collection("sent_requests").document(myUid));
+
+        batch.commit()
+                .addOnSuccessListener(v -> {
+                    Log.e(TAG, "acceptFriendRequest " + requesterUid + " thành công");
+                    callback.onSuccess(null);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "acceptFriendRequest thất bại: " + e.getMessage());
+                    callback.onError(e.getMessage());
+                });
+    }
+
+    /**
+     * Từ chối lời mời kết bạn
+     */
+    public void declineFriendRequest(String requesterUid, DataCallback<Void> callback) {
+        String myUid = getCurrentUserId();
+        if (myUid == null) { callback.onError("Chưa đăng nhập!"); return; }
+
+        WriteBatch batch = db.batch();
+        batch.delete(db.collection("users").document(myUid).collection("friend_requests").document(requesterUid));
+        batch.delete(db.collection("users").document(requesterUid).collection("sent_requests").document(myUid));
+
+        batch.commit()
+                .addOnSuccessListener(v -> callback.onSuccess(null))
+                .addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
+
+    /**
+     * Huỷ kết bạn*/
+    public void unfriend(String targetUid, DataCallback<Void> callback) {
+        String myUid = getCurrentUserId();
+        if (myUid == null) { callback.onError("Chưa đăng nhập!"); return; }
+
+        WriteBatch batch = db.batch();
+        batch.delete(db.collection("users").document(myUid).collection("friends").document(targetUid));
+        batch.delete(db.collection("users").document(targetUid).collection("friends").document(myUid));
+
+        batch.commit()
+                .addOnSuccessListener(v -> callback.onSuccess(null))
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 }

@@ -15,7 +15,7 @@
         android:paddingHorizontal="16dp"
         android:paddingVertical="14dp">
 
-        <!-- Avatar tròn -->
+        <!-- Avatar -->
         <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/imgAvatar"
             android:layout_width="52dp"
@@ -28,7 +28,7 @@
 
         <!-- Tên -->
         <TextView
-            android:id="@+id/tvFriendName"
+            android:id="@+id/tvName"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="14dp"
@@ -39,12 +39,12 @@
             android:maxLines="1"
             android:ellipsize="end"
             app:layout_constraintStart_toEndOf="@id/imgAvatar"
-            app:layout_constraintEnd_toStartOf="@id/tvSentRequest"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="@id/imgAvatar" />
 
-        <!-- Email / Status nhỏ -->
+        <!-- Email -->
         <TextView
-            android:id="@+id/tvStatus"
+            android:id="@+id/tvEmail"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="14dp"
@@ -55,42 +55,10 @@
             android:maxLines="1"
             android:ellipsize="end"
             app:layout_constraintStart_toEndOf="@id/imgAvatar"
-            app:layout_constraintEnd_toStartOf="@id/tvSentRequest"
-            app:layout_constraintTop_toBottomOf="@id/tvFriendName" />
-
-        <!-- Tag "Sent" -->
-        <TextView
-            android:id="@+id/tvSentRequest"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Sent"
-            android:background="@drawable/bg_tag_grey"
-            android:paddingHorizontal="10dp"
-            android:paddingVertical="4dp"
-            android:textSize="12sp"
-            android:textColor="#757575"
-            android:visibility="gone"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@id/tvFriendName"
-            app:layout_constraintBottom_toBottomOf="@id/tvStatus" />
+            app:layout_constraintTop_toBottomOf="@id/tvName" />
 
-        <!-- Tag "✓ Friends" -->
-        <TextView
-            android:id="@+id/tvAlreadyFriend"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="✓ Friends"
-            android:background="@drawable/bg_tag_blue"
-            android:paddingHorizontal="10dp"
-            android:paddingVertical="4dp"
-            android:textSize="12sp"
-            android:textColor="#1A237E"
-            android:visibility="gone"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@id/tvFriendName"
-            app:layout_constraintBottom_toBottomOf="@id/tvStatus" />
-
-        <!-- Divider mỏng -->
+        <!-- Divider -->
         <View
             android:id="@+id/divider"
             android:layout_width="0dp"
@@ -101,62 +69,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/imgAvatar" />
 
-        <!-- Nút Add Friend -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnAddFriend"
-            android:layout_width="0dp"
-            android:layout_height="38dp"
-            android:layout_marginTop="10dp"
-            android:backgroundTint="#1A237E"
-            android:text="Add Friend"
-            android:textAllCaps="false"
-            android:textSize="13sp"
-            android:visibility="gone"
-            app:cornerRadius="10dp"
-            app:icon="@android:drawable/ic_input_add"
-            app:iconSize="16dp"
-            app:iconTint="@color/white"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/divider" />
-
-        <!-- Nút Message -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnMessage"
-            android:layout_width="0dp"
-            android:layout_height="38dp"
-            android:layout_marginTop="10dp"
-            android:layout_marginEnd="8dp"
-            android:backgroundTint="#1A237E"
-            android:text="Message"
-            android:textAllCaps="false"
-            android:textSize="13sp"
-            android:visibility="gone"
-            app:cornerRadius="10dp"
-            app:layout_constraintEnd_toStartOf="@id/btnUnfriend"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/divider"
-            app:layout_constraintHorizontal_weight="3" />
-
-        <!-- Nút Unfriend -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnUnfriend"
-            android:layout_width="48dp"
-            android:layout_height="38dp"
-            android:layout_marginTop="10dp"
-            android:backgroundTint="#FFEBEE"
-            app:cornerRadius="10dp"
-            app:icon="@drawable/ic_unfriend"
-            app:iconTint="#EF5350"
-            app:iconSize="18dp"
-            app:iconGravity="textStart"
-            android:paddingStart="14dp"
-            android:visibility="gone"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/divider"
-            app:layout_constraintBottom_toBottomOf="@id/btnMessage" />
-
-        <!-- Nút Accept -->
+        <!-- Nút Accept (tab Received) -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnAccept"
             android:layout_width="0dp"
@@ -169,11 +82,11 @@
             android:textSize="13sp"
             android:visibility="gone"
             app:cornerRadius="10dp"
-            app:layout_constraintEnd_toStartOf="@id/btnDecline"
             app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/btnDecline"
             app:layout_constraintTop_toBottomOf="@id/divider" />
 
-        <!-- Nút Decline -->
+        <!-- Nút Decline (tab Received) -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnDecline"
             android:layout_width="0dp"
@@ -186,10 +99,27 @@
             android:textSize="13sp"
             android:visibility="gone"
             app:cornerRadius="10dp"
-            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@id/btnAccept"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/divider"
             app:layout_constraintBottom_toBottomOf="@id/btnAccept" />
+
+        <!-- Nút Cancel (tab Sent) -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCancel"
+            android:layout_width="0dp"
+            android:layout_height="38dp"
+            android:layout_marginTop="10dp"
+            android:backgroundTint="#EEEEEE"
+            android:text="Cancel Request"
+            android:textColor="#757575"
+            android:textAllCaps="false"
+            android:textSize="13sp"
+            android:visibility="gone"
+            app:cornerRadius="10dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/divider" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.cardview.widget.CardView>
