@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dùng inset để bóp nhỏ cái nền lại, chừa lề 2 bên cho nó đừng dính sát màn hình -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:insetLeft="12dp"
+    android:insetRight="12dp"
+    android:insetTop="4dp"
+    android:insetBottom="4dp">
+
+    <selector>
+        <!-- Trạng thái khi được chọn (Checked) -->
+        <item android:state_checked="true">
+            <shape android:shape="rectangle">
+                <!-- Đổi mã màu nền ở đây. #334C6FFF là màu xanh nhạt có độ trong suốt 20% -->
+                <solid android:color="#33E28651" />
+                <!-- radius=50dp là bo tròn cong vút 2 đầu như viên thuốc -->
+                <corners android:radius="50dp" />
+            </shape>
+        </item>
+
+        <!-- Trạng thái mặc định (Không chọn) -->
+        <item>
+            <shape android:shape="rectangle">
+                <solid android:color="@android:color/transparent" />
+                <corners android:radius="50dp" />
+            </shape>
+        </item>
+    </selector>
+</inset>

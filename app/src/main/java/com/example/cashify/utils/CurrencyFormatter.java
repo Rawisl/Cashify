@@ -30,10 +30,10 @@ public class CurrencyFormatter
         String sign = amount < 0 ? "-" : "";
 
         if (absAmount >= 1_000_000_000) {
-            return sign + dfShort.format(absAmount / 1_000_000_000) + " Tỷ VNĐ";
+            return sign + dfShort.format(absAmount / 1_000_000_000) + " Tỷ VND";
         } else {
             // Dưới 1 tỷ thì cứ full số 0 cho sướng mắt
-            return sign + (absAmount == 0 ? "0" : dfNormal.format(absAmount)) + " VNĐ";
+            return sign + (absAmount == 0 ? "0" : dfNormal.format(absAmount)) + " VND";
         }
     }
 

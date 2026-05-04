@@ -64,21 +64,23 @@ public class WorkspaceViewModel extends ViewModel {
     // ============================================================
     // 4. CÁC HÀM TẢI DỮ LIỆU TỪ DB (ĐÃ SỬA LỖI LAMBDA)
     // ============================================================
-
     public void loadWorkspaceDetails(String workspaceId) {
         if (workspaceId == null || workspaceId.isEmpty()) return;
         _isLoading.setValue(true);
 
-        workspaceRepo.getWorkspaceTransactions(workspaceId, new IWorkspaceRepo.OnTransactionsLoadedListener() {
+        // Gọi ĐÚNG hàm lấy chi tiết Quỹ bên Repository
+        workspaceRepo.getWorkspaceById(workspaceId, new IWorkspaceRepo.OnWorkspaceDetailLoadedListener() {
             @Override
-            public void onSuccess(List<TransactionViewModel.HistoryItem> transactions) {
-                // Đổ vào LiveData để Fragment/Activity nhận được và vẽ lên màn hình
-                _transactionsLiveData.postValue(transactions); // ĐÃ FIX: _transactions -> _transactionsLiveData
+            public void onSuccess(Workspace workspace) {
+                _isLoading.postValue(false);
+                // Bơm toàn bộ object Workspace lấy được vào LiveData
+                _workspaceLiveData.postValue(workspace);
             }
 
             @Override
             public void onError(Exception e) {
-                _errorMessage.postValue("Failed to load transactions: " + e.getMessage());
+                _isLoading.postValue(false);
+                _errorMessage.postValue("Failed to load transactions:: " + e.getMessage());
             }
         });
     }
@@ -105,12 +107,12 @@ public class WorkspaceViewModel extends ViewModel {
         workspaceRepo.getWorkspaceTransactions(workspaceId, new IWorkspaceRepo.OnTransactionsLoadedListener() {
             @Override
             public void onSuccess(List<TransactionViewModel.HistoryItem> transactions) {
-                _transactionsLiveData.setValue(transactions);
+                _transactionsLiveData.postValue(transactions);
             }
 
             @Override
             public void onError(Exception e) {
-                _errorMessage.setValue("Failed to load transactions: " + e.getMessage());
+                _errorMessage.postValue("Failed to load transactions: " + e.getMessage());
             }
         });
     }
