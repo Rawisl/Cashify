@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/workspace_nav_home"
+        android:title="@string/nav_home"
+        android:icon="@drawable/ic_nav_home_selector" />
+    <item
+        android:id="@+id/workspace_nav_chat"
+        android:title="Chat"
+        android:icon="@drawable/ic_nav_message_selector"/>
+    <item
+        android:id="@+id/workspace_nav_log"
+        android:title="Log"
+        android:icon="@drawable/ic_nav_log_selector"/>
+    <item
+        android:id="@+id/workspace_nav_settings"
+        android:title="@string/nav_settings"
+        android:icon="@drawable/ic_nav_settings_selector"/>
+</menu>

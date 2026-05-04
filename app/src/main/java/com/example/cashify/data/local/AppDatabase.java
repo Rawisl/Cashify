@@ -13,7 +13,7 @@ import com.example.cashify.data.model.Budget;
 import com.example.cashify.data.model.Category;
 import com.example.cashify.data.model.Transaction;
 
-@Database(entities = {Category.class, Transaction.class, Budget.class}, version = 4)
+@Database(entities = {Category.class, Transaction.class, Budget.class}, version = 5)
 public abstract class AppDatabase extends RoomDatabase {
     private static AppDatabase instance;
 
@@ -36,7 +36,6 @@ public abstract class AppDatabase extends RoomDatabase {
         if (instance == null) {
             instance = Room.databaseBuilder(context.getApplicationContext(),
                             AppDatabase.class, "money_manager_db")
-                    .addMigrations(MIGRATION_3_4)
                     .fallbackToDestructiveMigration()
                     .build();
         }

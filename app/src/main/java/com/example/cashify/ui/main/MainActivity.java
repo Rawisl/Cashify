@@ -31,14 +31,12 @@ import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.NavigationUI;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.core.view.GravityCompat; // Thêm thư viện này cho Sidebar
-import androidx.drawerlayout.widget.DrawerLayout; // Thêm thư viện này
 
-import com.bumptech.glide.Glide;
-import com.example.cashify.data.model.Workspace; // Thêm import này
+
+import com.example.cashify.data.model.Workspace;
 import com.example.cashify.ui.auth.EditProfileActivity;
 import com.example.cashify.ui.auth.LoginActivity;
-import com.example.cashify.ui.workspace.WorkspaceDetailActivity;
+//import com.example.cashify.ui.workspace.WorkspaceDetailActivity;
 import com.example.cashify.utils.ImageHelper;
 import com.example.cashify.utils.ToastHelper;
 import com.google.android.material.navigation.NavigationView;
@@ -47,21 +45,19 @@ import com.google.firebase.auth.FirebaseUser;
 
 import com.example.cashify.ui.transactions.AddTransactionActivity;
 import com.example.cashify.R;
-import com.example.cashify.data.model.Category;
-import com.example.cashify.data.local.CategoryDao;
+
 import com.example.cashify.ui.transactions.TransactionViewModel;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import com.example.cashify.data.local.AppDatabase;
 import com.example.cashify.data.local.DatabaseSeeder;
-import com.example.cashify.data.local.FakeDataSeeder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.example.cashify.data.remote.FirebaseManager;
 import com.example.cashify.utils.WorkScheduler;
 
-import java.util.HashMap; // Thêm import này
+import java.util.HashMap;
 import java.util.List;
-import java.util.Map; // Thêm import này
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
     // Tạo một lá cờ hiệu
@@ -71,8 +67,6 @@ public class MainActivity extends AppCompatActivity {
 
     private String currentWorkspaceId = "PERSONAL";
 
-    // ĐỊNH NGHĨA ID ĐỂ QUẢN LÝ MENU ĐỘNG
-    private final int WORKSPACE_GROUP_ID = 999;
     // Dùng Map để lưu ID của MenuItem và ID của Workspace tương ứng (để biết click vào đâu)
     private final Map<Integer, String> menuIdToWorkspaceIdMap = new HashMap<>();
 
@@ -228,34 +222,44 @@ public class MainActivity extends AppCompatActivity {
         navigationView.setNavigationItemSelectedListener(item -> {
             int id = item.getItemId();
 
-            // --- LÀM MỚI CHỖ NÀY: KIỂM TRA XEM CÓ BẤM VÀO QUỸ ĐỘNG KO ---
+            // ĐÁNH DẤU HIGHLIGHT: Chỉ tô màu nếu bấm vào Ví Cá Nhân hoặc Quỹ Nhóm
+            if (id == R.id.nav_workspace_personal || menuIdToWorkspaceIdMap.containsKey(id)) {
+                item.setChecked(true);
+            }
+
+            // --- KIỂM TRA XEM CÓ BẤM VÀO QUỸ ĐỘNG KO ---
             if (menuIdToWorkspaceIdMap.containsKey(id)) {
-                // Lấy ID Quỹ thật từ Map ra
                 String clickedWorkspaceId = menuIdToWorkspaceIdMap.get(id);
 
-                // Mở màn hình Chi tiết Quỹ
-                Intent intent = new Intent(this, WorkspaceDetailActivity.class);
-                intent.putExtra("WORKSPACE_ID", clickedWorkspaceId);
-                startActivity(intent);
+                Bundle bundle = new Bundle();
+                bundle.putString("WORKSPACE_ID", clickedWorkspaceId);
 
-                // TODO: Gọi ViewModel đổi Workspace hiện tại nếu màn hình Home/Dashboard của ghệ có dùng
+                NavController navController = androidx.navigation.Navigation.findNavController(this, R.id.nav_host_fragment);
+                navController.navigate(R.id.nav_workspace_container, bundle);
+
             }
-            // --- CÁC MENU TĨNH CŨ ---
+            // --- CÁC MENU TĨNH ---
             else if (id == R.id.nav_workspace_personal) {
                 currentWorkspaceId = "PERSONAL";
-                ToastHelper.show(this, "Đã chọn Ví Cá Nhân");
-                // TODO: Update UI Fragment theo ví cá nhân
+                NavController navController = androidx.navigation.Navigation.findNavController(this, R.id.nav_host_fragment);
+                navController.popBackStack(R.id.nav_home, false);
+                transactionViewModel.fetchHistoryData("PERSONAL");
             }
             else if (id == R.id.nav_add_workspace) {
                 drawerLayout.closeDrawer(androidx.core.view.GravityCompat.START);
                 com.example.cashify.ui.workspace.AddWorkspaceBottomSheet bottomSheet = new com.example.cashify.ui.workspace.AddWorkspaceBottomSheet();
                 bottomSheet.show(getSupportFragmentManager(), "AddWorkspaceBottomSheet");
+                // Mở BottomSheet thì KHÔNG return true ở đây để tránh bị lỗi hiển thị UI
+                return false;
             }
             else if (id == R.id.nav_friends) {
                 Intent intent = new Intent(MainActivity.this, com.example.cashify.ui.FriendsActivity.FriendsActivity.class);
                 startActivity(intent);
             }
+
             drawerLayout.closeDrawer(GravityCompat.START);
+
+            // TRẢ VỀ TRUE ĐỂ LƯU MÀU HIGHLIGHT
             return true;
         });
     }
@@ -266,29 +270,34 @@ public class MainActivity extends AppCompatActivity {
     private void updateSidebarMenu(List<Workspace> workspaces) {
         android.view.Menu menu = navigationView.getMenu();
 
-        // 1. Xóa các Quỹ cũ đã vẽ lần trước (tránh bị đúp)
-        menu.removeGroup(WORKSPACE_GROUP_ID);
+        // 1. Xóa các Quỹ động cũ (Dùng Map để xóa chính xác, KHÔNG dùng removeGroup vì sẽ xóa nhầm Personal và Add Group)
+        for (Integer itemId : menuIdToWorkspaceIdMap.keySet()) {
+            menu.removeItem(itemId);
+        }
         menuIdToWorkspaceIdMap.clear();
 
-        // 2. Bơm danh sách Quỹ mới vào menu
+        // 2. Bơm danh sách Quỹ mới vào chung nhóm R.id.group_workspaces
         for (Workspace w : workspaces) {
-            // Tạo 1 ID duy nhất cho MenuItem bằng cách lấy hashCode của Quỹ ID
             int itemId = w.getId().hashCode();
-
-            // Lưu lại mối quan hệ: "Bấm vào itemId này thì tức là chọn Quỹ ID này"
             menuIdToWorkspaceIdMap.put(itemId, w.getId());
 
             // Vẽ lên menu: add(groupId, itemId, order, title)
-            android.view.MenuItem item = menu.add(WORKSPACE_GROUP_ID, itemId, android.view.Menu.NONE, w.getName());
+            // Để order = 1 để nó chèn vào giữa (nằm dưới Ví cá nhân, nằm trên nút Add group)
+            android.view.MenuItem item = menu.add(R.id.group_workspaces, itemId, 1, w.getName());
+
             String iconName = w.getIconName();
-            if (iconName == null || iconName.isEmpty()) iconName = "ic_other"; // Chống cháy nếu Quỹ cũ chưa có icon
+            if (iconName == null || iconName.isEmpty()) iconName = "ic_other";
 
             int iconResId = getResources().getIdentifier(iconName, "drawable", getPackageName());
             if (iconResId != 0) {
                 item.setIcon(iconResId);
             } else {
-                item.setIcon(R.drawable.ic_other); // Fallback nếu tìm không thấy
-            }        }
+                item.setIcon(R.drawable.ic_other);
+            }
+
+            // Kích hoạt checkable để lưu trạng thái highlight
+            item.setCheckable(true);
+        }
     }
 
     private void setupNavigationAndFab() {
@@ -307,15 +316,26 @@ public class MainActivity extends AppCompatActivity {
         NavController navController = navHostFragment.getNavController();
 
         NavigationUI.setupWithNavController(bottomNav, navController);
-
-        // Fix lỗi chìm FAB ở màn Setting
+        View navHostView = findViewById(R.id.nav_host_fragment);
+        // Fix lỗi chìm FAB ở màn Setting + Ẩn/hiện bottom nav
         navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
             int id = destination.getId();
-            // Đổi R.id.nav_settings thành đúng ID fragment settings của ghệ
-            if (id == R.id.nav_settings) {
+            //
+            if (id == R.id.nav_workspace_container) {
+                // Giấu nhẹm thanh Nav và nút FAB của Ví Cá nhân đi
+                bottomNav.setVisibility(View.GONE);
                 fabAddTransaction.hide();
+                navHostView.setPadding(0, 0, 0, 0); // Xóa padding để thanh nav bên quỹ không dôi lên
             } else {
-                fabAddTransaction.show();
+                // Đang ở ngoài Ví Cá nhân -> Hiện lại thanh Nav
+                bottomNav.setVisibility(View.VISIBLE);
+                int padding56dp = (int) (56 * getResources().getDisplayMetrics().density);
+                navHostView.setPadding(0, 0, 0, padding56dp);
+                if (id == R.id.nav_settings) {
+                    fabAddTransaction.hide();
+                } else {
+                    fabAddTransaction.show();
+                }
             }
         });
     }
