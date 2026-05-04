@@ -194,5 +194,7 @@
     <string name="error_field_required">This field is required</string>
     <string name="error_generic">Something went wrong, please try again</string>
     <string name="loading">Processing…</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 
 </resources>

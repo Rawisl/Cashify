@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/workspace_nav_graph"
+    app:startDestination="@id/workspace_nav_home">
+    <fragment
+        android:id="@+id/workspace_nav_home"
+        android:name="com.example.cashify.ui.workspace.WorkspaceHomeFragment"
+        android:label="fragment_workspace_home"
+        tools:layout="@layout/fragment_workspace_home" />
+    <fragment
+        android:id="@+id/workspace_nav_chat"
+        android:name="com.example.cashify.ui.workspace.WorkspaceChatFragment"
+        android:label="fragment_workspace_chat"
+        tools:layout="@layout/fragment_workspace_chat" />
+    <fragment
+        android:id="@+id/workspace_nav_log"
+        android:name="com.example.cashify.ui.workspace.WorkspaceLogFragment"
+        android:label="fragment_workspace_log"
+        tools:layout="@layout/fragment_workspace_log" />
+    <fragment
+        android:id="@+id/workspace_nav_settings"
+        android:name="com.example.cashify.ui.workspace.WorkspaceSettingsFragment"
+        android:label="fragment_workspace_settings"
+        tools:layout="@layout/fragment_workspace_settings" />
+</navigation>

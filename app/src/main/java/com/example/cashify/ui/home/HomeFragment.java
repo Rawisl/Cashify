@@ -230,6 +230,17 @@ public class HomeFragment extends Fragment {
             }
         });
 
+        //đống này liên quan tới cái appbar và sidebar
+        com.google.android.material.appbar.MaterialToolbar toolbarPersonal = view.findViewById(R.id.toolbarPersonal);
+
+        // Bắt sự kiện bấm nút 3 gạch để mở Sidebar
+        toolbarPersonal.setNavigationOnClickListener(v -> {
+            androidx.drawerlayout.widget.DrawerLayout drawer = requireActivity().findViewById(R.id.drawerLayout);
+            if (drawer != null) {
+                drawer.openDrawer(androidx.core.view.GravityCompat.START);
+            }
+        });
+
 //        //Bắt sự kiện click chọn tháng (Tạm thời để Toast, Khang ráp DatePicker vào sau nhé)
 //        tvDate.setOnClickListener(v -> {
 //           ToastHelper.show(getContext(), "Tính năng chọn tháng sẽ mở BottomSheet!");

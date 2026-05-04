@@ -3,9 +3,14 @@ package com.example.cashify.ui.workspace;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
 import android.widget.TextView;
 
-import androidx.appcompat.app.AppCompatActivity;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -21,7 +26,7 @@ import com.google.android.material.appbar.MaterialToolbar;
 
 import java.util.ArrayList;
 
-public class WorkspaceDetailActivity extends AppCompatActivity {
+public class WorkspaceHomeFragment extends Fragment {
 
     private RecyclerView rvMembers, rvTransactions;
     private WorkspaceMemberAdapter memberAdapter;
@@ -32,92 +37,98 @@ public class WorkspaceDetailActivity extends AppCompatActivity {
     private WorkspaceViewModel workspaceViewModel;
     private String workspaceId;
 
+    @Nullable
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_workspace_detail);
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        return inflater.inflate(R.layout.fragment_workspace_home, container, false);
+    }
 
-        workspaceId = getIntent().getStringExtra("WORKSPACE_ID");
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
 
-        if (workspaceId == null || workspaceId.isEmpty()) {
-            ToastHelper.show(this, "Error: Fund information not found!");
-            finish();
-            return;
+// Đổi cách lấy ID trong WorkspaceHomeFragment.java
+        Fragment parent = getParentFragment();
+        while (parent != null) {
+            if (parent instanceof WorkspaceContainerFragment) {
+                if (parent.getArguments() != null) {
+                    workspaceId = parent.getArguments().getString("WORKSPACE_ID");
+                }
+                break;
+            }
+            parent = parent.getParentFragment();
         }
 
         initViewModel();
-        initViews();
+        initViews(view);
         observeViewModel();
     }
 
     private void initViewModel() {
-        workspaceViewModel = new ViewModelProvider(this).get(WorkspaceViewModel.class);
+        // Dùng requireActivity() để xài chung ViewModel với Activity nếu cần
+        workspaceViewModel = new ViewModelProvider(requireActivity()).get(WorkspaceViewModel.class);
 
         workspaceViewModel.loadWorkspaceDetails(workspaceId);
         workspaceViewModel.loadWorkspaceMembers(workspaceId);
+        workspaceViewModel.loadWorkspaceTransactions(workspaceId);
     }
 
-    private void initViews() {
-        toolbar = findViewById(R.id.toolbarWorkspaceDetail);
-        tvBalance = findViewById(R.id.tvWorkspaceBalance);
-        tvIncome = findViewById(R.id.tvWorkspaceIncome);
-        tvExpense = findViewById(R.id.tvWorkspaceExpense);
-        rvMembers = findViewById(R.id.rvWorkspaceMembers);
-        rvTransactions = findViewById(R.id.rvWorkspaceTransactions);
+    private void initViews(View view) {
+        toolbar = view.findViewById(R.id.toolbarWorkspaceDetail);
+        tvBalance = view.findViewById(R.id.tvWorkspaceBalance);
+        tvIncome = view.findViewById(R.id.tvWorkspaceIncome);
+        tvExpense = view.findViewById(R.id.tvWorkspaceExpense);
+        rvMembers = view.findViewById(R.id.rvWorkspaceMembers);
+        rvTransactions = view.findViewById(R.id.rvWorkspaceTransactions);
 
-        setSupportActionBar(toolbar);
-        toolbar.setNavigationOnClickListener(v -> finish());
-
-        rvMembers.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+        // Mở Sidebar của MainActivity từ bên trong Fragment
+        toolbar.setNavigationOnClickListener(v -> {
+            androidx.drawerlayout.widget.DrawerLayout drawer = requireActivity().findViewById(R.id.drawerLayout);
+            if (drawer != null) {
+                drawer.openDrawer(androidx.core.view.GravityCompat.START);
+            }
+        });
+        rvMembers.setLayoutManager(new LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false));
         memberAdapter = new WorkspaceMemberAdapter(new ArrayList<>());
         rvMembers.setAdapter(memberAdapter);
 
-        rvTransactions.setLayoutManager(new LinearLayoutManager(this));
+        rvTransactions.setLayoutManager(new LinearLayoutManager(requireContext()));
         historyAdapter = new HistoryAdapter();
 
-        // Bắt sự kiện bấm vào 1 dòng giao dịch để mở màn hình chỉnh sửa
         historyAdapter.setOnTransactionClickListener(transaction -> {
-            Intent intent = new Intent(this, AddTransactionActivity.class);
+            Intent intent = new Intent(requireContext(), AddTransactionActivity.class);
             intent.putExtra("TRANSACTION_ID", transaction.id);
             intent.putExtra("WORKSPACE_ID", workspaceId);
             startActivity(intent);
         });
 
         rvTransactions.setAdapter(historyAdapter);
-        // =======================================================
 
-        findViewById(R.id.tvAddMember).setOnClickListener(v -> {
-            // Truyền cái workspaceId của màn hình hiện tại vào Bottom Sheet
+        view.findViewById(R.id.tvAddMember).setOnClickListener(v -> {
             AddMemberBottomSheet bottomSheet = AddMemberBottomSheet.newInstance(workspaceId);
-            bottomSheet.show(getSupportFragmentManager(), "AddMemberBottomSheet");
+            bottomSheet.show(getChildFragmentManager(), "AddMemberBottomSheet");
         });
 
-        findViewById(R.id.fabAddWorkspaceTransaction).setOnClickListener(v -> {
-            Intent intent = new Intent(this, AddTransactionActivity.class);
-            intent.putExtra("WORKSPACE_ID", workspaceId);
-            startActivity(intent);
-        });
     }
 
     @SuppressLint("SetTextI18n")
     private void observeViewModel() {
-        workspaceViewModel.getWorkspaceLiveData().observe(this, workspace -> {
+        workspaceViewModel.getWorkspaceLiveData().observe(getViewLifecycleOwner(), workspace -> {
             if (workspace != null) {
                 toolbar.setTitle(workspace.getName());
             }
         });
 
-        workspaceViewModel.getMembersLiveData().observe(this, members -> {
+        workspaceViewModel.getMembersLiveData().observe(getViewLifecycleOwner(), members -> {
             if (members != null) {
                 memberAdapter.setMembers(members);
             }
         });
 
-        workspaceViewModel.getTransactionsLiveData().observe(this, historyItems -> {
+        workspaceViewModel.getTransactionsLiveData().observe(getViewLifecycleOwner(), historyItems -> {
             if (historyItems != null) {
                 historyAdapter.setHistoryData(historyItems);
 
-                // Tính lại Số dư, Thu, Chi mỗi khi có cục data mới (Real-time)
                 long totalIncome = 0;
                 long totalExpense = 0;
 
@@ -139,15 +150,9 @@ public class WorkspaceDetailActivity extends AppCompatActivity {
             }
         });
 
-        workspaceViewModel.getErrorMessage().observe(this, errorMsg -> {
+        workspaceViewModel.getErrorMessage().observe(getViewLifecycleOwner(), errorMsg -> {
             if (errorMsg != null) {
-                ToastHelper.show(this, errorMsg);
-            }
-        });
-
-        workspaceViewModel.getErrorMessage().observe(this, errorMsg -> {
-            if (errorMsg != null) {
-                ToastHelper.show(this, errorMsg);
+                ToastHelper.show(requireContext(), errorMsg);
             }
         });
     }
