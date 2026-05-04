@@ -82,7 +82,7 @@ public class AuthViewModel extends ViewModel {
         _isLoading.setValue(true);
 
         // Lưu ý: Tên hàm bên FirebaseManager giờ là registerWithEmail
-        firebaseManager.registerWithEmail(email, password, new FirebaseManager.AuthCallback() {
+        firebaseManager.registerWithEmail(email, password, name,new FirebaseManager.AuthCallback() {
             @Override
             public void onSuccess(String uid) {
                 FirebaseUser user = firebaseManager.getAuth().getCurrentUser();

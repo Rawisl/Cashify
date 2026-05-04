@@ -253,7 +253,8 @@ public class MainActivity extends AppCompatActivity {
                 return false;
             }
             else if (id == R.id.nav_friends) {
-                ToastHelper.show(this, "Mở danh sách Bạn bè");
+                Intent intent = new Intent(MainActivity.this, com.example.cashify.ui.FriendsActivity.FriendsActivity.class);
+                startActivity(intent);
             }
 
             drawerLayout.closeDrawer(GravityCompat.START);
