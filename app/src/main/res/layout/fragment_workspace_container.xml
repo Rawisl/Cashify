@@ -31,7 +31,6 @@
         app:itemIconSize="26dp"
         android:background="@drawable/bg_bottom_nav" />
 
-    <!-- Nút FAB -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabAddWorkspaceTransaction"
         style="@style/float_btn_add"
@@ -40,7 +39,7 @@
         android:layout_gravity="bottom|end"
         android:layout_marginEnd="24dp"
         android:layout_marginBottom="150dp"
-        app:srcCompat="@drawable/ic_add_transaction"
-        app:layout_behavior=".utils.FabScaleBehavior" />
+        app:layout_behavior=".utils.FabScaleBehavior"
+        app:srcCompat="@drawable/ic_add_transaction" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

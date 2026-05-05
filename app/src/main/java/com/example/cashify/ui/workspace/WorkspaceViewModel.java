@@ -30,6 +30,10 @@ public class WorkspaceViewModel extends ViewModel {
     private final MutableLiveData<Boolean> _actionSuccess = new MutableLiveData<>(false);
     public LiveData<Boolean> actionSuccess = _actionSuccess;
 
+    private final MutableLiveData<List<com.example.cashify.data.model.ChatMessage>> _chatMessages = new MutableLiveData<>();
+    public LiveData<List<com.example.cashify.data.model.ChatMessage>> getChatMessages() { return _chatMessages; }
+    private com.google.firebase.firestore.ListenerRegistration chatListener;
+
     // ============================================================
     // 2. CÁC BIẾN LIVEDATA CUNG CẤP DỮ LIỆU
     // ============================================================
@@ -203,5 +207,70 @@ public class WorkspaceViewModel extends ViewModel {
     public void resetActionStatus() {
         _actionSuccess.setValue(false);
         _errorMessage.setValue(null);
+    }
+
+    public void listenForChatMessages(String workspaceId) {
+        if (workspaceId == null || workspaceId.isEmpty()) return;
+        com.google.firebase.firestore.FirebaseFirestore db = com.google.firebase.firestore.FirebaseFirestore.getInstance();
+
+        // Hủy listener cũ nếu có
+        if (chatListener != null) chatListener.remove();
+
+        chatListener = db.collection("workspaces").document(workspaceId)
+                .collection("messages")
+                .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.ASCENDING)
+                .addSnapshotListener((snapshots, e) -> {
+                    if (e != null) {
+                        _errorMessage.setValue("Listen failed: " + e.getMessage());
+                        return;
+                    }
+                    if (snapshots != null) {
+                        List<com.example.cashify.data.model.ChatMessage> msgs = new java.util.ArrayList<>();
+                        for (com.google.firebase.firestore.DocumentSnapshot doc : snapshots.getDocuments()) {
+                            com.example.cashify.data.model.ChatMessage msg = doc.toObject(com.example.cashify.data.model.ChatMessage.class);
+                            if (msg != null) {
+                                msg.setMessageId(doc.getId());
+                                msgs.add(msg);
+                            }
+                        }
+                        _chatMessages.setValue(msgs);
+                    }
+                });
+    }
+
+    public void sendChatMessage(String workspaceId, String text) {
+        com.google.firebase.auth.FirebaseUser user = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null || text.trim().isEmpty()) return;
+
+        com.google.firebase.firestore.FirebaseFirestore db = com.google.firebase.firestore.FirebaseFirestore.getInstance();
+
+        com.example.cashify.data.model.ChatMessage newMsg = new com.example.cashify.data.model.ChatMessage(
+                user.getUid(),
+                user.getDisplayName() != null ? user.getDisplayName() : "User",
+                user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : "",
+                text.trim(),
+                System.currentTimeMillis()
+        );
+
+        db.collection("workspaces").document(workspaceId)
+                .collection("messages")
+                .add(newMsg)
+                .addOnFailureListener(e -> _errorMessage.setValue("Send failed: " + e.getMessage()));
+    }
+
+    public void deleteChatMessage(String workspaceId, String messageId) {
+        if (workspaceId == null || messageId == null) return;
+        com.google.firebase.firestore.FirebaseFirestore db = com.google.firebase.firestore.FirebaseFirestore.getInstance();
+
+        db.collection("workspaces").document(workspaceId)
+                .collection("messages").document(messageId)
+                .delete()
+                .addOnFailureListener(e -> _errorMessage.setValue("Message delete failed: " + e.getMessage()));
+    }
+
+    @Override
+    protected void onCleared() {
+        super.onCleared();
+        if (chatListener != null) chatListener.remove(); // Tránh tràn RAM
     }
 }
