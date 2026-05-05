@@ -1,14 +1,25 @@
 package com.example.cashify.ui.workspace;
 
 import android.os.Bundle;
-
-import androidx.fragment.app.Fragment;
-
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
+import com.example.cashify.utils.ToastHelper;
+
+import java.util.ArrayList;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -25,6 +36,14 @@ public class WorkspaceChatFragment extends Fragment {
     // TODO: Rename and change types of parameters
     private String mParam1;
     private String mParam2;
+
+    // === CÁC BIẾN MỚI THÊM CHO TÍNH NĂNG CHAT ===
+    private String workspaceId;
+    private WorkspaceViewModel workspaceViewModel;
+    private ChatAdapter chatAdapter;
+    private RecyclerView rvChatMessages;
+    private EditText edtMessageInput;
+    private ImageButton btnSendMessage;
 
     public WorkspaceChatFragment() {
         // Required empty public constructor
@@ -62,5 +81,96 @@ public class WorkspaceChatFragment extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_workspace_chat, container, false);
+    }
+
+    // === PHẦN LOGIC CHAT MỚI THÊM ===
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        // Kỹ thuật leo cây tìm workspaceId từ Fragment cha
+        Fragment parent = getParentFragment();
+        while (parent != null) {
+            if (parent instanceof WorkspaceContainerFragment) {
+                if (parent.getArguments() != null) {
+                    workspaceId = parent.getArguments().getString("WORKSPACE_ID");
+                }
+                break;
+            }
+            parent = parent.getParentFragment();
+        }
+
+        // Ánh xạ
+        rvChatMessages = view.findViewById(R.id.rvChatMessages);
+        edtMessageInput = view.findViewById(R.id.edtMessageInput);
+        btnSendMessage = view.findViewById(R.id.btnSendMessage);
+        ImageView imgWorkspaceIcon = view.findViewById(R.id.imgWorkspaceIcon);
+        TextView tvWorkspaceName = view.findViewById(R.id.tvWorkspaceName);
+
+        // Setup RecyclerView
+        LinearLayoutManager layoutManager = new LinearLayoutManager(requireContext());
+        layoutManager.setStackFromEnd(true); // Để tin nhắn đẩy từ dưới lên
+        rvChatMessages.setLayoutManager(layoutManager);
+
+        // Khởi tạo Adapter kèm theo sự kiện nhấn giữ tin nhắn
+        chatAdapter = new ChatAdapter(new ArrayList<>(), message -> {
+            // Hiện hộp thoại hỏi xác nhận cho chắc cú
+            new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                    .setTitle("Delete message?")
+                    .setMessage("Are you sure deleting this message?")
+                    .setPositiveButton("Delete", (dialog, which) -> {
+                        // Gọi ViewModel để xóa trên Firebase
+                        workspaceViewModel.deleteChatMessage(workspaceId, message.getMessageId());
+                    })
+                    .setNegativeButton("Cancel", null)
+                    .show();
+        });
+        rvChatMessages.setAdapter(chatAdapter);
+
+        // Setup ViewModel
+        workspaceViewModel = new ViewModelProvider(requireActivity()).get(WorkspaceViewModel.class);
+
+        workspaceViewModel.getWorkspaceLiveData().observe(getViewLifecycleOwner(), workspace -> {
+            if (workspace != null) {
+                tvWorkspaceName.setText(workspace.getName());
+
+                int resId = requireContext().getResources().getIdentifier(workspace.getIconName(), "drawable", requireContext().getPackageName());
+                if (resId != 0) {
+                    imgWorkspaceIcon.setImageResource(resId);
+                } else {
+                    imgWorkspaceIcon.setImageResource(R.drawable.ic_other);
+                }
+            }
+        });
+
+        // Bắt đầu lắng nghe tin nhắn Realtime
+        workspaceViewModel.listenForChatMessages(workspaceId);
+
+        // Cập nhật giao diện khi có tin nhắn mới
+        workspaceViewModel.getChatMessages().observe(getViewLifecycleOwner(), messages -> {
+            if (messages != null) {
+                chatAdapter.setMessages(messages);
+                // Cuộn xuống dòng cuối cùng cực mượt
+                if (!messages.isEmpty()) {
+                    rvChatMessages.smoothScrollToPosition(messages.size() - 1);
+                }
+            }
+        });
+
+        // Xử lý nút Gửi
+        btnSendMessage.setOnClickListener(v -> {
+            String text = edtMessageInput.getText().toString();
+            if (!text.trim().isEmpty()) {
+                workspaceViewModel.sendChatMessage(workspaceId, text);
+                edtMessageInput.setText(""); // Xóa trắng ô nhập sau khi gửi thành công
+            }
+        });
+
+        // Bắt lỗi nếu gửi xịt
+        workspaceViewModel.getErrorMessage().observe(getViewLifecycleOwner(), errorMsg -> {
+            if (errorMsg != null) {
+                ToastHelper.show(requireContext(), errorMsg);
+            }
+        });
     }
 }

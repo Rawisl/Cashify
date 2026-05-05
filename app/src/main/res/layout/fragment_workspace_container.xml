@@ -6,32 +6,35 @@
     android:layout_height="match_parent"
     android:background="@color/bg_main">
 
-    <!-- Cái rỗng để chứa 3 tab (Home, Chat, Log) -->
-    <androidx.fragment.app.FragmentContainerView
-        android:id="@+id/workspace_inner_nav_host"
-        android:name="androidx.navigation.fragment.NavHostFragment"
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:clipToPadding="false"
-        android:paddingBottom="56dp"
-        app:defaultNavHost="false"
-        app:navGraph="@navigation/workspace_nav_graph" />
+        android:layout_height="match_parent">
 
-    <!-- Thanh Nav Quỹ chung -->
-    <com.google.android.material.bottomnavigation.BottomNavigationView
-        android:id="@+id/bottom_navigation_workspace"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
-        app:menu="@menu/bottom_nav_workspace_menu"
-        app:itemIconTint="@color/nav_color_selector"
-        app:itemTextColor="@color/nav_color_selector"
-        app:labelVisibilityMode="labeled"
-        app:itemActiveIndicatorStyle="@null"
-        app:itemRippleColor="@null"
-        app:itemIconSize="26dp" />
+        <androidx.fragment.app.FragmentContainerView
+            android:id="@+id/workspace_inner_nav_host"
+            android:name="androidx.navigation.fragment.NavHostFragment"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            app:defaultNavHost="false"
+            app:navGraph="@navigation/workspace_nav_graph"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toTopOf="@id/bottom_navigation_workspace" />
 
-    <!-- Nút FAB -->
+        <com.google.android.material.bottomnavigation.BottomNavigationView
+            android:id="@+id/bottom_navigation_workspace"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:itemActiveIndicatorStyle="@null"
+            app:itemIconSize="26dp"
+            app:itemIconTint="@color/nav_color_selector"
+            app:itemRippleColor="@null"
+            app:itemTextColor="@color/nav_color_selector"
+            app:labelVisibilityMode="labeled"
+            app:menu="@menu/bottom_nav_workspace_menu"
+            app:layout_constraintBottom_toBottomOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabAddWorkspaceTransaction"
         style="@style/float_btn_add"
@@ -40,7 +43,7 @@
         android:layout_gravity="bottom|end"
         android:layout_marginEnd="24dp"
         android:layout_marginBottom="150dp"
-        app:srcCompat="@drawable/ic_add_transaction"
-        app:layout_behavior=".utils.FabScaleBehavior" />
+        app:layout_behavior=".utils.FabScaleBehavior"
+        app:srcCompat="@drawable/ic_add_transaction" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
