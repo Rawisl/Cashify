@@ -106,6 +106,7 @@ public class WorkspaceChatFragment extends Fragment {
         btnSendMessage = view.findViewById(R.id.btnSendMessage);
         ImageView imgWorkspaceIcon = view.findViewById(R.id.imgWorkspaceIcon);
         TextView tvWorkspaceName = view.findViewById(R.id.tvWorkspaceName);
+        View layoutInput = view.findViewById(R.id.layoutInput);
 
         // Setup RecyclerView
         LinearLayoutManager layoutManager = new LinearLayoutManager(requireContext());
@@ -173,6 +174,57 @@ public class WorkspaceChatFragment extends Fragment {
             }
         });
 
+
+        float density = getResources().getDisplayMetrics().density;
+
+        view.getViewTreeObserver().addOnGlobalLayoutListener(new android.view.ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                // Tính toán độ chênh lệch chiều cao màn hình để biết bàn phím có bật hay không
+                android.graphics.Rect r = new android.graphics.Rect();
+                view.getWindowVisibleDisplayFrame(r);
+                int screenHeight = view.getRootView().getHeight();
+                int keypadHeight = screenHeight - r.bottom;
+
+                android.view.ViewGroup.MarginLayoutParams inputParams =
+                        (android.view.ViewGroup.MarginLayoutParams) layoutInput.getLayoutParams();
+
+                // Nếu độ chênh lệch > 15% màn hình -> Bàn phím đang mở
+                if (keypadHeight > screenHeight * 0.15) {
+                    // Chỉ cập nhật nếu margin hiện tại chưa phải là 16dp (tránh bị lặp vô tận)
+                    if (inputParams.bottomMargin != (int) (16 * density)) {
+                        inputParams.bottomMargin = (int) (16 * density);
+                        layoutInput.setLayoutParams(inputParams);
+
+                        rvChatMessages.setPadding(
+                                rvChatMessages.getPaddingLeft(),
+                                rvChatMessages.getPaddingTop(),
+                                rvChatMessages.getPaddingRight(),
+                                (int) (16 * density)
+                        );
+
+                        // Cuộn mượt xuống tin nhắn cuối cùng khi bàn phím mở
+                        if (chatAdapter.getItemCount() > 0) {
+                            rvChatMessages.smoothScrollToPosition(chatAdapter.getItemCount() - 1);
+                        }
+                    }
+                }
+                // Ngược lại -> Bàn phím đang đóng
+                else {
+                    if (inputParams.bottomMargin != (int) (110 * density)) {
+                        inputParams.bottomMargin = (int) (110 * density);
+                        layoutInput.setLayoutParams(inputParams);
+
+                        rvChatMessages.setPadding(
+                                rvChatMessages.getPaddingLeft(),
+                                rvChatMessages.getPaddingTop(),
+                                rvChatMessages.getPaddingRight(),
+                                (int) (180 * density)
+                        );
+                    }
+                }
+            }
+        });
 
     }
 
