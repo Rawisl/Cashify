@@ -6,14 +6,12 @@
     android:layout_height="match_parent"
     android:background="@color/bg_main">
 
-    <!-- Cái rỗng để chứa 3 tab (Home, Chat, Log) -->
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/workspace_inner_nav_host"
         android:name="androidx.navigation.fragment.NavHostFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:clipToPadding="false"
-        android:paddingBottom="56dp"
         app:defaultNavHost="false"
         app:navGraph="@navigation/workspace_nav_graph" />
 
@@ -21,15 +19,17 @@
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottom_navigation_workspace"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
+        android:layout_height="wrap_content"  android:layout_gravity="bottom"
+        android:layout_marginHorizontal="20dp"
+        android:layout_marginBottom="35dp"
         app:menu="@menu/bottom_nav_workspace_menu"
         app:itemIconTint="@color/nav_color_selector"
         app:itemTextColor="@color/nav_color_selector"
-        app:labelVisibilityMode="labeled"
+        app:labelVisibilityMode="auto"
         app:itemActiveIndicatorStyle="@null"
         app:itemRippleColor="@null"
-        app:itemIconSize="26dp" />
+        app:itemIconSize="26dp"
+        android:background="@drawable/bg_bottom_nav" />
 
     <!-- Nút FAB -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton

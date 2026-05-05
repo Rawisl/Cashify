@@ -312,6 +312,23 @@ public class MainActivity extends AppCompatActivity {
 
         // Thanh điều hướng Bottom
         BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
+        //Tách bottom khỏi thanh hệ thống
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(bottomNav, (v, windowInsets) -> {
+            // Lấy độ cao của thanh tác vụ hệ thống (navigation bar)
+            androidx.core.graphics.Insets insets = windowInsets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars());
+
+            // Đổi 35dp (theo layout_marginBottom của XML) sang Pixel
+            int margin20dp = (int) (20 * getResources().getDisplayMetrics().density);
+
+            // Ép Insets thành Margin
+            android.view.ViewGroup.MarginLayoutParams mlp = (android.view.ViewGroup.MarginLayoutParams) v.getLayoutParams();
+            mlp.bottomMargin = insets.bottom + margin20dp;
+            v.setLayoutParams(mlp);
+
+            // Khóa mõm, cấm hệ thống tự đẻ thêm padding
+            return androidx.core.view.WindowInsetsCompat.CONSUMED;
+        });
+
         NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager().findFragmentById(R.id.nav_host_fragment);
         NavController navController = navHostFragment.getNavController();
 
@@ -329,8 +346,9 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 // Đang ở ngoài Ví Cá nhân -> Hiện lại thanh Nav
                 bottomNav.setVisibility(View.VISIBLE);
-                int padding56dp = (int) (56 * getResources().getDisplayMetrics().density);
-                navHostView.setPadding(0, 0, 0, padding56dp);
+
+                navHostView.setPadding(0, 0, 0, 0);
+
                 if (id == R.id.nav_settings) {
                     fabAddTransaction.hide();
                 } else {
@@ -375,16 +393,36 @@ public class MainActivity extends AppCompatActivity {
                 TextView tvEmail = headerView.findViewById(R.id.tvEmailHeader);
                 de.hdodenhof.circleimageview.CircleImageView imgAvatarHeader = headerView.findViewById(R.id.imgAvatarHeader);
 
-                if (tvName != null && currentUser.getDisplayName() != null && !currentUser.getDisplayName().isEmpty()) {
-                    tvName.setText(currentUser.getDisplayName());
-                }
+                // 1. Gán Email ngay lập tức vì Email lấy từ Auth chắc chắn có
                 if (tvEmail != null && currentUser.getEmail() != null) {
                     tvEmail.setText(currentUser.getEmail());
                 }
 
-                if (imgAvatarHeader != null && currentUser.getPhotoUrl() != null) {
-                    ImageHelper.loadAvatar(currentUser.getPhotoUrl().toString(), imgAvatarHeader);
-                }
+                // 2. Chọc thẳng vào bảng 'users' trên Firestore để kéo Tên và Avatar
+                com.google.firebase.firestore.FirebaseFirestore db = com.google.firebase.firestore.FirebaseFirestore.getInstance();
+                db.collection("users")
+                        .document(currentUser.getUid())
+                        .get()
+                        .addOnSuccessListener(documentSnapshot -> {
+                            // Nếu tìm thấy User trong DB
+                            if (documentSnapshot.exists()) {
+                                String fullName = documentSnapshot.getString("displayName");
+                                String avatarUrl = documentSnapshot.getString("avatarUrl");
+
+                                // Cập nhật Tên lên giao diện
+                                if (tvName != null && fullName != null && !fullName.isEmpty()) {
+                                    tvName.setText(fullName);
+                                }
+
+                                // Cập nhật Avatar lên giao diện
+                                if (imgAvatarHeader != null && avatarUrl != null && !avatarUrl.isEmpty()) {
+                                    ImageHelper.loadAvatar(avatarUrl, imgAvatarHeader);
+                                }
+                            }
+                        })
+                        .addOnFailureListener(e -> {
+                            // Log lỗi nếu cần thiết
+                        });
             }
         }
     }

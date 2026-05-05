@@ -53,7 +53,7 @@ public class User {
         if (email != null && email.contains("@")) {
             return email.split("@")[0]; // Lấy phần trước @ của email
         }
-        return "Người dùng Cashify";
+        return "Cashify User";
     }
     public int getFriendStatus() {
         return friendStatus;

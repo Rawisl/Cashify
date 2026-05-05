@@ -8,6 +8,9 @@ import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
@@ -39,6 +42,24 @@ public class WorkspaceContainerFragment extends Fragment {
 
         BottomNavigationView bottomNav = view.findViewById(R.id.bottom_navigation_workspace);
         FloatingActionButton fabAddTransaction = view.findViewById(R.id.fabAddWorkspaceTransaction);
+
+        //Tách bottom navigation khỏi thanh hệ thống điện thoại (Tại cái thuộc tính fit system của layout)
+
+        ViewCompat.setOnApplyWindowInsetsListener(bottomNav, (v, windowInsets) -> {
+            // Lấy độ cao của thanh 3 nút / vạch vuốt của hệ thống
+            Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
+
+            // Đổi 20dp margin bồ muốn sang dạng Pixel để tính toán
+            int margin20dp = (int) (20 * getResources().getDisplayMetrics().density);
+
+            // Set lại Margin Bottom = Chiều cao thanh hệ thống + 20dp lơ lửng
+            ViewGroup.MarginLayoutParams mlp = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
+            mlp.bottomMargin = insets.bottom + margin20dp;
+            v.setLayoutParams(mlp);
+
+            // Báo cho Android: "Tao tính toán xong rồi, đừng tự động nhét padding vào nữa!"
+            return WindowInsetsCompat.CONSUMED;
+        });
 
         // Lấy NavController của cái ruột BÊN TRONG vỏ hộp
         NavHostFragment navHostFragment = (NavHostFragment) getChildFragmentManager().findFragmentById(R.id.workspace_inner_nav_host);

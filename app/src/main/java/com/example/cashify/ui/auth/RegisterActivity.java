@@ -25,7 +25,6 @@ public class RegisterActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // TODO 1: setContentView(R.layout.activity_register);
         setContentView(R.layout.activity_register);
 
         initViewModel();
@@ -44,17 +43,6 @@ public class RegisterActivity extends AppCompatActivity {
         edtConfirmPassword = findViewById(R.id.edtConfirmPassword);
         btnRegister = findViewById(R.id.btnRegister);
         tvHasAccount = findViewById(R.id.tvHasAccount);
-
-        // ============================================================
-        // TODO 2: BẮT SỰ KIỆN NÚT "ĐĂNG KÝ"
-        // - Lấy data từ các EditText: Name, Email, Password, Confirm Password.
-        // - Kiểm tra logic (Validation):
-        //   + Không bỏ trống trường nào.
-        //   + Email đúng định dạng.
-        //   + Password tối thiểu 6 ký tự (Quy định của Firebase).
-        //   + Password và Confirm Password phải trùng khớp 100%.
-        // - Nếu OK: Gọi authViewModel.register(email, password, name).
-        // ============================================================
 
         btnRegister.setOnClickListener(v -> {
             String name = edtName.getText().toString().trim();
