@@ -60,10 +60,9 @@
             android:id="@+id/tvTextRight"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="@drawable/bg_btn_primary"
-            android:backgroundTint="@color/brand_primary"
-            android:paddingHorizontal="12dp"
-            android:paddingVertical="8dp"
+            android:background="@drawable/bg_chat_right"
+            android:paddingHorizontal="14dp"
+            android:paddingVertical="10dp"
             android:textColor="@color/white"
             android:textSize="14sp" />
     </LinearLayout>
