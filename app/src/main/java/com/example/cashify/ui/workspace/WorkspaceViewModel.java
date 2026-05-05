@@ -91,12 +91,12 @@ public class WorkspaceViewModel extends ViewModel {
         workspaceRepo.getWorkspaceMembers(workspaceId, new IWorkspaceRepo.OnMembersLoadedListener() {
             @Override
             public void onSuccess(List<User> members) {
-                _membersLiveData.setValue(members);
+                _membersLiveData.postValue(members);
             }
 
             @Override
             public void onError(Exception e) {
-                _errorMessage.setValue("Failed to load members: " + e.getMessage());
+                _errorMessage.postValue("Failed to load members: " + e.getMessage());
             }
         });
     }

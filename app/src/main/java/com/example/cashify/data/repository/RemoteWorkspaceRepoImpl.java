@@ -123,36 +123,6 @@ public class RemoteWorkspaceRepoImpl implements IWorkspaceRepo {
     }
 
     @Override
-    public void getWorkspaceMembers(String workspaceId, OnMembersLoadedListener listener) {
-        // Bước 1: Lấy danh sách UID (List<String>) từ Quỹ này trước
-        db.collection("workspaces").document(workspaceId)
-                .get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (!documentSnapshot.exists()) return;
-                    Workspace ws = documentSnapshot.toObject(Workspace.class);
-                    if (ws == null || ws.getMembers() == null || ws.getMembers().isEmpty()) {
-                        listener.onSuccess(new ArrayList<>()); // Quỹ chưa có ai (hoặc lỗi)
-                        return;
-                    }
-
-                    // Bước 2: Dùng mảng UID đó chọc thẳng vào bảng Users để lấy Tên + Avatar
-                    List<String> uids = ws.getMembers();
-                    db.collection("users")
-                            .whereIn(com.google.firebase.firestore.FieldPath.documentId(), uids)
-                            .get()
-                            .addOnSuccessListener(userSnaps -> {
-                                List<User> memberList = new ArrayList<>();
-                                for (QueryDocumentSnapshot userDoc : userSnaps) {
-                                    memberList.add(userDoc.toObject(User.class));
-                                }
-                                listener.onSuccess(memberList); // Trả List<User> về cho ViewModel
-                            })
-                            .addOnFailureListener(listener::onError);
-                })
-                .addOnFailureListener(listener::onError);
-    }
-
-    @Override
     public void getWorkspaceTransactions(String workspaceId, OnTransactionsLoadedListener listener) {
         // Đổi .get() thành .addSnapshotListener() để đồng bộ Real-time như Ví cá nhân!
         db.collection("workspaces").document(workspaceId).collection("transactions")
@@ -180,6 +150,7 @@ public class RemoteWorkspaceRepoImpl implements IWorkspaceRepo {
     }
 
     // Hàm phụ trợ để nhóm giao dịch theo ngày (cho giao diện đẹp)
+
     private List<com.example.cashify.ui.transactions.TransactionViewModel.HistoryItem> mapToHistoryItems(List<com.example.cashify.data.model.Transaction> transactions) {
         List<com.example.cashify.ui.transactions.TransactionViewModel.HistoryItem> historyItems = new java.util.ArrayList<>();
         if (transactions == null || transactions.isEmpty()) return historyItems;
@@ -208,5 +179,54 @@ public class RemoteWorkspaceRepoImpl implements IWorkspaceRepo {
             ));
         }
         return historyItems;
+    }
+    @Override
+    public void getWorkspaceMembers(String workspaceId, OnMembersLoadedListener listener) {
+        // Tạo 1 cái chốt an toàn (mảng 1 phần tử) để giữ cái "tai nghe" Users, chống tràn RAM
+        final com.google.firebase.firestore.ListenerRegistration[] usersListener = {null};
+
+        // Bước 1: Lắng nghe thay đổi UIDs từ Quỹ
+        db.collection("workspaces").document(workspaceId)
+                .addSnapshotListener((documentSnapshot, error) -> {
+                    if (error != null) {
+                        listener.onError(error);
+                        return;
+                    }
+
+                    if (documentSnapshot == null || !documentSnapshot.exists()) return;
+
+                    Workspace ws = documentSnapshot.toObject(Workspace.class);
+                    if (ws == null || ws.getMembers() == null || ws.getMembers().isEmpty()) {
+                        // Nếu Quỹ bị xóa hết người, phải tháo tai nghe Users ra cho nhẹ máy
+                        if (usersListener[0] != null) usersListener[0].remove();
+                        listener.onSuccess(new ArrayList<>());
+                        return;
+                    }
+
+                    List<String> uids = ws.getMembers();
+
+                    // TRỌNG TÂM Ở ĐÂY: Gỡ cái tai nghe cũ ra trước khi cắm cái mới vào
+                    if (usersListener[0] != null) {
+                        usersListener[0].remove();
+                    }
+
+                    // Bước 2: Cắm tai nghe thẳng vào bảng Users để hóng Avatar rẹt rẹt
+                    usersListener[0] = db.collection("users")
+                            .whereIn(com.google.firebase.firestore.FieldPath.documentId(), uids)
+                            .addSnapshotListener((userSnaps, e) -> {
+                                if (e != null) {
+                                    listener.onError(e);
+                                    return;
+                                }
+
+                                if (userSnaps != null) {
+                                    List<User> memberList = new ArrayList<>();
+                                    for (com.google.firebase.firestore.QueryDocumentSnapshot userDoc : userSnaps) {
+                                        memberList.add(userDoc.toObject(User.class));
+                                    }
+                                    listener.onSuccess(memberList); // Trả data về cho ViewModel
+                                }
+                            });
+                });
     }
 }
