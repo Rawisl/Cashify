@@ -6,34 +6,30 @@
     android:layout_height="match_parent"
     android:background="@color/bg_main">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/workspace_inner_nav_host"
+        android:name="androidx.navigation.fragment.NavHostFragment"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        app:defaultNavHost="false"
+        app:navGraph="@navigation/workspace_nav_graph" />
 
-        <androidx.fragment.app.FragmentContainerView
-            android:id="@+id/workspace_inner_nav_host"
-            android:name="androidx.navigation.fragment.NavHostFragment"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            app:defaultNavHost="false"
-            app:navGraph="@navigation/workspace_nav_graph"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toTopOf="@id/bottom_navigation_workspace" />
-
-        <com.google.android.material.bottomnavigation.BottomNavigationView
-            android:id="@+id/bottom_navigation_workspace"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:itemActiveIndicatorStyle="@null"
-            app:itemIconSize="26dp"
-            app:itemIconTint="@color/nav_color_selector"
-            app:itemRippleColor="@null"
-            app:itemTextColor="@color/nav_color_selector"
-            app:labelVisibilityMode="labeled"
-            app:menu="@menu/bottom_nav_workspace_menu"
-            app:layout_constraintBottom_toBottomOf="parent" />
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
+    <!-- Thanh Nav Quỹ chung -->
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottom_navigation_workspace"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"  android:layout_gravity="bottom"
+        android:layout_marginHorizontal="20dp"
+        android:layout_marginBottom="35dp"
+        app:menu="@menu/bottom_nav_workspace_menu"
+        app:itemIconTint="@color/nav_color_selector"
+        app:itemTextColor="@color/nav_color_selector"
+        app:labelVisibilityMode="auto"
+        app:itemActiveIndicatorStyle="@null"
+        app:itemRippleColor="@null"
+        app:itemIconSize="26dp"
+        android:background="@drawable/bg_bottom_nav" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabAddWorkspaceTransaction"

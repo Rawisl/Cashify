@@ -3,10 +3,9 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fadingEdgeLength="24dp"
+    android:background="@color/bg_main"
     android:fillViewport="true"
-    android:fitsSystemWindows="true"
-    android:requiresFadingEdge="vertical">
+    android:fitsSystemWindows="true">
     <!-- 2 dòng fading edge để hỗ trợ việc scroll mượt hơn (content bị fade dần) -->
 
     <LinearLayout
@@ -17,7 +16,7 @@
         android:paddingLeft="20dp"
         android:paddingTop="20dp"
         android:paddingRight="20dp"
-        android:paddingBottom="35dp">
+        android:paddingBottom="110dp">
 
         <!-- Header -->
         <TextView
