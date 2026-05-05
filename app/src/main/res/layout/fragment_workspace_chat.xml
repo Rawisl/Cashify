@@ -5,6 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg_main"
+    android:fitsSystemWindows="true"
     tools:context=".ui.workspace.WorkspaceChatFragment">
 
     <LinearLayout
@@ -17,8 +18,7 @@
         android:orientation="horizontal"
         android:paddingHorizontal="16dp"
         android:paddingVertical="12dp"
-        app:layout_constraintTop_toTopOf="parent"
-        tools:layout_editor_absoluteX="0dp">
+        app:layout_constraintTop_toTopOf="parent">
 
         <ImageView
             android:id="@+id/imgWorkspaceIcon"
@@ -44,46 +44,50 @@
         android:id="@+id/rvChatMessages"
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        android:paddingHorizontal="12dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="180dp"
         android:clipToPadding="false"
-        android:padding="12dp"
-        app:layout_constraintBottom_toTopOf="@+id/layoutInput"
+        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+        app:stackFromEnd="true"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toBottomOf="@id/layoutChatHeader" />
 
     <LinearLayout
         android:id="@+id/layoutInput"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/bg_main"
+        android:background="@drawable/bg_bottom_nav"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:padding="8dp"
-        android:layout_marginBottom="150dp"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="4dp"
+        android:layout_marginBottom="110dp"
+        android:layout_marginHorizontal="20dp"
         app:layout_constraintBottom_toBottomOf="parent">
 
-        <EditText
-            android:id="@+id/edtMessageInput"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:background="@drawable/bg_chat_input"
-            android:hint="@string/workspace_chat_input_hint"
-            android:inputType="textMultiLine|textCapSentences"
-            android:importantForAutofill="no"
-            android:maxLines="4"
-            android:minHeight="48dp"
-            android:paddingHorizontal="16dp"
-            android:paddingVertical="12dp"
-            android:textColor="@color/black"
-            android:textSize="14sp" />
+    <EditText
+        android:id="@+id/edtMessageInput"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:background="@android:color/transparent"
+        android:hint="@string/workspace_chat_input_hint"
+        android:inputType="textMultiLine|textCapSentences"
+        android:importantForAutofill="no"
+        android:maxLines="4"
+        android:minHeight="48dp"
+        android:textColor="@color/black"
+        android:textSize="14sp" />
 
-        <ImageButton
-            android:id="@+id/btnSendMessage"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_marginStart="8dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_menu_send"
-            app:tint="@color/brand_primary" />
-    </LinearLayout>
+    <ImageButton
+        android:id="@+id/btnSendMessage"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="8dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@android:drawable/ic_menu_send"
+        app:tint="@color/brand_primary" />
+</LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

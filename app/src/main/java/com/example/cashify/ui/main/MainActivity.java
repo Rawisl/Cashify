@@ -157,7 +157,7 @@ public class MainActivity extends AppCompatActivity {
                 return keepSplash;
             }
         });
-        EdgeToEdge.enable(this);
+        //EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
 
         initSidebar(); // currentUser đã lấy qua FirebaseAuth rồi, ko cần truyền vào nữa
@@ -326,8 +326,11 @@ public class MainActivity extends AppCompatActivity {
             v.setLayoutParams(mlp);
 
             // Khóa mõm, cấm hệ thống tự đẻ thêm padding
-            return androidx.core.view.WindowInsetsCompat.CONSUMED;
+            //return androidx.core.view.WindowInsetsCompat.CONSUMED;
+            return windowInsets;
         });
+
+
 
         NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager().findFragmentById(R.id.nav_host_fragment);
         NavController navController = navHostFragment.getNavController();
