@@ -115,16 +115,21 @@ public class WorkspaceChatFragment extends Fragment {
 
         // Khởi tạo Adapter kèm theo sự kiện nhấn giữ tin nhắn
         chatAdapter = new ChatAdapter(new ArrayList<>(), message -> {
-            // Hiện hộp thoại hỏi xác nhận cho chắc cú
-            new androidx.appcompat.app.AlertDialog.Builder(requireContext())
-                    .setTitle("Delete message?")
-                    .setMessage("Are you sure deleting this message?")
-                    .setPositiveButton("Delete", (dialog, which) -> {
-                        // Gọi ViewModel để xóa trên Firebase
+            // Sử dụng DialogHelper xịn xò của Tài (Nút đỏ DANGER)
+            com.example.cashify.utils.DialogHelper.showCustomDialog(
+                    requireContext(),
+                    "Delete message?",
+                    "Are you sure deleting this message?",
+                    "Delete",
+                    "Cancel",
+                    com.example.cashify.utils.DialogHelper.DialogType.DANGER,
+                    true,
+                    () -> {
+                        // Sự kiện khi bấm nút "Thu hồi"
                         workspaceViewModel.deleteChatMessage(workspaceId, message.getMessageId());
-                    })
-                    .setNegativeButton("Cancel", null)
-                    .show();
+                    },
+                    null
+            );
         });
         rvChatMessages.setAdapter(chatAdapter);
 
