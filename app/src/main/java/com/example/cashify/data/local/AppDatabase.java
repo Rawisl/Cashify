@@ -13,7 +13,7 @@ import com.example.cashify.data.model.Budget;
 import com.example.cashify.data.model.Category;
 import com.example.cashify.data.model.Transaction;
 
-@Database(entities = {Category.class, Transaction.class, Budget.class}, version = 5)
+@Database(entities = {Category.class, Transaction.class, Budget.class}, version = 7)
 public abstract class AppDatabase extends RoomDatabase {
     private static AppDatabase instance;
 

@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel;
 
 import com.example.cashify.data.model.User;
 import com.example.cashify.data.model.Workspace;
+import com.example.cashify.data.remote.FirebaseManager;
 import com.example.cashify.data.repository.RemoteWorkspaceRepoImpl;
 import com.example.cashify.ui.transactions.TransactionViewModel;
 import com.example.cashify.data.repository.IWorkspaceRepo;
@@ -132,35 +133,19 @@ public class WorkspaceViewModel extends ViewModel {
         }
 
         _isLoading.setValue(true);
-        String uid = auth.getCurrentUser().getUid();
 
-        // 1. Khởi tạo cục data Quỹ mới
-        Workspace newWorkspace = new Workspace();
-        newWorkspace.setName(name);
-        newWorkspace.setType(type); // Tùy thuộc vào model Workspace của ghệ có trường này ko
-        newWorkspace.setIconName(iconName != null ? iconName : "ic_other");
-        newWorkspace.setOwnerId(uid); // Đánh dấu chủ quyền
-        newWorkspace.setBalance(0L);
-        newWorkspace.setTotalIncome(0L);
-        newWorkspace.setTotalExpense(0L);
-
-        // 2. Tự add bản thân vào danh sách thành viên đầu tiên
-        java.util.List<String> initialMembers = new java.util.ArrayList<>();
-        initialMembers.add(uid);
-        newWorkspace.setMembers(initialMembers);
-
-        // 3. Đẩy xuống Repository để Firebase lo phần còn lại
-        workspaceRepo.createWorkspace(newWorkspace, new IWorkspaceRepo.OnActionCompleteListener() {
+        // Gọi thẳng FirebaseManager để kích hoạt cục WriteBatch tạo danh mục mẫu
+        FirebaseManager.getInstance().createSharedWorkspace(name, type, iconName, new java.util.ArrayList<>(), new FirebaseManager.DataCallback<String>() {
             @Override
-            public void onSuccess() {
+            public void onSuccess(String newWorkspaceId) {
                 _isLoading.postValue(false);
                 _actionSuccess.postValue(true); // Bắn tín hiệu tạo thành công cho UI đóng BottomSheet
             }
 
             @Override
-            public void onError(Exception e) {
+            public void onError(String message) {
                 _isLoading.postValue(false);
-                _errorMessage.postValue("Could not create fund: " + e.getMessage());
+                _errorMessage.postValue("Could not create fund: " + message);
             }
         });
     }

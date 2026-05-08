@@ -1,7 +1,10 @@
 package com.example.cashify.data.model;
 
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
+
+import com.google.firebase.firestore.Exclude;
 
 import java.io.Serializable;
 
@@ -11,6 +14,9 @@ import java.io.Serializable;
 public class Category implements Serializable {
     @PrimaryKey(autoGenerate = true)
     public int id;
+
+    public String firestoreId; //Dành riêng cho Quỹ chung lưu Document ID
+
     public String name;
     public int type; // 0=Chi, 1=Thu
     public String iconName; // Tên của icon để lấy từ resources

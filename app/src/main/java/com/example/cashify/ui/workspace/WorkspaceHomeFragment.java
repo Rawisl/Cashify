@@ -30,7 +30,7 @@ public class WorkspaceHomeFragment extends Fragment {
 
     private RecyclerView rvMembers, rvTransactions;
     private WorkspaceMemberAdapter memberAdapter;
-    private HistoryAdapter historyAdapter;
+    private WorkspaceTransactionAdapter historyAdapter; // Bỏ cái cũ đi
     private TextView tvBalance, tvIncome, tvExpense;
     private MaterialToolbar toolbar;
 
@@ -93,9 +93,9 @@ public class WorkspaceHomeFragment extends Fragment {
         rvMembers.setAdapter(memberAdapter);
 
         rvTransactions.setLayoutManager(new LinearLayoutManager(requireContext()));
-        historyAdapter = new HistoryAdapter();
 
-        historyAdapter.setOnTransactionClickListener(transaction -> {
+        // Truyền new ArrayList<>() vào làm data rỗng ban đầu, tẹo ViewModel nó đổ vào sau
+        historyAdapter = new WorkspaceTransactionAdapter(requireContext(), workspaceId, new ArrayList<>(), transaction -> {
             Intent intent = new Intent(requireContext(), AddTransactionActivity.class);
             intent.putExtra("TRANSACTION_ID", transaction.id);
             intent.putExtra("WORKSPACE_ID", workspaceId);
