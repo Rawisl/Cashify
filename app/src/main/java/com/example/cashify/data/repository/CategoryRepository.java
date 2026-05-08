@@ -85,26 +85,44 @@ public class CategoryRepository {
 
     public void deleteCategory(int categoryId, Runnable onComplete) {
         executor.execute(() -> {
-            // Trước khi xóa, kiểm tra xem có phải danh mục mặc định không
             Category category = categoryDao.getCategoryById(categoryId);
             if (category != null) {
                 int count = categoryDao.countTransactionsByCategory(categoryId);
+
+                // Xác định Workspace ID
+                String currentWorkspaceId = (category.workspaceId != null) ? category.workspaceId : "PERSONAL";
+
                 if (count > 0) {
+                    // CÓ GIAO DỊCH: Xóa mềm (Soft Delete)
                     categoryDao.softDelete(categoryId);
-                    // Đồng bộ trạng thái đã xóa (isDeleted = 1) lên Firebase
                     if (category.isDefault == 0) {
                         category.isDeleted = 1;
-                        syncCategoryToCloud(category);
+                        syncCategoryToCloud(category); // Đẩy cập nhật isDeleted = 1 lên mây
                     }
                 } else {
+                    // KHÔNG CÓ GIAO DỊCH: Xóa cứng (Hard Delete)
                     categoryDao.hardDelete(categoryId);
-                    // Nếu muốn xóa hẳn document trên Firebase, cần viết thêm hàm deleteDocument trong FirebaseManager
+
+                    // GỌI HÀM VỪA THÊM ĐỂ BẮN TÍN HIỆU TIÊU DIỆT LÊN FIREBASE
+                    if (category.isDefault == 0) {
+                        firebaseManager.deleteDocumentFromCloud(currentWorkspaceId, "categories", String.valueOf(category.id), new FirebaseManager.DataCallback<Void>() {
+                            @Override
+                            public void onSuccess(Void result) {
+                                Log.d("FIREBASE_SYNC", "Hard delete success on Cloud!");
+                            }
+                            @Override
+                            public void onError(String message) {
+                                Log.e("FIREBASE_SYNC", "Hard delete failed on Cloud: " + message);
+                            }
+                        });
+                    }
                 }
             }
 
             if (onComplete != null) onComplete.run();
         });
     }
+
     public void getCategoriesByType(int type, Callback<List<Category>> callback) {
         executor.execute(() -> callback.onResult(categoryDao.getCategoriesByType(type)));
     }

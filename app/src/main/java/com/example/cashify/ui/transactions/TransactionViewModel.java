@@ -130,7 +130,22 @@ public class TransactionViewModel extends AndroidViewModel {
                     lastDate = currentDate;
                 }
 
-                Category cat = categoryDao.getCategoryById(trans.categoryId);
+                Category cat = null;
+                // Nếu có mã mây thì tìm theo mã mây (Bên Quỹ chung hoặc đồ đã đồng bộ)
+                if (trans.firestoreCategoryId != null && !trans.firestoreCategoryId.isEmpty()) {
+                    // (Tớ tự chế logic tìm kiếm này vì categoryDao của sếp hiện tại hình như chưa có hàm getCategoryByFirestoreId)
+                    List<Category> allCats = categoryDao.getAll();
+                    for (Category c : allCats) {
+                        if (trans.firestoreCategoryId.equals(c.firestoreId)) {
+                            cat = c; break;
+                        }
+                    }
+                }
+                // Nếu vẫn không tìm thấy thì tìm theo ID Int truyền thống (Đồ offline chưa đồng bộ)
+                if (cat == null) {
+                    cat = categoryDao.getCategoryById(trans.categoryId);
+                }
+
                 String catName = (cat != null) ? cat.name : "Unknown";
                 String catColor = (cat != null) ? cat.colorCode : "#000000";
                 String catIcon = (cat != null) ? cat.iconName : "ic_other";

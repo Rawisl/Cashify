@@ -101,10 +101,10 @@ public class HomeFragment extends Fragment {
         rvRecentTransactions.setAdapter(adapter);
 
         // Setup Click cho từng dòng (Mới học được từ bên History)
-        adapter.setOnItemClickListener(transaction -> {
-            // Tạm thời hiện Toast, sau này bác có thể mở Dialog Edit hoặc xem chi tiết
-            ToastHelper.show(getContext(), "Giao dịch: " + transaction.amount);
-        });
+//        adapter.setOnItemClickListener(transaction -> {
+//            // Tạm thời hiện Toast, sau này bác có thể mở Dialog Edit hoặc xem chi tiết
+//            ToastHelper.show(getContext(), "Giao dịch: " + transaction.amount);
+//        });
 
         //Setup giao diện chuẩn Donut Chart
         setupDonutChart();
@@ -127,9 +127,10 @@ public class HomeFragment extends Fragment {
                 List<TransactionViewModel.HistoryItem> recentItems = new ArrayList<>();
 
                 for (TransactionWithCategory item : transWithCatList) {
-                    String catName = (item.category != null) ? item.category.name : "Chưa phân loại";
-                    String catIcon = (item.category != null) ? item.category.iconName : "ic_food";
-                    String catColor = (item.category != null) ? item.category.colorCode : "#000000";
+                    // Check kỹ cả bên trong xem nó có null không, nếu null thì gán mặc định
+                    String catName = (item.category != null && item.category.name != null) ? item.category.name : "Đang đồng bộ...";
+                    String catIcon = (item.category != null && item.category.iconName != null) ? item.category.iconName : "ic_other";
+                    String catColor = (item.category != null && item.category.colorCode != null) ? item.category.colorCode : "#A9A9A9";
 
                     recentItems.add(new TransactionViewModel.HistoryItem(item.transaction, catName, catIcon, catColor));
                 }

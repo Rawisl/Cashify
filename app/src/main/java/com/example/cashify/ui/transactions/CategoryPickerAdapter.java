@@ -22,7 +22,7 @@ public class CategoryPickerAdapter extends RecyclerView.Adapter<CategoryPickerAd
     private Context context;
     private int selectedPosition = -1;
     private OnCategoryClickListener listener;
-
+    private String selectedFirestoreId = "";
     public interface OnCategoryClickListener {
         void onCategoryClick(Category category);
     }
@@ -43,8 +43,10 @@ public class CategoryPickerAdapter extends RecyclerView.Adapter<CategoryPickerAd
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Category item = list.get(position);
-        holder.tvName.setText(item.name);
-
+        holder.tvName.setText(item.name != null ? item.name : "Unknown");
+        // Logic so sánh thông minh: Khớp ID int HOẶC khớp firestoreId String
+        boolean isSelected = (selectedPosition == position) ||
+                (item.firestoreId != null && item.firestoreId.equals(selectedFirestoreId));
         // 1. Lấy icon từ drawable
         int resId = context.getResources().getIdentifier(item.iconName, "drawable", context.getPackageName());
         holder.imgIcon.setImageResource(resId != 0 ? resId : R.drawable.ic_other);
@@ -68,7 +70,7 @@ public class CategoryPickerAdapter extends RecyclerView.Adapter<CategoryPickerAd
         shape.setShape(GradientDrawable.RECTANGLE);
         shape.setCornerRadius(dpToPx(context, 30)); // Bo tròn góc (ví dụ 12dp)
 
-        if (selectedPosition == position) {
+        if (isSelected) {
             // NẾU ĐƯỢC CHỌN:
             // TẠO MÀU PASTEL cực nhạt (Alpha thấp, ví dụ 30 hoặc 40 trên 255)
             int pastelColor = Color.argb(40, Color.red(color), Color.green(color), Color.blue(color));
@@ -143,5 +145,22 @@ public class CategoryPickerAdapter extends RecyclerView.Adapter<CategoryPickerAd
             imgIcon = itemView.findViewById(R.id.imgCatIcon);
             tvName = itemView.findViewById(R.id.tvCatName);
         }
+    }
+
+    public void setSelectedByFirestoreId(String firestoreId) {
+        this.selectedFirestoreId = (firestoreId != null) ? firestoreId : "";
+        for (int i = 0; i < list.size(); i++) {
+            if (list.get(i).firestoreId != null && list.get(i).firestoreId.equals(firestoreId)) {
+                selectedPosition = i;
+                notifyDataSetChanged();
+                break;
+            }
+        }
+    }
+    public void setNewData(List<Category> newList) {
+        this.list = newList;
+        this.selectedPosition = -1; // Reset lại lựa chọn khi đổi tab Thu/Chi
+        this.selectedFirestoreId = "";
+        notifyDataSetChanged();
     }
 }

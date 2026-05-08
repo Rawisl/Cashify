@@ -146,6 +146,22 @@ public class FirebaseManager {
         }).addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
+    public void deleteDocumentFromCloud(String workspaceId, String collection, String docId, DataCallback<Void> callback) {
+        String uid = getCurrentUserId();
+        if (uid == null) { if (callback != null) callback.onError("Chưa đăng nhập!"); return; }
+
+        com.google.firebase.firestore.DocumentReference docRef;
+        if (workspaceId == null || workspaceId.equals("PERSONAL")) {
+            docRef = db.collection("users").document(uid).collection(collection).document(docId);
+        } else {
+            docRef = db.collection("workspaces").document(workspaceId).collection(collection).document(docId);
+        }
+
+        docRef.delete()
+                .addOnSuccessListener(v -> { if (callback != null) callback.onSuccess(null); })
+                .addOnFailureListener(e -> { if (callback != null) callback.onError(e.getMessage()); });
+    }
+
     // ============================================================
     // SOCIAL & WORKSPACE
     // ============================================================
@@ -159,16 +175,57 @@ public class FirebaseManager {
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
-    public void createSharedWorkspace(String workspaceName, List<String> memberIds, DataCallback<String> callback) {
+    public void createSharedWorkspace(String workspaceName, String type, String iconName, List<String> memberIds, DataCallback<String> callback) {
         String uid = getCurrentUserId();
         if (uid == null) return;
         memberIds.add(uid);
+
         Map<String, Object> workspace = new HashMap<>();
         workspace.put("name", workspaceName);
         workspace.put("ownerId", uid);
         workspace.put("members", memberIds);
+
+        //Thêm 2 dòng này để lưu icon và loại quỹ
+        workspace.put("type", type);
+        workspace.put("iconName", iconName != null ? iconName : "ic_other");
+
         db.collection("workspaces").add(workspace)
-                .addOnSuccessListener(ref -> callback.onSuccess(ref.getId()))
+                .addOnSuccessListener(ref -> {
+                    String newWorkspaceId = ref.getId();
+
+                    // =========================================================
+                    // TẠO XONG QUỸ LÀ BƠM DATA MẪU NGAY BẰNG WRITEBATCH
+                    // =========================================================
+                    com.google.firebase.firestore.WriteBatch batch = db.batch();
+                    com.google.firebase.firestore.CollectionReference catRef =
+                            db.collection("workspaces").document(newWorkspaceId).collection("categories");
+
+                    String[] defaultNames = {"Food & Dining", "Transport", "Shopping", "Salary", "Bonus"};
+                    String[] defaultIcons = {"ic_food", "ic_transport", "ic_shopping", "ic_salary", "ic_bonus"};
+                    String[] defaultColors = {"#FFB74D", "#4FC3F7", "#F06292", "#81C784", "#FFF176"};
+                    int[] defaultTypes = {0, 0, 0, 1, 1}; // 0 = Chi, 1 = Thu
+
+                    for (int i = 0; i < defaultNames.length; i++) {
+                        // Tạo ID ngẫu nhiên cho Document
+                        com.google.firebase.firestore.DocumentReference newCatDoc = catRef.document();
+
+                        Map<String, Object> c = new HashMap<>();
+                        c.put("name", defaultNames[i]);
+                        c.put("iconName", defaultIcons[i]);
+                        c.put("colorCode", defaultColors[i]);
+                        c.put("type", defaultTypes[i]);
+                        c.put("workspaceId", newWorkspaceId);
+                        c.put("isDefault", 1);
+                        c.put("isDeleted", 0);
+
+                        batch.set(newCatDoc, c); // Nhét vào chung 1 chuyến xe
+                    }
+
+                    // Chạy chuyến xe chở 5 danh mục lên mây cùng lúc
+                    batch.commit()
+                            .addOnSuccessListener(v -> callback.onSuccess(newWorkspaceId))
+                            .addOnFailureListener(e -> callback.onError("Tạo quỹ thành công nhưng lỗi tạo danh mục: " + e.getMessage()));
+                })
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 

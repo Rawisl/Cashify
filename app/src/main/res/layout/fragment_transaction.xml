@@ -14,7 +14,7 @@
         android:paddingLeft="20dp"
         android:paddingTop="20dp"
         android:paddingRight="20dp"
-        android:paddingBottom="110dp">
+        android:paddingBottom="120dp">
 
         <TextView
             style="@style/screen_title"
