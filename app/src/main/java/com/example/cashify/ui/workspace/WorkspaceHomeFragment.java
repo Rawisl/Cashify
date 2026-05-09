@@ -3,6 +3,7 @@ package com.example.cashify.ui.workspace;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,6 +13,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -47,21 +49,30 @@ public class WorkspaceHomeFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-// Đổi cách lấy ID trong WorkspaceHomeFragment.java
+        // 1. LẤY ID TỪ PARENT
+        // Đảm bảo dùng biến toàn cục 'this.workspaceId', KHÔNG khai báo 'String workspaceId' ở đây
+        this.workspaceId = "";
         Fragment parent = getParentFragment();
         while (parent != null) {
             if (parent instanceof WorkspaceContainerFragment) {
                 if (parent.getArguments() != null) {
-                    workspaceId = parent.getArguments().getString("WORKSPACE_ID");
+                    this.workspaceId = parent.getArguments().getString("WORKSPACE_ID", "");
                 }
                 break;
             }
             parent = parent.getParentFragment();
         }
 
-        initViewModel();
-        initViews(view);
-        observeViewModel();
+        android.util.Log.d("DEBUG_FLOW", "0. WorkspaceHomeFragment đã gán biến toàn cục: [" + this.workspaceId + "]");
+
+        // 2. CHỈ KHỞI TẠO KHI CÓ ID
+        if (this.workspaceId != null && !this.workspaceId.isEmpty()) {
+            initViewModel();
+            initViews(view);
+            observeViewModel();
+        } else {
+            android.util.Log.e("DEBUG_FLOW", "=> Dừng lại! workspaceId vẫn rỗng.");
+        }
     }
 
     private void initViewModel() {
@@ -92,16 +103,33 @@ public class WorkspaceHomeFragment extends Fragment {
         memberAdapter = new WorkspaceMemberAdapter(new ArrayList<>());
         rvMembers.setAdapter(memberAdapter);
 
+        rvTransactions = view.findViewById(R.id.rvWorkspaceTransactions);
+
+        // Đảm bảo setup RecyclerView LayoutManager trước
         rvTransactions.setLayoutManager(new LinearLayoutManager(requireContext()));
 
-        // Truyền new ArrayList<>() vào làm data rỗng ban đầu, tẹo ViewModel nó đổ vào sau
-        historyAdapter = new WorkspaceTransactionAdapter(requireContext(), workspaceId, new ArrayList<>(), transaction -> {
-            Intent intent = new Intent(requireContext(), AddTransactionActivity.class);
-            intent.putExtra("TRANSACTION_ID", transaction.id);
-            intent.putExtra("WORKSPACE_ID", workspaceId);
-            startActivity(intent);
-        });
+        // TRUYỀN BIẾN TOÀN CỤC this.workspaceId VÀO ADAPTER
+        // Lúc này chắc chắn this.workspaceId đã có giá trị từ bước 1
+        Log.d("DEBUG_FLOW",
+                "1. Truyền workspaceId vào Adapter: [" + this.workspaceId + "]");
+        historyAdapter = new WorkspaceTransactionAdapter(
+                requireContext(),
+                this.workspaceId,
+                new ArrayList<>(),
+                transaction -> {
 
+                    Bundle bundle = new Bundle();
+                    bundle.putString("WORKSPACE_ID", workspaceId);
+
+                    androidx.navigation.NavController navController =
+                            Navigation.findNavController(requireView());
+
+                    navController.navigate(
+                            R.id.action_workspaceFragment_to_workspaceLogFragment,
+                            bundle
+                    );
+                }
+        );
         rvTransactions.setAdapter(historyAdapter);
 
         view.findViewById(R.id.tvAddMember).setOnClickListener(v -> {

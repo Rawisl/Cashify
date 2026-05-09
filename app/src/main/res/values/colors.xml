@@ -56,4 +56,7 @@
     <color name="numpad_key_bg">#73DED7B8</color>
 
     <color name="tips_text_color">#4C6FFF</color>
+
+    <!-- Line dọc nối các avatar trong timeline -->
+    <color name="timeline_line_color">#E0E0E0</color>
 </resources>

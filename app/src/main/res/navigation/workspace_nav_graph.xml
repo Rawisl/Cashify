@@ -4,21 +4,38 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/workspace_nav_graph"
     app:startDestination="@id/workspace_nav_home">
+
     <fragment
         android:id="@+id/workspace_nav_home"
         android:name="com.example.cashify.ui.workspace.WorkspaceHomeFragment"
         android:label="fragment_workspace_home"
-        tools:layout="@layout/fragment_workspace_home" />
+        tools:layout="@layout/fragment_workspace_home">
+
+        <!-- ĐƯA ACTION VÀO TRONG NÀY -->
+        <action
+            android:id="@+id/action_workspaceFragment_to_workspaceLogFragment"
+            app:destination="@id/workspace_nav_log" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/workspace_nav_log"
+        android:name="com.example.cashify.ui.workspace.WorkspaceLogFragment"
+        android:label="fragment_workspace_log"
+        tools:layout="@layout/fragment_workspace_log">
+
+        <!-- KHAI BÁO BIẾN ĐỂ NHẬN DỮ LIỆU -->
+        <argument
+            android:name="WORKSPACE_ID"
+            app:argType="string"
+            android:defaultValue="" />
+    </fragment>
+
     <fragment
         android:id="@+id/workspace_nav_chat"
         android:name="com.example.cashify.ui.workspace.WorkspaceChatFragment"
         android:label="fragment_workspace_chat"
         tools:layout="@layout/fragment_workspace_chat" />
-    <fragment
-        android:id="@+id/workspace_nav_log"
-        android:name="com.example.cashify.ui.workspace.WorkspaceLogFragment"
-        android:label="fragment_workspace_log"
-        tools:layout="@layout/fragment_workspace_log" />
+
     <fragment
         android:id="@+id/workspace_nav_settings"
         android:name="com.example.cashify.ui.workspace.WorkspaceSettingsFragment"
