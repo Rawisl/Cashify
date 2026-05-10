@@ -259,8 +259,11 @@ public class WorkspaceViewModel extends ViewModel {
 
         db.collection("workspaces").document(workspaceId)
                 .collection("messages").document(messageId)
-                .delete()
-                .addOnFailureListener(e -> _errorMessage.setValue("Message delete failed: " + e.getMessage()));
+                .update(
+                        "text", "",
+                        "recalled", true
+                )
+                .addOnFailureListener(e -> _errorMessage.setValue("Message recall failed: " + e.getMessage()));
     }
 
     @Override

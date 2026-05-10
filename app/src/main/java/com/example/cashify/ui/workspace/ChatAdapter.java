@@ -76,20 +76,43 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             // TIN NHẮN CỦA MÌNH
             holder.layoutLeft.setVisibility(View.GONE);
             holder.layoutRight.setVisibility(View.VISIBLE);
-            holder.tvTextRight.setText(currentMessage.getText());
 
-            holder.layoutRight.setOnLongClickListener(v -> {
-                if (listener != null) {
-                    listener.onLongClick(currentMessage);
-                }
-                return true;
-            });
+            // XỬ LÝ STYLE KHI BỊ THU HỒI
+            if (currentMessage.isRecalled()) {
+                holder.tvTextRight.setText("You unsent a message");
+                holder.tvTextRight.setTypeface(null, android.graphics.Typeface.ITALIC);
+                holder.tvTextRight.setAlpha(0.6f);
+                holder.layoutRight.setOnLongClickListener(null); // Không cho bấm thu hồi nữa
+            } else {
+                // Tin nhắn bình thường
+                holder.tvTextRight.setText(currentMessage.getText());
+                holder.tvTextRight.setTypeface(null, android.graphics.Typeface.NORMAL);
+                holder.tvTextRight.setAlpha(1.0f);
+                holder.layoutRight.setOnLongClickListener(v -> {
+                    if (listener != null) {
+                        listener.onLongClick(currentMessage);
+                    }
+                    return true;
+                });
+            }
         } else {
             // TIN NHẮN CỦA NGƯỜI KHÁC
             holder.layoutRight.setVisibility(View.GONE);
             holder.layoutLeft.setVisibility(View.VISIBLE);
 
-            holder.tvTextLeft.setText(currentMessage.getText());
+            // XỬ LÝ STYLE KHI BỊ THU HỒI (DÀNH CHO BÊN TRÁI)
+            if (currentMessage.isRecalled()) {
+                // Lấy tên người gửi + "unsent a message"
+                String senderName = currentMessage.getSenderName() != null ? currentMessage.getSenderName() : "Unknown";
+                holder.tvTextLeft.setText(senderName + " unsent a message");
+                holder.tvTextLeft.setTypeface(null, android.graphics.Typeface.ITALIC);
+                holder.tvTextLeft.setAlpha(0.6f);
+            } else {
+                // Tin nhắn bình thường
+                holder.tvTextLeft.setText(currentMessage.getText());
+                holder.tvTextLeft.setTypeface(null, android.graphics.Typeface.NORMAL);
+                holder.tvTextLeft.setAlpha(1.0f);
+            }
 
             // TÊN: Chỉ hiện ở dòng ĐẦU TIÊN của 1 cụm chat
             if (isFirstInGroup) {
