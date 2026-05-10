@@ -1,6 +1,7 @@
 package com.example.cashify.data.model;
 
 import com.google.firebase.firestore.DocumentId;
+import com.google.firebase.firestore.Exclude;
 
 import java.util.List;
 
@@ -33,6 +34,7 @@ public class Workspace {
         this.totalExpense = 0.0;
     }
 
+    @Exclude
     public String getId() {
         return id;
     }

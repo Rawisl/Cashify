@@ -194,8 +194,19 @@ public class WorkspaceChatFragment extends Fragment {
                 android.view.ViewGroup.MarginLayoutParams inputParams =
                         (android.view.ViewGroup.MarginLayoutParams) layoutInput.getLayoutParams();
 
+                View bottomNav = null;
+                View fab = null;
+                if (getActivity() != null) {
+                    bottomNav = getActivity().findViewById(R.id.bottom_navigation_workspace);
+                    fab = getActivity().findViewById(R.id.fabAddWorkspaceTransaction);
+                }
+
                 // Nếu độ chênh lệch > 15% màn hình -> Bàn phím đang mở
                 if (keypadHeight > screenHeight * 0.15) {
+
+                    if (bottomNav != null) bottomNav.setVisibility(View.GONE);
+                    if (fab != null) fab.setVisibility(View.GONE);
+
                     // Chỉ cập nhật nếu margin hiện tại chưa phải là 16dp (tránh bị lặp vô tận)
                     if (inputParams.bottomMargin != (int) (16 * density)) {
                         inputParams.bottomMargin = (int) (16 * density);
@@ -216,6 +227,9 @@ public class WorkspaceChatFragment extends Fragment {
                 }
                 // Ngược lại -> Bàn phím đang đóng
                 else {
+                    if (bottomNav != null) bottomNav.setVisibility(View.VISIBLE);
+                    if (fab != null) fab.setVisibility(View.VISIBLE);
+
                     if (inputParams.bottomMargin != (int) (110 * density)) {
                         inputParams.bottomMargin = (int) (110 * density);
                         layoutInput.setLayoutParams(inputParams);

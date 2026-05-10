@@ -8,6 +8,7 @@ public class ChatMessage {
     private String text;
     private long timestamp;
 
+    private boolean recalled = false;
     public ChatMessage() {}
 
     public ChatMessage(String senderId, String senderName, String senderAvatar, String text, long timestamp) {
@@ -30,4 +31,12 @@ public class ChatMessage {
     public void setText(String text) { this.text = text; }
     public long getTimestamp() { return timestamp; }
     public void setTimestamp(long timestamp) { this.timestamp = timestamp; }
+
+    public boolean isRecalled() {
+        return recalled;
+    }
+
+    public void setRecalled(boolean recalled) {
+        this.recalled = recalled;
+    }
 }
