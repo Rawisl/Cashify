@@ -53,8 +53,6 @@ public class WorkspaceTransactionAdapter extends RecyclerView.Adapter<RecyclerVi
     }
 
     public WorkspaceTransactionAdapter(Context context, String workspaceId, List<TransactionViewModel.HistoryItem> list, OnTransactionClickListener listener) {
-        Log.d("DEBUG_FLOW",
-                "2. Adapter constructor nhận ID: [" + workspaceId + "]");
         this.context = context;
         this.workspaceId = workspaceId;
         if(list != null) this.items = list;

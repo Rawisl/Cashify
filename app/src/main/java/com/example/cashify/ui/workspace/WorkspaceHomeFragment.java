@@ -13,6 +13,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -63,7 +64,6 @@ public class WorkspaceHomeFragment extends Fragment {
             parent = parent.getParentFragment();
         }
 
-        android.util.Log.d("DEBUG_FLOW", "0. WorkspaceHomeFragment đã gán biến toàn cục: [" + this.workspaceId + "]");
 
         // 2. CHỈ KHỞI TẠO KHI CÓ ID
         if (this.workspaceId != null && !this.workspaceId.isEmpty()) {
@@ -71,7 +71,6 @@ public class WorkspaceHomeFragment extends Fragment {
             initViews(view);
             observeViewModel();
         } else {
-            android.util.Log.e("DEBUG_FLOW", "=> Dừng lại! workspaceId vẫn rỗng.");
         }
     }
 
@@ -108,26 +107,18 @@ public class WorkspaceHomeFragment extends Fragment {
         // Đảm bảo setup RecyclerView LayoutManager trước
         rvTransactions.setLayoutManager(new LinearLayoutManager(requireContext()));
 
-        // TRUYỀN BIẾN TOÀN CỤC this.workspaceId VÀO ADAPTER
-        // Lúc này chắc chắn this.workspaceId đã có giá trị từ bước 1
-        Log.d("DEBUG_FLOW",
-                "1. Truyền workspaceId vào Adapter: [" + this.workspaceId + "]");
+        String finalWorkspaceId = this.workspaceId;
+
         historyAdapter = new WorkspaceTransactionAdapter(
                 requireContext(),
-                this.workspaceId,
+                finalWorkspaceId,
                 new ArrayList<>(),
                 transaction -> {
-
-                    Bundle bundle = new Bundle();
-                    bundle.putString("WORKSPACE_ID", workspaceId);
-
-                    androidx.navigation.NavController navController =
-                            Navigation.findNavController(requireView());
-
-                    navController.navigate(
-                            R.id.action_workspaceFragment_to_workspaceLogFragment,
-                            bundle
-                    );
+                    // Click transaction → mở edit
+                    Intent intent = new Intent(requireContext(), AddTransactionActivity.class);
+                    intent.putExtra("TRANSACTION_ID", transaction.id);
+                    intent.putExtra("WORKSPACE_ID", finalWorkspaceId);
+                    startActivity(intent);
                 }
         );
         rvTransactions.setAdapter(historyAdapter);

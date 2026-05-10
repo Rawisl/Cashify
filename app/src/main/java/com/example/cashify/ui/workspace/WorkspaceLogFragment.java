@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
+import com.example.cashify.data.repository.WorkspaceLogRepository;
 
 /**
  * WorkspaceLogFragment.java — tầng View trong MVVM.
@@ -66,23 +67,63 @@ public class WorkspaceLogFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        String workspaceId = "";
+        // Lấy workspaceId từ Bundle hoặc parent
+        String workspaceId = null;
+        Bundle args = getArguments();
+        if (args != null) workspaceId = args.getString("WORKSPACE_ID");
 
-        if (getArguments() != null) {
-            workspaceId = getArguments().getString("WORKSPACE_ID", "");
+        if (workspaceId == null || workspaceId.isEmpty()) {
+            Fragment parent = getParentFragment();
+            while (parent != null) {
+                if (parent instanceof WorkspaceContainerFragment) {
+                    if (parent.getArguments() != null) {
+                        workspaceId = parent.getArguments().getString("WORKSPACE_ID", "");
+                    }
+                    break;
+                }
+                parent = parent.getParentFragment();
+            }
         }
+        
 
-        // 3. Kiểm tra logic
-        if (workspaceId == null || workspaceId.trim().isEmpty()) {
-            // Chỉ hiện Toast nếu THỰC SỰ không có ID
-            android.util.Log.e("DEBUG_FLOW", "=> LỖI: workspaceId rỗng, dừng setup.");
-            Toast.makeText(requireContext(), "Lỗi: Không tìm thấy nhóm!", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        // 4. Nếu đi đến đây nghĩa là ID đã ngon lành
         setupRecyclerView(view);
         setupViewModel(workspaceId);
+
+        // FAB seed mock data
+        String finalWorkspaceId = workspaceId;
+        view.findViewById(R.id.fabSeedLog).setOnClickListener(v -> {
+            seedMockLogs(finalWorkspaceId);
+            Toast.makeText(requireContext(), "Đã tạo mock log!", Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    private void seedMockLogs(String workspaceId) {
+        String uid = com.example.cashify.data.remote.FirebaseManager.getInstance().getCurrentUserId();
+
+        String[][] mocks = {
+                {"CREATE_WORKSPACE",   "đã khởi tạo quỹ nhóm này"},
+                {"ADD_TRANSACTION",    "đã thêm giao dịch Chi 200,000đ - Ăn uống"},
+                {"ADD_TRANSACTION",    "đã thêm giao dịch Thu 1,500,000đ - Lương"},
+                {"EDIT_TRANSACTION",   "đã chỉnh sửa giao dịch 300,000đ - Mua sắm"},
+                {"DELETE_TRANSACTION", "đã xóa giao dịch 50,000đ - Di chuyển"},
+                {"ADD_MEMBER",         "đã thêm thành viên mới vào quỹ"},
+                {"ADD_BUDGET",         "đã tạo ngân sách Ăn uống 2,000,000đ/tháng"},
+                {"EDIT_BUDGET",        "đã cập nhật ngân sách Di chuyển lên 500,000đ"},
+        };
+
+        // Thêm delay nhỏ giữa các log để timestamp khác nhau
+        android.os.Handler handler = new android.os.Handler();
+        for (int i = 0; i < mocks.length; i++) {
+            final int index = i;
+            handler.postDelayed(() ->
+                            WorkspaceLogRepository.pushLog(
+                                    workspaceId,
+                                    uid,
+                                    mocks[index][0],
+                                    mocks[index][1]
+                            ),
+                    index * 100L); // cách nhau 100ms để timestamp khác nhau
+        }
     }
 
     // ── Setup RecyclerView ────────────────────────────────────────────────────
