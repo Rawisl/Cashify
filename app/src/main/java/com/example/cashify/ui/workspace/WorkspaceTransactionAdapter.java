@@ -3,6 +3,8 @@ package com.example.cashify.ui.workspace;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
+import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,11 +12,15 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
+import androidx.navigation.NavController;
+import androidx.navigation.Navigation;
+import androidx.navigation.fragment.NavHostFragment;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
 import com.example.cashify.data.model.Category;
 import com.example.cashify.data.model.Transaction;
+import com.example.cashify.data.model.Workspace;
 import com.example.cashify.ui.transactions.TransactionViewModel;
 import com.example.cashify.utils.CurrencyFormatter;
 import com.google.android.material.imageview.ShapeableImageView;
@@ -80,7 +86,6 @@ public class WorkspaceTransactionAdapter extends RecyclerView.Adapter<RecyclerVi
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         TransactionViewModel.HistoryItem item = items.get(position);
-
         if (holder instanceof DateViewHolder) {
             // =====================================
             // XỬ LÝ GIAO DIỆN HEADER (NGÀY THÁNG)
@@ -162,8 +167,11 @@ public class WorkspaceTransactionAdapter extends RecyclerView.Adapter<RecyclerVi
             }
 
             // 5. BẮT SỰ KIỆN CLICK SỬA/XÓA
+            // Tìm đến dòng này trong WorkspaceTransactionAdapter.java
             holder.itemView.setOnClickListener(v -> {
-                if (listener != null) listener.onClick(t);
+                if (listener != null) {
+                    listener.onClick(t);
+                }
             });
         }
     }

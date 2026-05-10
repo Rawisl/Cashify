@@ -138,6 +138,16 @@ public class WorkspaceViewModel extends ViewModel {
         FirebaseManager.getInstance().createSharedWorkspace(name, type, iconName, new java.util.ArrayList<>(), new FirebaseManager.DataCallback<String>() {
             @Override
             public void onSuccess(String newWorkspaceId) {
+                String uid = FirebaseAuth.getInstance().getCurrentUser() != null
+                        ? FirebaseAuth.getInstance().getCurrentUser().getUid()
+                        : "unknown_user";
+
+                com.example.cashify.utils.WorkspaceLogHelper.pushLog(
+                        newWorkspaceId,
+                        uid,
+                        com.example.cashify.data.model.LogActionType.CREATE_WORKSPACE,
+                        "created workspace."
+                );
                 _isLoading.postValue(false);
                 _actionSuccess.postValue(true); // Bắn tín hiệu tạo thành công cho UI đóng BottomSheet
             }

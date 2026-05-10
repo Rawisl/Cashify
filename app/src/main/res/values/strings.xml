@@ -199,4 +199,7 @@
 
     <string name="workspace_chat_loading">Loading...</string>
     <string name="workspace_chat_input_hint">Aa</string>
+
+    <string name="log_activity_title">Log Activity</string>
+    <string name="log_activity_subtitle">Track all actions in your workspace</string>
 </resources>

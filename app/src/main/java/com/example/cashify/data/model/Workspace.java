@@ -1,5 +1,7 @@
 package com.example.cashify.data.model;
 
+import com.google.firebase.firestore.DocumentId;
+
 import java.util.List;
 
 /**
@@ -8,6 +10,7 @@ import java.util.List;
 public class Workspace {
     //cái ý tưởng là làm side bar bên trái ấy, xong mỗi section trong sidebar đó sẽ có đại loại như "Personal", "Quỹ A", "Quỹ B", nên là cần cái class này lưu id, tên, type (personal/group), owner ID (ID chủ quỹ,..), member (danh sách thành viên trong quỹ)
 
+    @DocumentId
     private String id;           // Khóa chính (Firestore Document ID)
     private String name;         // Tên quỹ (VD: Quỹ ăn chơi, Tiền nhà...)
     private String type;         // "PERSONAL" hoặc "GROUP"
@@ -21,8 +24,7 @@ public class Workspace {
     public Workspace() {
     }
 
-    public Workspace(String id, String name, String type, String ownerId) {
-        this.id = id;
+    public Workspace(String name, String type, String ownerId) {
         this.name = name;
         this.type = type;
         this.ownerId = ownerId;

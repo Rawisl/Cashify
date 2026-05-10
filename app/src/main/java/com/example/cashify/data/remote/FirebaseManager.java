@@ -206,9 +206,7 @@ public class FirebaseManager {
                     int[] defaultTypes = {0, 0, 0, 1, 1}; // 0 = Chi, 1 = Thu
 
                     for (int i = 0; i < defaultNames.length; i++) {
-                        // Tạo ID ngẫu nhiên cho Document
                         com.google.firebase.firestore.DocumentReference newCatDoc = catRef.document();
-
                         Map<String, Object> c = new HashMap<>();
                         c.put("name", defaultNames[i]);
                         c.put("iconName", defaultIcons[i]);
@@ -217,14 +215,27 @@ public class FirebaseManager {
                         c.put("workspaceId", newWorkspaceId);
                         c.put("isDefault", 1);
                         c.put("isDeleted", 0);
-
-                        batch.set(newCatDoc, c); // Nhét vào chung 1 chuyến xe
+                        batch.set(newCatDoc, c);
                     }
 
-                    // Chạy chuyến xe chở 5 danh mục lên mây cùng lúc
+                    com.google.firebase.firestore.DocumentReference logRef =
+                            db.collection("workspaces").document(newWorkspaceId).collection("logs").document();
+
+                    Map<String, Object> firstLog = new HashMap<>();
+                    firstLog.put("actionType", "CREATE_WORKSPACE"); // Sử dụng LogActionType.CREATE_WORKSPACE
+                    firstLog.put("message", "đã khởi tạo quỹ nhóm này");
+                    firstLog.put("userId", uid);
+                    firstLog.put("timestamp", System.currentTimeMillis()); // Timestamp cho TimeFormatter
+
+                    batch.set(logRef, firstLog);
+
+                    // 4. Commit toàn bộ danh mục và log cùng lúc
                     batch.commit()
-                            .addOnSuccessListener(v -> callback.onSuccess(newWorkspaceId))
-                            .addOnFailureListener(e -> callback.onError("Tạo quỹ thành công nhưng lỗi tạo danh mục: " + e.getMessage()));
+                            .addOnSuccessListener(v -> {
+                                Log.d("FirebaseManager", "Tạo quỹ, danh mục và log thành công!");
+                                callback.onSuccess(newWorkspaceId);
+                            })
+                            .addOnFailureListener(e -> callback.onError("Lỗi khởi tạo dữ liệu: " + e.getMessage()));
                 })
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }

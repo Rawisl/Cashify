@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    item_workspace_log.xml
+    Layout timeline cho mỗi item log.
+
+    Cấu trúc:
+    ┌──────────────────────────────────────────────────┐
+    │  [●]  [Avatar]  [Tên đậm + màu] [message]       │
+    │  [│]            [timestamp nhỏ]                  │
+    └──────────────────────────────────────────────────┘
+
+    Cột 1 (20dp): timeline dot + line dọc
+    Cột 2 (40dp): avatar tròn
+    Cột 3 (0dp, weight=1): nội dung text
+-->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
+    android:paddingTop="4dp">
+
+    <!-- ── Cột 1: Timeline (dot + line dọc) ─────────────────────────────── -->
+    <LinearLayout
+        android:layout_width="20dp"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center_horizontal">
+
+        <!-- Dot tròn nhỏ nằm ngang với avatar -->
+        <View
+            android:layout_width="10dp"
+            android:layout_height="10dp"
+            android:layout_marginTop="19dp"
+            android:background="@drawable/bg_timeline_dot" />
+
+        <!-- Line dọc nối các item (ẩn cho item cuối qua adapter) -->
+        <View
+            android:id="@+id/viewTimelineLine"
+            android:layout_width="2dp"
+            android:layout_height="match_parent"
+            android:layout_marginTop="4dp"
+            android:background="@color/timeline_line_color" />
+
+    </LinearLayout>
+
+    <!-- ── Cột 2: Avatar tròn ────────────────────────────────────────────── -->
+    <!--
+        Dùng ShapeableImageView từ Material để bo tròn đúng cách.
+        Nếu team dùng Glide thì có thể dùng ImageView thường + .circleCrop().
+    -->
+    <com.google.android.material.imageview.ShapeableImageView
+        android:id="@+id/imgAvatar"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="8dp"
+        android:scaleType="centerCrop"
+        android:src="@drawable/ic_default_user"
+        xmlns:app="http://schemas.android.com/apk/res-auto" />
+
+    <!-- ── Cột 3: Nội dung text ──────────────────────────────────────────── -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="16dp"
+        android:orientation="vertical">
+
+        <!--
+            tvMessage hiển thị: [Tên người dùng đậm + màu primary] + [nội dung log]
+            Ví dụ: "Trần Khang đã thêm khoản chi 50.000đ"
+        -->
+        <TextView
+            android:id="@+id/tvMessage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:textColor="?attr/colorOnSurface"
+            android:lineSpacingMultiplier="1.35" />
+
+        <!-- Timestamp nhỏ: "10 phút trước" hoặc "14:30 12/05" -->
+        <TextView
+            android:id="@+id/tvTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:textSize="11sp"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:alpha="0.65" />
+
+    </LinearLayout>
+
+</LinearLayout>
