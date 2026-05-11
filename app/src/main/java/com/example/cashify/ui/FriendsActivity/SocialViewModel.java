@@ -7,6 +7,9 @@ import androidx.lifecycle.ViewModel;
 
 import com.example.cashify.data.model.User;
 import com.example.cashify.data.remote.FirebaseManager;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,177 +17,191 @@ import java.util.List;
 public class SocialViewModel extends ViewModel {
     private static final String TAG = "CASHIFY";
 
-    public MutableLiveData<List<User>> userList = new MutableLiveData<>();
+    public MutableLiveData<List<User>> friendList = new MutableLiveData<>();
+    public MutableLiveData<List<User>> incomingList = new MutableLiveData<>();
+    public MutableLiveData<List<User>> sentList = new MutableLiveData<>();
+
     public MutableLiveData<String> error = new MutableLiveData<>();
-    public MutableLiveData<String> toast = new MutableLiveData<>(); // Toast thành công
+    public MutableLiveData<String> toast = new MutableLiveData<>();
 
-    private List<User> allUsersList = new ArrayList<>();
+    private List<User> allFriendsOriginal = new ArrayList<>();
 
-    // 3 danh sách status
+    // Các list lưu ID để check validate
     private List<String> myFriendIds = new ArrayList<>();
     private List<String> mySentRequestIds = new ArrayList<>();
     private List<String> myIncomingRequestIds = new ArrayList<>();
 
+    // BA CAMERA GIÁM SÁT REAL-TIME
+    private ListenerRegistration friendsListener;
+    private ListenerRegistration incomingListener;
+    private ListenerRegistration sentListener;
+
     // ============================================================
-    // FETCH DỮ LIỆU BAN ĐẦU (3 bước song song)
+    // 1. LẮNG NGHE REAL-TIME DANH SÁCH BẠN BÈ
     // ============================================================
-    public void fetchUsers() {
+    public void fetchOnlyFriends() {
         String myUid = FirebaseManager.getInstance().getCurrentUserId();
-        Log.e(TAG, "fetchUsers: myUid = " + myUid);
         if (myUid == null) { error.setValue("Chưa đăng nhập!"); return; }
 
-        // Dùng counter để chờ cả 3 request xong rồi mới fetch users
-        final int[] doneCount = {0};
-        Runnable checkAndFetch = () -> {
-            doneCount[0]++;
-            if (doneCount[0] == 3) fetchAllUsersFromFirebase(myUid);
-        };
+        // Bật luôn camera giám sát 2 list lời mời để check logic lúc tìm bạn qua Email
+        fetchRequests();
 
-        FirebaseManager.getInstance().getFriendIds(myUid, new FirebaseManager.DataCallback<List<String>>() {
-            @Override public void onSuccess(List<String> data) { myFriendIds = data; checkAndFetch.run(); }
-            @Override public void onError(String message) { myFriendIds = new ArrayList<>(); checkAndFetch.run(); }
-        });
+        if (friendsListener != null) friendsListener.remove();
+        friendsListener = FirebaseFirestore.getInstance().collection("users").document(myUid).collection("friends")
+                .addSnapshotListener((snapshots, e) -> {
+                    if (e != null) return;
+                    if (snapshots != null) {
+                        List<String> ids = new ArrayList<>();
+                        for (DocumentSnapshot doc : snapshots.getDocuments()) ids.add(doc.getId());
+                        myFriendIds = ids;
 
-        FirebaseManager.getInstance().getSentRequestIds(new FirebaseManager.DataCallback<List<String>>() {
-            @Override public void onSuccess(List<String> data) { mySentRequestIds = data; checkAndFetch.run(); }
-            @Override public void onError(String message) { mySentRequestIds = new ArrayList<>(); checkAndFetch.run(); }
-        });
-
-        FirebaseManager.getInstance().getIncomingRequestIds(new FirebaseManager.DataCallback<List<String>>() {
-            @Override public void onSuccess(List<String> data) { myIncomingRequestIds = data; checkAndFetch.run(); }
-            @Override public void onError(String message) { myIncomingRequestIds = new ArrayList<>(); checkAndFetch.run(); }
-        });
-    }
-
-    private void fetchAllUsersFromFirebase(String myUid) {
-        FirebaseManager.getInstance().getAllUsers(new FirebaseManager.DataCallback<List<User>>() {
-            @Override
-            public void onSuccess(List<User> data) {
-                List<User> processed = new ArrayList<>();
-                for (User user : data) {
-                    if (user.getUid() == null || user.getUid().equals(myUid)) continue;
-
-                    String uid = user.getUid();
-                    if (myFriendIds.contains(uid)) {
-                        user.setFriendStatus(1);       // Đã là bạn
-                    } else if (mySentRequestIds.contains(uid)) {
-                        user.setFriendStatus(2);       // Mình đã gửi lời mời
-                    } else if (myIncomingRequestIds.contains(uid)) {
-                        user.setFriendStatus(3);       // Họ gửi lời mời cho mình
-                    } else {
-                        user.setFriendStatus(0);       // Người lạ
+                        if (ids.isEmpty()) {
+                            friendList.setValue(new ArrayList<>());
+                            allFriendsOriginal.clear();
+                        } else {
+                            fetchUserProfilesFromIds(ids, friendList, 1); // 1 = Bạn bè
+                        }
                     }
-                    processed.add(user);
-                }
-                Log.e(TAG, "fetchAllUsers xong: " + processed.size() + " người");
-                allUsersList = new ArrayList<>(processed);
-                userList.setValue(processed);
-            }
-
-            @Override
-            public void onError(String message) {
-                Log.e(TAG, "fetchAllUsers lỗi: " + message);
-                error.setValue(message);
-            }
-        });
+                });
     }
 
     // ============================================================
-    // ACTIONS
+    // 2. LẮNG NGHE REAL-TIME DANH SÁCH LỜI MỜI
     // ============================================================
+    public void fetchRequests() {
+        String myUid = FirebaseManager.getInstance().getCurrentUserId();
+        if (myUid == null) return;
 
-    public void sendFriendRequest(User user) {
-        FirebaseManager.getInstance().sendFriendRequest(user.getUid(), new FirebaseManager.DataCallback<Void>() {
-            @Override
-            public void onSuccess(Void data) {
-                // Cập nhật local luôn, không cần fetch lại
-                user.setFriendStatus(2);
-                mySentRequestIds.add(user.getUid());
-                refreshList();
-                toast.setValue("Đã gửi lời mời tới " + user.getNameToShow());
-            }
-            @Override
-            public void onError(String message) { error.setValue(message); }
-        });
+        // Camera giám sát tab RECEIVED (Nhận)
+        if (incomingListener != null) incomingListener.remove();
+        incomingListener = FirebaseFirestore.getInstance().collection("users").document(myUid).collection("friend_requests")
+                .addSnapshotListener((snapshots, e) -> {
+                    if (e != null) return;
+                    if (snapshots != null) {
+                        List<String> ids = new ArrayList<>();
+                        for (DocumentSnapshot doc : snapshots.getDocuments()) ids.add(doc.getId());
+                        myIncomingRequestIds = ids;
+
+                        if (ids.isEmpty()) incomingList.setValue(new ArrayList<>());
+                        else fetchUserProfilesFromIds(ids, incomingList, 3); // 3 = Lời mời đến
+                    }
+                });
+
+        // Camera giám sát tab SENT (Gửi đi)
+        if (sentListener != null) sentListener.remove();
+        sentListener = FirebaseFirestore.getInstance().collection("users").document(myUid).collection("sent_requests")
+                .addSnapshotListener((snapshots, e) -> {
+                    if (e != null) return;
+                    if (snapshots != null) {
+                        List<String> ids = new ArrayList<>();
+                        for (DocumentSnapshot doc : snapshots.getDocuments()) ids.add(doc.getId());
+                        mySentRequestIds = ids;
+
+                        if (ids.isEmpty()) sentList.setValue(new ArrayList<>());
+                        else fetchUserProfilesFromIds(ids, sentList, 2); // 2 = Lời mời đi
+                    }
+                });
     }
 
-    public void cancelFriendRequest(User user) {
-        FirebaseManager.getInstance().cancelFriendRequest(user.getUid(), new FirebaseManager.DataCallback<Void>() {
+    // Hàm dùng chung để kéo thông tin chi tiết của User dựa vào list ID
+    private void fetchUserProfilesFromIds(List<String> uids, MutableLiveData<List<User>> liveData, int status) {
+        FirebaseFirestore.getInstance().collection("users").whereIn("uid", uids).get()
+                .addOnSuccessListener(snapshots -> {
+                    List<User> list = new ArrayList<>();
+                    for (DocumentSnapshot doc : snapshots.getDocuments()) {
+                        User user = doc.toObject(User.class);
+                        if (user != null) {
+                            user.setFriendStatus(status);
+                            list.add(user);
+                        }
+                    }
+                    if (status == 1) allFriendsOriginal = new ArrayList<>(list); // Lưu backup để search nội bộ
+                    liveData.setValue(list);
+                });
+    }
+
+    // ============================================================
+    // 3. ACTIONS - Không cần gọi load lại data nữa vì Listener đã tự làm
+    // ============================================================
+    public void searchAndSendRequestByEmail(String email) {
+        String myUid = FirebaseManager.getInstance().getCurrentUserId();
+        if (email.trim().isEmpty()) { error.setValue("Vui lòng nhập Email!"); return; }
+
+        FirebaseManager.getInstance().searchUserByEmail(email.trim(), new FirebaseManager.DataCallback<String>() {
             @Override
-            public void onSuccess(Void data) {
-                user.setFriendStatus(0);
-                mySentRequestIds.remove(user.getUid());
-                refreshList();
-                toast.setValue("Đã huỷ lời mời");
+            public void onSuccess(String targetUid) {
+                if (targetUid.equals(myUid)) { error.setValue("Bạn không thể tự kết bạn với chính mình!"); return; }
+                if (myFriendIds.contains(targetUid)) { error.setValue("Người này đã là bạn bè của bạn rồi!"); return; }
+                if (mySentRequestIds.contains(targetUid)) { error.setValue("Đang chờ người này phản hồi rồi!"); return; }
+                if (myIncomingRequestIds.contains(targetUid)) { error.setValue("Họ đã gửi lời mời cho bạn, hãy kiểm tra tab Requests!"); return; }
+
+                FirebaseManager.getInstance().sendFriendRequest(targetUid, new FirebaseManager.DataCallback<Void>() {
+                    @Override
+                    public void onSuccess(Void data) { toast.setValue("Đã gửi lời mời!"); }
+                    @Override
+                    public void onError(String message) { error.setValue(message); }
+                });
             }
             @Override
-            public void onError(String message) { error.setValue(message); }
+            public void onError(String message) { error.setValue("Không tìm thấy Email này!"); }
         });
     }
 
     public void acceptFriendRequest(User user) {
         FirebaseManager.getInstance().acceptFriendRequest(user.getUid(), new FirebaseManager.DataCallback<Void>() {
             @Override
-            public void onSuccess(Void data) {
-                user.setFriendStatus(1);
-                myIncomingRequestIds.remove(user.getUid());
-                myFriendIds.add(user.getUid());
-                refreshList();
-                toast.setValue("Đã kết bạn với " + user.getNameToShow() + "!");
-            }
-            @Override
-            public void onError(String message) { error.setValue(message); }
+            public void onSuccess(Void data) { toast.setValue("Đã kết bạn với " + user.getNameToShow() + "!"); }
+            @Override public void onError(String message) { error.setValue(message); }
         });
     }
 
     public void declineFriendRequest(User user) {
         FirebaseManager.getInstance().declineFriendRequest(user.getUid(), new FirebaseManager.DataCallback<Void>() {
+            @Override public void onSuccess(Void data) {}
+            @Override public void onError(String message) { error.setValue(message); }
+        });
+    }
+
+    public void cancelFriendRequest(User user) {
+        FirebaseManager.getInstance().cancelFriendRequest(user.getUid(), new FirebaseManager.DataCallback<Void>() {
             @Override
-            public void onSuccess(Void data) {
-                user.setFriendStatus(0);
-                myIncomingRequestIds.remove(user.getUid());
-                refreshList();
-            }
-            @Override
-            public void onError(String message) { error.setValue(message); }
+            public void onSuccess(Void data) { toast.setValue("Đã thu hồi lời mời"); }
+            @Override public void onError(String message) { error.setValue(message); }
         });
     }
 
     public void unfriend(User user) {
         FirebaseManager.getInstance().unfriend(user.getUid(), new FirebaseManager.DataCallback<Void>() {
             @Override
-            public void onSuccess(Void data) {
-                user.setFriendStatus(0);
-                myFriendIds.remove(user.getUid());
-                refreshList();
-                toast.setValue("Đã huỷ kết bạn");
-            }
-            @Override
-            public void onError(String message) { error.setValue(message); }
+            public void onSuccess(Void data) { toast.setValue("Đã huỷ kết bạn"); }
+            @Override public void onError(String message) { error.setValue(message); }
         });
     }
 
     // ============================================================
-    // SEARCH
+    // 4. SEARCH LOCAL
     // ============================================================
-
-    public void filterUsers(String query) {
+    public void filterFriendsLocal(String query) {
         if (query == null || query.isEmpty()) {
-            userList.setValue(allUsersList);
+            friendList.setValue(allFriendsOriginal);
             return;
         }
         List<User> filtered = new ArrayList<>();
         String pattern = query.toLowerCase().trim();
-        for (User user : allUsersList) {
+        for (User user : allFriendsOriginal) {
             if (user.getDisplayName() != null && user.getDisplayName().toLowerCase().contains(pattern)) {
                 filtered.add(user);
             }
         }
-        userList.setValue(filtered);
+        friendList.setValue(filtered);
     }
 
-    // Cập nhật lại list sau khi thay đổi status
-    private void refreshList() {
-        userList.setValue(new ArrayList<>(allUsersList));
+    // CHỐT CHẶN BẢO MẬT: Hủy camera giám sát khi thoát màn hình để không bị rò rỉ RAM
+    @Override
+    protected void onCleared() {
+        super.onCleared();
+        if (friendsListener != null) friendsListener.remove();
+        if (incomingListener != null) incomingListener.remove();
+        if (sentListener != null) sentListener.remove();
     }
 }

@@ -13,6 +13,7 @@ import com.example.cashify.data.repository.IWorkspaceRepo;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FieldValue;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class WorkspaceViewModel extends ViewModel {
@@ -270,5 +271,58 @@ public class WorkspaceViewModel extends ViewModel {
     protected void onCleared() {
         super.onCleared();
         if (chatListener != null) chatListener.remove(); // Tránh tràn RAM
+    }
+
+    // ============================================================
+    // LOGIC INVITE MULTIPLE FRIENDS
+    // ============================================================
+    public MutableLiveData<List<User>> availableFriends = new MutableLiveData<>();
+
+    public void loadAvailableFriends(String workspaceId) {
+        String myUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        com.google.firebase.firestore.FirebaseFirestore db = com.google.firebase.firestore.FirebaseFirestore.getInstance();
+
+        // 1. Lấy list bạn bè của mình
+        db.collection("users").document(myUid).collection("friends").get().addOnSuccessListener(friendSnap -> {
+            List<String> friendIds = new ArrayList<>();
+            for (com.google.firebase.firestore.DocumentSnapshot d : friendSnap.getDocuments()) friendIds.add(d.getId());
+            if (friendIds.isEmpty()) { availableFriends.setValue(new ArrayList<>()); return; }
+
+            // 2. Lấy list member hiện tại của Quỹ để loại trừ
+            db.collection("workspaces").document(workspaceId).get().addOnSuccessListener(wsSnap -> {
+                List<String> currentMembers = (List<String>) wsSnap.get("members");
+                if (currentMembers != null) friendIds.removeAll(currentMembers); // Trừ đi những người đã ở trong quỹ
+                if (friendIds.isEmpty()) { availableFriends.setValue(new ArrayList<>()); return; }
+
+                // 3. Lấy Profile của những người còn lại
+                db.collection("users").get().addOnSuccessListener(usersSnap -> {
+                    List<User> result = new ArrayList<>();
+                    for (com.google.firebase.firestore.DocumentSnapshot uDoc : usersSnap) {
+                        if (friendIds.contains(uDoc.getId())) {
+                            User u = uDoc.toObject(User.class);
+                            if(u != null) result.add(u);
+                        }
+                    }
+                    availableFriends.setValue(result);
+                });
+            });
+        });
+    }
+
+    public void addSelectedMembers(String workspaceId, List<String> selectedUids) {
+        if (selectedUids.isEmpty()) return;
+        _isLoading.setValue(true);
+        // FieldValue.arrayUnion hỗ trợ ném 1 mảng vào để update 1 lần duy nhất!
+        com.google.firebase.firestore.FirebaseFirestore.getInstance().collection("workspaces").document(workspaceId)
+                .update("members", FieldValue.arrayUnion(selectedUids.toArray()))
+                .addOnSuccessListener(v -> {
+                    _actionSuccess.postValue(true);
+                    _isLoading.postValue(false);
+                    loadWorkspaceMembers(workspaceId); // Load lại danh sách member hiển thị
+                })
+                .addOnFailureListener(e -> {
+                    _errorMessage.postValue(e.getMessage());
+                    _isLoading.postValue(false);
+                });
     }
 }

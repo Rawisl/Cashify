@@ -2,65 +2,75 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="match_parent"
     android:background="@color/bg_main"
     android:orientation="vertical"
     android:padding="24dp">
 
-    <View
+    <androidx.cardview.widget.CardView
         android:layout_width="40dp"
         android:layout_height="4dp"
         android:layout_gravity="center_horizontal"
         android:layout_marginBottom="16dp"
-        android:background="#D1D5DB" />
+        app:cardBackgroundColor="#D1D5DB"
+        app:cardCornerRadius="2dp"
+        app:cardElevation="0dp" />
 
     <TextView
-        style="@style/screen_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:fontFamily="@font/inter_bold"
-        android:text="Add Memeber"
+        android:text="Invite Friends"
+        android:textColor="#1A237E"
         android:textSize="20sp" />
 
     <TextView
-        style="@style/screen_subtitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="Enter your friends' email addresses to invite them to co-manage this fund."
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="16dp"
+        android:text="Select friends to invite to this workspace."
+        android:textColor="#757575"
         android:textSize="14sp" />
 
-    <com.google.android.material.textfield.TextInputLayout
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+    <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        app:boxCornerRadiusBottomEnd="12dp"
-        app:boxCornerRadiusBottomStart="12dp"
-        app:boxCornerRadiusTopEnd="12dp"
-        app:boxCornerRadiusTopStart="12dp">
+        android:layout_height="48dp"
+        android:layout_marginBottom="12dp"
+        app:cardBackgroundColor="#F5F6FA"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="0dp">
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etMemberEmail"
+        <EditText
+            android:id="@+id/etSearchFriend"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:fontFamily="@font/inter_bold"
-            android:hint="Your Friend's Email"
-            android:inputType="textEmailAddress"
-            android:maxLines="1" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:layout_height="match_parent"
+            android:background="@null"
+            android:drawableStart="@android:drawable/ic_menu_search"
+            android:drawablePadding="8dp"
+            android:hint="Search name..."
+            android:paddingHorizontal="16dp"
+            android:singleLine="true"
+            android:textColor="#1A237E"
+            android:textSize="14sp" />
+    </androidx.cardview.widget.CardView>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvFriendSelect"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingBottom="16dp" />
 
     <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnAddMember"
+        android:id="@+id/btnInvite"
         android:layout_width="match_parent"
-        android:layout_height="62dp"
-        android:layout_marginTop="30dp"
-        android:layout_marginBottom="15dp"
-        android:backgroundTint="@color/brand_primary"
-        android:fontFamily="@font/inter_bold"
-        android:text="Add"
-        android:textColor="@color/white"
-        android:textSize="20sp"
-        app:cornerRadius="18dp"
-        app:elevation="4dp" />
+        android:layout_height="54dp"
+        android:layout_marginTop="12dp"
+        android:backgroundTint="#1A237E"
+        android:text="Invite (0)"
+        android:textAllCaps="false"
+        android:textSize="16sp"
+        app:cornerRadius="12dp" />
 </LinearLayout>

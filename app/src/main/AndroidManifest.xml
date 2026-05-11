@@ -40,6 +40,9 @@
         <activity
             android:name=".ui.FriendsActivity.FriendsActivity"
             android:exported="false" />
+        <activity
+            android:name=".ui.FriendsActivity.RequestsActivity"
+            android:exported="false" />
 
         <activity
             android:name=".ui.auth.RegisterActivity"
