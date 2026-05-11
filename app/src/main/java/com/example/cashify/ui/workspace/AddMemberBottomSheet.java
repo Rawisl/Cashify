@@ -1,27 +1,40 @@
 package com.example.cashify.ui.workspace;
 
 import android.os.Bundle;
-import android.util.Patterns;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.EditText;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
+import com.example.cashify.data.model.User;
 import com.example.cashify.utils.ToastHelper;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
+import com.google.android.material.button.MaterialButton;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 public class AddMemberBottomSheet extends BottomSheetDialogFragment {
 
     private String workspaceId;
     private WorkspaceViewModel viewModel;
+    private MaterialButton btnInvite;
 
-    // Cách chuẩn để truyền ID vào Fragment
+    private SelectFriendAdapter adapter;
+    private List<User> originalList = new ArrayList<>();
+    private final Set<String> selectedUids = new HashSet<>();
+
     public static AddMemberBottomSheet newInstance(String workspaceId) {
         AddMemberBottomSheet fragment = new AddMemberBottomSheet();
         Bundle args = new Bundle();
@@ -39,47 +52,58 @@ public class AddMemberBottomSheet extends BottomSheetDialogFragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        if (getArguments() != null) workspaceId = getArguments().getString("WORKSPACE_ID");
 
-        if (getArguments() != null) {
-            workspaceId = getArguments().getString("WORKSPACE_ID");
-        }
-
-        EditText etMemberEmail = view.findViewById(R.id.etMemberEmail);
-        Button btnAddMember = view.findViewById(R.id.btnAddMember);
-
-        // Lấy ViewModel của Activity cha
+        RecyclerView rvFriendSelect = view.findViewById(R.id.rvFriendSelect);
+        btnInvite = view.findViewById(R.id.btnInvite);
+        EditText etSearchFriend = view.findViewById(R.id.etSearchFriend);
         viewModel = new ViewModelProvider(requireActivity()).get(WorkspaceViewModel.class);
 
-        btnAddMember.setOnClickListener(v -> {
-            String email = etMemberEmail.getText().toString().trim();
-
-            if (email.isEmpty()) {
-                etMemberEmail.setError("Please enter email!");
-                return;
-            }
-            if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-                etMemberEmail.setError("Invalid email address!");
-                return;
-            }
-
-            // Bắn email sang ViewModel để xử lý
-            viewModel.addMemberByEmail(workspaceId, email);
+        // Khởi tạo Adapter ĐÃ TÁCH
+        adapter = new SelectFriendAdapter(new ArrayList<>(), selectedUids, selectedCount -> {
+            btnInvite.setText("Invite (" + selectedCount + ")");
         });
 
-        // Lắng nghe kết quả
+        rvFriendSelect.setLayoutManager(new LinearLayoutManager(getContext()));
+        rvFriendSelect.setAdapter(adapter);
+
+        viewModel.loadAvailableFriends(workspaceId);
+        viewModel.availableFriends.observe(getViewLifecycleOwner(), users -> {
+            if (users != null) {
+                originalList = users;
+                adapter.updateList(users);
+            }
+        });
+
+        etSearchFriend.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) { filter(s.toString().trim()); }
+            @Override public void afterTextChanged(Editable s) {}
+        });
+
+        btnInvite.setOnClickListener(v -> {
+            if (selectedUids.isEmpty()) {
+                ToastHelper.show(getContext(), "Please select at least one friend!");
+                return;
+            }
+            viewModel.addSelectedMembers(workspaceId, new ArrayList<>(selectedUids));
+        });
+
         viewModel.actionSuccess.observe(getViewLifecycleOwner(), isSuccess -> {
             if (isSuccess) {
-                ToastHelper.show(getContext(), "Member added successfully!");
+                ToastHelper.show(getContext(), "Friends invited successfully!");
                 viewModel.resetActionStatus();
                 dismiss();
             }
         });
+    }
 
-        viewModel.errorMessage.observe(getViewLifecycleOwner(), error -> {
-            if (error != null) {
-                ToastHelper.show(getContext(), error);
-                viewModel.resetActionStatus();
-            }
-        });
+    private void filter(String query) {
+        if (query.isEmpty()) { adapter.updateList(originalList); return; }
+        List<User> filtered = new ArrayList<>();
+        for (User u : originalList) {
+            if (u.getNameToShow().toLowerCase().contains(query.toLowerCase())) filtered.add(u);
+        }
+        adapter.updateList(filtered);
     }
 }

@@ -23,8 +23,7 @@
             android:src="@android:drawable/ic_menu_report_image"
             app:shapeAppearanceOverlay="@style/RoundedAppearance"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent" />
+            app:layout_constraintTop_toTopOf="parent" />
 
         <!-- Tên -->
         <TextView

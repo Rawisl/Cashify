@@ -1,9 +1,11 @@
 package com.example.cashify.ui.workspace;
 
+import android.app.Dialog;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
 
@@ -14,7 +16,12 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
 import com.example.cashify.utils.ToastHelper;
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
+
+import java.util.Arrays;
+import java.util.List;
 
 public class AddWorkspaceBottomSheet extends BottomSheetDialogFragment {
 
@@ -23,6 +30,35 @@ public class AddWorkspaceBottomSheet extends BottomSheetDialogFragment {
     private WorkspaceViewModel viewModel;
     private RecyclerView rvIcons;
     private IconAdapter iconAdapter;
+
+    // =========================================================
+    // FIX BỆNH 1: ÉP BOTTOM SHEET MỞ BUNG FULL SIZE NGAY TỪ ĐẦU
+    // =========================================================
+    @NonNull
+    @Override
+    public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
+        BottomSheetDialog dialog = (BottomSheetDialog) super.onCreateDialog(savedInstanceState);
+        dialog.setOnShowListener(d -> {
+            BottomSheetDialog bottomSheetDialog = (BottomSheetDialog) d;
+            View bottomSheetInternal = bottomSheetDialog.findViewById(com.google.android.material.R.id.design_bottom_sheet);
+            if (bottomSheetInternal != null) {
+                BottomSheetBehavior.from(bottomSheetInternal).setState(BottomSheetBehavior.STATE_EXPANDED);
+            }
+        });
+        return dialog;
+    }
+
+    // =========================================================
+    // FIX BỆNH 2: ÉP BÀN PHÍM PHẢI ĐẨY BOTTOM SHEET TRƯỢT LÊN
+    // =========================================================
+    @Override
+    public void onStart() {
+        super.onStart();
+        Dialog dialog = getDialog();
+        if (dialog != null && dialog.getWindow() != null) {
+            dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        }
+    }
 
     @Nullable
     @Override
@@ -38,7 +74,7 @@ public class AddWorkspaceBottomSheet extends BottomSheetDialogFragment {
         btnCreate = view.findViewById(R.id.btnCreateWorkspace);
         rvIcons = view.findViewById(R.id.rvIcons);
 
-        java.util.List<String> myIcons = java.util.Arrays.asList(
+        List<String> myIcons = Arrays.asList(
                 "ic_house", "ic_gift", "ic_food", "ic_salary", "ic_family",
                 "ic_entertain", "ic_transport", "ic_vacation", "ic_freelance", "ic_cafe",
                 "ic_shopping", "ic_health", "ic_education", "ic_bill", "ic_bonus", "ic_other"
@@ -47,9 +83,40 @@ public class AddWorkspaceBottomSheet extends BottomSheetDialogFragment {
         iconAdapter = new IconAdapter(requireContext(), myIcons);
         rvIcons.setAdapter(iconAdapter);
 
-        // Dùng ViewModel của Activity cha để khi tạo xong, Activity cha tự biết đường update danh sách
+        // Dùng ViewModel của Activity cha
         viewModel = new ViewModelProvider(requireActivity()).get(WorkspaceViewModel.class);
 
+        // =========================================================
+        // FIX BỆNH 3: MANG OBSERVER RA KHỎI NÚT BẤM (TRÁNH TRÀN RAM)
+        // =========================================================
+        viewModel.isLoading.observe(getViewLifecycleOwner(), isLoading -> {
+            if (isLoading) {
+                btnCreate.setEnabled(false);
+                btnCreate.setText("Creating..."); // Đổi chữ cho ngầu
+            } else {
+                btnCreate.setEnabled(true);  // Mở khóa nút
+                btnCreate.setText("Create"); // Trả lại chữ cũ
+            }
+        });
+
+        viewModel.actionSuccess.observe(getViewLifecycleOwner(), isSuccess -> {
+            if (isSuccess) {
+                ToastHelper.show(getContext(), "Create group successfully!");
+                viewModel.resetActionStatus();
+                dismiss();
+            }
+        });
+
+        viewModel.errorMessage.observe(getViewLifecycleOwner(), error -> {
+            if (error != null) {
+                ToastHelper.show(getContext(), error);
+                viewModel.resetActionStatus();
+            }
+        });
+
+        // =========================================================
+        // SỰ KIỆN CLICK CHỈ LÀM ĐÚNG NHIỆM VỤ CỦA NÓ: KIỂM TRA & GỬI
+        // =========================================================
         btnCreate.setOnClickListener(v -> {
             if (!isNetworkConnected()) {
                 ToastHelper.show(getContext(), "Please connect to the internet to create a Group Fund!!");
@@ -61,41 +128,11 @@ public class AddWorkspaceBottomSheet extends BottomSheetDialogFragment {
                 return;
             }
 
-            viewModel.isLoading.observe(getViewLifecycleOwner(), isLoading -> {
-                if (isLoading) {
-                    btnCreate.setEnabled(false);
-                    btnCreate.setText("Creating..."); // Đổi chữ cho ngầu
-                } else {
-                    btnCreate.setEnabled(true);  // Mở khóa nút
-                    btnCreate.setText("Create"); // Trả lại chữ cũ
-                }
-            });
-
             String selectedIconName = iconAdapter.getSelectedIconName();
-
-            // Gọi hàm tạo quỹ ở ViewModel
-            viewModel.createNewWorkspace(name, "GROUP", selectedIconName); // Truyền Type nếu UI có chỗ chọn
-        });
-
-        // Lắng nghe tín hiệu tạo thành công từ ViewModel
-        viewModel.actionSuccess.observe(getViewLifecycleOwner(), isSuccess -> {
-            if (isSuccess) {
-                ToastHelper.show(getContext(), "Create group successfully!");
-                viewModel.resetActionStatus(); // Reset cờ để không bị nháy lại lần sau
-                dismiss(); // Đóng BottomSheet
-            }
-        });
-
-        // Lắng nghe lỗi
-        viewModel.errorMessage.observe(getViewLifecycleOwner(), error -> {
-            if (error != null) {
-                ToastHelper.show(getContext(), error);
-                viewModel.resetActionStatus();
-            }
+            viewModel.createNewWorkspace(name, "GROUP", selectedIconName);
         });
     }
 
-    // Hàm check kết nối Internet
     private boolean isNetworkConnected() {
         android.net.ConnectivityManager cm = (android.net.ConnectivityManager) requireContext().getSystemService(android.content.Context.CONNECTIVITY_SERVICE);
         if (cm != null) {
