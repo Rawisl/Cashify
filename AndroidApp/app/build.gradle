@@ -1,0 +1,131 @@
+plugins {
+    alias(libs.plugins.android.application)
+    id("com.google.gms.google-services")
+}
+
+android {
+    namespace 'com.example.cashify'
+
+    compileSdk {
+        version = release(36) {
+            minorApiLevel = 1
+        }
+    }
+
+    defaultConfig {
+        applicationId "com.example.cashify"
+        minSdk 24
+        targetSdk 36
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        // 1. Đọc file local.properties
+        Properties properties = new Properties()
+        properties.load(project.rootProject.file('local.properties').newDataInputStream())
+
+        // 2. Tạo một biến BuildField để dùng trong Java
+        // Lưu ý: Phải có dấu nháy kép bọc cái URL
+        buildConfigField "String", "BASE_URL", "\"${properties.getProperty('BASE_URL')}\""
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+        resources {
+            excludes += '/META-INF/{AL2.0,LGPL2.1}'
+        }
+    }
+}
+
+dependencies {
+    // ==========================================
+    // 1. UI CORE & NAVIGATION (Giao diện cơ bản - LUÔN GIỮ)
+    // ==========================================
+    implementation libs.appcompat
+    implementation 'com.google.android.material:material:1.12.0'
+    implementation libs.activity
+    implementation libs.constraintlayout
+    implementation libs.cardview
+    implementation libs.fragment
+    implementation libs.gridlayout
+    implementation libs.recyclerview
+    implementation libs.navigation.fragment.ktx
+    implementation libs.navigation.ui.ktx
+    implementation("androidx.core:core-splashscreen:1.2.0")
+
+    // ==========================================
+    // 2. DATABASE & FIREBASE (Data logic - LUÔN GIỮ)
+    // ==========================================
+    def room_version = "2.6.1"
+    implementation "androidx.room:room-runtime:$room_version"
+    annotationProcessor "androidx.room:room-compiler:$room_version"
+
+    implementation platform('com.google.firebase:firebase-bom:34.12.0')
+    implementation 'com.google.firebase:firebase-auth'
+    implementation 'com.google.firebase:firebase-firestore'
+    implementation 'com.google.firebase:firebase-messaging'
+    implementation 'com.google.firebase:firebase-storage'
+    implementation 'com.google.android.gms:play-services-auth:21.1.1'
+
+    // ==========================================
+    // 3. UTILITIES & CHART (Tiện ích nhẹ)
+    // ==========================================
+    implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
+    implementation "androidx.work:work-runtime:2.9.0"
+
+    // Ảnh Avatar & Cache ảnh
+    implementation 'com.github.bumptech.glide:glide:4.16.0'
+    annotationProcessor 'com.github.bumptech.glide:compiler:4.16.0'
+    implementation 'de.hdodenhof:circleimageview:3.1.0'
+
+    // ==========================================
+    // 4. TESTING
+    // ==========================================W
+    testImplementation libs.junit
+    androidTestImplementation libs.ext.junit
+    androidTestImplementation libs.espresso.core
+
+    // ============================================================
+    // KHU VỰC HẠNG NẶNG (MÁY YẾU THÌ COMMENT LẠI KHI CODE UI)
+    // ============================================================
+
+    // Thư viện quét hóa đơn AI & Camera (Ưu tiên comment số 1)
+    implementation 'com.google.mlkit:text-recognition:16.0.0'
+    implementation 'androidx.camera:camera-view:1.3.0'
+    implementation 'androidx.camera:camera-lifecycle:1.3.0'
+
+    // Upload file Cloudinary (Kéo theo OkHttp) (ưu tiên comment số 2 - tức là comment cái số 1 vẫn còn thoi thóp thì mới comment cái này)
+    implementation 'com.cloudinary:cloudinary-android:2.5.0'
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+
+    // ==========================================
+    // 5. NETWORK & API (Retrofit)
+    // ==========================================
+    implementation 'com.squareup.retrofit2:retrofit:2.11.0'
+    implementation 'com.squareup.retrofit2:converter-gson:2.11.0'
+}
+
+configurations.configureEach {
+    resolutionStrategy {
+        force 'com.google.android.gms:play-services-tasks:18.1.0'
+    }
+}

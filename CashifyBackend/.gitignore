@@ -1,0 +1,12 @@
+# Bỏ qua thư mục build của C#
+[Bb]in/
+[Oo]bj/
+
+# Bỏ qua các file cấu hình IDE
+.vs/
+.vscode/
+*.user
+
+# BẢO MẬT: TUYỆT ĐỐI KHÔNG PUSH MẤY FILE NÀY
+.env
+firebase-admin.json
