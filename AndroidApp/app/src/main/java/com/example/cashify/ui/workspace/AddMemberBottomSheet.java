@@ -80,20 +80,37 @@ public class AddMemberBottomSheet extends BottomSheetDialogFragment {
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) { filter(s.toString().trim()); }
             @Override public void afterTextChanged(Editable s) {}
         });
-
         btnInvite.setOnClickListener(v -> {
             if (selectedUids.isEmpty()) {
                 ToastHelper.show(getContext(), "Please select at least one friend!");
                 return;
             }
-            viewModel.addSelectedMembers(workspaceId, new ArrayList<>(selectedUids));
+
+            // Lấy tên Quỹ hiện tại từ ViewModel đang chạy
+            String wsName = "a workspace";
+            if (viewModel.getWorkspaceLiveData().getValue() != null) {
+                wsName = viewModel.getWorkspaceLiveData().getValue().getName();
+            }
+
+            // Gửi lời mời với ĐẦY ĐỦ 3 tham số
+            viewModel.addSelectedMembers(workspaceId, wsName, new ArrayList<>(selectedUids));
         });
 
+
+        // Lắng nghe khi gửi mời thành công
         viewModel.actionSuccess.observe(getViewLifecycleOwner(), isSuccess -> {
-            if (isSuccess) {
-                ToastHelper.show(getContext(), "Friends invited successfully!");
+            if (isSuccess != null && isSuccess) {
+                ToastHelper.show(getContext(), "You have invited selected friends!");
+                viewModel.resetActionStatus(); // Reset lại cờ để lần sau bấm tiếp được
+                dismiss(); // Đóng BottomSheet
+            }
+        });
+
+        // Lắng nghe nếu có lỗi xảy ra (Ví dụ: Server C# chưa bật)
+        viewModel.errorMessage.observe(getViewLifecycleOwner(), error -> {
+            if (error != null) {
+                ToastHelper.show(getContext(), error);
                 viewModel.resetActionStatus();
-                dismiss();
             }
         });
     }

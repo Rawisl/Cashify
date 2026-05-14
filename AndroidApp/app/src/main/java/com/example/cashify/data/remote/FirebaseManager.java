@@ -215,6 +215,109 @@ public class FirebaseManager {
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
+    // 1. Lắng nghe danh sách lời mời theo thời gian thực
+    public void listenToWorkspaceInvitations(DataCallback<List<com.example.cashify.data.model.WorkspaceInvitation>> callback) {
+        String uid = getCurrentUserId();
+        if (uid == null) return;
+
+        db.collection("users").document(uid).collection("workspace_invitations")
+                .addSnapshotListener((snap, e) -> {
+                    if (e != null) {
+                        callback.onError(e.getMessage());
+                        return;
+                    }
+                    List<com.example.cashify.data.model.WorkspaceInvitation> list = new ArrayList<>();
+                    if (snap != null) {
+                        for (DocumentSnapshot doc : snap.getDocuments()) {
+                            com.example.cashify.data.model.WorkspaceInvitation invite = doc.toObject(com.example.cashify.data.model.WorkspaceInvitation.class);
+                            if (invite != null) {
+                                invite.setId(doc.getId()); // Gắn ID của Document để lát biết đường xóa
+                                list.add(invite);
+                            }
+                        }
+                    }
+                    callback.onSuccess(list);
+                });
+    }
+
+    // 2. Gửi lời mời (Nhiều người cùng lúc)
+    public void sendWorkspaceInvites(String workspaceId, String workspaceName, List<String> targetUids, DataCallback<Void> callback) {
+        FirebaseUser user = auth.getCurrentUser();
+        if (user == null) { callback.onError("You are not logged in!"); return; }
+
+        user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
+            String token = "Bearer " + getTokenResult.getToken();
+            ApiService apiService = ApiClient.getClient().create(ApiService.class);
+            ApiService.WorkspaceInviteSendRequest req = new ApiService.WorkspaceInviteSendRequest(workspaceId, workspaceName, targetUids);
+
+            apiService.sendWorkspaceInvites(token, req).enqueue(new retrofit2.Callback<Object>() {
+                @Override public void onResponse(retrofit2.Call<Object> call, retrofit2.Response<Object> response) {
+                    if (response.isSuccessful()) callback.onSuccess(null);
+                    else callback.onError("Server rejected: " + response.code());
+                }
+                @Override public void onFailure(retrofit2.Call<Object> call, Throwable t) { callback.onError(t.getMessage()); }
+            });
+        }).addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
+
+    // 3. Chấp nhận lời mời (ĐÃ REFACTOR GỌI C#)
+    public void acceptWorkspaceInvitation(com.example.cashify.data.model.WorkspaceInvitation invitation, DataCallback<Void> callback) {
+        FirebaseUser user = auth.getCurrentUser();
+        if (user == null) { callback.onError("You are not logged in!"); return; }
+
+        user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
+            String token = "Bearer " + getTokenResult.getToken();
+            ApiService apiService = ApiClient.getClient().create(ApiService.class);
+
+            // Gọi endpoint C# đã viết: /api/v1/workspace/invite/accept
+            ApiService.WorkspaceInviteHandleRequest req = new ApiService.WorkspaceInviteHandleRequest(invitation.getWorkspaceId(), invitation.getId());
+
+            apiService.acceptWorkspaceInvite(token, req).enqueue(new retrofit2.Callback<Object>() {
+                @Override
+                public void onResponse(retrofit2.Call<Object> call, retrofit2.Response<Object> response) {
+                    if (response.isSuccessful()) {
+                        callback.onSuccess(null);
+                    } else {
+                        try {
+                            String errorBody = response.errorBody().string();
+                            org.json.JSONObject jsonObject = new org.json.JSONObject(errorBody);
+                            callback.onError(jsonObject.getString("message"));
+                        } catch (Exception e) {
+                            callback.onError("Server rejected: " + response.code());
+                        }
+                    }
+                }
+
+                @Override
+                public void onFailure(retrofit2.Call<Object> call, Throwable t) {
+                    callback.onError(t.getMessage());
+                }
+            });
+        }).addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
+
+    // 4. Từ chối lời mời (ĐÃ REFACTOR GỌI C#)
+    public void declineWorkspaceInvitation(String invitationId, DataCallback<Void> callback) {
+        FirebaseUser user = auth.getCurrentUser();
+        if (user == null) { callback.onError("You are not logged in!"); return; }
+
+        user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
+            String token = "Bearer " + getTokenResult.getToken();
+            ApiService apiService = ApiClient.getClient().create(ApiService.class);
+
+            // Gọi endpoint C# đã viết: /api/v1/workspace/invite/decline
+            ApiService.WorkspaceInviteHandleRequest req = new ApiService.WorkspaceInviteHandleRequest(null, invitationId);
+
+            apiService.declineWorkspaceInvite(token, req).enqueue(new retrofit2.Callback<Object>() {
+                @Override public void onResponse(retrofit2.Call<Object> call, retrofit2.Response<Object> response) {
+                    if (response.isSuccessful()) callback.onSuccess(null);
+                    else callback.onError("Server rejected: " + response.code());
+                }
+                @Override public void onFailure(retrofit2.Call<Object> call, Throwable t) { callback.onError(t.getMessage()); }
+            });
+        }).addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
+
     // ============================================================
     // FCM
     // ============================================================
@@ -648,4 +751,22 @@ public class FirebaseManager {
         }).addOnFailureListener(e -> callback.onError("Lỗi Auth: " + e.getMessage()));
     }
 
+    // ============================================================
+    // UNIFIED NOTIFICATIONS (THÔNG BÁO TỔNG HỢP)
+    // ============================================================
+    public void listenToUnreadNotifications(DataCallback<Integer> callback) {
+        String uid = getCurrentUserId();
+        if (uid == null) return;
+
+        db.collection("users").document(uid).collection("notifications")
+                .whereEqualTo("isRead", false) // Chỉ đếm những cái chưa đọc
+                .addSnapshotListener((snap, e) -> {
+                    if (e != null) {
+                        callback.onError(e.getMessage());
+                        return;
+                    }
+                    int count = (snap != null) ? snap.size() : 0;
+                    callback.onSuccess(count);
+                });
+    }
 }

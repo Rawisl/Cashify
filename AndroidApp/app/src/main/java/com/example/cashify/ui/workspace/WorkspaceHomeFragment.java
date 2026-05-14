@@ -18,6 +18,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
 import com.example.cashify.data.model.Transaction;
+import com.example.cashify.data.model.WorkspaceInvitation;
 import com.example.cashify.ui.transactions.AddTransactionActivity;
 import com.example.cashify.ui.transactions.TransactionViewModel;
 import com.example.cashify.utils.CurrencyFormatter;
@@ -26,6 +27,7 @@ import com.google.android.material.appbar.MaterialToolbar;
 import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class WorkspaceHomeFragment extends Fragment {
 
@@ -125,6 +127,34 @@ public class WorkspaceHomeFragment extends Fragment {
         view.findViewById(R.id.tvAddMember).setOnClickListener(v -> {
             AddMemberBottomSheet bottomSheet = AddMemberBottomSheet.newInstance(workspaceId);
             bottomSheet.show(getChildFragmentManager(), "AddMemberBottomSheet");
+        });
+
+        // ============================================================
+        // LOGIC CHẤM ĐỎ CHO NÚT CHUÔNG THÔNG BÁO
+        // ============================================================
+        TextView tvNotificationBadge = view.findViewById(R.id.tvNotificationBadge);
+
+        com.example.cashify.data.remote.FirebaseManager.getInstance()
+                .listenToUnreadNotifications(new com.example.cashify.data.remote.FirebaseManager.DataCallback<Integer>() {
+                    @Override
+                    public void onSuccess(Integer count) {
+                        if (count != null && count > 0) {
+                            tvNotificationBadge.setVisibility(View.VISIBLE);
+                            tvNotificationBadge.setText(count > 9 ? "9+" : String.valueOf(count));
+                        } else {
+                            tvNotificationBadge.setVisibility(View.GONE);
+                        }
+                    }
+
+                    @Override
+                    public void onError(String message) {
+                        tvNotificationBadge.setVisibility(View.GONE);
+                    }
+                });
+
+        view.findViewById(R.id.btnWorkspaceNotifications).setOnClickListener(v -> {
+            new com.example.cashify.ui.notifications.NotificationBottomSheet()
+                    .show(getChildFragmentManager(), "NotificationBottomSheet");
         });
     }
 

@@ -58,6 +58,7 @@ import com.example.cashify.utils.WorkScheduler;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.google.android.material.badge.BadgeDrawable;
 
 public class MainActivity extends AppCompatActivity {
     // Tạo một lá cờ hiệu
@@ -256,12 +257,77 @@ public class MainActivity extends AppCompatActivity {
                 Intent intent = new Intent(MainActivity.this, com.example.cashify.ui.FriendsActivity.FriendsActivity.class);
                 startActivity(intent);
             }
+            else if (id == R.id.nav_invitations) {
+                Intent intent = new Intent(MainActivity.this, com.example.cashify.ui.notifications.InvitationsActivity.class);
+                startActivity(intent);
+            }
 
             drawerLayout.closeDrawer(GravityCompat.START);
 
             // TRẢ VỀ TRUE ĐỂ LƯU MÀU HIGHLIGHT
             return true;
         });
+
+        FirebaseManager.getInstance().listenToWorkspaceInvitations(new FirebaseManager.DataCallback<List<com.example.cashify.data.model.WorkspaceInvitation>>() {
+            @Override
+            public void onSuccess(List<com.example.cashify.data.model.WorkspaceInvitation> data) {
+                int count = (data != null) ? data.size() : 0;
+                updateInvitationsBadge(count);
+            }
+
+            @Override
+            public void onError(String message) {
+                updateInvitationsBadge(0);
+            }
+        });
+    }
+
+    // ============================================================
+    // HÀM VẼ CHẤM ĐỎ DÍNH SÁT VÀO CHỮ INVITATIONS
+    // ============================================================
+    private void updateInvitationsBadge(int count) {
+        android.view.Menu menu = navigationView.getMenu();
+        android.view.MenuItem inviteItem = menu.findItem(R.id.nav_invitations);
+
+        if (count <= 0) {
+            inviteItem.setTitle("Invitations"); // Không có thì trả về chữ thường
+            return;
+        }
+
+        String title = "Invitations";
+        String badgeText = count > 9 ? "9+" : String.valueOf(count);
+
+        // 1. Tạo một cái View chấm đỏ bằng Java
+        TextView tv = new TextView(this);
+        tv.setText(badgeText);
+        tv.setTextColor(android.graphics.Color.WHITE);
+        tv.setTextSize(10); // Cỡ chữ bên trong chấm đỏ
+        tv.setTypeface(null, android.graphics.Typeface.BOLD);
+        tv.setBackgroundResource(R.drawable.bg_badge_red);
+        tv.setGravity(android.view.Gravity.CENTER);
+
+        // 2. Ép kích thước nó thành hình tròn (20dp)
+        int sizePx = (int) (20 * getResources().getDisplayMetrics().density);
+        tv.measure(View.MeasureSpec.makeMeasureSpec(sizePx, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(sizePx, View.MeasureSpec.EXACTLY));
+        tv.layout(0, 0, tv.getMeasuredWidth(), tv.getMeasuredHeight());
+
+        // 3. Chụp ảnh cái View đó thành một Bitmap (Hình ảnh)
+        android.graphics.Bitmap bitmap = android.graphics.Bitmap.createBitmap(tv.getMeasuredWidth(), tv.getMeasuredHeight(), android.graphics.Bitmap.Config.ARGB_8888);
+        android.graphics.Canvas canvas = new android.graphics.Canvas(bitmap);
+        tv.draw(canvas);
+
+        android.graphics.drawable.BitmapDrawable bd = new android.graphics.drawable.BitmapDrawable(getResources(), bitmap);
+        // Căn chỉnh trục Y để nó đứng ngay ngắn giữa dòng chữ
+        int yOffset = (int) (3 * getResources().getDisplayMetrics().density);
+        bd.setBounds(0, -yOffset, bitmap.getWidth(), bitmap.getHeight() - yOffset);
+
+        // 4. DÁN CHẶT HÌNH ẢNH VÀO NGAY SAU CHỮ "Invitations"
+        android.text.SpannableStringBuilder ssb = new android.text.SpannableStringBuilder(title + "  "); // Thêm dấu cách
+        ssb.setSpan(new android.text.style.ImageSpan(bd), title.length() + 1, title.length() + 2, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+        // 5. Gắn lại vào Menu
+        inviteItem.setTitle(ssb);
     }
 
     // ============================================================
