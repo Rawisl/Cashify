@@ -59,6 +59,9 @@
             android:name=".ui.category.CategoryManagement"/>
 
         <activity
+            android:name=".ui.notifications.InvitationsActivity"/>
+
+        <activity
             android:name=".ui.transactions.AddTransactionActivity"
             android:windowSoftInputMode="adjustResize"
             android:screenOrientation="portrait"/>

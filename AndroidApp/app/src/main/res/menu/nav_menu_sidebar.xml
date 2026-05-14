@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <group android:id="@+id/group_workspaces" android:checkableBehavior="single">
 
@@ -20,6 +21,11 @@
             android:id="@+id/nav_friends"
             android:icon="@drawable/ic_friends_solid"
             android:title="Friends" />
+
+        <item
+            android:id="@+id/nav_invitations"
+            android:icon="@android:drawable/ic_dialog_email"
+            android:title="Invitations" />
 
     </group>
 

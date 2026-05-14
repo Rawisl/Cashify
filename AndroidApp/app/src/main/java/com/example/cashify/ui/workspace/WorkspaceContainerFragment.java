@@ -76,6 +76,13 @@ public class WorkspaceContainerFragment extends Fragment {
                     fabAddTransaction.hide();
                 }
             });
+
+
+            if (getArguments() != null && getArguments().getBoolean("OPEN_CHAT_TAB", false)) {
+                bottomNav.setSelectedItemId(R.id.workspace_nav_chat);
+
+                getArguments().putBoolean("OPEN_CHAT_TAB", false);
+            }
         }
 
         // Bắt sự kiện bấm FAB

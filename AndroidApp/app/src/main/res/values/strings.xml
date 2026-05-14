@@ -202,4 +202,17 @@
 
     <string name="log_activity_title">Log Activity</string>
     <string name="log_activity_subtitle">Track all actions in your workspace</string>
+
+    <string name="invitations_title">Invitations</string>
+    <string name="invitation_body_text">invited you to join the fund</string>
+    <string name="notif_title">Notifications</string>
+    <string name="notif_icon_desc">Notification Icon</string>
+
+    <string name="action_accept">Accept</string>
+    <string name="action_decline">Decline</string>
+
+    <string name="placeholder_inviter_name">Inviter Name</string>
+    <string name="placeholder_notif_title">Notification Title</string>
+    <string name="placeholder_notif_message">Notification detail content...</string>
+    <string name="placeholder_notif_time">Just now</string>
 </resources>

@@ -43,6 +43,15 @@ public interface ApiService {
     @POST("/api/v1/friend/{actionType}")
     Call<Object> processFriendAction(@Path("actionType") String actionType, @Header("Authorization") String token, @Body FriendActionRequest request);
 
+    @POST("/api/v1/workspace/invite/send")
+    Call<Object> sendWorkspaceInvites(@Header("Authorization") String token, @Body WorkspaceInviteSendRequest request);
+
+    @POST("/api/v1/workspace/invite/accept")
+    Call<Object> acceptWorkspaceInvite(@Header("Authorization") String token, @Body WorkspaceInviteHandleRequest request);
+
+    @POST("/api/v1/workspace/invite/decline")
+    Call<Object> declineWorkspaceInvite(@Header("Authorization") String token, @Body WorkspaceInviteHandleRequest request);
+
     // --- CÁC CLASS MODEL DÙNG ĐỂ HỨNG DATA ---
 
     class CloudinarySignatureResponse {
@@ -88,5 +97,22 @@ public interface ApiService {
     class FriendActionRequest {
         public String TargetUid;
         public FriendActionRequest(String targetUid) { TargetUid = targetUid; }
+    }
+
+    class WorkspaceInviteSendRequest {
+        public String WorkspaceId;
+        public String WorkspaceName;
+        public java.util.List<String> TargetUids;
+        public WorkspaceInviteSendRequest(String wId, String wName, java.util.List<String> uids) {
+            this.WorkspaceId = wId; this.WorkspaceName = wName; this.TargetUids = uids;
+        }
+    }
+
+    class WorkspaceInviteHandleRequest {
+        public String WorkspaceId;
+        public String InvitationId;
+        public WorkspaceInviteHandleRequest(String wId, String iId) {
+            this.WorkspaceId = wId; this.InvitationId = iId;
+        }
     }
 }

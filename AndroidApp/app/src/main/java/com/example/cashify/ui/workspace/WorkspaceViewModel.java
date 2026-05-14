@@ -216,6 +216,7 @@ public class WorkspaceViewModel extends ViewModel {
 
         com.google.firebase.firestore.FirebaseFirestore db = com.google.firebase.firestore.FirebaseFirestore.getInstance();
 
+        // 1. Chuẩn bị cục data Tin nhắn
         com.example.cashify.data.model.ChatMessage newMsg = new com.example.cashify.data.model.ChatMessage(
                 user.getUid(),
                 user.getDisplayName() != null ? user.getDisplayName() : "User",
@@ -224,10 +225,45 @@ public class WorkspaceViewModel extends ViewModel {
                 System.currentTimeMillis()
         );
 
-        db.collection("workspaces").document(workspaceId)
+        // Lấy thông tin Quỹ hiện tại (Đã được load sẵn trong ViewModel)
+        com.example.cashify.data.model.Workspace currentWorkspace = _workspaceLiveData.getValue();
+        List<String> members = currentWorkspace != null ? currentWorkspace.getMembers() : new java.util.ArrayList<>();
+        String workspaceName = currentWorkspace != null ? currentWorkspace.getName() : "Workspace";
+
+        // Mở Batch để đảm bảo Ghi tin nhắn & Ghi thông báo diễn ra đồng thời
+        com.google.firebase.firestore.WriteBatch batch = db.batch();
+
+        // 2. Ghi tin nhắn vào collection messages của Quỹ
+        com.google.firebase.firestore.DocumentReference msgRef = db.collection("workspaces")
+                .document(workspaceId)
                 .collection("messages")
-                .add(newMsg)
-                .addOnFailureListener(e -> _errorMessage.setValue("Send failed: " + e.getMessage()));
+                .document();
+        batch.set(msgRef, newMsg);
+
+        // 3. Rải thông báo cho TẤT CẢ thành viên (ngoại trừ người gửi)
+        String senderName = user.getDisplayName() != null ? user.getDisplayName() : "Unknown user";
+        for (String memberId : members) {
+            if (!memberId.equals(user.getUid())) {
+                com.google.firebase.firestore.DocumentReference notifRef = db.collection("users")
+                        .document(memberId)
+                        .collection("notifications")
+                        .document();
+
+                // Build cục data thông báo y chang định dạng bên C#
+                java.util.Map<String, Object> notifData = new java.util.HashMap<>();
+                notifData.put("type", "WORKSPACE_CHAT");
+                notifData.put("title", workspaceName);
+                notifData.put("message", senderName + ": " + text.trim());
+                notifData.put("timestamp", System.currentTimeMillis());
+                notifData.put("isRead", false);
+                notifData.put("referenceId", workspaceId); // ID nhóm để lúc click vào nó bay thẳng tới nhóm
+
+                batch.set(notifRef, notifData);
+            }
+        }
+
+        // 4. Bóp cò chạy lệnh!
+        batch.commit().addOnFailureListener(e -> _errorMessage.setValue("Send failed: " + e.getMessage()));
     }
 
     public void deleteChatMessage(String workspaceId, String messageId) {
@@ -287,20 +323,23 @@ public class WorkspaceViewModel extends ViewModel {
         });
     }
 
-    public void addSelectedMembers(String workspaceId, List<String> selectedUids) {
+    public void addSelectedMembers(String workspaceId, String workspaceName, List<String> selectedUids) {
         if (selectedUids.isEmpty()) return;
         _isLoading.setValue(true);
-        // FieldValue.arrayUnion hỗ trợ ném 1 mảng vào để update 1 lần duy nhất!
-        com.google.firebase.firestore.FirebaseFirestore.getInstance().collection("workspaces").document(workspaceId)
-                .update("members", FieldValue.arrayUnion(selectedUids.toArray()))
-                .addOnSuccessListener(v -> {
-                    _actionSuccess.postValue(true);
-                    _isLoading.postValue(false);
-                    loadWorkspaceMembers(workspaceId); // Load lại danh sách member hiển thị
-                })
-                .addOnFailureListener(e -> {
-                    _errorMessage.postValue(e.getMessage());
-                    _isLoading.postValue(false);
-                });
+
+        // BẮN THẲNG QUA FIREBASE MANAGER (ĐỂ NÓ GỌI C# BACKEND)
+        FirebaseManager.getInstance().sendWorkspaceInvites(workspaceId, workspaceName, selectedUids, new FirebaseManager.DataCallback<Void>() {
+            @Override
+            public void onSuccess(Void data) {
+                _actionSuccess.postValue(true);
+                _isLoading.postValue(false);
+            }
+
+            @Override
+            public void onError(String message) {
+                _errorMessage.postValue("Invite failed: " + message);
+                _isLoading.postValue(false);
+            }
+        });
     }
 }

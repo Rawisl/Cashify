@@ -242,6 +242,34 @@ public class HomeFragment extends Fragment {
             }
         });
 
+        // ============================================================
+        // LOGIC CHẤM ĐỎ CHO NÚT CHUÔNG THÔNG BÁO
+        // ============================================================
+        TextView tvNotificationBadge = view.findViewById(R.id.tvNotificationBadge);
+
+        com.example.cashify.data.remote.FirebaseManager.getInstance()
+                .listenToUnreadNotifications(new com.example.cashify.data.remote.FirebaseManager.DataCallback<Integer>() {
+                    @Override
+                    public void onSuccess(Integer count) {
+                        if (count != null && count > 0) {
+                            tvNotificationBadge.setVisibility(View.VISIBLE);
+                            tvNotificationBadge.setText(count > 9 ? "9+" : String.valueOf(count));
+                        } else {
+                            tvNotificationBadge.setVisibility(View.GONE);
+                        }
+                    }
+
+                    @Override
+                    public void onError(String message) {
+                        tvNotificationBadge.setVisibility(View.GONE);
+                    }
+                });
+
+        view.findViewById(R.id.btnHomeNotifications).setOnClickListener(v -> {
+            new com.example.cashify.ui.notifications.NotificationBottomSheet()
+                    .show(getChildFragmentManager(), "NotificationBottomSheet");
+        });
+
 //        //Bắt sự kiện click chọn tháng (Tạm thời để Toast, Khang ráp DatePicker vào sau nhé)
 //        tvDate.setOnClickListener(v -> {
 //           ToastHelper.show(getContext(), "Tính năng chọn tháng sẽ mở BottomSheet!");
