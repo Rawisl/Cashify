@@ -1,6 +1,5 @@
 package com.example.cashify.ui.workspace;
 
-import android.app.AlertDialog;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,6 +15,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.cashify.R;
 import com.example.cashify.data.model.User;
 import com.example.cashify.data.remote.FirebaseManager;
+import com.example.cashify.utils.DialogHelper;
 import com.example.cashify.utils.ToastHelper;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.firebase.auth.FirebaseAuth;
@@ -85,52 +85,66 @@ public class MemberBottomSheetFragment extends BottomSheetDialogFragment impleme
 
     @Override
     public void onKickClicked(User targetUser) {
-        new AlertDialog.Builder(requireContext())
-                .setTitle("Kick Member")
-                .setMessage("Remove " + targetUser.getDisplayName() + " from this workspace?")
-                .setPositiveButton("Remove", (dialog, which) -> {
-                    ToastHelper.show(requireContext(), "Processing...");
+        DialogHelper.showCustomDialog(
+                requireContext(),
+                "Kick Member",
+                "Remove " + targetUser.getDisplayName() + " from this workspace?",
+                "Remove",
+                "Cancel",
+                DialogHelper.DialogType.DANGER,
+                true,
+                () -> {
                     FirebaseManager.getInstance().kickMember(workspaceId, targetUser.getUid(), new FirebaseManager.DataCallback<Void>() {
                         @Override
                         public void onSuccess(Void data) {
                             if (getActivity() != null) getActivity().runOnUiThread(() -> {
-                                ToastHelper.show(requireContext(), "Member removed!");
-                                viewModel.loadWorkspaceMembers(workspaceId); // Tự động load lại List trên Android
+                                DialogHelper.showSuccess(requireContext(), "Done", "Member removed!", () ->
+                                        viewModel.loadWorkspaceMembers(workspaceId)
+                                );
                             });
                         }
                         @Override
                         public void onError(String message) {
-                            if (getActivity() != null) getActivity().runOnUiThread(() -> ToastHelper.show(requireContext(), message));
+                            if (getActivity() != null) getActivity().runOnUiThread(() ->
+                                    DialogHelper.showAlert(requireContext(), "Error", message, null)
+                            );
                         }
                     });
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
+                },
+                null
+        );
     }
 
     @Override
     public void onTransferClicked(User targetUser) {
-        new AlertDialog.Builder(requireContext())
-                .setTitle("Transfer Ownership")
-                .setMessage("Make " + targetUser.getDisplayName() + " the new owner? You will become a regular member.")
-                .setPositiveButton("Confirm", (dialog, which) -> {
-                    ToastHelper.show(requireContext(), "Transferring...");
+        DialogHelper.showCustomDialog(
+                requireContext(),
+                "Transfer Ownership",
+                "Make " + targetUser.getDisplayName() + " the new owner? You will become a regular member.",
+                "Confirm",
+                "Cancel",
+                DialogHelper.DialogType.NORMAL,
+                true,
+                () -> {
                     FirebaseManager.getInstance().transferOwnership(workspaceId, targetUser.getUid(), new FirebaseManager.DataCallback<Void>() {
                         @Override
                         public void onSuccess(Void data) {
                             if (getActivity() != null) getActivity().runOnUiThread(() -> {
-                                ToastHelper.show(requireContext(), "You are no longer the owner.");
-                                viewModel.loadWorkspaceDetails(workspaceId); //sync giao diện ngay
-                                dismiss(); // Chỉ cần đóng Sheet, ViewModel sẽ tự động làm mờ các nút của sếp ở ngoài!
+                                DialogHelper.showSuccess(requireContext(), "Done", "You are no longer the owner.", () -> {
+                                    viewModel.loadWorkspaceDetails(workspaceId);
+                                    dismiss();
+                                });
                             });
                         }
                         @Override
                         public void onError(String message) {
-                            if (getActivity() != null) getActivity().runOnUiThread(() -> ToastHelper.show(requireContext(), message));
+                            if (getActivity() != null) getActivity().runOnUiThread(() ->
+                                    DialogHelper.showAlert(requireContext(), "Error", message, null)
+                            );
                         }
                     });
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
+                },
+                null
+        );
     }
 }

@@ -329,9 +329,9 @@ public class TransactionFragment extends Fragment {
                     DialogHelper.showCustomDialog(
                             requireContext(),
                             getString(R.string.action_delete), // Bạn có thể thay bằng "Xóa giao dịch"
-                            "Bạn có chắc chắn muốn xóa giao dịch này không? Hành động này không thể hoàn tác.",
-                            "Xóa",
-                            "Hủy",
+                            "Are you sure? This action cannot undo.",
+                            "Delete",
+                            "Cancel",
                             DialogHelper.DialogType.DANGER, // DANGER để hiện nút đỏ
                             true, // Cho phép hiện nút Hủy
                             () -> {
@@ -342,8 +342,8 @@ public class TransactionFragment extends Fragment {
                                 // B. Xóa xong thì gọi Dialog 1 nút (showSuccess) báo thành công
                                 DialogHelper.showSuccess(
                                         requireContext(),
-                                        "Thành công",
-                                        "Đã xóa giao dịch thành công!",
+                                        "Success",
+                                        "Delete successfully",
                                         null // Bấm OK tự tắt, không cần làm gì thêm
                                 );
                             },

@@ -1,6 +1,5 @@
 package com.example.cashify.ui.category;
 
-import android.app.AlertDialog;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
@@ -78,7 +77,6 @@ public class CategoryManagement extends AppCompatActivity {
         CategoryAdapter.OnCategoryListener listener = new CategoryAdapter.OnCategoryListener() {
             @Override
             public void onDeleteClick(Category category) {
-                // Thay thế AlertDialog cũ bằng DialogHelper "trẻ trung"
                 DialogHelper.showCustomDialog(
                         CategoryManagement.this, // Context
                         getString(R.string.action_delete_category), // Title: "Delete category"
@@ -250,7 +248,6 @@ public class CategoryManagement extends AppCompatActivity {
 
                 Category cat = list.get(pos);
 
-                // 2. Gọi DialogHelper thay cho AlertDialog cũ (Không cần mảng isDeleted nữa)
                 DialogHelper.showCustomDialog(
                         CategoryManagement.this, // Context
                         getString(R.string.action_delete_category),

@@ -28,6 +28,7 @@ import com.example.cashify.R;
 import com.example.cashify.data.model.Budget;
 import com.example.cashify.data.local.BudgetWithSpent;
 import com.example.cashify.ui.main.MainViewModel;
+import com.example.cashify.utils.DialogHelper;
 import com.example.cashify.utils.NumpadBottomSheet;
 import com.example.cashify.utils.CurrencyFormatter;
 import com.google.android.material.button.MaterialButton;
@@ -140,7 +141,7 @@ public class BudgetFragment extends Fragment {
         CardView cardMaster = view.findViewById(R.id.cardMaster);
         if (cardMaster != null) {
             cardMaster.setOnClickListener(v -> {
-                if (isReadOnly) { showToastOnUI("Past months are read-only!"); return; }
+                if (isReadOnly) { showDialogOnUI("Read-only", "Past months are read-only!", true);return; }
                 if (android.os.SystemClock.elapsedRealtime() - mLastClickTime < 1000) return;
                 mLastClickTime = android.os.SystemClock.elapsedRealtime();
                 double limit = masterBudgetCache != null ? masterBudgetCache.limitAmount : 0;
@@ -151,7 +152,7 @@ public class BudgetFragment extends Fragment {
         // Click (+) Thêm mới
         if (btnAddBudget != null) {
             btnAddBudget.setOnClickListener(v -> {
-                if (isReadOnly) { showToastOnUI("Past months are read-only!"); return; }
+                if (isReadOnly) { showDialogOnUI("Read-only", "Past months are read-only!", true); return; }
                 if (android.os.SystemClock.elapsedRealtime() - mLastClickTime < 1000) return;
                 mLastClickTime = android.os.SystemClock.elapsedRealtime();
                 List<Integer> existingIds = new ArrayList<>();
@@ -171,12 +172,12 @@ public class BudgetFragment extends Fragment {
         RecyclerView rvBudgets = view.findViewById(R.id.rvCategoryBudgets);
         rvBudgets.setLayoutManager(new LinearLayoutManager(getContext()));
         adapter = new BudgetAdapter(item -> {
-            if (isReadOnly) { showToastOnUI("Past months are read-only!"); return; }
+            if (isReadOnly) {showDialogOnUI("Read-only", "Past months are read-only!", true);return; }
             if (android.os.SystemClock.elapsedRealtime() - mLastClickTime < 1000) return;
             mLastClickTime = android.os.SystemClock.elapsedRealtime();
 
             if (isLinkedMode && currentPeriodType.equals("MONTH")) {
-                showToastOnUI("Please edit category budgets in the Weekly tab!");
+                showDialogOnUI("Linked Mode", "Please edit category budgets in the Weekly tab!", true);
                 return;
             }
 
@@ -201,13 +202,14 @@ public class BudgetFragment extends Fragment {
         });
 
         btnInfoLink.setOnClickListener(v -> {
-            new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
-                    .setTitle("About Linked Mode")
-                    .setMessage("How Weekly & Monthly budgets work:\n\n" +
+            DialogHelper.showSuccess(
+                    requireContext(),
+                    "About Linked Mode",
+                    "How Weekly & Monthly budgets work:\n\n" +
                             "• OFF (Independent): Weekly and Monthly budgets operate completely separately. Their limits do not affect each other.\n\n" +
-                            "• ON (Linked): Budgets are connected. You set the overall Master Budget in the Monthly tab, but detailed category allocations must be done in the Weekly tab. The sum of your Weekly Master budgets cannot exceed the Monthly limit.")
-                    .setPositiveButton("Got it", (dialog, which) -> dialog.dismiss())
-                    .show();
+                            "• ON (Linked): Budgets are connected. You set the overall Master Budget in the Monthly tab, but detailed category allocations must be done in the Weekly tab. The sum of your Weekly Master budgets cannot exceed the Monthly limit.",
+                    null
+            );
         });
     }
 
@@ -343,5 +345,17 @@ public class BudgetFragment extends Fragment {
                 mCurrentToast.show();
 
             });
-        }    }
+        }
+    }
+    private void showDialogOnUI(String title, String message, boolean isError) {
+        if (getActivity() != null) {
+            getActivity().runOnUiThread(() -> {
+                if (isError) {
+                    DialogHelper.showAlert(requireContext(), title, message, null);
+                } else {
+                    DialogHelper.showSuccess(requireContext(), title, message, null);
+                }
+            });
+        }
+    }
 }
