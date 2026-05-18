@@ -7,6 +7,7 @@
     app:cardBackgroundColor="@color/white"
     app:cardCornerRadius="24dp"
     app:cardElevation="0dp">
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -23,6 +24,7 @@
             android:textColor="@color/screen_title"
             android:textSize="24sp"
             android:textStyle="bold" />
+
         <TextView
             android:id="@+id/tvDialogMessage"
             android:layout_width="match_parent"
@@ -34,7 +36,10 @@
             android:textColor="@color/item_description"
             android:lineSpacingExtra="4dp"
             android:textSize="18sp" />
+
+        <!-- Thêm id để Java có thể điều chỉnh gravity -->
         <LinearLayout
+            android:id="@+id/btnContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
@@ -53,6 +58,7 @@
                 android:textSize="16sp"
                 app:backgroundTint="@color/btn_disabled_bg"
                 app:cornerRadius="10dp" />
+
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnConfirm"
                 android:layout_width="0dp"
@@ -66,6 +72,7 @@
                 android:textSize="16sp"
                 app:backgroundTint="@color/brand_primary"
                 app:cornerRadius="10dp" />
+
         </LinearLayout>
 
     </LinearLayout>
