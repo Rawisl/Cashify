@@ -49,6 +49,15 @@
                 android:imeOptions="actionSearch"
                 android:singleLine="true" />
         </androidx.cardview.widget.CardView>
+
+        <com.google.android.material.tabs.TabLayout
+            android:id="@+id/tabLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:tabIndicatorColor="#1A237E"
+            app:tabSelectedTextColor="#1A237E"
+            app:tabTextColor="#607D8B" />
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView

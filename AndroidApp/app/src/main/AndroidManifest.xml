@@ -43,6 +43,13 @@
         <activity
             android:name=".ui.FriendsActivity.RequestsActivity"
             android:exported="false" />
+        <activity
+            android:name=".ui.FriendsActivity.FriendChatActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".ui.FriendsActivity.MessagesActivity"
+            android:exported="false" />
 
         <activity
             android:name=".ui.auth.RegisterActivity"

@@ -2,6 +2,7 @@ package com.example.cashify.data.remote;
 
 import android.util.Log;
 
+import com.example.cashify.data.model.DirectConversation;
 import com.example.cashify.data.model.User;
 import com.example.cashify.utils.ApiClient;
 import com.example.cashify.utils.ApiService;
@@ -739,8 +740,31 @@ public class FirebaseManager {
             apiService.processFriendAction(actionType, token, request).enqueue(new retrofit2.Callback<Object>() {
                 @Override
                 public void onResponse(retrofit2.Call<Object> call, retrofit2.Response<Object> response) {
-                    if (response.isSuccessful()) callback.onSuccess(null);
-                    else callback.onError("Lỗi server: " + response.code());
+                    if (response.isSuccessful()) {
+                        callback.onSuccess(null);
+                        return;
+                    }
+
+                    try {
+                        String errorBody = response.errorBody() != null ? response.errorBody().string() : "";
+                        if (!errorBody.isEmpty()) {
+                            org.json.JSONObject jsonObject = new org.json.JSONObject(errorBody);
+                            String message = jsonObject.optString("message");
+                            if (message.isEmpty()) {
+                                message = jsonObject.optString("detail");
+                            }
+                            if (message.isEmpty()) {
+                                message = jsonObject.optString("title");
+                            }
+                            if (!message.isEmpty()) {
+                                callback.onError(message);
+                                return;
+                            }
+                        }
+                    } catch (Exception ignored) {
+                    }
+
+                    callback.onError("Lỗi server: " + response.code());
                 }
 
                 @Override
@@ -749,6 +773,155 @@ public class FirebaseManager {
                 }
             });
         }).addOnFailureListener(e -> callback.onError("Lỗi Auth: " + e.getMessage()));
+    }
+
+    public void sendDirectFriendMessage(String receiverId, String text, DataCallback<Void> callback) {
+        FirebaseUser user = auth.getCurrentUser();
+        if (user == null) {
+            callback.onError("Chưa đăng nhập!");
+            return;
+        }
+
+        user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
+            String token = "Bearer " + getTokenResult.getToken();
+            ApiService apiService = ApiClient.getClient().create(ApiService.class);
+            ApiService.DirectFriendMessageRequest request = new ApiService.DirectFriendMessageRequest(receiverId, text);
+
+            apiService.sendDirectFriendMessage(token, request).enqueue(new retrofit2.Callback<Object>() {
+                @Override
+                public void onResponse(retrofit2.Call<Object> call, retrofit2.Response<Object> response) {
+                    if (response.isSuccessful()) {
+                        callback.onSuccess(null);
+                        return;
+                    }
+
+                    callback.onError(extractApiError(response, "Lỗi server: " + response.code()));
+                }
+
+                @Override
+                public void onFailure(retrofit2.Call<Object> call, Throwable t) {
+                    callback.onError("Lỗi mạng: " + t.getMessage());
+                }
+            });
+        }).addOnFailureListener(e -> callback.onError("Lỗi Auth: " + e.getMessage()));
+    }
+
+    public void getFriendSuggestions(DataCallback<List<User>> callback) {
+        FirebaseUser user = auth.getCurrentUser();
+        if (user == null) {
+            callback.onError("Chưa đăng nhập!");
+            return;
+        }
+
+        user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
+            String token = "Bearer " + getTokenResult.getToken();
+            ApiService apiService = ApiClient.getClient().create(ApiService.class);
+            apiService.getFriendSuggestions(token).enqueue(new retrofit2.Callback<List<User>>() {
+                @Override
+                public void onResponse(retrofit2.Call<List<User>> call, retrofit2.Response<List<User>> response) {
+                    if (response.isSuccessful()) {
+                        callback.onSuccess(response.body() != null ? response.body() : new ArrayList<>());
+                        return;
+                    }
+                    callback.onError(extractApiError(response, "Lỗi server: " + response.code()));
+                }
+
+                @Override
+                public void onFailure(retrofit2.Call<List<User>> call, Throwable t) {
+                    callback.onError("Lỗi mạng: " + t.getMessage());
+                }
+            });
+        }).addOnFailureListener(e -> callback.onError("Lỗi Auth: " + e.getMessage()));
+    }
+
+    public void getFriendMessageChats(DataCallback<List<User>> callback) {
+        FirebaseUser user = auth.getCurrentUser();
+        if (user == null) {
+            callback.onError("Chưa đăng nhập!");
+            return;
+        }
+
+        user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
+            String token = "Bearer " + getTokenResult.getToken();
+            ApiService apiService = ApiClient.getClient().create(ApiService.class);
+            apiService.getFriendMessageChats(token).enqueue(new retrofit2.Callback<List<User>>() {
+                @Override
+                public void onResponse(retrofit2.Call<List<User>> call, retrofit2.Response<List<User>> response) {
+                    if (response.isSuccessful()) callback.onSuccess(response.body() != null ? response.body() : new ArrayList<>());
+                    else callback.onError(extractApiError(response, "Lỗi server: " + response.code()));
+                }
+
+                @Override
+                public void onFailure(retrofit2.Call<List<User>> call, Throwable t) {
+                    callback.onError("Lỗi mạng: " + t.getMessage());
+                }
+            });
+        }).addOnFailureListener(e -> callback.onError("Lỗi Auth: " + e.getMessage()));
+    }
+
+    public void getDirectFriendConversations(DataCallback<List<DirectConversation>> callback) {
+        FirebaseUser user = auth.getCurrentUser();
+        if (user == null) {
+            callback.onError("ChÆ°a Ä‘Äƒng nháº­p!");
+            return;
+        }
+
+        user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
+            String token = "Bearer " + getTokenResult.getToken();
+            ApiService apiService = ApiClient.getClient().create(ApiService.class);
+            apiService.getDirectFriendConversations(token).enqueue(new retrofit2.Callback<List<DirectConversation>>() {
+                @Override
+                public void onResponse(retrofit2.Call<List<DirectConversation>> call, retrofit2.Response<List<DirectConversation>> response) {
+                    if (response.isSuccessful()) callback.onSuccess(response.body() != null ? response.body() : new ArrayList<>());
+                    else callback.onError(extractApiError(response, "Lá»—i server: " + response.code()));
+                }
+
+                @Override
+                public void onFailure(retrofit2.Call<List<DirectConversation>> call, Throwable t) {
+                    callback.onError("Lá»—i máº¡ng: " + t.getMessage());
+                }
+            });
+        }).addOnFailureListener(e -> callback.onError("Lá»—i Auth: " + e.getMessage()));
+    }
+
+    public void getDirectFriendMessages(String friendUid, DataCallback<List<com.example.cashify.data.model.ChatMessage>> callback) {
+        FirebaseUser user = auth.getCurrentUser();
+        if (user == null) {
+            callback.onError("Chưa đăng nhập!");
+            return;
+        }
+
+        user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
+            String token = "Bearer " + getTokenResult.getToken();
+            ApiService apiService = ApiClient.getClient().create(ApiService.class);
+            apiService.getDirectFriendMessages(friendUid, token).enqueue(new retrofit2.Callback<List<com.example.cashify.data.model.ChatMessage>>() {
+                @Override
+                public void onResponse(retrofit2.Call<List<com.example.cashify.data.model.ChatMessage>> call, retrofit2.Response<List<com.example.cashify.data.model.ChatMessage>> response) {
+                    if (response.isSuccessful()) callback.onSuccess(response.body() != null ? response.body() : new ArrayList<>());
+                    else callback.onError(extractApiError(response, "Lỗi server: " + response.code()));
+                }
+
+                @Override
+                public void onFailure(retrofit2.Call<List<com.example.cashify.data.model.ChatMessage>> call, Throwable t) {
+                    callback.onError("Lỗi mạng: " + t.getMessage());
+                }
+            });
+        }).addOnFailureListener(e -> callback.onError("Lỗi Auth: " + e.getMessage()));
+    }
+
+    private String extractApiError(retrofit2.Response<?> response, String fallback) {
+        try {
+            String errorBody = response.errorBody() != null ? response.errorBody().string() : "";
+            if (!errorBody.isEmpty()) {
+                org.json.JSONObject jsonObject = new org.json.JSONObject(errorBody);
+                String message = jsonObject.optString("message");
+                if (message.isEmpty()) message = jsonObject.optString("detail");
+                if (message.isEmpty()) message = jsonObject.optString("title");
+                if (!message.isEmpty()) return message;
+            }
+        } catch (Exception ignored) {
+        }
+        return fallback;
     }
 
     // ============================================================

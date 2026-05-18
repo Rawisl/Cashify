@@ -164,6 +164,12 @@ public class RequestsActivity extends AppCompatActivity {
             }
             // TODO: Sếp thêm luồng cho nav_messages ở đây nếu sau này làm
             // TODO: Sếp thêm luồng cho nav_messages ở đây nếu sau này làm
+            if (id == R.id.nav_messages) {
+                startActivity(new Intent(RequestsActivity.this, MessagesActivity.class));
+                overridePendingTransition(0, 0);
+                finish();
+                return true;
+            }
             return false;
         });
         bottomNavigation.setSelectedItemId(R.id.nav_requests); // Sáng đèn tab Requests

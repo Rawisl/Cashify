@@ -43,6 +43,21 @@ public interface ApiService {
     @POST("/api/v1/friend/{actionType}")
     Call<Object> processFriendAction(@Path("actionType") String actionType, @Header("Authorization") String token, @Body FriendActionRequest request);
 
+    @GET("/api/v1/friend/suggestions")
+    Call<java.util.List<com.example.cashify.data.model.User>> getFriendSuggestions(@Header("Authorization") String token);
+
+    @GET("/api/v1/friend/messages/chats")
+    Call<java.util.List<com.example.cashify.data.model.User>> getFriendMessageChats(@Header("Authorization") String token);
+
+    @GET("/api/v1/friend/messages/conversations")
+    Call<java.util.List<com.example.cashify.data.model.DirectConversation>> getDirectFriendConversations(@Header("Authorization") String token);
+
+    @GET("/api/v1/friend/messages/{friendUid}")
+    Call<java.util.List<com.example.cashify.data.model.ChatMessage>> getDirectFriendMessages(@Path("friendUid") String friendUid, @Header("Authorization") String token);
+
+    @POST("/api/v1/friend/message/send")
+    Call<Object> sendDirectFriendMessage(@Header("Authorization") String token, @Body DirectFriendMessageRequest request);
+
     @POST("/api/v1/workspace/invite/send")
     Call<Object> sendWorkspaceInvites(@Header("Authorization") String token, @Body WorkspaceInviteSendRequest request);
 
@@ -97,6 +112,15 @@ public interface ApiService {
     class FriendActionRequest {
         public String TargetUid;
         public FriendActionRequest(String targetUid) { TargetUid = targetUid; }
+    }
+
+    class DirectFriendMessageRequest {
+        public String ReceiverId;
+        public String Text;
+        public DirectFriendMessageRequest(String receiverId, String text) {
+            ReceiverId = receiverId;
+            Text = text;
+        }
     }
 
     class WorkspaceInviteSendRequest {
