@@ -215,4 +215,19 @@
     <string name="placeholder_notif_title">Notification Title</string>
     <string name="placeholder_notif_message">Notification detail content...</string>
     <string name="placeholder_notif_time">Just now</string>
+
+    <string name="social_title">Social</string>
+    <string name="social_newsfeed_title">Newsfeed</string>
+    <string name="social_newsfeed_subtitle">Friends\' activities</string>
+
+    <string name="social_profile_title">Profile</string>
+    <string name="social_profile_friends">Friends</string>
+    <string name="social_profile_achievements">Achievements</string>
+    <string name="social_profile_my_posts">My posts</string>
+    <string name="social_profile_my_posts_subtitle">Activity &amp; Milestone</string>
+    <string name="social_profile_empty_title">Chưa có bài viết nào</string>
+    <string name="social_profile_empty_desc">Các bài viết và cột mốc của bạn sẽ xuất hiện ở đây</string>
+
+    <string name="placeholder_user_name">User</string>
+    <string name="placeholder_zero">0</string>
 </resources>

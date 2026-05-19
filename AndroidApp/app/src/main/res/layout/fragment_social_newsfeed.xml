@@ -27,7 +27,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:text="Social"
+                android:text="@string/social_title"
                 android:textColor="@color/white"
                 android:textAppearance="@style/ToolbarTitleFont" />
 
@@ -50,13 +50,13 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Bảng tin"
+                android:text="@string/social_newsfeed_title"
                 style="@style/screen_title" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Hoạt động từ bạn bè"
+                android:text="@string/social_newsfeed_subtitle"
                 style="@style/screen_subtitle" />
 
             <!-- TODO: RecyclerView bài đăng -->
