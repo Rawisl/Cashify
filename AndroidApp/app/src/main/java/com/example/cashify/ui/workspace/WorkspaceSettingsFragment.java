@@ -1,6 +1,5 @@
 package com.example.cashify.ui.workspace;
 
-import android.app.AlertDialog;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,6 +15,7 @@ import androidx.lifecycle.ViewModelProvider;
 import com.example.cashify.R;
 import com.example.cashify.data.model.User;
 import com.example.cashify.data.remote.FirebaseManager;
+import com.example.cashify.utils.DialogHelper;
 import com.example.cashify.utils.ToastHelper;
 import com.google.firebase.auth.FirebaseAuth;
 
@@ -122,26 +122,38 @@ public class WorkspaceSettingsFragment extends Fragment {
 
         btnLeaveWorkspace.setOnClickListener(v -> {
             if (isOwner && memberCount > 1) {
-                new AlertDialog.Builder(requireContext())
-                        .setTitle("Action Required")
-                        .setMessage("You cannot leave while you are the owner. Please open 'Manage Members' and transfer ownership first.")
-                        .setPositiveButton("OK", null).show();
+                DialogHelper.showAlert(
+                        requireContext(),
+                        "Action Required",
+                        "You cannot leave while you are the owner. Please open 'Manage Members' and transfer ownership first.",
+                        null
+                );
             } else {
                 String title = isOwner ? "Delete Workspace?" : "Leave Workspace?";
                 String msg = isOwner ? "Are you sure you want to delete this workspace forever?" : "Are you sure you want to leave?";
 
-                new AlertDialog.Builder(requireContext())
-                        .setTitle(title).setMessage(msg)
-                        .setPositiveButton("Confirm", (dialog, which) -> {
+                DialogHelper.showCustomDialog(
+                        requireContext(),
+                        title,
+                        msg,
+                        "Confirm",
+                        "Cancel",
+                        DialogHelper.DialogType.DANGER,
+                        true,
+                        () -> {
                             FirebaseManager.getInstance().leaveWorkspace(workspaceId, new FirebaseManager.DataCallback<Void>() {
                                 @Override
-                                public void onSuccess(Void data) { } // Firebase snapshot sẽ tự động xử lý và văng app
+                                public void onSuccess(Void data) { }
                                 @Override
                                 public void onError(String message) {
-                                    if (getActivity() != null) getActivity().runOnUiThread(() -> ToastHelper.show(requireContext(), message));
+                                    if (getActivity() != null) getActivity().runOnUiThread(() ->
+                                            DialogHelper.showAlert(requireContext(), "Error", message, null)
+                                    );
                                 }
                             });
-                        }).setNegativeButton("Cancel", null).show();
+                        },
+                        null
+                );
             }
         });
     }
