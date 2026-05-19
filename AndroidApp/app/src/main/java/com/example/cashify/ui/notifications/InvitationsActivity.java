@@ -1,21 +1,26 @@
 package com.example.cashify.ui.notifications;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
-import androidx.appcompat.app.AppCompatActivity;
+import android.widget.ImageButton;
+import android.widget.TextView;
+
+import androidx.core.view.GravityCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
 import com.example.cashify.data.model.WorkspaceInvitation;
 import com.example.cashify.data.remote.FirebaseManager;
+import com.example.cashify.ui.main.BaseActivity;
+import com.example.cashify.ui.main.MainActivity;
 import com.example.cashify.utils.ToastHelper;
 import com.google.android.material.appbar.MaterialToolbar;
 
-import java.util.ArrayList;
 import java.util.List;
 
-public class InvitationsActivity extends AppCompatActivity {
+public class InvitationsActivity extends BaseActivity { // Đổi sang kế thừa BaseActivity
 
     private InvitationAdapter adapter;
     private FirebaseManager firebaseManager;
@@ -27,8 +32,19 @@ public class InvitationsActivity extends AppCompatActivity {
 
         firebaseManager = FirebaseManager.getInstance();
 
+        // 1. GỌI HÀM CỦA CHA ĐỂ SETUP SIDEBAR
+        setupBaseSidebar();
+
         MaterialToolbar toolbar = findViewById(R.id.toolbarInvitations);
-        toolbar.setNavigationOnClickListener(v -> finish()); // Nút back
+
+        // 2. MỞ CỬA SIDEBAR THAY VÌ FINISH()
+        if (toolbar != null) {
+            toolbar.setNavigationOnClickListener(v -> {
+                if (drawerLayout != null) {
+                    drawerLayout.openDrawer(GravityCompat.START);
+                }
+            });
+        }
 
         RecyclerView rvInvitations = findViewById(R.id.rvInvitations);
         rvInvitations.setLayoutManager(new LinearLayoutManager(this));
@@ -69,6 +85,50 @@ public class InvitationsActivity extends AppCompatActivity {
 
         // Kéo dữ liệu từ Firebase về
         loadInvitations();
+
+        // 3. SETUP CHUÔNG THÔNG BÁO VÀ CHẤM ĐỎ
+        ImageButton btnNotifications = findViewById(R.id.btnNotifications);
+        if (btnNotifications != null) {
+            btnNotifications.setOnClickListener(v -> {
+                new com.example.cashify.ui.notifications.NotificationBottomSheet()
+                        .show(getSupportFragmentManager(), "NotificationBottomSheet");
+            });
+        }
+
+        TextView tvNotificationBadge = findViewById(R.id.tvNotificationBadge);
+        if (tvNotificationBadge != null) {
+            FirebaseManager.getInstance().listenToUnreadNotifications(new FirebaseManager.DataCallback<Integer>() {
+                @Override
+                public void onSuccess(Integer count) {
+                    if (count != null && count > 0) {
+                        tvNotificationBadge.setVisibility(View.VISIBLE);
+                        tvNotificationBadge.setText(count > 9 ? "9+" : String.valueOf(count));
+                    } else {
+                        tvNotificationBadge.setVisibility(View.GONE);
+                    }
+                }
+
+                @Override
+                public void onError(String message) {
+                    tvNotificationBadge.setVisibility(View.GONE);
+                }
+            });
+        }
+    }
+
+    // 4. XỬ LÝ LOGIC KHI BẤM VÀO ITEM QUỸ TRÊN SIDEBAR (BẮT BUỘC VÌ IMPLEMENTS)
+    @Override
+    protected void onNavigationItemSelected(int itemId) {
+        if (menuIdToWorkspaceIdMap.containsKey(itemId)) {
+            Intent intent = new Intent(this, MainActivity.class);
+            intent.putExtra("OPEN_WORKSPACE_ID", menuIdToWorkspaceIdMap.get(itemId));
+            startActivity(intent);
+            finish();
+        } else if (itemId == R.id.nav_workspace_personal) {
+            Intent intent = new Intent(this, MainActivity.class);
+            startActivity(intent);
+            finish();
+        }
     }
 
     private void loadInvitations() {
@@ -76,8 +136,6 @@ public class InvitationsActivity extends AppCompatActivity {
             @Override
             public void onSuccess(List<WorkspaceInvitation> data) {
                 adapter.setData(data);
-
-                // Nếu rỗng thì có thể hiện một TextView "Không có lời mời nào" (Tài tự custom thêm UI chỗ này nếu muốn nhé)
             }
 
             @Override

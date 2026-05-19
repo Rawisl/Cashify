@@ -59,4 +59,7 @@
 
     <!-- Line dọc nối các avatar trong timeline -->
     <color name="timeline_line_color">#E0E0E0</color>
+
+    <color name="accent_gold">#F5A623</color>
+
 </resources>
