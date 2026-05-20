@@ -29,7 +29,6 @@ public class SocialProfileFragment extends Fragment {
     // ── Views ─────────────────────────────────────────────────────
     private ShapeableImageView imgAvatar;
     private TextView tvDisplayName;
-    private TextView tvUsername;
     private TextView tvFriendCount;
     private TextView tvTrophyCount;
     private RecyclerView rvMyPosts;
@@ -66,7 +65,6 @@ public class SocialProfileFragment extends Fragment {
     private void bindViews(View view) {
         imgAvatar       = view.findViewById(R.id.imgAvatar);
         tvDisplayName   = view.findViewById(R.id.tvDisplayName);
-        tvUsername      = view.findViewById(R.id.tvUsername);
         tvFriendCount   = view.findViewById(R.id.tvFriendCount);
         tvTrophyCount   = view.findViewById(R.id.tvTrophyCount);
         rvMyPosts       = view.findViewById(R.id.rvMyPosts);
@@ -126,7 +124,6 @@ public class SocialProfileFragment extends Fragment {
             String avatarUrl   = doc.getString("avatarUrl");
 
             tvDisplayName.setText(displayName != null ? displayName : "Người dùng");
-            tvUsername.setText("@" + (username != null ? username : "user"));
 
             if (avatarUrl != null && !avatarUrl.isEmpty()) {
                 com.example.cashify.utils.ImageHelper.loadAvatar(avatarUrl, imgAvatar);

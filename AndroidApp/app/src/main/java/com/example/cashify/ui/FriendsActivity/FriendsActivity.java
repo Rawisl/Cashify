@@ -144,9 +144,15 @@ public class FriendsActivity extends BaseActivity { // Đã kế thừa BaseActi
                 friendAdapter.updateList(isShowingFriends ? friendList : suggestionList);
             }
 
-            @Override public void onTabUnselected(TabLayout.Tab tab) {}
-            @Override public void onTabReselected(TabLayout.Tab tab) {}
+            @Override
+            public void onTabUnselected(TabLayout.Tab tab) {
+            }
+
+            @Override
+            public void onTabReselected(TabLayout.Tab tab) {
+            }
         });
+    }
     // 3. XỬ LÝ LOGIC KHI BẤM VÀO ITEM QUỸ TRÊN SIDEBAR (BẮT BUỘC VÌ IMPLEMENTS TỪ BASEACTIVITY)
     @Override
     protected void onNavigationItemSelected(int itemId) {
