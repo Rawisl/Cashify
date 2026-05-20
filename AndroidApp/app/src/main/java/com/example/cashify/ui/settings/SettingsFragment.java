@@ -1,6 +1,5 @@
 package com.example.cashify.ui.settings;
 
-import android.app.AlertDialog;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
@@ -27,6 +26,7 @@ import com.example.cashify.ui.category.CategoryManagement;
 import com.example.cashify.R;
 import com.example.cashify.data.local.AppDatabase;
 import com.example.cashify.ui.auth.LoginActivity;
+import com.example.cashify.utils.DialogHelper;
 import com.example.cashify.utils.ToastHelper;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 
@@ -101,41 +101,40 @@ public class SettingsFragment extends Fragment {
 
         // GỮ NGUYÊN: Reset transaction
         LinearLayout btnResetTransaction = view.findViewById(R.id.btn_reset_transaction);
-        btnResetTransaction.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String msg = getString(R.string.confirm_reset) + " all " + getString(R.string.nav_transaction_history) + "?";
-                AppDatabase db = AppDatabase.getInstance(requireContext());
+        btnResetTransaction.setOnClickListener(v -> {
+            String msg = getString(R.string.confirm_reset) + " all " + getString(R.string.nav_transaction_history) + "?";
 
-                new AlertDialog.Builder(requireContext())
-                        .setTitle(getString(R.string.action_reset_transactions))
-                        .setMessage(msg)
-                        .setPositiveButton(getString(R.string.action_reset), (d, w) -> {
-                            // Dọn dẹp Firebase trước
-                            FirebaseManager.getInstance().deleteAllTransactionsFromCloud("PERSONAL", new FirebaseManager.DataCallback<Void>() {
-                                @Override
-                                public void onSuccess(Void data) {
-                                    // Nếu xóa Cloud thành công, mới dọn tiếp Room Database
-                                    Executors.newSingleThreadExecutor().execute(() -> {
-                                        AppDatabase.getInstance(requireContext()).transactionDao().deleteAllTransactions("PERSONAL");
+            DialogHelper.showCustomDialog(
+                    requireContext(),
+                    getString(R.string.action_reset_transactions),
+                    msg,
+                    getString(R.string.action_reset),
+                    getString(R.string.action_cancel),
+                    DialogHelper.DialogType.DANGER,
+                    true,
+                    () -> {
+                        FirebaseManager.getInstance().deleteAllTransactionsFromCloud("PERSONAL", new FirebaseManager.DataCallback<Void>() {
+                            @Override
+                            public void onSuccess(Void data) {
+                                Executors.newSingleThreadExecutor().execute(() -> {
+                                    AppDatabase.getInstance(requireContext()).transactionDao().deleteAllTransactions("PERSONAL");
 
-                                        // Hiện thông báo thành công
-                                        requireActivity().runOnUiThread(() ->
-                                                ToastHelper.show(requireContext(), "All transactions have been deleted!")
-                                        );
-                                    });
-                                }
-                                @Override
-                                public void onError(String message) {
-                                    ToastHelper.show(requireContext(), "Cloud deleting error: " + message);
-                                }
-                            });
-                        })
-                        .setNegativeButton(getString(R.string.action_cancel), null)
-                        .show();
-            }
+                                    requireActivity().runOnUiThread(() ->
+                                            DialogHelper.showSuccess(requireContext(), "Done", "All transactions have been deleted!", null)
+                                    );
+                                });
+                            }
+                            @Override
+                            public void onError(String message) {
+                                requireActivity().runOnUiThread(() ->
+                                        DialogHelper.showAlert(requireContext(), "Error", "Cloud deleting error: " + message, null)
+                                );
+                            }
+                        });
+                    },
+                    null  // Cancel không cần làm gì
+            );
         });
-
         // GỮ NGUYÊN: Logout
         LinearLayout btnLogout = view.findViewById(R.id.btn_logout);
         btnLogout.setOnClickListener(v -> {

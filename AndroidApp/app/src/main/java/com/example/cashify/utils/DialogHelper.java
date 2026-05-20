@@ -5,9 +5,11 @@ import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.core.content.ContextCompat;
@@ -54,6 +56,8 @@ public class DialogHelper {
         MaterialButton btnCancel = dialog.findViewById(R.id.btnCancel);
 
         // Gán text
+        // Căn giữa Title
+        tvTitle.setGravity(Gravity.CENTER);
         tvTitle.setText(title);
         tvMessage.setText(message);
 
@@ -71,6 +75,18 @@ public class DialogHelper {
         // Ẩn/Hiện nút Cancel
         if (!showCancelButton) {
             btnCancel.setVisibility(View.GONE);
+
+            // Căn giữa button confirm: reset weight, đặt width cố định, gravity container = center
+            LinearLayout btnContainer = dialog.findViewById(R.id.btnContainer);
+            btnContainer.setGravity(Gravity.CENTER);
+
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                    (int) (context.getResources().getDisplayMetrics().widthPixels * 0.4), // ~40% màn hình
+                    (int) (56 * context.getResources().getDisplayMetrics().density)        // 56dp → px
+            );
+            params.setMargins(0, 0, 0, 0);
+            btnConfirm.setLayoutParams(params);
+
         } else {
             btnCancel.setVisibility(View.VISIBLE);
         }

@@ -24,6 +24,7 @@ import com.example.cashify.data.model.Category;
 import com.example.cashify.data.model.Transaction;
 import com.example.cashify.utils.ApiClient;
 import com.example.cashify.utils.ApiService;
+import com.example.cashify.utils.DialogHelper;
 import com.example.cashify.utils.InvoiceParser;
 import com.example.cashify.utils.NumpadBottomSheet;
 import com.example.cashify.utils.CurrencyFormatter;
@@ -397,26 +398,29 @@ public class AddTransactionActivity extends AppCompatActivity {
     }
 
     private void showDeleteConfirmation() {
-        new AlertDialog.Builder(this)
-                .setTitle("Delete Transaction")
-                .setMessage("Are you sure you want to delete this record?")
-                .setPositiveButton("Delete", (dialog, which) -> {
+        DialogHelper.showCustomDialog(
+                this,
+                "Delete Transaction",
+                "Are you sure you want to delete this record?",
+                "Delete",
+                "Cancel",
+                DialogHelper.DialogType.DANGER,
+                true,
+                () -> {
                     if (workspaceId != null && !workspaceId.trim().isEmpty() && !workspaceId.equals("null") && !workspaceId.equals("PERSONAL")) {
-                        // XÓA TRÊN CLOUD
                         FirebaseFirestore.getInstance()
                                 .collection("workspaces").document(workspaceId)
                                 .collection("transactions").document(editTransactionId)
                                 .delete()
                                 .addOnSuccessListener(a -> {
-                                    ToastHelper.show(this, "Deleted from Cloud!");
-                                    finish();
+                                    DialogHelper.showSuccess(this, "Done", "Deleted from Cloud!", () -> finish());
                                 });
                     } else {
                         viewModel.deleteCurrentTransaction();
                     }
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
+                },
+                null
+        );
     }
 
     private void loadTransactionFromFirestoreForEdit(String id) {

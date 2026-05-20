@@ -147,71 +147,72 @@ app.MapPost("/api/v1/workspace/transaction/add", async (HttpRequest request, Tra
     try
     {
         var authHeader = request.Headers["Authorization"].FirstOrDefault();
-        if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
-            return Results.Unauthorized();
+        if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer ")) return Results.Unauthorized();
 
         var token = authHeader.Substring("Bearer ".Length);
         var decodedToken = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token);
         var uid = decodedToken.Uid;
+        string senderName = decodedToken.Claims.TryGetValue("name", out var nameObj) ? nameObj.ToString()! : "A member";
 
-        if (body.Amount <= 0) return Results.BadRequest(new { error = "Số tiền không hợp lệ" });
-        if (string.IsNullOrEmpty(body.WorkspaceId) || body.WorkspaceId == "PERSONAL")
-            return Results.BadRequest(new { error = "API này chỉ dành cho Quỹ chung" });
+        if (body.Amount <= 0) return Results.BadRequest(new { error = "invalid budget" });
+        if (string.IsNullOrEmpty(body.WorkspaceId) || body.WorkspaceId == "PERSONAL") return Results.BadRequest(new { error = "This API is for Group fund" });
 
         var db = FirestoreDb.Create(projectId);
         var wsRef = db.Collection("workspaces").Document(body.WorkspaceId);
         var wsSnap = await wsRef.GetSnapshotAsync();
-
-        if (!wsSnap.Exists) return Results.NotFound(new { error = "Không tìm thấy Quỹ này" });
+        if (!wsSnap.Exists) return Results.NotFound(new { error = "Not found group" });
 
         var members = wsSnap.GetValue<List<string>>("members");
-
-        // --- THÊM DÒNG NÀY ĐỂ FIX LỖI CS0103 ---
         var ownerId = wsSnap.GetValue<string>("ownerId");
-        // ---------------------------------------
 
-        if (members == null || !members.Contains(uid))
-            return Results.StatusCode(403);
+        if (members == null || !members.Contains(uid)) return Results.StatusCode(403);
 
         var transId = !string.IsNullOrEmpty(body.Id) ? body.Id : Guid.NewGuid().ToString();
         var transRef = wsRef.Collection("transactions").Document(transId);
 
-        // NẾU LÀ HÀNH ĐỘNG SỬA (Đã có ID từ trước) -> Phải check xem có quyền sửa không!
         if (!string.IsNullOrEmpty(body.Id))
         {
             var existingTransSnap = await transRef.GetSnapshotAsync();
             if (existingTransSnap.Exists)
             {
                 var creatorId = existingTransSnap.GetValue<string>("userId");
-                // Cấm sửa trộm giao dịch của người khác (Ngoại trừ Owner)
-                if (uid != creatorId && uid != ownerId)
-                {
-                    return Results.StatusCode(403);
-                }
+                if (uid != creatorId && uid != ownerId) return Results.StatusCode(403);
             }
         }
 
         var transactionData = new Dictionary<string, object>
         {
-            { "id", transId },
-            { "amount", body.Amount },
-            { "categoryId", body.CategoryId },
-            { "note", body.Note ?? "" },
-            { "timestamp", body.Timestamp },
-            { "paymentMethod", body.PaymentMethod ?? "Cash" },
-            { "type", body.Type },
-            { "workspaceId", body.WorkspaceId },
-            { "userId", uid },
-            { "firestoreCategoryId", body.FirestoreCategoryId ?? "" }
+            { "id", transId }, { "amount", body.Amount }, { "categoryId", body.CategoryId },
+            { "note", body.Note ?? "" }, { "timestamp", body.Timestamp }, { "paymentMethod", body.PaymentMethod ?? "Cash" },
+            { "type", body.Type }, { "workspaceId", body.WorkspaceId }, { "userId", uid }, { "firestoreCategoryId", body.FirestoreCategoryId ?? "" }
         };
 
-        await transRef.SetAsync(transactionData);
+        var batch = db.StartBatch();
+        batch.Set(transRef, transactionData);
+
+        // BẮN THÔNG BÁO CHO CÁC THÀNH VIÊN KHÁC
+        string actionName = string.IsNullOrEmpty(body.Id) ? "Adding" : "Updating";
+        foreach (var memberId in members)
+        {
+            if (memberId != uid) // Không tự gửi thông báo cho chính mình
+            {
+                var notifRef = db.Collection("users").Document(memberId).Collection("notifications").Document();
+                batch.Set(notifRef, new
+                {
+                    type = "WORKSPACE_TRANS",
+                    title = "Group fund fluctation",
+                    message = $"{senderName} has just {actionName} a transaction in group fund.",
+                    timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                    isRead = false,
+                    referenceId = body.WorkspaceId // Bấm vào sẽ bay sang trang Quỹ này
+                });
+            }
+        }
+
+        await batch.CommitAsync();
         return Results.Ok(new { message = "Lưu giao dịch Quỹ thành công", id = transId });
     }
-    catch (Exception ex)
-    {
-        return Results.Problem($"Lỗi hệ thống: {ex.Message}");
-    }
+    catch (Exception ex) { return Results.Problem($"Lỗi hệ thống: {ex.Message}"); }
 });
 
 // ======================================================================
@@ -453,15 +454,14 @@ app.MapPost("/api/v1/workspace/transaction/delete", async (HttpRequest request, 
         var token = authHeader.Substring("Bearer ".Length);
         var decodedToken = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token);
         var uid = decodedToken.Uid;
+        string senderName = decodedToken.Claims.TryGetValue("name", out var nameObj) ? nameObj.ToString()! : "A member";
 
-        if (string.IsNullOrEmpty(body.WorkspaceId) || string.IsNullOrEmpty(body.TransactionId))
-            return Results.BadRequest("Thiếu thông tin");
+        if (string.IsNullOrEmpty(body.WorkspaceId) || string.IsNullOrEmpty(body.TransactionId)) return Results.BadRequest("Data lacking");
 
         var db = FirestoreDb.Create(projectId);
         var wsRef = db.Collection("workspaces").Document(body.WorkspaceId);
         var wsSnap = await wsRef.GetSnapshotAsync();
-
-        if (!wsSnap.Exists) return Results.NotFound(new { error = "Không tìm thấy Quỹ" });
+        if (!wsSnap.Exists) return Results.NotFound(new { error = "Not found group" });
 
         var members = wsSnap.GetValue<List<string>>("members");
         var ownerId = wsSnap.GetValue<string>("ownerId");
@@ -470,34 +470,39 @@ app.MapPost("/api/v1/workspace/transaction/delete", async (HttpRequest request, 
 
         var transRef = wsRef.Collection("transactions").Document(body.TransactionId);
         var transSnap = await transRef.GetSnapshotAsync();
-
-        if (!transSnap.Exists) return Results.NotFound(new { error = "Giao dịch đã bị xóa từ trước" });
+        if (!transSnap.Exists) return Results.NotFound(new { error = "Transaction deleted before" });
 
         var creatorId = transSnap.GetValue<string>("userId");
-
-        //Không phải tác giả VÀ không phải Owner thì CẤM XÓA
-        if (uid != creatorId && uid != ownerId)
-        {
-            return Results.StatusCode(403);
-        }
+        if (uid != creatorId && uid != ownerId) return Results.StatusCode(403);
 
         var batch = db.StartBatch();
-        batch.Delete(transRef); // Trảm!
+        batch.Delete(transRef);
 
-        // Ghi Log báo cáo hệ thống
         var logRef = wsRef.Collection("logs").Document();
-        batch.Set(logRef, new
+        batch.Set(logRef, new { actionType = "DELETE_TRANSACTION", message = "has delete a transaction", userId = uid, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() });
+
+        // BẮN THÔNG BÁO CHO CÁC THÀNH VIÊN KHÁC 
+        foreach (var memberId in members)
         {
-            actionType = "DELETE_TRANSACTION",
-            message = "đã xóa một giao dịch",
-            userId = uid,
-            timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
-        });
+            if (memberId != uid)
+            {
+                var notifRef = db.Collection("users").Document(memberId).Collection("notifications").Document();
+                batch.Set(notifRef, new
+                {
+                    type = "WORKSPACE_TRANS",
+                    title = "Transcation deleted",
+                    message = $"{senderName} has just deleted a transaction from group fund.",
+                    timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                    isRead = false,
+                    referenceId = body.WorkspaceId
+                });
+            }
+        }
 
         await batch.CommitAsync();
-        return Results.Ok(new { message = "Xóa giao dịch thành công" });
+        return Results.Ok(new { message = "Deleted transaction successflly" });
     }
-    catch (Exception ex) { return Results.Problem($"Lỗi hệ thống: {ex.Message}"); }
+    catch (Exception ex) { return Results.Problem($"System error: {ex.Message}"); }
 });
 
 // ======================================================================
@@ -589,9 +594,12 @@ app.MapPost("/api/v1/friend/request", async (HttpRequest request, FriendActionRe
         var authHeader = request.Headers["Authorization"].FirstOrDefault();
         if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer ")) return Results.Unauthorized();
 
-        var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(authHeader.Substring("Bearer ".Length))).Uid;
-        if (string.IsNullOrWhiteSpace(body.TargetUid) || uid == body.TargetUid)
-            return Results.BadRequest(new { message = "UID không hợp lệ" });
+        var token = authHeader.Substring("Bearer ".Length);
+        var decodedToken = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token);
+        var uid = decodedToken.Uid;
+        string senderName = decodedToken.Claims.TryGetValue("name", out var nameObj) ? nameObj.ToString()! : "Unknown user";
+
+        if (string.IsNullOrEmpty(body.TargetUid) || uid == body.TargetUid) return Results.BadRequest("UID invalid");
 
         var db = FirestoreDb.Create(projectId);
         var currentUserRef = db.Collection("users").Document(uid);
@@ -632,8 +640,20 @@ app.MapPost("/api/v1/friend/request", async (HttpRequest request, FriendActionRe
         batch.Set(currentUserRef.Collection("sent_requests").Document(body.TargetUid), sentRequestData);
         batch.Set(targetUserRef.Collection("friend_requests").Document(uid), incomingRequestData);
 
+        // BẮN THÔNG BÁO KẾT BẠN
+        var notifRef = db.Collection("users").Document(body.TargetUid).Collection("notifications").Document();
+        batch.Set(notifRef, new
+        {
+            type = "FRIEND_REQUEST",
+            title = "Friend request",
+            message = $"{senderName} has sent you a friend request.",
+            timestamp = timestamp,
+            isRead = false,
+            referenceId = uid // ID người gửi
+        });
+
         await batch.CommitAsync();
-        return Results.Ok(new { message = "Gửi lời mời thành công" });
+        return Results.Ok(new { message = "sent request successfully" });
     }
     catch (Exception ex)
     {
@@ -687,7 +707,7 @@ app.MapPost("/api/v1/friend/remove", async (HttpRequest request, FriendActionReq
         if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer ")) return Results.Unauthorized();
 
         var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(authHeader.Substring("Bearer ".Length))).Uid;
-        if (string.IsNullOrEmpty(body.TargetUid)) return Results.BadRequest("UID không hợp lệ");
+        if (string.IsNullOrEmpty(body.TargetUid)) return Results.BadRequest("UID invalid");
 
         var db = FirestoreDb.Create(projectId);
         var batch = db.StartBatch();
@@ -701,7 +721,7 @@ app.MapPost("/api/v1/friend/remove", async (HttpRequest request, FriendActionReq
         }
 
         await batch.CommitAsync();
-        return Results.Ok(new { message = "Thao tác thành công" });
+        return Results.Ok(new { message = "successfully" });
     }
     catch (Exception ex) { return Results.Problem(ex.Message); }
 });
@@ -1033,6 +1053,130 @@ app.MapGet("/api/v1/cloudinary/sign", async (HttpRequest request) =>
     }
 });
 
+// ======================================================================
+// 14. ENDPOINT: GỬI LỜI MỜI VÀO QUỸ (WORKSPACE INVITATIONS)
+// ======================================================================
+app.MapPost("/api/v1/workspace/invite/send", async (HttpRequest request, WorkspaceInviteSendRequest body) =>
+{
+    try
+    {
+        var authHeader = request.Headers["Authorization"].FirstOrDefault();
+        if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer ")) return Results.Unauthorized();
+
+        var token = authHeader.Substring("Bearer ".Length);
+        var decodedToken = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token);
+        var uid = decodedToken.Uid;
+
+        if (string.IsNullOrEmpty(body.WorkspaceId) || body.TargetUids == null || body.TargetUids.Count == 0)
+            return Results.BadRequest("Data lacking");
+
+        var db = FirestoreDb.Create(projectId);
+        var batch = db.StartBatch();
+        var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+        var wsRef = db.Collection("workspaces").Document(body.WorkspaceId);
+        var wsSnap = await wsRef.GetSnapshotAsync();
+        if (!wsSnap.Exists) return Results.NotFound(new { error = "Not found group" });
+
+        var ownerId = wsSnap.GetValue<string>("ownerId");
+        if (uid != ownerId) return Results.StatusCode(403);
+
+        string inviterName = decodedToken.Claims.TryGetValue("name", out var nameObj) ? nameObj.ToString()! : "Your friend";
+        string inviterAvatar = decodedToken.Claims.TryGetValue("picture", out var picObj) ? picObj.ToString()! : "";
+
+        foreach (var targetUid in body.TargetUids)
+        {
+            var inviteRef = db.Collection("users").Document(targetUid).Collection("workspace_invitations").Document(body.WorkspaceId);
+            batch.Set(inviteRef, new
+            {
+                workspaceId = body.WorkspaceId,
+                workspaceName = body.WorkspaceName ?? "group",
+                inviterName = inviterName,
+                inviterAvatar = inviterAvatar,
+                timestamp = timestamp
+            });
+
+            // BẮN THÔNG BÁO MỜI VÀO QUỸ
+            var notifRef = db.Collection("users").Document(targetUid).Collection("notifications").Document();
+            batch.Set(notifRef, new
+            {
+                type = "WORKSPACE_INVITE",
+                title = "Invite to group",
+                message = $"{inviterName} has invited you to group fund: {(body.WorkspaceName ?? "group")}.",
+                timestamp = timestamp,
+                isRead = false,
+                referenceId = body.WorkspaceId
+            });
+        }
+
+        await batch.CommitAsync();
+        return Results.Ok(new { message = "Invitation sent succesfully!" });
+    }
+    catch (Exception ex) { return Results.Problem($"System error: {ex.Message}"); }
+});
+
+// ======================================================================
+// 15. ENDPOINT: ĐỒNG Ý LỜI MỜI
+// ======================================================================
+app.MapPost("/api/v1/workspace/invite/accept", async (HttpRequest request, WorkspaceInviteHandleRequest body) =>
+{
+    try
+    {
+        var authHeader = request.Headers["Authorization"].FirstOrDefault();
+        if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer ")) return Results.Unauthorized();
+
+        var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(authHeader.Substring("Bearer ".Length))).Uid;
+        if (string.IsNullOrEmpty(body.WorkspaceId) || string.IsNullOrEmpty(body.InvitationId)) return Results.BadRequest("Data lacking");
+
+        var db = FirestoreDb.Create(projectId);
+
+        var inviteRef = db.Collection("users").Document(uid).Collection("workspace_invitations").Document(body.InvitationId);
+
+        var wsRef = db.Collection("workspaces").Document(body.WorkspaceId);
+        var wsSnap = await wsRef.GetSnapshotAsync();
+
+        if (!wsSnap.Exists)
+        {
+            await inviteRef.DeleteAsync();
+            return Results.BadRequest(new { error = "WORKSPACE_DELETED", message = "Group has been deleted or not existed" });
+        }
+
+        var batch = db.StartBatch();
+
+        batch.Update(wsRef, "members", FieldValue.ArrayUnion(uid));
+
+        batch.Delete(inviteRef);
+
+        await batch.CommitAsync();
+        return Results.Ok(new { message = "Join group successfully!" });
+    }
+    catch (Exception ex) { return Results.Problem($"System error: {ex.Message}"); }
+});
+
+// ======================================================================
+// 16. ENDPOINT: TỪ CHỐI LỜI MỜI
+// ======================================================================
+app.MapPost("/api/v1/workspace/invite/decline", async (HttpRequest request, WorkspaceInviteHandleRequest body) =>
+{
+    try
+    {
+        var authHeader = request.Headers["Authorization"].FirstOrDefault();
+        if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer ")) return Results.Unauthorized();
+
+        var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(authHeader.Substring("Bearer ".Length))).Uid;
+        if (string.IsNullOrEmpty(body.InvitationId)) return Results.BadRequest("Data lacking");
+
+        var db = FirestoreDb.Create(projectId);
+
+        // Chỉ việc xé giấy mời vứt đi
+        var inviteRef = db.Collection("users").Document(uid).Collection("workspace_invitations").Document(body.InvitationId);
+        await inviteRef.DeleteAsync();
+
+        return Results.Ok(new { message = "Rejected the invitation." });
+    }
+    catch (Exception ex) { return Results.Problem($"System error: {ex.Message}"); }
+});
+
 
 // ======================================================================
 // CHẠY SERVER - Lệnh này PHẢI nằm ngay trước các Model
@@ -1099,6 +1243,17 @@ public class MessageRecallRequest
 public class FriendActionRequest
 {
     public string? TargetUid { get; set; }
+}
+public class WorkspaceInviteSendRequest
+{
+    public string? WorkspaceId { get; set; }
+    public string? WorkspaceName { get; set; }
+    public List<string>? TargetUids { get; set; }
+}
+public class WorkspaceInviteHandleRequest
+{
+    public string? WorkspaceId { get; set; }
+    public string? InvitationId { get; set; }
 }
 
 public class DirectFriendMessageRequest

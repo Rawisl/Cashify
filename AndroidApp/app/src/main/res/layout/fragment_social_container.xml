@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_main">
+
+    <!-- NavHost chứa các fragment con -->
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/social_inner_nav_host"
+        android:name="androidx.navigation.fragment.NavHostFragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        app:defaultNavHost="false"
+        app:navGraph="@navigation/social_nav_graph" />
+
+    <!-- Bottom Nav (sau này sẽ có người làm top nav thay thế) -->
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottom_navigation_social"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_marginHorizontal="20dp"
+        android:layout_marginBottom="35dp"
+        android:background="@drawable/bg_bottom_nav"
+        app:itemActiveIndicatorStyle="@null"
+        app:itemIconSize="26dp"
+        app:itemIconTint="@color/nav_color_selector"
+        app:itemRippleColor="@null"
+        app:itemTextColor="@color/nav_color_selector"
+        app:labelVisibilityMode="auto"
+        app:menu="@menu/bottom_nav_social_menu" />
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
