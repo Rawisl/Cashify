@@ -30,4 +30,9 @@
         android:id="@+id/nav_workspace_container"
         android:name="com.example.cashify.ui.workspace.WorkspaceContainerFragment"
         android:label="Workspace Container" />
+
+    <fragment
+        android:id="@+id/nav_social_container"
+        android:name="com.example.cashify.ui.social.SocialContainerFragment"
+        android:label="Social" />
 </navigation>

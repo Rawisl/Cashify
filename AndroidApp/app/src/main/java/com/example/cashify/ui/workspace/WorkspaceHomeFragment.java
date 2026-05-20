@@ -29,7 +29,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import java.util.ArrayList;
 import java.util.List;
 
-public class WorkspaceHomeFragment extends Fragment {
+public class WorkspaceHomeFragment extends Fragment { // Vẫn giữ nguyên extends Fragment
 
     private RecyclerView rvMembers, rvTransactions;
     private WorkspaceMemberAdapter memberAdapter;
@@ -67,7 +67,7 @@ public class WorkspaceHomeFragment extends Fragment {
         if (this.workspaceId != null && !this.workspaceId.isEmpty()) {
             initViewModel();
             initViews(view);
-            observeViewModel(); // Lắng nghe real-time
+            observeViewModel();
         }
     }
 
@@ -86,11 +86,15 @@ public class WorkspaceHomeFragment extends Fragment {
         rvMembers = view.findViewById(R.id.rvWorkspaceMembers);
         rvTransactions = view.findViewById(R.id.rvWorkspaceTransactions);
 
-        // Nút mở Sidebar
+        // ============================================================
+        // VỚI TAY RA MÀN HÌNH CHÍNH (MAIN ACTIVITY) ĐỂ MỞ SIDEBAR
+        // ============================================================
         toolbar.setNavigationOnClickListener(v -> {
-            androidx.drawerlayout.widget.DrawerLayout drawer = requireActivity().findViewById(R.id.drawerLayout);
-            if (drawer != null) {
-                drawer.openDrawer(androidx.core.view.GravityCompat.START);
+            if (getActivity() != null) {
+                androidx.drawerlayout.widget.DrawerLayout drawer = getActivity().findViewById(R.id.drawerLayout);
+                if (drawer != null) {
+                    drawer.openDrawer(androidx.core.view.GravityCompat.START);
+                }
             }
         });
 
@@ -106,31 +110,32 @@ public class WorkspaceHomeFragment extends Fragment {
                 FirebaseAuth.getInstance().getCurrentUser().getUid() : "";
         String finalWorkspaceId = this.workspaceId;
 
-        // Khởi tạo Adapter với ownerId = rỗng. Khi data về sẽ update lại!
+        // Khởi tạo Adapter an toàn
         historyAdapter = new WorkspaceTransactionAdapter(
                 requireContext(),
                 finalWorkspaceId,
                 currentUserUid,
-                "", // Tạm để rỗng
+                "",
                 new ArrayList<>(),
                 transaction -> {
-                    // Mở màn hình Add/Edit Transaction
-                    Intent intent = new Intent(requireContext(), AddTransactionActivity.class);
-                    intent.putExtra("TRANSACTION_ID", transaction.id);
-                    intent.putExtra("WORKSPACE_ID", finalWorkspaceId);
-                    startActivity(intent);
+                    // Check getContext để không bị văng app
+                    if (getContext() != null) {
+                        Intent intent = new Intent(getContext(), AddTransactionActivity.class);
+                        intent.putExtra("TRANSACTION_ID", transaction.id);
+                        intent.putExtra("WORKSPACE_ID", finalWorkspaceId);
+                        startActivity(intent);
+                    }
                 }
         );
         rvTransactions.setAdapter(historyAdapter);
 
-        // Nút thêm thành viên
         view.findViewById(R.id.tvAddMember).setOnClickListener(v -> {
             AddMemberBottomSheet bottomSheet = AddMemberBottomSheet.newInstance(workspaceId);
             bottomSheet.show(getChildFragmentManager(), "AddMemberBottomSheet");
         });
 
         // ============================================================
-        // LOGIC CHẤM ĐỎ CHO NÚT CHUÔNG THÔNG BÁO
+        // MẶC ÁO GIÁP CHỐNG VĂNG APP KHI CHUYỂN TAB ĐANG LOAD DỞ
         // ============================================================
         TextView tvNotificationBadge = view.findViewById(R.id.tvNotificationBadge);
 
@@ -138,6 +143,9 @@ public class WorkspaceHomeFragment extends Fragment {
                 .listenToUnreadNotifications(new com.example.cashify.data.remote.FirebaseManager.DataCallback<Integer>() {
                     @Override
                     public void onSuccess(Integer count) {
+                        // CHỐT CHẶN: Nếu Fragment bị giấu đi rồi thì nghỉ vẽ
+                        if (!isAdded() || getView() == null) return;
+
                         if (count != null && count > 0) {
                             tvNotificationBadge.setVisibility(View.VISIBLE);
                             tvNotificationBadge.setText(count > 9 ? "9+" : String.valueOf(count));
@@ -148,6 +156,7 @@ public class WorkspaceHomeFragment extends Fragment {
 
                     @Override
                     public void onError(String message) {
+                        if (!isAdded() || getView() == null) return;
                         tvNotificationBadge.setVisibility(View.GONE);
                     }
                 });
@@ -160,26 +169,30 @@ public class WorkspaceHomeFragment extends Fragment {
 
     @SuppressLint("SetTextI18n")
     private void observeViewModel() {
-        // Lắng nghe Workspace thay đổi (Chứa OwnerId)
+
+        View progressBar = getView().findViewById(R.id.progressBarWorkspace);
+
+        workspaceViewModel.isLoading.observe(getViewLifecycleOwner(), isLoading -> {
+            if (progressBar != null) {
+                progressBar.setVisibility(isLoading != null && isLoading ? View.VISIBLE : View.GONE);
+            }
+        });
+
         workspaceViewModel.getWorkspaceLiveData().observe(getViewLifecycleOwner(), workspace -> {
             if (workspace != null) {
                 toolbar.setTitle(workspace.getName());
-
-                // PHÉP THUẬT: Cập nhật quyền Owner xuống cho Adapter
                 if (historyAdapter != null && workspace.getOwnerId() != null) {
                     historyAdapter.setOwnerId(workspace.getOwnerId());
                 }
             }
         });
 
-        // Lắng nghe Members thay đổi
         workspaceViewModel.getMembersLiveData().observe(getViewLifecycleOwner(), members -> {
-            if (members != null) {
+            if (members != null && memberAdapter != null) {
                 memberAdapter.setMembers(members);
             }
         });
 
-        // Lắng nghe Lịch sử Giao dịch thay đổi
         workspaceViewModel.getTransactionsLiveData().observe(getViewLifecycleOwner(), historyItems -> {
             if (historyItems != null) {
                 historyAdapter.setHistoryData(historyItems);
@@ -204,10 +217,17 @@ public class WorkspaceHomeFragment extends Fragment {
             }
         });
 
-        // Lắng nghe lỗi
+        // ============================================================
+        // MẶC ÁO GIÁP CHO PHẦN BÁO LỖI (CHỐNG TOAST BÓNG MA)
+        // ============================================================
         workspaceViewModel.getErrorMessage().observe(getViewLifecycleOwner(), errorMsg -> {
             if (errorMsg != null) {
-                ToastHelper.show(requireContext(), errorMsg);
+                // Phải check getContext() != null thay vì xài requireContext()
+                if (getContext() != null) {
+                    ToastHelper.show(getContext(), errorMsg);
+                }
+                // Xóa thông báo lỗi ngay lập tức để lần sau lật tab nó không tự bung Toast ảo ra nữa
+                workspaceViewModel.resetActionStatus();
             }
         });
     }
