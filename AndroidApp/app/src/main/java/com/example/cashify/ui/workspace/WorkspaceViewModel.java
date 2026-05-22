@@ -12,6 +12,7 @@ import com.example.cashify.ui.transactions.TransactionViewModel;
 import com.example.cashify.data.repository.IWorkspaceRepo;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 
 import java.util.ArrayList;
@@ -79,7 +80,7 @@ public class WorkspaceViewModel extends ViewModel {
         if (workspaceId == null || workspaceId.isEmpty()) return;
         _isLoading.setValue(true);
 
-        com.google.firebase.firestore.FirebaseFirestore db = com.google.firebase.firestore.FirebaseFirestore.getInstance();
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
         if (workspaceListener != null) workspaceListener.remove();
 
         String myUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
@@ -108,7 +109,7 @@ public class WorkspaceViewModel extends ViewModel {
                         return;
                     }
 
-                    com.example.cashify.data.model.Workspace workspace = snapshot.toObject(com.example.cashify.data.model.Workspace.class);
+                    Workspace workspace = snapshot.toObject(Workspace.class);
                     if (workspace != null) {
                         workspace.setId(snapshot.getId());
                         _workspaceLiveData.postValue(workspace);
