@@ -1,5 +1,6 @@
 package com.example.cashify.ui.social;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -11,7 +12,9 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.cashify.R;
+import com.example.cashify.ui.social.PostDetailActivity;
 import com.google.android.material.appbar.MaterialToolbar;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 /**
  * SocialNewsfeedFragment — Tab "Bảng tin".
@@ -43,6 +46,7 @@ public class SocialNewsfeedFragment extends Fragment {
 
     private void initViews(View view) {
         MaterialToolbar toolbar = view.findViewById(R.id.toolbarSocialNewsfeed);
+        FloatingActionButton fabOpenPostDetail = view.findViewById(R.id.fabOpenPostDetail);
 
         // Vươn tay ra MainActivity để mở sidebar — giống WorkspaceHomeFragment
         toolbar.setNavigationOnClickListener(v -> {
@@ -53,6 +57,12 @@ public class SocialNewsfeedFragment extends Fragment {
                     drawer.openDrawer(androidx.core.view.GravityCompat.START);
                 }
             }
+        });
+
+        // FAB click to open PostDetailActivity for testing
+        fabOpenPostDetail.setOnClickListener(v -> {
+            Intent intent = new Intent(getActivity(), PostDetailActivity.class);
+            startActivity(intent);
         });
 
         // TODO: Setup RecyclerView newsfeed
