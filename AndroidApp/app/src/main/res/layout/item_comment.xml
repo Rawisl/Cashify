@@ -41,6 +41,7 @@
                 android:layout_marginStart="12dp"
                 android:orientation="vertical">
 
+                <!-- Username + Time + Menu -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -65,8 +66,27 @@
                         android:textColor="@color/item_description"
                         android:textSize="12sp" />
 
+                    <!-- Spacer đẩy icon sang phải -->
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="1dp"
+                        android:layout_weight="1" />
+
+                    <!-- Icon 3 chấm dọc -->
+                    <ImageView
+                        android:id="@+id/imgCommentMenu"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:src="@drawable/ic_more_vert"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:padding="6dp"
+                        app:tint="@color/icon_inactive" />
+
                 </LinearLayout>
 
+                <!-- Nội dung comment -->
                 <TextView
                     android:id="@+id/tvCommentContent"
                     android:layout_width="match_parent"
@@ -83,7 +103,7 @@
 
     </androidx.cardview.widget.CardView>
 
-    <!-- Like badge — đè lên viền dưới, lệch phải -->
+    <!-- Like badge -->
     <LinearLayout
         android:id="@+id/layoutCommentLike"
         android:layout_width="wrap_content"

@@ -1,7 +1,9 @@
 package com.example.cashify.ui.social;
 
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -14,6 +16,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.cashify.R;
 import com.example.cashify.utils.HeartAnimation;
 import com.google.android.material.appbar.MaterialToolbar;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +36,7 @@ public class PostDetailActivity extends AppCompatActivity {
     private ImageView imgPostMenu;
 
     private String currentUserId = "user123";
-    private String postOwnerId = "user123";
+    private String postOwnerId   = "user123";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,12 +52,12 @@ public class PostDetailActivity extends AppCompatActivity {
     }
 
     private void initViews() {
-        imgLikeHeart = findViewById(R.id.imgLikeHeart);
-        tvLikeCount = findViewById(R.id.tvLikeCount);
+        imgLikeHeart         = findViewById(R.id.imgLikeHeart);
+        tvLikeCount          = findViewById(R.id.tvLikeCount);
         recyclerViewComments = findViewById(R.id.recyclerViewComments);
-        etCommentInput = findViewById(R.id.etCommentInput);
-        imgSendComment = findViewById(R.id.imgSendComment);
-        imgPostMenu = findViewById(R.id.imgPostMenu);
+        etCommentInput       = findViewById(R.id.etCommentInput);
+        imgSendComment       = findViewById(R.id.imgSendComment);
+        imgPostMenu          = findViewById(R.id.imgPostMenu);
         setupMockPostData();
     }
 
@@ -68,7 +71,7 @@ public class PostDetailActivity extends AppCompatActivity {
         toolbar.setNavigationOnClickListener(v -> onBackPressed());
     }
 
-    // ─── Like button chính (post) ───────────────────────────────────────────
+    // ─── Like button ────────────────────────────────────────────────────────
 
     private void setupLikeButton() {
         imgLikeHeart.setOnClickListener(v -> togglePostLike());
@@ -77,12 +80,8 @@ public class PostDetailActivity extends AppCompatActivity {
 
     private void togglePostLike() {
         isLiked = HeartAnimation.toggleLike(
-                this,
-                imgLikeHeart,
-                tvLikeCount,
-                isLiked,
-                likeCount,
-                R.color.status_red
+                this, imgLikeHeart, tvLikeCount,
+                isLiked, likeCount, R.color.status_red
         );
         if (isLiked) likeCount++; else likeCount--;
     }
@@ -90,13 +89,11 @@ public class PostDetailActivity extends AppCompatActivity {
     // ─── Mock data ──────────────────────────────────────────────────────────
 
     private void setupMockPostData() {
-        TextView tvUsername = findViewById(R.id.tvPostUsername);
-        TextView tvTime = findViewById(R.id.tvPostTime);
-        TextView tvContent = findViewById(R.id.tvPostContent);
-
-        tvUsername.setText("John Doe");
-        tvTime.setText("2 hours ago");
-        tvContent.setText("This is a sample post about managing finances. It's important to track your spending and save for the future!");
+        ((TextView) findViewById(R.id.tvPostUsername)).setText("John Doe");
+        ((TextView) findViewById(R.id.tvPostTime)).setText("2 hours ago");
+        ((TextView) findViewById(R.id.tvPostContent)).setText(
+                "This is a sample post about managing finances. " +
+                        "It's important to track your spending and save for the future!");
         tvLikeCount.setText(String.valueOf(likeCount));
         ((TextView) findViewById(R.id.tvCommentCount)).setText("8");
     }
@@ -144,12 +141,8 @@ public class PostDetailActivity extends AppCompatActivity {
                 Toast.makeText(this, "Please enter a comment", Toast.LENGTH_SHORT).show();
                 return;
             }
-
             Comment newComment = new Comment(
-                    "https://i.pravatar.cc/150?img=5",
-                    "You",
-                    text,
-                    "Just now"
+                    "https://i.pravatar.cc/150?img=5", "You", text, "Just now"
             );
             commentList.add(newComment);
             commentAdapter.notifyItemInserted(commentList.size() - 1);
@@ -158,33 +151,65 @@ public class PostDetailActivity extends AppCompatActivity {
         });
     }
 
-    // ─── Post menu ──────────────────────────────────────────────────────────
+    // ─── Post menu → BottomSheet ─────────────────────────────────────────────
 
     private void setupPostMenu() {
-        imgPostMenu.setOnClickListener(v -> {
-            android.widget.PopupMenu popup = new android.widget.PopupMenu(this, imgPostMenu);
-            popup.getMenuInflater().inflate(R.menu.menu_post, popup.getMenu());
-            popup.setOnMenuItemClickListener(item -> {
-                int id = item.getItemId();
-                if (id == R.id.action_hide_post) {
-                    finish(); return true;
-                } else if (id == R.id.action_delete_post) {
-                    finish(); return true;
-                }
-                return false;
+        imgPostMenu.setOnClickListener(v -> showPostBottomSheet());
+    }
+
+    private void showPostBottomSheet() {
+        BottomSheetDialog dialog = new BottomSheetDialog(this);
+        View sheetView = LayoutInflater.from(this)
+                .inflate(R.layout.bottom_sheet_option, null);
+
+        // Edit không dùng cho post
+        sheetView.findViewById(R.id.btnEditComment).setVisibility(View.GONE);
+
+        boolean isOwner = currentUserId.equals(postOwnerId);
+
+        if (isOwner) {
+            // Chủ bài: chỉ Delete
+            sheetView.findViewById(R.id.btnDeleteComment).setVisibility(View.VISIBLE);
+            sheetView.findViewById(R.id.btnHideComment).setVisibility(View.GONE);
+            sheetView.findViewById(R.id.btnReportPost).setVisibility(View.GONE);
+
+            sheetView.findViewById(R.id.btnDeleteComment).setOnClickListener(v -> {
+                dialog.dismiss();
+                finish();
             });
-            popup.show();
-        });
+        } else {
+            // Người khác: Hide + Report
+            sheetView.findViewById(R.id.btnDeleteComment).setVisibility(View.GONE);
+            sheetView.findViewById(R.id.btnHideComment).setVisibility(View.VISIBLE);
+            sheetView.findViewById(R.id.btnReportPost).setVisibility(View.VISIBLE);
+
+            sheetView.findViewById(R.id.btnHideComment).setOnClickListener(v -> {
+                dialog.dismiss();
+                finish();
+            });
+
+            sheetView.findViewById(R.id.btnReportPost).setOnClickListener(v -> {
+                dialog.dismiss();
+                Toast.makeText(this, "Post reported", Toast.LENGTH_SHORT).show();
+            });
+        }
+
+        sheetView.findViewById(R.id.btnCancelComment).setOnClickListener(v ->
+                dialog.dismiss()
+        );
+
+        dialog.setContentView(sheetView);
+        dialog.show();
     }
 
     // ─── Mock comments ──────────────────────────────────────────────────────
 
     private List<Comment> createMockComments() {
         List<Comment> list = new ArrayList<>();
-        list.add(new Comment("https://i.pravatar.cc/150?img=1", "John Doe",    "This is a great post!",      "2 hours ago"));
-        list.add(new Comment("https://i.pravatar.cc/150?img=2", "Jane Smith",  "I totally agree!",           "3 hours ago"));
-        list.add(new Comment("https://i.pravatar.cc/150?img=3", "Mike Johnson","Interesting perspective.",   "5 hours ago"));
-        list.add(new Comment("https://i.pravatar.cc/150?img=4", "Sarah W.",    "Really helpful.",            "1 day ago"));
+        list.add(new Comment("https://i.pravatar.cc/150?img=1", "John Doe",    "This is a great post!",    "2 hours ago"));
+        list.add(new Comment("https://i.pravatar.cc/150?img=2", "Jane Smith",  "I totally agree!",         "3 hours ago"));
+        list.add(new Comment("https://i.pravatar.cc/150?img=3", "Mike Johnson","Interesting perspective.", "5 hours ago"));
+        list.add(new Comment("https://i.pravatar.cc/150?img=4", "Sarah W.",    "Really helpful.",          "1 day ago"));
         return list;
     }
 

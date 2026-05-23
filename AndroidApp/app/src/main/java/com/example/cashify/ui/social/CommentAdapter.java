@@ -5,7 +5,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.PopupMenu;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -15,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.example.cashify.R;
 import com.example.cashify.utils.HeartAnimation;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 
 import java.util.List;
 
@@ -65,6 +65,7 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentV
         private LinearLayout layoutCommentLike;
         private ImageView imgCommentLike;
         private TextView tvCommentLikeCount;
+        private ImageView imgCommentMenu;
 
         private boolean isLiked = false;
         private int likeCount = 0;
@@ -79,6 +80,7 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentV
             layoutCommentLike  = itemView.findViewById(R.id.layoutCommentLike);
             imgCommentLike     = itemView.findViewById(R.id.imgCommentLike);
             tvCommentLikeCount = itemView.findViewById(R.id.tvCommentLikeCount);
+            imgCommentMenu     = itemView.findViewById(R.id.imgCommentMenu);
         }
 
         public void bind(Comment comment, int position) {
@@ -86,7 +88,6 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentV
             tvTime.setText(comment.getTime());
             tvContent.setText(comment.getContent());
 
-            // Reset trạng thái like mỗi lần bind
             isLiked = false;
             likeCount = 0;
             imgCommentLike.clearColorFilter();
@@ -110,43 +111,53 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentV
                 if (isLiked) likeCount++; else likeCount--;
             });
 
-            cardComment.setOnLongClickListener(v -> {
-                showCommentOptions(v, comment, position);
-                return true;
-            });
+            imgCommentMenu.setOnClickListener(v ->
+                    showCommentBottomSheet(comment, position)
+            );
         }
 
-        private void showCommentOptions(View anchor, Comment comment, int position) {
-            PopupMenu popup = new PopupMenu(itemView.getContext(), anchor);
+        private void showCommentBottomSheet(Comment comment, int position) {
+            BottomSheetDialog dialog = new BottomSheetDialog(itemView.getContext());
+            View sheetView = LayoutInflater.from(itemView.getContext())
+                    .inflate(R.layout.bottom_sheet_option, null);
 
             boolean isCommentOwner = comment.getUsername().equals("You");
-            boolean isPostOwner = currentUserId.equals(postOwnerId);
+            boolean isPostOwner    = currentUserId.equals(postOwnerId);
+
+            View btnEdit   = sheetView.findViewById(R.id.btnEditComment);
+            View btnDelete = sheetView.findViewById(R.id.btnDeleteComment);
+            View btnHide   = sheetView.findViewById(R.id.btnHideComment);
 
             if (isCommentOwner) {
-                popup.getMenuInflater().inflate(R.menu.menu_comment, popup.getMenu());
+                btnEdit.setVisibility(View.VISIBLE);
+                btnDelete.setVisibility(View.VISIBLE);
             } else if (isPostOwner) {
-                popup.getMenuInflater().inflate(R.menu.menu_comment_post_owner, popup.getMenu());
+                btnHide.setVisibility(View.VISIBLE);
             } else {
-                popup.getMenuInflater().inflate(R.menu.menu_comment_other, popup.getMenu());
+                btnHide.setVisibility(View.VISIBLE);
             }
 
-            popup.setOnMenuItemClickListener(item -> {
-                if (listener == null) return false;
-                int id = item.getItemId();
-                if (id == R.id.action_edit_comment) {
-                    listener.onEditComment(position);
-                    return true;
-                } else if (id == R.id.action_delete_comment) {
-                    listener.onDeleteComment(position);
-                    return true;
-                } else if (id == R.id.action_hide_comment) {
-                    listener.onHideComment(position);
-                    return true;
-                }
-                return false;
+            btnEdit.setOnClickListener(v -> {
+                dialog.dismiss();
+                if (listener != null) listener.onEditComment(position);
             });
 
-            popup.show();
+            btnDelete.setOnClickListener(v -> {
+                dialog.dismiss();
+                if (listener != null) listener.onDeleteComment(position);
+            });
+
+            btnHide.setOnClickListener(v -> {
+                dialog.dismiss();
+                if (listener != null) listener.onHideComment(position);
+            });
+
+            sheetView.findViewById(R.id.btnCancelComment).setOnClickListener(v ->
+                    dialog.dismiss()
+            );
+
+            dialog.setContentView(sheetView);
+            dialog.show();
         }
     }
 }
