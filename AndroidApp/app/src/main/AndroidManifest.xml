@@ -82,6 +82,11 @@
             android:name=".ui.workspace.WorkspaceCategoryActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".ui.social.PostDetailActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
         <service
             android:name=".data.remote.FirebaseMessagingServices"
             android:exported="true">

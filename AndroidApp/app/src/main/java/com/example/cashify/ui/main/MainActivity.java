@@ -19,6 +19,8 @@ import android.widget.Toast;
 import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.core.splashscreen.SplashScreen;
 
@@ -27,6 +29,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.navigation.NavController;
+import androidx.navigation.NavDestination;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.NavigationUI;
 import androidx.appcompat.app.AppCompatDelegate;
@@ -60,19 +63,18 @@ import java.util.List;
 import java.util.Map;
 import com.google.android.material.badge.BadgeDrawable;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends BaseActivity {
+
     // Tạo một lá cờ hiệu
     boolean keepSplash = true;
-    private MainViewModel mainViewModel;
+
+    // mainViewModel đã được khai báo ở BaseActivity nên không cần khai báo lại
     private TransactionViewModel transactionViewModel; // Tách riêng ViewModel để dễ gọi
 
     private String currentWorkspaceId = "PERSONAL";
 
-    // Dùng Map để lưu ID của MenuItem và ID của Workspace tương ứng (để biết click vào đâu)
-    private final Map<Integer, String> menuIdToWorkspaceIdMap = new HashMap<>();
+    // Các biến drawerLayout, navigationView, menuIdToWorkspaceIdMap đã chuyển sang BaseActivity
 
-    private DrawerLayout drawerLayout;
-    private NavigationView navigationView;
     private final ActivityResultLauncher<String> requestPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
                 if (isGranted) {
@@ -101,16 +103,64 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        mainViewModel = new ViewModelProvider(this).get(MainViewModel.class);
+        // --- GỌI HÀM CỦA CHA ĐỂ SETUP GIAO DIỆN VÀ SIDEBAR ---
+        setContentView(R.layout.activity_main);
+        setupBaseSidebar();
 
         String currentUserId = currentUser.getUid();
         android.util.Log.d("AUTH_FLOW", "Signed in successfully! UID: " + currentUserId);
 
+        // --- BẮT SỰ KIỆN: NẾU ĐƯỢC CHUYỂN TỚI TỪ MÀN HÌNH FRIENDS / INVITATIONS ---
+        if (getIntent().hasExtra("OPEN_WORKSPACE_ID")) {
+            currentWorkspaceId = getIntent().getStringExtra("OPEN_WORKSPACE_ID");
+
+            NavHostFragment nhf = (NavHostFragment) getSupportFragmentManager()
+                    .findFragmentById(R.id.nav_host_fragment);
+            if (nhf != null) {
+                NavController nav = nhf.getNavController();
+
+                // Chờ NavController load xong destination đầu tiên (nav_home) rồi mới navigate
+                nav.addOnDestinationChangedListener(new NavController.OnDestinationChangedListener() {
+                    @Override
+                    public void onDestinationChanged(@NonNull NavController controller,
+                                                     @NonNull NavDestination destination,
+                                                     @Nullable Bundle arguments) {
+                        if (destination.getId() == R.id.nav_home) {
+                            Bundle bundle = new Bundle();
+                            bundle.putString("WORKSPACE_ID", currentWorkspaceId);
+                            nav.navigate(R.id.nav_workspace_container, bundle);
+
+                            nav.removeOnDestinationChangedListener(this);
+                        }
+                    }
+                });
+            }
+        }
+
+        if (getIntent().getBooleanExtra("OPEN_SOCIAL", false)) {
+            NavHostFragment nhf = (NavHostFragment) getSupportFragmentManager()
+                    .findFragmentById(R.id.nav_host_fragment);
+            if (nhf != null) {
+                NavController nav = nhf.getNavController();
+                nav.addOnDestinationChangedListener(new NavController.OnDestinationChangedListener() {
+                    @Override
+                    public void onDestinationChanged(@NonNull NavController controller,
+                                                     @NonNull NavDestination destination,
+                                                     @Nullable Bundle arguments) {
+                        if (destination.getId() == R.id.nav_home) {
+                            nav.navigate(R.id.nav_social_container);
+                            nav.removeOnDestinationChangedListener(this);
+                        }
+                    }
+                });
+            }
+        }
+
         // ============================================================
         // [ĐÃ CẬP NHẬT] BƯỚC 1: KÍCH HOẠT TẢI DANH SÁCH QUỸ
         // ============================================================
-        mainViewModel.loadWorkspaces(currentUserId);
-
+        // Lưu ý: BaseActivity đã tự động khởi tạo mainViewModel và gọi loadWorkspaces()
+        // ở bên trong hàm setupBaseSidebar() rồi, nên ta không cần gọi lại ở đây nữa!
 
         //reset và seed data - chạy ngầm
         new Thread(() -> {
@@ -131,6 +181,7 @@ public class MainActivity extends AppCompatActivity {
                 int count = db.transactionDao().countTransactions("PERSONAL");
                 if (count == 0) {
                     Log.d("AUTH_FLOW", "Database is empty. Fetching data from server...");
+                    // mainViewModel đã được khởi tạo sẵn bên BaseActivity
                     mainViewModel.syncAllDataFromServer(MainActivity.this);
                 } else {
                     Log.d("AUTH_FLOW", "Data already exists.");
@@ -144,6 +195,7 @@ public class MainActivity extends AppCompatActivity {
                 Log.e("AUTH_FLOW", "Database error: " + e.getMessage());
             }
         }).start();
+
         //Cài đồng hồ đếm ngược cho splash screen 2000 ms
         new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
             @Override
@@ -159,20 +211,14 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         //EdgeToEdge.enable(this);
-        setContentView(R.layout.activity_main);
 
-        initSidebar(); // currentUser đã lấy qua FirebaseAuth rồi, ko cần truyền vào nữa
+        // Khởi tạo các view của MainActivity
         setupNavigationAndFab();
 
         // ============================================================
         // [ĐÃ CẬP NHẬT] BƯỚC 2: LẮNG NGHE ĐỂ VẼ SIDEBAR MENU (REAL-TIME)
         // ============================================================
-        mainViewModel.getWorkspaces().observe(this, workspaces -> {
-            if (workspaces != null) {
-                // Gọi hàm vẽ menu động
-                updateSidebarMenu(workspaces);
-            }
-        });
+        // Việc observe workspaces và vẽ sidebar menu đã được BaseActivity lo trọn gói!
 
 
         // ============================================================
@@ -187,6 +233,7 @@ public class MainActivity extends AppCompatActivity {
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
+                // drawerLayout lấy từ BaseActivity
                 if (drawerLayout != null && drawerLayout.isDrawerOpen(GravityCompat.START)) {
                     drawerLayout.closeDrawer(GravityCompat.START);
                 } else {
@@ -198,172 +245,36 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    // ============================================================
+    // BẮT BUỘC PHẢI CÓ: ĐIỀU HƯỚNG QUỸ DÀNH RIÊNG CHO MAIN ACTIVITY
+    // ============================================================
     @Override
-    protected void onResume() {
-        super.onResume();
-        updateSidebarProfileUI();
-    }
+    protected void onNavigationItemSelected(int itemId) {
+        if (menuIdToWorkspaceIdMap.containsKey(itemId)) {
+            currentWorkspaceId = menuIdToWorkspaceIdMap.get(itemId);
 
-    private void initSidebar() {
-        drawerLayout = findViewById(R.id.drawerLayout);
-        navigationView = findViewById(R.id.navigationView);
-        updateSidebarProfileUI();
+            NavController nav = androidx.navigation.Navigation
+                    .findNavController(this, R.id.nav_host_fragment);
 
-        // 1. XỬ LÝ CLICK HEADER (MỞ PROFILE)
-        View headerView = navigationView.getHeaderView(0);
-        LinearLayout headerProfileLayout = headerView.findViewById(R.id.headerProfileLayout);
+            // Pop về home trước để tránh same destination bị skip
+            nav.popBackStack(R.id.nav_home, false);
 
-        headerProfileLayout.setOnClickListener(v -> {
-            drawerLayout.closeDrawer(GravityCompat.START);
-            Intent intent = new Intent(MainActivity.this, EditProfileActivity.class);
-            startActivity(intent);
-        });
+            Bundle bundle = new Bundle();
+            bundle.putString("WORKSPACE_ID", currentWorkspaceId);
+            nav.navigate(R.id.nav_workspace_container, bundle);
 
-        // 2. XỬ LÝ BẤM CÁC NÚT TRONG SIDEBAR
-        navigationView.setNavigationItemSelectedListener(item -> {
-            int id = item.getItemId();
-
-            // ĐÁNH DẤU HIGHLIGHT: Chỉ tô màu nếu bấm vào Ví Cá Nhân hoặc Quỹ Nhóm
-            if (id == R.id.nav_workspace_personal || menuIdToWorkspaceIdMap.containsKey(id)) {
-                item.setChecked(true);
-            }
-
-            // --- KIỂM TRA XEM CÓ BẤM VÀO QUỸ ĐỘNG KO ---
-            if (menuIdToWorkspaceIdMap.containsKey(id)) {
-                String clickedWorkspaceId = menuIdToWorkspaceIdMap.get(id);
-
-                Bundle bundle = new Bundle();
-                bundle.putString("WORKSPACE_ID", clickedWorkspaceId);
-
-                NavController navController = androidx.navigation.Navigation.findNavController(this, R.id.nav_host_fragment);
-                navController.navigate(R.id.nav_workspace_container, bundle);
-
-            }
-            // --- CÁC MENU TĨNH ---
-            else if (id == R.id.nav_workspace_personal) {
-                currentWorkspaceId = "PERSONAL";
-                NavController navController = androidx.navigation.Navigation.findNavController(this, R.id.nav_host_fragment);
-                navController.popBackStack(R.id.nav_home, false);
-                transactionViewModel.fetchHistoryData("PERSONAL");
-            }
-            else if (id == R.id.nav_add_workspace) {
-                drawerLayout.closeDrawer(androidx.core.view.GravityCompat.START);
-                com.example.cashify.ui.workspace.AddWorkspaceBottomSheet bottomSheet = new com.example.cashify.ui.workspace.AddWorkspaceBottomSheet();
-                bottomSheet.show(getSupportFragmentManager(), "AddWorkspaceBottomSheet");
-                // Mở BottomSheet thì KHÔNG return true ở đây để tránh bị lỗi hiển thị UI
-                return false;
-            }
-            else if (id == R.id.nav_friends) {
-                Intent intent = new Intent(MainActivity.this, com.example.cashify.ui.FriendsActivity.FriendsActivity.class);
-                startActivity(intent);
-            }
-            else if (id == R.id.nav_invitations) {
-                Intent intent = new Intent(MainActivity.this, com.example.cashify.ui.notifications.InvitationsActivity.class);
-                startActivity(intent);
-            }
-
-            drawerLayout.closeDrawer(GravityCompat.START);
-
-            // TRẢ VỀ TRUE ĐỂ LƯU MÀU HIGHLIGHT
-            return true;
-        });
-
-        FirebaseManager.getInstance().listenToWorkspaceInvitations(new FirebaseManager.DataCallback<List<com.example.cashify.data.model.WorkspaceInvitation>>() {
-            @Override
-            public void onSuccess(List<com.example.cashify.data.model.WorkspaceInvitation> data) {
-                int count = (data != null) ? data.size() : 0;
-                updateInvitationsBadge(count);
-            }
-
-            @Override
-            public void onError(String message) {
-                updateInvitationsBadge(0);
-            }
-        });
-    }
-
-    // ============================================================
-    // HÀM VẼ CHẤM ĐỎ DÍNH SÁT VÀO CHỮ INVITATIONS
-    // ============================================================
-    private void updateInvitationsBadge(int count) {
-        android.view.Menu menu = navigationView.getMenu();
-        android.view.MenuItem inviteItem = menu.findItem(R.id.nav_invitations);
-
-        if (count <= 0) {
-            inviteItem.setTitle("Invitations"); // Không có thì trả về chữ thường
-            return;
+        } else if (itemId == R.id.nav_workspace_personal) {
+            currentWorkspaceId = "PERSONAL";
+            androidx.navigation.Navigation.findNavController(this, R.id.nav_host_fragment)
+                    .popBackStack(R.id.nav_home, false);
+            transactionViewModel.fetchHistoryData("PERSONAL");
+        } else if (itemId == R.id.nav_social) {
+            NavController nav = androidx.navigation.Navigation
+                    .findNavController(this, R.id.nav_host_fragment);
+            nav.popBackStack(R.id.nav_home, false);
+            nav.navigate(R.id.nav_social_container);
         }
 
-        String title = "Invitations";
-        String badgeText = count > 9 ? "9+" : String.valueOf(count);
-
-        // 1. Tạo một cái View chấm đỏ bằng Java
-        TextView tv = new TextView(this);
-        tv.setText(badgeText);
-        tv.setTextColor(android.graphics.Color.WHITE);
-        tv.setTextSize(10); // Cỡ chữ bên trong chấm đỏ
-        tv.setTypeface(null, android.graphics.Typeface.BOLD);
-        tv.setBackgroundResource(R.drawable.bg_badge_red);
-        tv.setGravity(android.view.Gravity.CENTER);
-
-        // 2. Ép kích thước nó thành hình tròn (20dp)
-        int sizePx = (int) (20 * getResources().getDisplayMetrics().density);
-        tv.measure(View.MeasureSpec.makeMeasureSpec(sizePx, View.MeasureSpec.EXACTLY),
-                View.MeasureSpec.makeMeasureSpec(sizePx, View.MeasureSpec.EXACTLY));
-        tv.layout(0, 0, tv.getMeasuredWidth(), tv.getMeasuredHeight());
-
-        // 3. Chụp ảnh cái View đó thành một Bitmap (Hình ảnh)
-        android.graphics.Bitmap bitmap = android.graphics.Bitmap.createBitmap(tv.getMeasuredWidth(), tv.getMeasuredHeight(), android.graphics.Bitmap.Config.ARGB_8888);
-        android.graphics.Canvas canvas = new android.graphics.Canvas(bitmap);
-        tv.draw(canvas);
-
-        android.graphics.drawable.BitmapDrawable bd = new android.graphics.drawable.BitmapDrawable(getResources(), bitmap);
-        // Căn chỉnh trục Y để nó đứng ngay ngắn giữa dòng chữ
-        int yOffset = (int) (3 * getResources().getDisplayMetrics().density);
-        bd.setBounds(0, -yOffset, bitmap.getWidth(), bitmap.getHeight() - yOffset);
-
-        // 4. DÁN CHẶT HÌNH ẢNH VÀO NGAY SAU CHỮ "Invitations"
-        android.text.SpannableStringBuilder ssb = new android.text.SpannableStringBuilder(title + "  "); // Thêm dấu cách
-        ssb.setSpan(new android.text.style.ImageSpan(bd), title.length() + 1, title.length() + 2, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-
-        // 5. Gắn lại vào Menu
-        inviteItem.setTitle(ssb);
-    }
-
-    // ============================================================
-    // [ĐÃ THÊM MỚI] BƯỚC 3: HÀM VẼ MENU QUỸ ĐỘNG LÊN SIDEBAR
-    // ============================================================
-    private void updateSidebarMenu(List<Workspace> workspaces) {
-        android.view.Menu menu = navigationView.getMenu();
-
-        // 1. Xóa các Quỹ động cũ (Dùng Map để xóa chính xác, KHÔNG dùng removeGroup vì sẽ xóa nhầm Personal và Add Group)
-        for (Integer itemId : menuIdToWorkspaceIdMap.keySet()) {
-            menu.removeItem(itemId);
-        }
-        menuIdToWorkspaceIdMap.clear();
-
-        // 2. Bơm danh sách Quỹ mới vào chung nhóm R.id.group_workspaces
-        for (Workspace w : workspaces) {
-            int itemId = w.getId().hashCode();
-            menuIdToWorkspaceIdMap.put(itemId, w.getId());
-
-            // Vẽ lên menu: add(groupId, itemId, order, title)
-            // Để order = 1 để nó chèn vào giữa (nằm dưới Ví cá nhân, nằm trên nút Add group)
-            android.view.MenuItem item = menu.add(R.id.group_workspaces, itemId, 1, w.getName());
-
-            String iconName = w.getIconName();
-            if (iconName == null || iconName.isEmpty()) iconName = "ic_other";
-
-            int iconResId = getResources().getIdentifier(iconName, "drawable", getPackageName());
-            if (iconResId != 0) {
-                item.setIcon(iconResId);
-            } else {
-                item.setIcon(R.drawable.ic_other);
-            }
-
-            // Kích hoạt checkable để lưu trạng thái highlight
-            item.setCheckable(true);
-        }
     }
 
     private void setupNavigationAndFab() {
@@ -396,18 +307,16 @@ public class MainActivity extends AppCompatActivity {
             return windowInsets;
         });
 
-
-
         NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager().findFragmentById(R.id.nav_host_fragment);
         NavController navController = navHostFragment.getNavController();
 
         NavigationUI.setupWithNavController(bottomNav, navController);
         View navHostView = findViewById(R.id.nav_host_fragment);
+
         // Fix lỗi chìm FAB ở màn Setting + Ẩn/hiện bottom nav
         navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
             int id = destination.getId();
-            //
-            if (id == R.id.nav_workspace_container) {
+            if (id == R.id.nav_workspace_container || id == R.id.nav_social_container) {
                 // Giấu nhẹm thanh Nav và nút FAB của Ví Cá nhân đi
                 bottomNav.setVisibility(View.GONE);
                 fabAddTransaction.hide();
@@ -415,7 +324,6 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 // Đang ở ngoài Ví Cá nhân -> Hiện lại thanh Nav
                 bottomNav.setVisibility(View.VISIBLE);
-
                 navHostView.setPadding(0, 0, 0, 0);
 
                 if (id == R.id.nav_settings) {
@@ -450,49 +358,5 @@ public class MainActivity extends AppCompatActivity {
             public void onError(String message) {
             }
         });
-    }
-
-    private void updateSidebarProfileUI() {
-        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
-
-        if (currentUser != null && navigationView != null && navigationView.getHeaderCount() > 0) {
-            View headerView = navigationView.getHeaderView(0);
-            if (headerView != null) {
-                TextView tvName = headerView.findViewById(R.id.tvNameHeader);
-                TextView tvEmail = headerView.findViewById(R.id.tvEmailHeader);
-                de.hdodenhof.circleimageview.CircleImageView imgAvatarHeader = headerView.findViewById(R.id.imgAvatarHeader);
-
-                // 1. Gán Email ngay lập tức vì Email lấy từ Auth chắc chắn có
-                if (tvEmail != null && currentUser.getEmail() != null) {
-                    tvEmail.setText(currentUser.getEmail());
-                }
-
-                // 2. Chọc thẳng vào bảng 'users' trên Firestore để kéo Tên và Avatar
-                com.google.firebase.firestore.FirebaseFirestore db = com.google.firebase.firestore.FirebaseFirestore.getInstance();
-                db.collection("users")
-                        .document(currentUser.getUid())
-                        .get()
-                        .addOnSuccessListener(documentSnapshot -> {
-                            // Nếu tìm thấy User trong DB
-                            if (documentSnapshot.exists()) {
-                                String fullName = documentSnapshot.getString("displayName");
-                                String avatarUrl = documentSnapshot.getString("avatarUrl");
-
-                                // Cập nhật Tên lên giao diện
-                                if (tvName != null && fullName != null && !fullName.isEmpty()) {
-                                    tvName.setText(fullName);
-                                }
-
-                                // Cập nhật Avatar lên giao diện
-                                if (imgAvatarHeader != null && avatarUrl != null && !avatarUrl.isEmpty()) {
-                                    ImageHelper.loadAvatar(avatarUrl, imgAvatarHeader);
-                                }
-                            }
-                        })
-                        .addOnFailureListener(e -> {
-                            // Log lỗi nếu cần thiết
-                        });
-            }
-        }
     }
 }

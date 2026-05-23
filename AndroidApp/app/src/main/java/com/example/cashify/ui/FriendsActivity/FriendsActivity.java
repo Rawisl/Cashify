@@ -4,17 +4,18 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
-
 import android.widget.EditText;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.GravityCompat;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
 import com.example.cashify.data.model.User;
+import com.example.cashify.ui.main.BaseActivity;
+import com.example.cashify.ui.main.MainActivity;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.tabs.TabLayout;
@@ -22,7 +23,7 @@ import com.google.android.material.tabs.TabLayout;
 import java.util.ArrayList;
 import java.util.List;
 
-public class FriendsActivity extends AppCompatActivity {
+public class FriendsActivity extends BaseActivity { // Đã kế thừa BaseActivity
 
     private static final String TAG = "CASHIFY";
 
@@ -41,11 +42,15 @@ public class FriendsActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_friends);
 
+        // 1. GỌI HÀM CỦA CHA ĐỂ SETUP SIDEBAR CỰC MƯỢT
+        setupBaseSidebar();
+
         // Ánh xạ view
         bottomNavigation = findViewById(R.id.bottomNavigation);
         fabAddFriend = findViewById(R.id.fabAddFriend);
         rvFriends = findViewById(R.id.rvFriends);
         tabLayout = findViewById(R.id.tabLayout);
+        com.google.android.material.appbar.MaterialToolbar toolbarFriends = findViewById(R.id.toolbarFriends);
 
         socialViewModel = new ViewModelProvider(this).get(SocialViewModel.class);
 
@@ -118,6 +123,13 @@ public class FriendsActivity extends AppCompatActivity {
             });
         }
 
+        // 2. MỞ CỬA SIDEBAR KHI BẤM NÚT 3 GẠCH
+        if (toolbarFriends != null) {
+            toolbarFriends.setNavigationOnClickListener(v -> {
+                if (drawerLayout != null) drawerLayout.openDrawer(GravityCompat.START);
+            });
+        }
+
         // Khởi động!
         socialViewModel.fetchOnlyFriends();
     }
@@ -132,13 +144,31 @@ public class FriendsActivity extends AppCompatActivity {
                 friendAdapter.updateList(isShowingFriends ? friendList : suggestionList);
             }
 
-            @Override public void onTabUnselected(TabLayout.Tab tab) {}
-            @Override public void onTabReselected(TabLayout.Tab tab) {}
+            @Override
+            public void onTabUnselected(TabLayout.Tab tab) {
+            }
+
+            @Override
+            public void onTabReselected(TabLayout.Tab tab) {
+            }
         });
+    }
+    // 3. XỬ LÝ LOGIC KHI BẤM VÀO ITEM QUỸ TRÊN SIDEBAR (BẮT BUỘC VÌ IMPLEMENTS TỪ BASEACTIVITY)
+    @Override
+    protected void onNavigationItemSelected(int itemId) {
+        if (menuIdToWorkspaceIdMap.containsKey(itemId)) {
+            Intent intent = new Intent(this, MainActivity.class);
+            intent.putExtra("OPEN_WORKSPACE_ID", menuIdToWorkspaceIdMap.get(itemId));
+            startActivity(intent);
+            finish();
+        } else if (itemId == R.id.nav_workspace_personal) {
+            Intent intent = new Intent(this, MainActivity.class);
+            startActivity(intent);
+            finish();
+        }
     }
 
     private void showAddFriendDialog() {
-        // Thay vì hiện AlertDialog mặc định, ta gọi BottomSheet siêu xịn ra
         AddFriendBottomSheet bottomSheet = new AddFriendBottomSheet();
         bottomSheet.show(getSupportFragmentManager(), "AddFriendBottomSheet");
     }
