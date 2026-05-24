@@ -12,6 +12,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
@@ -28,6 +29,7 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHo
         // Chỉ cần báo là muốn xóa hoặc sửa, không cần xử lý logic ở đây
         void onDeleteClick(Category category);
         void onEditClick(Category category);
+        void onRestoreClick(Category category);
     }
 
     public CategoryAdapter(Context context, List<Category> list, OnCategoryListener listener) {
@@ -71,24 +73,38 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHo
         }
 
         // XỬ LÝ LOGIC SOFT DELETE
-        if (category.isDeleted == 1) { // Phụ thuộc biến isDeleted bên model sếp
+        // XỬ LÝ LOGIC SOFT DELETE (ẨN / HIỆN / KHÔI PHỤC)
+        if (category.isDeleted == 1) {
             holder.tvName.setText(category.name + " (Hidden)");
             holder.tvName.setTextColor(Color.GRAY);
             holder.itemView.setAlpha(0.5f); // Làm mờ đi 50%
-            holder.btnDelete.setVisibility(View.GONE); // Đã ẩn rồi thì giấu nút xóa đi
-            holder.btnEdit.setVisibility(View.GONE);   // Không cho sửa nữa
-            holder.itemView.setOnLongClickListener(null);
+
+            holder.btnDelete.setVisibility(View.GONE);
+            holder.btnEdit.setVisibility(View.GONE);
+            holder.btnRestore.setVisibility(View.VISIBLE); // HIỆN NÚT KHÔI PHỤC
+
+            holder.itemView.setOnLongClickListener(null); // Không cho bấm giữ
+
+            // Bắt sự kiện Khôi phục
+            holder.btnRestore.setOnClickListener(v -> listener.onRestoreClick(category));
+
         } else {
             holder.tvName.setText(category.name);
-            holder.tvName.setTextColor(Color.BLACK); // Hoặc màu mặc định của sếp
+            holder.tvName.setTextColor(ContextCompat.getColor(context, R.color.item_title)); // Dùng màu chuẩn từ XML
             holder.itemView.setAlpha(1.0f);
+
             holder.btnDelete.setVisibility(View.VISIBLE);
             holder.btnEdit.setVisibility(View.VISIBLE);
-            // CHỈ CHO PHÉP ẤN GIỮ KHI DANH MỤC CHƯA BỊ ẨN
+            holder.btnRestore.setVisibility(View.GONE); // ẨN NÚT KHÔI PHỤC
+
             holder.itemView.setOnLongClickListener(v -> {
                 listener.onEditClick(category);
                 return true;
             });
+
+            // --- 3. Event Listeners (Trạng thái bình thường) ---
+            holder.btnEdit.setOnClickListener(v -> listener.onEditClick(category));
+            holder.btnDelete.setOnClickListener(v -> listener.onDeleteClick(category));
         }
 
         // --- 3. Event Listeners (Gửi tín hiệu về cho Activity) ---
@@ -103,7 +119,7 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHo
     public static class ViewHolder extends RecyclerView.ViewHolder {
         ImageView imgIcon;
         TextView tvName;
-        ImageButton btnEdit, btnDelete;
+        ImageButton btnEdit, btnDelete,btnRestore;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -111,6 +127,7 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHo
             tvName = itemView.findViewById(R.id.tvCategoryName);
             btnEdit = itemView.findViewById(R.id.btnEdit);
             btnDelete = itemView.findViewById(R.id.btnDelete);
+            btnRestore = itemView.findViewById(R.id.btnRestore);
         }
     }
 }

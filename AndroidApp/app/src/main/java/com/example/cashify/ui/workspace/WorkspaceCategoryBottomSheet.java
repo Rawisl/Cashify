@@ -1,5 +1,7 @@
 package com.example.cashify.ui.workspace;
 
+import static com.example.cashify.BuildConfig.BASE_URL;
+
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
@@ -24,6 +26,7 @@ import com.example.cashify.ui.category.PopupAdapter;
 import com.example.cashify.utils.ToastHelper;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.io.Serializable;
@@ -100,36 +103,48 @@ public class WorkspaceCategoryBottomSheet extends BottomSheetDialogFragment {
             return;
         }
 
-        Category c = (editCat != null) ? editCat : new Category();
-        c.name = name;
-        c.iconName = selectedIconName;
-        c.colorCode = selectedColorCode;
-        c.type = isExpense ? 0 : 1;
-        c.workspaceId = workspaceId;
-
-        // THÊM 2 DÒNG NÀY VÀO ĐỂ ĐỒNG BỘ CẤU TRÚC:
-        c.isDefault = 0;
-        c.isDeleted = 0;
-
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
         btnSave.setEnabled(false); // Tránh bấm 2 lần
 
         if (editCat != null && editCat.firestoreId != null) {
-            // EDIT Mode
-            db.collection("workspaces").document(workspaceId)
-                    .collection("categories").document(editCat.firestoreId)
-                    .set(c)
-                    .addOnSuccessListener(aVoid -> {
-                        ToastHelper.show(getContext(), "Category updated successfully");
-                        dismiss();
-                    })
-                    .addOnFailureListener(e -> {
-                        btnSave.setEnabled(true);
-                        ToastHelper.show(getContext(), "Failed to update: " + e.getMessage());
-                    });
+            // ========================================================
+            // EDIT MODE: GỌI API C# THÔNG QUA FIREBASE MANAGER
+            // ========================================================
+            com.example.cashify.data.remote.FirebaseManager.getInstance().editCategory(
+                    workspaceId,
+                    editCat.firestoreId,
+                    name,
+                    selectedIconName,
+                    selectedColorCode,
+                    isExpense ? 0 : 1,
+                    new com.example.cashify.data.remote.FirebaseManager.DataCallback<Void>() {
+                        @Override
+                        public void onSuccess(Void data) {
+                            ToastHelper.show(getContext(), "Category updated successfully");
+                            dismiss();
+                        }
+
+                        @Override
+                        public void onError(String message) {
+                            btnSave.setEnabled(true);
+                            ToastHelper.show(getContext(), "Failed to update: " + message);
+                        }
+                    }
+            );
+
         } else {
-            // ADD NEW Mode
-            db.collection("workspaces").document(workspaceId)
+            // ========================================================
+            // ADD NEW MODE: Giữ nguyên chạy trực tiếp Firestore
+            // ========================================================
+            Category c = new Category();
+            c.name = name;
+            c.iconName = selectedIconName;
+            c.colorCode = selectedColorCode;
+            c.type = isExpense ? 0 : 1;
+            c.workspaceId = workspaceId;
+            c.isDefault = 0;
+            c.isDeleted = 0;
+
+            FirebaseFirestore.getInstance().collection("workspaces").document(workspaceId)
                     .collection("categories")
                     .add(c)
                     .addOnSuccessListener(documentReference -> {

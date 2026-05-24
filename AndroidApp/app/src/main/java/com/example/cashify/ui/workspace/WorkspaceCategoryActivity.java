@@ -16,7 +16,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
 import com.example.cashify.data.model.Category;
+import com.example.cashify.data.remote.FirebaseManager;
 import com.example.cashify.ui.category.CategoryAdapter;
+import com.example.cashify.ui.category.CategoryManagement;
 import com.example.cashify.utils.DialogHelper;
 import com.example.cashify.utils.ToastHelper;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -68,6 +70,7 @@ public class WorkspaceCategoryActivity extends AppCompatActivity {
 
         rvChi.setVisibility(View.VISIBLE);
         rvThu.setVisibility(View.VISIBLE);
+
     }
 
     private void setupRecyclerViews() {
@@ -78,7 +81,7 @@ public class WorkspaceCategoryActivity extends AppCompatActivity {
                         WorkspaceCategoryActivity.this, "Hide Category", "Are you sure you want to hide '" + category.name + "'? Future transactions cannot use this.", "Hide", "Cancel", DialogHelper.DialogType.DANGER, true,
                         () -> {
                             // GỌI CÁP XUỐNG C# ĐỂ KIỂM DUYỆT VÀ SOFT DELETE
-                            com.example.cashify.data.remote.FirebaseManager.getInstance().deleteCategory(workspaceId, category.firestoreId, new com.example.cashify.data.remote.FirebaseManager.DataCallback<Void>() {
+                            FirebaseManager.getInstance().deleteCategory(workspaceId, category.firestoreId, new com.example.cashify.data.remote.FirebaseManager.DataCallback<Void>() {
                                 @Override
                                 public void onSuccess(Void data) {
                                     runOnUiThread(() -> ToastHelper.show(WorkspaceCategoryActivity.this, "Category hidden successfully"));
@@ -95,6 +98,35 @@ public class WorkspaceCategoryActivity extends AppCompatActivity {
             @Override
             public void onEditClick(Category category) {
                 WorkspaceCategoryBottomSheet.newInstance(workspaceId, category).show(getSupportFragmentManager(), "EditCategory");
+            }
+
+            @Override
+            public void onRestoreClick(Category category) {
+                // Sửa chữ "this" thành "WorkspaceCategoryActivity.this"
+                DialogHelper.showCustomDialog(
+                        WorkspaceCategoryActivity.this,
+                        "Restore Category",
+                        "Are you sure you want to restore " + category.name + "?",
+                        "Restore",
+                        "Cancel",
+                        DialogHelper.DialogType.NORMAL, // Nút màu Xanh lá cho việc Khôi phục
+                        true,
+                        () -> {
+                            // GỌI THẲNG XUỐNG FIREBASE MANAGER, KHÔNG XÀI VIEWMODEL Ở ĐÂY NỮA
+                            FirebaseManager.getInstance().restoreCategory(workspaceId, category.firestoreId, new FirebaseManager.DataCallback<Void>() {
+                                @Override
+                                public void onSuccess(Void data) {
+                                    runOnUiThread(() -> ToastHelper.show(WorkspaceCategoryActivity.this, "Category restored successfully"));
+                                }
+
+                                @Override
+                                public void onError(String message) {
+                                    runOnUiThread(() -> ToastHelper.show(WorkspaceCategoryActivity.this, "Error: " + message));
+                                }
+                            });
+                        },
+                        null
+                );
             }
         };
 

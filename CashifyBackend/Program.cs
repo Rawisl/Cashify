@@ -79,7 +79,7 @@ app.MapPost("/api/v1/scan-bill", async (HttpRequest request, ScanRequest req, IH
         {
             //tham khảo thử mấy model khác con nào ngon thì vứt vào chứ openrouter/free hơi hên xui
             //baidu/cobuddy:free
-            model = "baidu/qianfan-ocr-fast:free",
+            model = "baidu/cobuddy:free",
             messages = new[]
             {
                 new { role = "system", content = systemPrompt },
@@ -140,7 +140,7 @@ app.MapPost("/api/v1/scan-bill", async (HttpRequest request, ScanRequest req, IH
 });
 
 // ======================================================================
-// 3. TẠO GIAO DỊCH QUỸ CHUNG
+// 3. TẠO GIAO DỊCH QUỸ CHUNG KÈM LOGIC SỬA
 // ======================================================================
 app.MapPost("/api/v1/workspace/transaction/add", async (HttpRequest request, TransactionRequest body) =>
 {
@@ -849,16 +849,15 @@ app.MapGet("/api/v1/friend/messages/conversations", async (HttpRequest request) 
                 .WhereEqualTo("isRead", false)
                 .GetSnapshotAsync();
 
-            conversations.Add(new DirectConversationSummary
-            {
-                FriendUid = friendSnap.ContainsField("uid") ? friendSnap.GetValue<string>("uid") : friendId,
-                FriendEmail = friendSnap.ContainsField("email") ? friendSnap.GetValue<string>("email") : "",
-                FriendDisplayName = friendSnap.ContainsField("displayName") ? friendSnap.GetValue<string>("displayName") : "",
-                FriendAvatarUrl = friendSnap.ContainsField("avatarUrl") ? friendSnap.GetValue<string>("avatarUrl") : "",
-                LatestMessageText = latest.ContainsField("text") ? latest.GetValue<string>("text") : "",
-                LatestMessageTimestamp = latest.ContainsField("timestamp") ? latest.GetValue<long>("timestamp") : 0,
-                UnreadCount = unreadSnapshot.Count
-            });
+            conversations.Add(new DirectConversationSummary(
+                            FriendUid: friendSnap.ContainsField("uid") ? friendSnap.GetValue<string>("uid") : friendId,
+                            FriendEmail: friendSnap.ContainsField("email") ? friendSnap.GetValue<string>("email") : "",
+                            FriendDisplayName: friendSnap.ContainsField("displayName") ? friendSnap.GetValue<string>("displayName") : "",
+                            FriendAvatarUrl: friendSnap.ContainsField("avatarUrl") ? friendSnap.GetValue<string>("avatarUrl") : "",
+                            LatestMessageText: latest.ContainsField("text") ? latest.GetValue<string>("text") : "",
+                            LatestMessageTimestamp: latest.ContainsField("timestamp") ? latest.GetValue<long>("timestamp") : 0,
+                            UnreadCount: unreadSnapshot.Count
+                        ));
         }
 
         return Results.Ok(conversations.OrderByDescending(item => item.LatestMessageTimestamp));
@@ -1177,6 +1176,477 @@ app.MapPost("/api/v1/workspace/invite/decline", async (HttpRequest request, Work
     catch (Exception ex) { return Results.Problem($"System error: {ex.Message}"); }
 });
 
+// CÁC ENDPOINT LIÊN QUAN ĐẾN POST
+//load các bài đăng
+app.MapPost("/api/v1/post/feed", async (HttpRequest request, FeedRequest body) =>
+{
+    try
+    {
+        var authHeader = request.Headers["Authorization"].FirstOrDefault();
+        if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer ")) return Results.Unauthorized();
+
+        var token = authHeader.Substring("Bearer ".Length);
+        var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token)).Uid; // LẤY UID ĐỂ CHECK LIKE
+
+        var db = FirestoreDb.Create(projectId);
+        Query query = db.Collection("posts");
+
+        if (body.FriendIds != null && body.FriendIds.Count > 0)
+        {
+            var limitedFriends = body.FriendIds.Take(30).ToList();
+            query = query.WhereIn("userId", limitedFriends);
+        }
+
+        query = query.OrderByDescending("timestamp");
+        if (body.LastTimestamp > 0) query = query.StartAfter(body.LastTimestamp);
+        query = query.Limit(body.Limit > 0 ? body.Limit : 10);
+
+        var snapshot = await query.GetSnapshotAsync();
+
+        // CHẠY SONG SONG KỂM TRA LIKE CHO 10 BÀI POST CÙNG LÚC
+        var likeCheckTasks = snapshot.Documents.Select(async doc =>
+        {
+            var postDict = doc.ToDictionary();
+
+            // Chọc vào sub-collection likes để xem uid này có tồn tại không
+            var likeSnap = await db.Collection("posts").Document(doc.Id).Collection("likes").Document(uid).GetSnapshotAsync();
+
+            // Gắn thêm trường isLiked cho Android
+            postDict["isLiked"] = likeSnap.Exists;
+
+            return postDict;
+        });
+
+        var posts = (await Task.WhenAll(likeCheckTasks)).ToList();
+
+        return Results.Ok(posts);
+    }
+    catch (Exception ex) { return Results.Problem($"Lỗi lấy feed: {ex.Message}"); }
+});
+
+//load bình luận của 1 bài viết
+app.MapGet("/api/v1/post/{postId}/comments", async (HttpRequest request, string postId) =>
+{
+    try
+    {
+        var authHeader = request.Headers["Authorization"].FirstOrDefault();
+        if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer ")) return Results.Unauthorized();
+
+        var db = FirestoreDb.Create(projectId);
+        var commentsRef = db.Collection("posts").Document(postId).Collection("comments");
+
+        // Load comment xếp theo thời gian cũ nhất lên trước (như Facebook)
+        var snapshot = await commentsRef.OrderBy("timestamp").GetSnapshotAsync();
+
+        var comments = snapshot.Documents.Select(doc => doc.ToDictionary()).ToList();
+        return Results.Ok(comments);
+    }
+    catch (Exception ex) { return Results.Problem(ex.Message); }
+});
+
+//load bài viết tường nhà của riêng 1 user (chỉ load bài của riêng nó)
+app.MapGet("/api/v1/post/wall/{targetUid}", async (HttpRequest request, string targetUid, int limit = 10, long lastTimestamp = 0) =>
+{
+    try
+    {
+        var authHeader = request.Headers["Authorization"].FirstOrDefault();
+        if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer ")) return Results.Unauthorized();
+
+        // Lấy UID của người ĐANG XEM để check xem nó đã like bài trên tường này chưa
+        var token = authHeader.Substring("Bearer ".Length);
+        var currentViewerUid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token)).Uid;
+
+        var db = FirestoreDb.Create(projectId);
+        Query query = db.Collection("posts").WhereEqualTo("userId", targetUid).OrderByDescending("timestamp");
+
+        if (lastTimestamp > 0) query = query.StartAfter(lastTimestamp);
+        query = query.Limit(limit);
+
+        var snapshot = await query.GetSnapshotAsync();
+
+        // ỐP LOGIC CHECK LIKE SONG SONG Y HỆT BÊN FEED VÀO ĐÂY
+        var likeCheckTasks = snapshot.Documents.Select(async doc =>
+        {
+            var postDict = doc.ToDictionary();
+            var likeSnap = await db.Collection("posts").Document(doc.Id).Collection("likes").Document(currentViewerUid).GetSnapshotAsync();
+            postDict["isLiked"] = likeSnap.Exists;
+            return postDict;
+        });
+
+        var posts = (await Task.WhenAll(likeCheckTasks)).ToList();
+
+        return Results.Ok(posts);
+    }
+    catch (Exception ex) { return Results.Problem(ex.Message); }
+});
+
+//tạo bài
+app.MapPost("/api/v1/post/create", async (HttpRequest request, CreatePostRequest body) =>
+{
+    try
+    {
+        var authHeader = request.Headers["Authorization"].FirstOrDefault();
+        if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer ")) return Results.Unauthorized();
+
+        var token = authHeader.Substring("Bearer ".Length);
+        var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token)).Uid;
+
+        if (string.IsNullOrEmpty(body.Content)) return Results.BadRequest("Nội dung không được để trống");
+
+        var db = FirestoreDb.Create(projectId);
+        var postId = Guid.NewGuid().ToString();
+        var postRef = db.Collection("posts").Document(postId);
+
+        var postData = new Dictionary<string, object>
+        {
+            { "postId", postId },
+            { "userId", uid },
+            { "type", body.Type ?? "USER_POST" },
+            { "content", body.Content },
+            { "imageUrl", body.ImageUrl ?? "" },
+            { "milestoneData", body.MilestoneData },
+            { "likeCount", 0 },
+            { "commentCount", 0 },
+            { "timestamp", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() },
+            { "isEdited", false }
+        };
+
+        await postRef.SetAsync(postData);
+        return Results.Ok(new { message = "Đăng bài thành công", postId });
+    }
+    catch (Exception ex) { return Results.Problem($"Lỗi tạo bài: {ex.Message}"); }
+});
+
+//thả chim
+app.MapPost("/api/v1/post/like", async (HttpRequest request, LikeActionRequest body) =>
+{
+    try
+    {
+        var authHeader = request.Headers["Authorization"].FirstOrDefault();
+        if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer ")) return Results.Unauthorized();
+
+        var token = authHeader.Substring("Bearer ".Length);
+        var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token)).Uid;
+
+        var db = FirestoreDb.Create(projectId);
+        var postRef = db.Collection("posts").Document(body.PostId);
+        var likeRef = postRef.Collection("likes").Document(uid);
+
+        // Dùng Transaction để đảm bảo tính toán số lượng Tim chuẩn xác 100%
+        await db.RunTransactionAsync(async transaction =>
+        {
+            DocumentSnapshot postSnap = await transaction.GetSnapshotAsync(postRef);
+            if (!postSnap.Exists) throw new Exception("Bài viết không tồn tại");
+
+            DocumentSnapshot likeSnap = await transaction.GetSnapshotAsync(likeRef);
+            long currentLikes = postSnap.GetValue<long>("likeCount");
+
+            if (likeSnap.Exists)
+            {
+                // Đã like rồi -> Giờ là UNLIKE
+                transaction.Delete(likeRef);
+                transaction.Update(postRef, "likeCount", Math.Max(0, currentLikes - 1));
+            }
+            else
+            {
+                // Chưa like -> Giờ là LIKE
+                transaction.Set(likeRef, new Dictionary<string, object> { { "likedAt", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() } });
+                transaction.Update(postRef, "likeCount", currentLikes + 1);
+            }
+        });
+
+        return Results.Ok(new { message = "Thao tác Like/Unlike thành công" });
+    }
+    catch (Exception ex) { return Results.Problem(ex.Message); }
+});
+
+//sửa bài
+app.MapPost("/api/v1/post/edit", async (HttpRequest request, EditPostRequest body) =>
+{
+    try
+    {
+        var authHeader = request.Headers["Authorization"].FirstOrDefault();
+        if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer ")) return Results.Unauthorized();
+
+        var token = authHeader.Substring("Bearer ".Length);
+        var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token)).Uid;
+
+        var db = FirestoreDb.Create(projectId);
+        var postRef = db.Collection("posts").Document(body.PostId);
+        var postSnap = await postRef.GetSnapshotAsync();
+
+        if (!postSnap.Exists) return Results.NotFound("Bài viết không tồn tại");
+        if (postSnap.GetValue<string>("userId") != uid) return Results.StatusCode(403); // Cấm sửa trộm
+
+        var updates = new Dictionary<string, object>
+        {
+            { "content", body.NewContent },
+            { "isEdited", true }
+        };
+        // Nếu có update ảnh mới thì lưu, không thì giữ nguyên ảnh cũ
+        if (body.NewImageUrl != null) updates["imageUrl"] = body.NewImageUrl;
+
+        await postRef.UpdateAsync(updates);
+        return Results.Ok(new { message = "Đã sửa bài viết" });
+    }
+    catch (Exception ex) { return Results.Problem(ex.Message); }
+});
+
+//xóa bài viết (Dọn sạch cả Sub-collection để chống rác Data)
+app.MapPost("/api/v1/post/delete", async (HttpRequest request, DeletePostRequest body) =>
+{
+    try
+    {
+        var authHeader = request.Headers["Authorization"].FirstOrDefault();
+        if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer ")) return Results.Unauthorized();
+
+        var token = authHeader.Substring("Bearer ".Length);
+        var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token)).Uid;
+
+        var db = FirestoreDb.Create(projectId);
+        var postRef = db.Collection("posts").Document(body.PostId);
+        var postSnap = await postRef.GetSnapshotAsync();
+
+        if (!postSnap.Exists) return Results.NotFound("Bài viết không tồn tại");
+        if (postSnap.GetValue<string>("userId") != uid) return Results.StatusCode(403); // Cấm xóa trộm
+
+        // Khởi tạo xe rác (Batch) để gom lệnh xóa
+        var batch = db.StartBatch();
+
+        // 1. Quét dọn collection "likes"
+        var likesSnap = await postRef.Collection("likes").GetSnapshotAsync();
+        foreach (var doc in likesSnap.Documents)
+        {
+            batch.Delete(doc.Reference);
+        }
+
+        // 2. Quét dọn collection "comments"
+        var commentsSnap = await postRef.Collection("comments").GetSnapshotAsync();
+        foreach (var doc in commentsSnap.Documents)
+        {
+            batch.Delete(doc.Reference);
+        }
+
+        // 3. Đập bỏ Document gốc (Post)
+        batch.Delete(postRef);
+
+        // 4. Bấm nút hủy diệt cùng lúc toàn bộ
+        await batch.CommitAsync();
+
+        return Results.Ok(new { message = "Đã xóa bài viết và các dữ liệu liên quan" });
+    }
+    catch (Exception ex) { return Results.Problem(ex.Message); }
+});
+
+
+//ENDPOINT CỦA COMMENT
+//add bình luận
+app.MapPost("/api/v1/comment/add", async (HttpRequest request, AddCommentRequest body) =>
+{
+    try
+    {
+        var authHeader = request.Headers["Authorization"].FirstOrDefault();
+        if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer ")) return Results.Unauthorized();
+
+        var token = authHeader.Substring("Bearer ".Length);
+        var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token)).Uid;
+
+        var db = FirestoreDb.Create(projectId);
+        var postRef = db.Collection("posts").Document(body.PostId);
+        var commentId = Guid.NewGuid().ToString();
+        var commentRef = postRef.Collection("comments").Document(commentId);
+
+        await db.RunTransactionAsync(async transaction =>
+        {
+            DocumentSnapshot postSnap = await transaction.GetSnapshotAsync(postRef);
+            if (!postSnap.Exists) throw new Exception("Bài viết không tồn tại");
+
+            var commentData = new Dictionary<string, object>
+            {
+                { "commentId", commentId },
+                { "userId", uid },
+                { "content", body.Content },
+                { "timestamp", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() },
+                { "isEdited", false }
+            };
+
+            transaction.Set(commentRef, commentData);
+            long currentComments = postSnap.GetValue<long>("commentCount");
+            transaction.Update(postRef, "commentCount", currentComments + 1);
+        });
+
+        return Results.Ok(new { message = "Bình luận thành công", commentId });
+    }
+    catch (Exception ex) { return Results.Problem(ex.Message); }
+});
+
+//sửa bình luận
+app.MapPost("/api/v1/comment/edit", async (HttpRequest request, EditCommentRequest body) =>
+{
+    try
+    {
+        var authHeader = request.Headers["Authorization"].FirstOrDefault();
+        if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer ")) return Results.Unauthorized();
+
+        var token = authHeader.Substring("Bearer ".Length);
+        var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token)).Uid;
+
+        var db = FirestoreDb.Create(projectId);
+        var commentRef = db.Collection("posts").Document(body.PostId).Collection("comments").Document(body.CommentId);
+        var commentSnap = await commentRef.GetSnapshotAsync();
+
+        if (!commentSnap.Exists) return Results.NotFound("Bình luận không tồn tại");
+        if (commentSnap.GetValue<string>("userId") != uid) return Results.StatusCode(403);
+
+        await commentRef.UpdateAsync(new Dictionary<string, object>
+        {
+            { "content", body.NewContent },
+            { "isEdited", true }
+        });
+
+        return Results.Ok(new { message = "Đã sửa bình luận" });
+    }
+    catch (Exception ex) { return Results.Problem(ex.Message); }
+});
+
+//xóa bình luận
+app.MapPost("/api/v1/comment/delete", async (HttpRequest request, DeleteCommentRequest body) =>
+{
+    try
+    {
+        var authHeader = request.Headers["Authorization"].FirstOrDefault();
+        if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer ")) return Results.Unauthorized();
+
+        var token = authHeader.Substring("Bearer ".Length);
+        var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token)).Uid;
+
+        var db = FirestoreDb.Create(projectId);
+        var postRef = db.Collection("posts").Document(body.PostId);
+        var commentRef = postRef.Collection("comments").Document(body.CommentId);
+
+        await db.RunTransactionAsync(async transaction =>
+        {
+            var postSnap = await transaction.GetSnapshotAsync(postRef);
+            var commentSnap = await transaction.GetSnapshotAsync(commentRef);
+
+            if (!postSnap.Exists || !commentSnap.Exists) throw new Exception("Không tìm thấy dữ liệu");
+
+            var postOwnerId = postSnap.GetValue<string>("userId");
+            var commentOwnerId = commentSnap.GetValue<string>("userId");
+
+            // Chỉ chủ comment hoặc chủ bài viết mới có quyền xóa
+            if (uid != commentOwnerId && uid != postOwnerId) throw new Exception("Không có quyền xóa");
+
+            transaction.Delete(commentRef);
+
+            // Giảm số đếm comment
+            long currentComments = postSnap.GetValue<long>("commentCount");
+            transaction.Update(postRef, "commentCount", Math.Max(0, currentComments - 1));
+        });
+
+        return Results.Ok(new { message = "Đã xóa bình luận" });
+    }
+    catch (Exception ex) { return Results.Problem(ex.Message); }
+});
+
+//bulk profile fetch (ý tưởng cái này đại loại phục vụ cho Client-side Join. Khi tải 10 bài post, Andr gom 10 userId (loại bỏ trùng lặp), bắn lên rồi gọi API backend này để lấy về tên + avt của những người đó nhét vào cache trong ViewModel)
+app.MapPost("/api/v1/user/batch-profiles", async (HttpRequest request, BatchProfileRequest body) =>
+{
+    try
+    {
+        if (body.UserIds == null || body.UserIds.Count == 0) return Results.Ok(new Dictionary<string, object>());
+
+        var db = FirestoreDb.Create(projectId);
+        var profiles = new Dictionary<string, object>();
+
+        // Lọc trùng ID trước khi đi tìm trong Database để tối ưu hiệu năng
+        var uniqueUids = body.UserIds.Distinct().ToList();
+
+        foreach (var uid in uniqueUids)
+        {
+            var userSnap = await db.Collection("users").Document(uid).GetSnapshotAsync();
+            if (userSnap.Exists)
+            {
+                profiles[uid] = new
+                {
+                    displayName = userSnap.ContainsField("displayName") ? userSnap.GetValue<string>("displayName") : "Người dùng Cashify",
+                    avatarUrl = userSnap.ContainsField("avatarUrl") ? userSnap.GetValue<string>("avatarUrl") : ""
+                };
+            }
+        }
+
+        return Results.Ok(profiles);
+    }
+    catch (Exception ex) { return Results.Problem(ex.Message); }
+});
+
+//sửa danh mục cho Owner
+app.MapPost("/api/v1/workspace/category/edit", async (HttpRequest request, EditCategoryRequest body) =>
+{
+    try
+    {
+        var authHeader = request.Headers["Authorization"].FirstOrDefault();
+        if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer ")) return Results.Unauthorized();
+
+        var token = authHeader.Substring("Bearer ".Length);
+        var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token)).Uid;
+
+        if (string.IsNullOrEmpty(body.WorkspaceId) || string.IsNullOrEmpty(body.CategoryId) || string.IsNullOrEmpty(body.Name))
+            return Results.BadRequest("Thiếu thông tin chỉnh sửa");
+
+        var db = FirestoreDb.Create(projectId);
+        var wsRef = db.Collection("workspaces").Document(body.WorkspaceId);
+        var wsSnap = await wsRef.GetSnapshotAsync();
+
+        if (!wsSnap.Exists) return Results.NotFound("Không tìm thấy quỹ");
+
+        // Bảo mật: Chỉ Trưởng nhóm (Owner) mới được quyền chỉnh sửa cấu trúc danh mục nhóm
+        if (uid != wsSnap.GetValue<string>("ownerId")) return Results.StatusCode(403);
+
+        var catRef = wsRef.Collection("categories").Document(body.CategoryId);
+
+        await catRef.UpdateAsync(new Dictionary<string, object>
+        {
+            { "name", body.Name },
+            { "iconName", body.IconName },
+            { "colorCode", body.ColorCode },
+            { "type", body.Type }
+        });
+
+        return Results.Ok(new { message = "Cập nhật danh mục thành công!" });
+    }
+    catch (Exception ex) { return Results.Problem($"Lỗi hệ thống: {ex.Message}"); }
+});
+
+//khôi phục danh mục đã ẩn (isDeleted = 0)
+app.MapPost("/api/v1/workspace/category/restore", async (HttpRequest request, RestoreCategoryRequest body) =>
+{
+    try
+    {
+        var authHeader = request.Headers["Authorization"].FirstOrDefault();
+        if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer ")) return Results.Unauthorized();
+
+        var token = authHeader.Substring("Bearer ".Length);
+        var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token)).Uid;
+
+        if (string.IsNullOrEmpty(body.WorkspaceId) || string.IsNullOrEmpty(body.CategoryId)) return Results.BadRequest("Thiếu Data");
+
+        var db = FirestoreDb.Create(projectId);
+        var wsRef = db.Collection("workspaces").Document(body.WorkspaceId);
+        var wsSnap = await wsRef.GetSnapshotAsync();
+
+        if (!wsSnap.Exists) return Results.NotFound("Không tìm thấy quỹ");
+        if (uid != wsSnap.GetValue<string>("ownerId")) return Results.StatusCode(403);
+
+        var catRef = wsRef.Collection("categories").Document(body.CategoryId);
+
+        // Trả trạng thái xóa mềm về lại 0 để hiển thị lên bảng tin Android
+        await catRef.UpdateAsync("isDeleted", 0);
+
+        return Results.Ok(new { message = "Khôi phục danh mục thành công!" });
+    }
+    catch (Exception ex) { return Results.Problem($"Lỗi hệ thống: {ex.Message}"); }
+});
 
 // ======================================================================
 // CHẠY SERVER - Lệnh này PHẢI nằm ngay trước các Model
@@ -1184,92 +1654,47 @@ app.MapPost("/api/v1/workspace/invite/decline", async (HttpRequest request, Work
 app.Run("http://0.0.0.0:5283");
 
 // ======================================================================
-// TẤT CẢ CÁC MODEL (CLASSES, RECORDS) PHẢI NẰM DƯỚI NÀY
+// TẤT CẢ CÁC MODEL (RECORDS DTO) PHẢI NẰM DƯỚI NÀY
 // ======================================================================
+
+// --- NHÓM MODEL CỦA SOCIAL POST & AI SCAN ---
 public record ScanRequest(string OcrText);
+public record FeedRequest(List<string> FriendIds, long LastTimestamp, int Limit);
+public record CreatePostRequest(string Content, string? ImageUrl, string? Type, object? MilestoneData);
+public record LikeActionRequest(string PostId);
+public record AddCommentRequest(string PostId, string Content);
+public record DeletePostRequest(string PostId);
+public record BatchProfileRequest(List<string> UserIds);
+public record DeleteCommentRequest(string PostId, string CommentId);
+public record EditPostRequest(string PostId, string NewContent, string? NewImageUrl);
+public record EditCommentRequest(string PostId, string CommentId, string NewContent);
 
-public class TransactionRequest
-{
-    public string? Id { get; set; }
-    public long Amount { get; set; }
-    public int CategoryId { get; set; }
-    public string? Note { get; set; }
-    public long Timestamp { get; set; }
-    public string? PaymentMethod { get; set; }
-    public int Type { get; set; }
-    public string? WorkspaceId { get; set; }
-    public string? FirestoreCategoryId { get; set; }
-}
+// --- NHÓM MODEL CỦA QUỸ NHÓM (WORKSPACE) VÀ GIAO DỊCH ---
+public record TransactionRequest(string? Id, long Amount, int CategoryId, string? Note, long Timestamp, string? PaymentMethod, int Type, string? WorkspaceId, string? FirestoreCategoryId);
+public record WorkspaceCreateRequest(string? Name, string? Type, string? IconName);
+public record WorkspaceLeaveRequest(string? WorkspaceId, string? NewOwnerId);
+public record WorkspaceKickRequest(string? WorkspaceId, string? TargetUid);
+public record WorkspaceTransferRequest(string? WorkspaceId, string? NewOwnerId);
+public record TransactionDeleteRequest(string? WorkspaceId, string? TransactionId);
+public record CategoryDeleteRequest(string? WorkspaceId, string? CategoryId);
+public record MessageRecallRequest(string? WorkspaceId, string? MessageId);
+public record EditCategoryRequest(string WorkspaceId, string CategoryId, string Name, string IconName, string ColorCode, int Type);
+public record RestoreCategoryRequest(string WorkspaceId, string CategoryId);
 
-public class WorkspaceCreateRequest
-{
-    public string? Name { get; set; }
-    public string? Type { get; set; }
-    public string? IconName { get; set; }
-}
+// --- NHÓM MODEL CỦA BẠN BÈ VÀ LỜI MỜI ---
+public record FriendActionRequest(string? TargetUid);
+public record WorkspaceInviteSendRequest(string? WorkspaceId, string? WorkspaceName, List<string>? TargetUids);
+public record WorkspaceInviteHandleRequest(string? WorkspaceId, string? InvitationId);
 
-public class WorkspaceLeaveRequest
-{
-    public string? WorkspaceId { get; set; }
-    public string? NewOwnerId { get; set; }
-}
+// --- NHÓM MODEL CỦA CHAT TRỰC TIẾP ---
+public record DirectFriendMessageRequest(string? ReceiverId, string? Text);
 
-public class WorkspaceKickRequest
-{
-    public string? WorkspaceId { get; set; }
-    public string? TargetUid { get; set; }
-}
-
-public class WorkspaceTransferRequest
-{
-    public string? WorkspaceId { get; set; }
-    public string? NewOwnerId { get; set; }
-}
-public class TransactionDeleteRequest
-{
-    public string? WorkspaceId { get; set; }
-    public string? TransactionId { get; set; }
-}
-public class CategoryDeleteRequest
-{
-    public string? WorkspaceId { get; set; }
-    public string? CategoryId { get; set; }
-}
-public class MessageRecallRequest
-{
-    public string? WorkspaceId { get; set; }
-    public string? MessageId { get; set; }
-}
-public class FriendActionRequest
-{
-    public string? TargetUid { get; set; }
-}
-public class WorkspaceInviteSendRequest
-{
-    public string? WorkspaceId { get; set; }
-    public string? WorkspaceName { get; set; }
-    public List<string>? TargetUids { get; set; }
-}
-public class WorkspaceInviteHandleRequest
-{
-    public string? WorkspaceId { get; set; }
-    public string? InvitationId { get; set; }
-}
-
-public class DirectFriendMessageRequest
-{
-    public string? ReceiverId { get; set; }
-    public string? Text { get; set; }
-}
-
-public class DirectConversationSummary
-{
-    public string FriendUid { get; set; } = "";
-    public string FriendEmail { get; set; } = "";
-    public string FriendDisplayName { get; set; } = "";
-    public string FriendAvatarUrl { get; set; } = "";
-    public string LatestMessageText { get; set; } = "";
-    public long LatestMessageTimestamp { get; set; }
-    public int UnreadCount { get; set; }
-}
-
+public record DirectConversationSummary(
+    string FriendUid,
+    string FriendEmail,
+    string FriendDisplayName,
+    string FriendAvatarUrl,
+    string LatestMessageText,
+    long LatestMessageTimestamp,
+    int UnreadCount
+);

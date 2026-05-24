@@ -1,60 +1,72 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     style="@style/cardview_buttons"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="8dp"
-    app:cardElevation="0.5dp"
-    app:cardBackgroundColor="@color/white"> <LinearLayout
-    style="@style/btn_component_layout"
-    android:gravity="center_vertical"
-    android:padding="12dp">
+    app:cardBackgroundColor="@color/white"
+    app:cardElevation="0.5dp">
 
-    <com.google.android.material.imageview.ShapeableImageView
-        android:id="@+id/imgCategoryIcon"
-        style="@style/btn_main_icon"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:scaleType="centerInside"
-        android:background="@color/icon_setting_background"
-        app:shapeAppearanceOverlay="@style/square_rounded"
-        tools:srcCompat="@drawable/ic_other"
-        app:tint="@color/brand_primary" />
+    <LinearLayout
+        style="@style/btn_component_layout"
+        android:gravity="center_vertical"
+        android:padding="12dp">
 
-    <TextView
-        android:id="@+id/tvCategoryName"
-        style="@style/btn_item_title"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:layout_marginStart="16dp"
-        android:textColor="@color/item_title"
-        android:text="Ăn uống"
-        android:textSize="16sp" />
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/imgCategoryIcon"
+            style="@style/btn_main_icon"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@color/icon_setting_background"
+            android:scaleType="centerInside"
+            app:shapeAppearanceOverlay="@style/square_rounded"
+            app:tint="@color/brand_primary"
+            tools:srcCompat="@drawable/ic_other" />
 
-    <ImageButton
-        android:id="@+id/btnEdit"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:src="@drawable/ic_pencil_regular"
-        android:padding="10dp"
-        android:scaleType="centerInside"
-        app:tint="@color/status_green" />
+        <TextView
+            android:id="@+id/tvCategoryName"
+            style="@style/btn_item_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_weight="1"
+            android:text="Ăn uống"
+            android:textColor="@color/item_title"
+            android:textSize="16sp" />
 
-    <ImageButton
-        android:id="@+id/btnDelete"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_marginStart="8dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:src="@drawable/ic_trash_regular"
-        android:padding="10dp"
-        android:scaleType="centerInside"
-        app:tint="@color/status_red" />
+        <ImageButton
+            android:id="@+id/btnEdit"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="10dp"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_pencil_regular"
+            app:tint="@color/status_green" />
 
-</LinearLayout>
+        <ImageButton
+            android:id="@+id/btnDelete"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="10dp"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_trash_regular"
+            app:tint="@color/status_red" />
+
+        <ImageButton
+            android:id="@+id/btnRestore"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:layout_marginStart="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="10dp"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_restore"
+            app:tint="@color/status_green" />
+
+    </LinearLayout>
 </androidx.cardview.widget.CardView>

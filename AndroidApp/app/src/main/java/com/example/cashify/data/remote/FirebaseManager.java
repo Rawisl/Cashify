@@ -663,6 +663,52 @@ public class FirebaseManager {
         callGenericWorkspaceApi(req, "deleteCategory", callback);
     }
 
+    public void editCategory(String workspaceId, String categoryId, String name, String iconName, String colorCode, int type, DataCallback<Void> callback) {
+        FirebaseUser user = auth.getCurrentUser();
+        if (user == null) { callback.onError("Chưa đăng nhập!"); return; }
+
+        user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
+            String token = "Bearer " + getTokenResult.getToken();
+            ApiService apiService = ApiClient.getClient().create(ApiService.class);
+            ApiService.EditCategoryRequest request = new ApiService.EditCategoryRequest(workspaceId, categoryId, name, iconName, colorCode, type);
+
+            apiService.editCategory(token, request).enqueue(new retrofit2.Callback<Object>() {
+                @Override
+                public void onResponse(retrofit2.Call<Object> call, retrofit2.Response<Object> response) {
+                    if (response.isSuccessful()) callback.onSuccess(null);
+                    else callback.onError(extractApiError(response, "Server từ chối (Mã: " + response.code() + ")"));
+                }
+                @Override
+                public void onFailure(retrofit2.Call<Object> call, Throwable t) { callback.onError("Lỗi mạng: " + t.getMessage()); }
+            });
+        }).addOnFailureListener(e -> callback.onError("Lỗi Auth: " + e.getMessage()));
+    }
+
+    public void restoreCategory(String workspaceId, String categoryId, DataCallback<Void> callback) {
+        FirebaseUser user = auth.getCurrentUser();
+        if (user == null) { callback.onError("Chưa đăng nhập!"); return; }
+
+        user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
+            String token = "Bearer " + getTokenResult.getToken();
+            ApiService apiService = ApiClient.getClient().create(ApiService.class);
+
+            // Xài lại WorkspaceActionRequest vì nó có sẵn WorkspaceId và CategoryId
+            ApiService.WorkspaceActionRequest req = new ApiService.WorkspaceActionRequest();
+            req.WorkspaceId = workspaceId;
+            req.CategoryId = categoryId;
+
+            apiService.restoreCategory(token, req).enqueue(new retrofit2.Callback<Object>() {
+                @Override
+                public void onResponse(retrofit2.Call<Object> call, retrofit2.Response<Object> response) {
+                    if (response.isSuccessful()) callback.onSuccess(null);
+                    else callback.onError(extractApiError(response, "Server từ chối (Mã: " + response.code() + ")"));
+                }
+                @Override
+                public void onFailure(retrofit2.Call<Object> call, Throwable t) { callback.onError("Lỗi mạng: " + t.getMessage()); }
+            });
+        }).addOnFailureListener(e -> callback.onError("Lỗi Auth: " + e.getMessage()));
+    }
+
     public void recallMessage(String workspaceId, String messageId, DataCallback<Void> callback) {
         ApiService.WorkspaceActionRequest req = new ApiService.WorkspaceActionRequest();
         req.WorkspaceId = workspaceId;
