@@ -60,7 +60,7 @@ public class FriendChatActivity extends AppCompatActivity {
         rvChatMessages.setAdapter(chatAdapter);
 
         viewModel = new ViewModelProvider(this).get(FriendChatViewModel.class);
-        viewModel.loadMessages(friendUid);
+        viewModel.startListeningMessages(friendUid);
         viewModel.getChatMessages().observe(this, messages -> {
             chatAdapter.setMessages(messages);
             if (messages != null && !messages.isEmpty()) {

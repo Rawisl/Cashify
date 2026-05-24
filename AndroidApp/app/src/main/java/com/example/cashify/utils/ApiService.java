@@ -79,7 +79,7 @@ public interface ApiService {
     @GET("/api/v1/friend/messages/{friendUid}")
     Call<java.util.List<com.example.cashify.data.model.ChatMessage>> getDirectFriendMessages(@Path("friendUid") String friendUid, @Header("Authorization") String token);
 
-    @POST("/api/v1/friend/message/send")
+    @POST("/api/v1/friend/messages/send")
     Call<Object> sendDirectFriendMessage(@Header("Authorization") String token, @Body DirectFriendMessageRequest request);
 
     //SOCIAL API
@@ -123,9 +123,6 @@ public interface ApiService {
     //api hỗ trợ load profile
     @POST("/api/v1/user/batch-profiles")
     Call<Object> getBatchProfiles(@Body BatchProfileRequest request);
-
-
-
 
     // --- CÁC CLASS MODEL DÙNG ĐỂ HỨNG DATA ---
 
