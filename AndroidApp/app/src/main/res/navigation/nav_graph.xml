@@ -25,6 +25,11 @@
         android:name="com.example.cashify.ui.settings.SettingsFragment"
         android:label="fragment_settings"
         tools:layout="@layout/fragment_settings" />
+    <fragment
+        android:id="@+id/nav_post_feed"
+        android:name="com.example.cashify.ui.feed.CommunityFeedFragment"
+        android:label="Community Feed"
+        tools:layout="@layout/fragment_post_feed" />
 
     <fragment
         android:id="@+id/nav_workspace_container"

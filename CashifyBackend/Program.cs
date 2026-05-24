@@ -1177,6 +1177,205 @@ app.MapPost("/api/v1/workspace/invite/decline", async (HttpRequest request, Work
     catch (Exception ex) { return Results.Problem($"System error: {ex.Message}"); }
 });
 
+// ======================================================================
+// 19. SOCIAL POSTS: DETAIL, COMMENTS, LIKE, SHARE
+// ======================================================================
+app.MapGet("/api/v1/social/posts/{postId}", async (HttpRequest request, string postId) =>
+{
+    try
+    {
+        var authHeader = request.Headers["Authorization"].FirstOrDefault();
+        if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer ")) return Results.Unauthorized();
+
+        var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(authHeader.Substring("Bearer ".Length))).Uid;
+        if (string.IsNullOrWhiteSpace(postId)) return Results.BadRequest(new { message = "Thiếu mã bài viết" });
+
+        var db = FirestoreDb.Create(projectId);
+        var postRef = db.Collection("posts").Document(postId);
+        var postSnap = await postRef.GetSnapshotAsync();
+        if (!postSnap.Exists) return Results.NotFound(new { message = "Không tìm thấy bài viết" });
+
+        var likesSnap = await postRef.Collection("likes").GetSnapshotAsync();
+        var commentsSnap = await postRef.Collection("comments").GetSnapshotAsync();
+        var myLikeSnap = await postRef.Collection("likes").Document(uid).GetSnapshotAsync();
+
+        return Results.Ok(new SocialPostDetailResponse
+        {
+            Id = postSnap.Id,
+            AuthorId = postSnap.ContainsField("authorId") ? postSnap.GetValue<string>("authorId") : "",
+            AuthorName = postSnap.ContainsField("authorName") ? postSnap.GetValue<string>("authorName") : "",
+            AuthorAvatarUrl = postSnap.ContainsField("authorAvatarUrl") ? postSnap.GetValue<string>("authorAvatarUrl") : "",
+            Content = postSnap.ContainsField("content") ? postSnap.GetValue<string>("content") : "",
+            ImageUrl = postSnap.ContainsField("imageUrl") ? postSnap.GetValue<string>("imageUrl") : "",
+            Timestamp = postSnap.ContainsField("timestamp") ? postSnap.GetValue<long>("timestamp") : 0,
+            LikeCount = postSnap.ContainsField("likeCount") ? postSnap.GetValue<int>("likeCount") : likesSnap.Count,
+            CommentCount = postSnap.ContainsField("commentCount") ? postSnap.GetValue<int>("commentCount") : commentsSnap.Count,
+            ShareCount = postSnap.ContainsField("shareCount") ? postSnap.GetValue<int>("shareCount") : 0,
+            LikedByMe = myLikeSnap.Exists
+        });
+    }
+    catch (Exception ex)
+    {
+        Console.Error.WriteLine($"Load social post failed: {ex}");
+        return Results.Problem(title: "Không tải được bài viết", detail: ex.Message, statusCode: 500);
+    }
+});
+
+app.MapGet("/api/v1/social/posts/{postId}/comments", async (HttpRequest request, string postId) =>
+{
+    try
+    {
+        var authHeader = request.Headers["Authorization"].FirstOrDefault();
+        if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer ")) return Results.Unauthorized();
+        await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(authHeader.Substring("Bearer ".Length));
+
+        var db = FirestoreDb.Create(projectId);
+        var postRef = db.Collection("posts").Document(postId);
+        if (!(await postRef.GetSnapshotAsync()).Exists) return Results.NotFound(new { message = "Không tìm thấy bài viết" });
+
+        var commentsSnap = await postRef.Collection("comments").OrderBy("timestamp").GetSnapshotAsync();
+        var comments = commentsSnap.Documents.Select(doc => new SocialCommentResponse
+        {
+            Id = doc.Id,
+            AuthorId = doc.ContainsField("authorId") ? doc.GetValue<string>("authorId") : "",
+            AuthorName = doc.ContainsField("authorName") ? doc.GetValue<string>("authorName") : "",
+            AuthorAvatarUrl = doc.ContainsField("authorAvatarUrl") ? doc.GetValue<string>("authorAvatarUrl") : "",
+            Content = doc.ContainsField("content") ? doc.GetValue<string>("content") : "",
+            Timestamp = doc.ContainsField("timestamp") ? doc.GetValue<long>("timestamp") : 0,
+            LikeCount = doc.ContainsField("likeCount") ? doc.GetValue<int>("likeCount") : 0
+        });
+        return Results.Ok(comments);
+    }
+    catch (Exception ex)
+    {
+        Console.Error.WriteLine($"Load social comments failed: {ex}");
+        return Results.Problem(title: "Không tải được bình luận", detail: ex.Message, statusCode: 500);
+    }
+});
+
+app.MapPost("/api/v1/social/posts/{postId}/like", async (HttpRequest request, string postId, SocialLikeRequest body) =>
+{
+    try
+    {
+        var authHeader = request.Headers["Authorization"].FirstOrDefault();
+        if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer ")) return Results.Unauthorized();
+        var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(authHeader.Substring("Bearer ".Length))).Uid;
+
+        var db = FirestoreDb.Create(projectId);
+        var postRef = db.Collection("posts").Document(postId);
+        if (!(await postRef.GetSnapshotAsync()).Exists) return Results.NotFound(new { message = "Không tìm thấy bài viết" });
+
+        var likeRef = postRef.Collection("likes").Document(uid);
+        var batch = db.StartBatch();
+        if (body.Liked)
+        {
+            batch.Set(likeRef, new { userId = uid, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() });
+            batch.Update(postRef, "likeCount", FieldValue.Increment(1));
+        }
+        else
+        {
+            batch.Delete(likeRef);
+            batch.Update(postRef, "likeCount", FieldValue.Increment(-1));
+        }
+        await batch.CommitAsync();
+
+        var likesSnap = await postRef.Collection("likes").GetSnapshotAsync();
+        await postRef.UpdateAsync("likeCount", likesSnap.Count);
+        return Results.Ok(new SocialReactionResponse
+        {
+            LikeCount = likesSnap.Count,
+            CommentCount = (await postRef.Collection("comments").GetSnapshotAsync()).Count,
+            ShareCount = (await postRef.GetSnapshotAsync()).ContainsField("shareCount") ? (await postRef.GetSnapshotAsync()).GetValue<int>("shareCount") : 0,
+            LikedByMe = (await likeRef.GetSnapshotAsync()).Exists
+        });
+    }
+    catch (Exception ex)
+    {
+        Console.Error.WriteLine($"Like social post failed: {ex}");
+        return Results.Problem(title: "Không cập nhật được lượt thích", detail: ex.Message, statusCode: 500);
+    }
+});
+
+app.MapPost("/api/v1/social/posts/{postId}/comments", async (HttpRequest request, string postId, SocialCommentRequest body) =>
+{
+    try
+    {
+        var authHeader = request.Headers["Authorization"].FirstOrDefault();
+        if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer ")) return Results.Unauthorized();
+        var decodedToken = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(authHeader.Substring("Bearer ".Length));
+        var uid = decodedToken.Uid;
+        if (string.IsNullOrWhiteSpace(body.Content)) return Results.BadRequest(new { message = "Bình luận không được để trống" });
+
+        var db = FirestoreDb.Create(projectId);
+        var postRef = db.Collection("posts").Document(postId);
+        if (!(await postRef.GetSnapshotAsync()).Exists) return Results.NotFound(new { message = "Không tìm thấy bài viết" });
+
+        var userSnap = await db.Collection("users").Document(uid).GetSnapshotAsync();
+        var authorName = userSnap.Exists && userSnap.ContainsField("displayName") ? userSnap.GetValue<string>("displayName") : "Người dùng Cashify";
+        var authorAvatar = userSnap.Exists && userSnap.ContainsField("avatarUrl") ? userSnap.GetValue<string>("avatarUrl") : "";
+        var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        var commentRef = postRef.Collection("comments").Document();
+        var data = new Dictionary<string, object>
+        {
+            { "authorId", uid },
+            { "authorName", authorName },
+            { "authorAvatarUrl", authorAvatar },
+            { "content", body.Content.Trim() },
+            { "timestamp", timestamp },
+            { "likeCount", 0 }
+        };
+        var batch = db.StartBatch();
+        batch.Set(commentRef, data);
+        batch.Update(postRef, "commentCount", FieldValue.Increment(1));
+        await batch.CommitAsync();
+
+        return Results.Ok(new SocialCommentResponse
+        {
+            Id = commentRef.Id,
+            AuthorId = uid,
+            AuthorName = authorName,
+            AuthorAvatarUrl = authorAvatar,
+            Content = body.Content.Trim(),
+            Timestamp = timestamp,
+            LikeCount = 0
+        });
+    }
+    catch (Exception ex)
+    {
+        Console.Error.WriteLine($"Add social comment failed: {ex}");
+        return Results.Problem(title: "Không gửi được bình luận", detail: ex.Message, statusCode: 500);
+    }
+});
+
+app.MapPost("/api/v1/social/posts/{postId}/share", async (HttpRequest request, string postId) =>
+{
+    try
+    {
+        var authHeader = request.Headers["Authorization"].FirstOrDefault();
+        if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer ")) return Results.Unauthorized();
+        await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(authHeader.Substring("Bearer ".Length));
+
+        var db = FirestoreDb.Create(projectId);
+        var postRef = db.Collection("posts").Document(postId);
+        if (!(await postRef.GetSnapshotAsync()).Exists) return Results.NotFound(new { message = "Không tìm thấy bài viết" });
+
+        await postRef.UpdateAsync("shareCount", FieldValue.Increment(1));
+        var postSnap = await postRef.GetSnapshotAsync();
+        return Results.Ok(new SocialReactionResponse
+        {
+            LikeCount = postSnap.ContainsField("likeCount") ? postSnap.GetValue<int>("likeCount") : 0,
+            CommentCount = postSnap.ContainsField("commentCount") ? postSnap.GetValue<int>("commentCount") : 0,
+            ShareCount = postSnap.ContainsField("shareCount") ? postSnap.GetValue<int>("shareCount") : 0,
+            LikedByMe = false
+        });
+    }
+    catch (Exception ex)
+    {
+        Console.Error.WriteLine($"Share social post failed: {ex}");
+        return Results.Problem(title: "Không chia sẻ được bài viết", detail: ex.Message, statusCode: 500);
+    }
+});
+
 
 // ======================================================================
 // CHẠY SERVER - Lệnh này PHẢI nằm ngay trước các Model
@@ -1271,5 +1470,49 @@ public class DirectConversationSummary
     public string LatestMessageText { get; set; } = "";
     public long LatestMessageTimestamp { get; set; }
     public int UnreadCount { get; set; }
+}
+
+public class SocialLikeRequest
+{
+    public bool Liked { get; set; }
+}
+
+public class SocialCommentRequest
+{
+    public string? Content { get; set; }
+}
+
+public class SocialReactionResponse
+{
+    public int LikeCount { get; set; }
+    public int CommentCount { get; set; }
+    public int ShareCount { get; set; }
+    public bool LikedByMe { get; set; }
+}
+
+public class SocialPostDetailResponse
+{
+    public string Id { get; set; } = "";
+    public string AuthorId { get; set; } = "";
+    public string AuthorName { get; set; } = "";
+    public string AuthorAvatarUrl { get; set; } = "";
+    public string Content { get; set; } = "";
+    public string ImageUrl { get; set; } = "";
+    public long Timestamp { get; set; }
+    public int LikeCount { get; set; }
+    public int CommentCount { get; set; }
+    public int ShareCount { get; set; }
+    public bool LikedByMe { get; set; }
+}
+
+public class SocialCommentResponse
+{
+    public string Id { get; set; } = "";
+    public string AuthorId { get; set; } = "";
+    public string AuthorName { get; set; } = "";
+    public string AuthorAvatarUrl { get; set; } = "";
+    public string Content { get; set; } = "";
+    public long Timestamp { get; set; }
+    public int LikeCount { get; set; }
 }
 

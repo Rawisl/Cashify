@@ -89,6 +89,16 @@ public abstract class BaseActivity extends AppCompatActivity {
                     startActivity(new Intent(this, com.example.cashify.ui.notifications.InvitationsActivity.class));
                     overridePendingTransition(0, 0); // TẮT HIỆU ỨNG CHUYỂN CẢNH
                 }
+            } else if (id == R.id.nav_post_feed) {
+                if (this instanceof MainActivity) {
+                    onNavigationItemSelected(id);
+                } else {
+                    Intent intent = new Intent(this, MainActivity.class);
+                    intent.putExtra("OPEN_POST_FEED", true);
+                    startActivity(intent);
+                    overridePendingTransition(0, 0);
+                    finish();
+                }
             }else if (id == R.id.nav_add_workspace) {
                 drawerLayout.closeDrawer(GravityCompat.START);
                 if (this instanceof MainActivity) {
@@ -185,11 +195,11 @@ public abstract class BaseActivity extends AppCompatActivity {
         android.view.Menu menu = navigationView.getMenu();
         android.view.MenuItem inviteItem = menu.findItem(R.id.nav_invitations);
         if (count <= 0) {
-            inviteItem.setTitle("Invitations");
+            inviteItem.setTitle("Lời mời");
             return;
         }
 
-        String title = "Invitations";
+        String title = "Lời mời";
         String badgeText = count > 9 ? "9+" : String.valueOf(count);
 
         TextView tv = new TextView(this);

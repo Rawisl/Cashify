@@ -67,6 +67,21 @@ public interface ApiService {
     @POST("/api/v1/workspace/invite/decline")
     Call<Object> declineWorkspaceInvite(@Header("Authorization") String token, @Body WorkspaceInviteHandleRequest request);
 
+    @GET("/api/v1/social/posts/{postId}")
+    Call<SocialPostDetailResponse> getPostDetail(@Path("postId") String postId, @Header("Authorization") String token);
+
+    @GET("/api/v1/social/posts/{postId}/comments")
+    Call<java.util.List<SocialCommentResponse>> getPostComments(@Path("postId") String postId, @Header("Authorization") String token);
+
+    @POST("/api/v1/social/posts/{postId}/like")
+    Call<SocialReactionResponse> setPostLike(@Path("postId") String postId, @Header("Authorization") String token, @Body SocialLikeRequest request);
+
+    @POST("/api/v1/social/posts/{postId}/comments")
+    Call<SocialCommentResponse> addPostComment(@Path("postId") String postId, @Header("Authorization") String token, @Body SocialCommentRequest request);
+
+    @POST("/api/v1/social/posts/{postId}/share")
+    Call<SocialReactionResponse> sharePost(@Path("postId") String postId, @Header("Authorization") String token);
+
     // --- CÁC CLASS MODEL DÙNG ĐỂ HỨNG DATA ---
 
     class CloudinarySignatureResponse {
@@ -138,5 +153,46 @@ public interface ApiService {
         public WorkspaceInviteHandleRequest(String wId, String iId) {
             this.WorkspaceId = wId; this.InvitationId = iId;
         }
+    }
+
+    class SocialPostDetailResponse {
+        public String id;
+        public String authorId;
+        public String authorName;
+        public String authorAvatarUrl;
+        public String content;
+        public String imageUrl;
+        public long timestamp;
+        public int likeCount;
+        public int commentCount;
+        public int shareCount;
+        public boolean likedByMe;
+    }
+
+    class SocialCommentResponse {
+        public String id;
+        public String authorId;
+        public String authorName;
+        public String authorAvatarUrl;
+        public String content;
+        public long timestamp;
+        public int likeCount;
+    }
+
+    class SocialLikeRequest {
+        public boolean Liked;
+        public SocialLikeRequest(boolean liked) { Liked = liked; }
+    }
+
+    class SocialCommentRequest {
+        public String Content;
+        public SocialCommentRequest(String content) { Content = content; }
+    }
+
+    class SocialReactionResponse {
+        public int likeCount;
+        public int commentCount;
+        public int shareCount;
+        public boolean likedByMe;
     }
 }

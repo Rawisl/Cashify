@@ -20,10 +20,10 @@ import java.util.List;
 
 public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentViewHolder> {
 
-    private List<Comment> commentList;
-    private OnCommentActionListener listener;
-    private String currentUserId;
-    private String postOwnerId;
+    private final List<Comment> commentList;
+    private final OnCommentActionListener listener;
+    private final String currentUserId;
+    private final String postOwnerId;
 
     public interface OnCommentActionListener {
         void onEditComment(int position);
@@ -59,38 +59,39 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentV
 
     class CommentViewHolder extends RecyclerView.ViewHolder {
 
-        private ImageView imgAvatar;
-        private TextView tvUsername, tvTime, tvContent;
-        private CardView cardComment;
-        private LinearLayout layoutCommentLike;
-        private ImageView imgCommentLike;
-        private TextView tvCommentLikeCount;
+        private final ImageView imgAvatar;
+        private final TextView tvUsername;
+        private final TextView tvTime;
+        private final TextView tvContent;
+        private final CardView cardComment;
+        private final LinearLayout layoutCommentLike;
+        private final ImageView imgCommentLike;
+        private final TextView tvCommentLikeCount;
 
         private boolean isLiked = false;
         private int likeCount = 0;
 
-        public CommentViewHolder(@NonNull View itemView) {
+        CommentViewHolder(@NonNull View itemView) {
             super(itemView);
-            imgAvatar          = itemView.findViewById(R.id.imgCommentAvatar);
-            tvUsername         = itemView.findViewById(R.id.tvCommentUsername);
-            tvTime             = itemView.findViewById(R.id.tvCommentTime);
-            tvContent          = itemView.findViewById(R.id.tvCommentContent);
-            cardComment        = itemView.findViewById(R.id.cardComment);
-            layoutCommentLike  = itemView.findViewById(R.id.layoutCommentLike);
-            imgCommentLike     = itemView.findViewById(R.id.imgCommentLike);
+            imgAvatar = itemView.findViewById(R.id.imgCommentAvatar);
+            tvUsername = itemView.findViewById(R.id.tvCommentUsername);
+            tvTime = itemView.findViewById(R.id.tvCommentTime);
+            tvContent = itemView.findViewById(R.id.tvCommentContent);
+            cardComment = itemView.findViewById(R.id.cardComment);
+            layoutCommentLike = itemView.findViewById(R.id.layoutCommentLike);
+            imgCommentLike = itemView.findViewById(R.id.imgCommentLike);
             tvCommentLikeCount = itemView.findViewById(R.id.tvCommentLikeCount);
         }
 
-        public void bind(Comment comment, int position) {
+        void bind(Comment comment, int position) {
             tvUsername.setText(comment.getUsername());
             tvTime.setText(comment.getTime());
             tvContent.setText(comment.getContent());
 
-            // Reset trạng thái like mỗi lần bind
             isLiked = false;
-            likeCount = 0;
+            likeCount = Math.max(0, comment.getLikeCount());
             imgCommentLike.clearColorFilter();
-            tvCommentLikeCount.setText("0");
+            tvCommentLikeCount.setText(String.valueOf(likeCount));
 
             Glide.with(itemView.getContext())
                     .load(comment.getAvatarUrl())
@@ -107,7 +108,11 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentV
                         likeCount,
                         R.color.status_red
                 );
-                if (isLiked) likeCount++; else likeCount--;
+                if (isLiked) {
+                    likeCount++;
+                } else {
+                    likeCount--;
+                }
             });
 
             cardComment.setOnLongClickListener(v -> {
@@ -119,8 +124,8 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentV
         private void showCommentOptions(View anchor, Comment comment, int position) {
             PopupMenu popup = new PopupMenu(itemView.getContext(), anchor);
 
-            boolean isCommentOwner = comment.getUsername().equals("You");
-            boolean isPostOwner = currentUserId.equals(postOwnerId);
+            boolean isCommentOwner = currentUserId != null && currentUserId.equals(comment.getAuthorId());
+            boolean isPostOwner = currentUserId != null && currentUserId.equals(postOwnerId);
 
             if (isCommentOwner) {
                 popup.getMenuInflater().inflate(R.menu.menu_comment, popup.getMenu());
