@@ -1,0 +1,42 @@
+# =========================
+# ANDROID & GRADLE
+# =========================
+*.iml
+.gradle/
+.idea/
+.cxx/
+local.properties
+build/
+app/build/
+captures/
+.externalNativeBuild/
+.dir_local/
+
+# Keystore (Cực kỳ quan trọng, không bao giờ push file ký app lên)
+*.jks
+*.keystore
+
+# =========================
+# C# .NET BACKEND
+# =========================
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+.vs/
+.vscode/
+*.user
+*.suo
+
+# =========================
+# SECURITY & CONFIG
+# =========================
+.env
+firebase-admin.json
+appsettings.Development.json
+secrets.json
+
+# =========================
+# OS
+# =========================
+.DS_Store
+Thumbs.db

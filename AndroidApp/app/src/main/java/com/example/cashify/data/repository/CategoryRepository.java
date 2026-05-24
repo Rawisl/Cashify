@@ -123,6 +123,30 @@ public class CategoryRepository {
         });
     }
 
+    public void restoreCategory(int categoryId, Runnable onComplete) {
+        executor.execute(() -> {
+            // 1. Lôi thằng Category từ dưới mồ SQLite lên
+            Category category = categoryDao.getCategoryById(categoryId);
+
+            if (category != null && category.isDeleted == 1) {
+
+                // 2. Châm lại sức sống cho nó (Sửa cờ isDeleted về 0)
+                category.isDeleted = 0;
+
+                // Cập nhật lại vào SQLite Local
+                categoryDao.update(category);
+
+                // 3. Nếu là danh mục do người dùng tạo, bắn tín hiệu báo cho Firebase biết nó đã đội mồ sống dậy
+                if (category.isDefault == 0) {
+                    syncCategoryToCloud(category);
+                }
+            }
+
+            // 4. Báo cho ViewModel biết là làm xong rồi, gọi refreshData để RecyclerView vẽ lại đi
+            if (onComplete != null) onComplete.run();
+        });
+    }
+
     public void getCategoriesByType(int type, Callback<List<Category>> callback) {
         executor.execute(() -> callback.onResult(categoryDao.getCategoriesByType(type)));
     }

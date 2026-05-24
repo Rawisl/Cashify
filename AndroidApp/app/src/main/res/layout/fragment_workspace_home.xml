@@ -20,16 +20,9 @@
             android:layout_height="?attr/actionBarSize"
             android:background="@drawable/bg_toolbar_rounded"
             app:navigationIcon="@drawable/ic_menu_padded"
-            app:navigationIconTint="@color/white">
-
-            <TextView
-                android:id="@+id/tvToolbarTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:text="Loading..."
-                android:textColor="@color/white"
-                android:textAppearance="@style/ToolbarTitleFont" />
+            app:navigationIconTint="@color/white"
+            app:titleTextAppearance="@style/MyCustomToolbarTitle"
+            app:titleCentered="true">
 
             <FrameLayout
                 android:layout_width="wrap_content"

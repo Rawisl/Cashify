@@ -663,6 +663,52 @@ public class FirebaseManager {
         callGenericWorkspaceApi(req, "deleteCategory", callback);
     }
 
+    public void editCategory(String workspaceId, String categoryId, String name, String iconName, String colorCode, int type, DataCallback<Void> callback) {
+        FirebaseUser user = auth.getCurrentUser();
+        if (user == null) { callback.onError("Chưa đăng nhập!"); return; }
+
+        user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
+            String token = "Bearer " + getTokenResult.getToken();
+            ApiService apiService = ApiClient.getClient().create(ApiService.class);
+            ApiService.EditCategoryRequest request = new ApiService.EditCategoryRequest(workspaceId, categoryId, name, iconName, colorCode, type);
+
+            apiService.editCategory(token, request).enqueue(new retrofit2.Callback<Object>() {
+                @Override
+                public void onResponse(retrofit2.Call<Object> call, retrofit2.Response<Object> response) {
+                    if (response.isSuccessful()) callback.onSuccess(null);
+                    else callback.onError(extractApiError(response, "Server từ chối (Mã: " + response.code() + ")"));
+                }
+                @Override
+                public void onFailure(retrofit2.Call<Object> call, Throwable t) { callback.onError("Lỗi mạng: " + t.getMessage()); }
+            });
+        }).addOnFailureListener(e -> callback.onError("Lỗi Auth: " + e.getMessage()));
+    }
+
+    public void restoreCategory(String workspaceId, String categoryId, DataCallback<Void> callback) {
+        FirebaseUser user = auth.getCurrentUser();
+        if (user == null) { callback.onError("Chưa đăng nhập!"); return; }
+
+        user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
+            String token = "Bearer " + getTokenResult.getToken();
+            ApiService apiService = ApiClient.getClient().create(ApiService.class);
+
+            // Xài lại WorkspaceActionRequest vì nó có sẵn WorkspaceId và CategoryId
+            ApiService.WorkspaceActionRequest req = new ApiService.WorkspaceActionRequest();
+            req.WorkspaceId = workspaceId;
+            req.CategoryId = categoryId;
+
+            apiService.restoreCategory(token, req).enqueue(new retrofit2.Callback<Object>() {
+                @Override
+                public void onResponse(retrofit2.Call<Object> call, retrofit2.Response<Object> response) {
+                    if (response.isSuccessful()) callback.onSuccess(null);
+                    else callback.onError(extractApiError(response, "Server từ chối (Mã: " + response.code() + ")"));
+                }
+                @Override
+                public void onFailure(retrofit2.Call<Object> call, Throwable t) { callback.onError("Lỗi mạng: " + t.getMessage()); }
+            });
+        }).addOnFailureListener(e -> callback.onError("Lỗi Auth: " + e.getMessage()));
+    }
+
     public void recallMessage(String workspaceId, String messageId, DataCallback<Void> callback) {
         ApiService.WorkspaceActionRequest req = new ApiService.WorkspaceActionRequest();
         req.WorkspaceId = workspaceId;
@@ -884,29 +930,44 @@ public class FirebaseManager {
         }).addOnFailureListener(e -> callback.onError("Lá»—i Auth: " + e.getMessage()));
     }
 
-    public void getDirectFriendMessages(String friendUid, DataCallback<List<com.example.cashify.data.model.ChatMessage>> callback) {
-        FirebaseUser user = auth.getCurrentUser();
-        if (user == null) {
+    // Hàm tạo ID phòng chat y hệt bên C# (Xếp theo bảng chữ cái)
+    private String generateChatId(String uid1, String uid2) {
+        if (uid1.compareTo(uid2) < 0) {
+            return uid1 + "_" + uid2;
+        } else {
+            return uid2 + "_" + uid1;
+        }
+    }
+
+    // Lắng nghe tin nhắn theo thời gian thực (Real-time)
+    public com.google.firebase.firestore.ListenerRegistration listenToDirectMessages(String friendUid, DataCallback<List<com.example.cashify.data.model.ChatMessage>> callback) {
+        String currentUid = getCurrentUserId();
+        if (currentUid == null) {
             callback.onError("Chưa đăng nhập!");
-            return;
+            return null;
         }
 
-        user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
-            String token = "Bearer " + getTokenResult.getToken();
-            ApiService apiService = ApiClient.getClient().create(ApiService.class);
-            apiService.getDirectFriendMessages(friendUid, token).enqueue(new retrofit2.Callback<List<com.example.cashify.data.model.ChatMessage>>() {
-                @Override
-                public void onResponse(retrofit2.Call<List<com.example.cashify.data.model.ChatMessage>> call, retrofit2.Response<List<com.example.cashify.data.model.ChatMessage>> response) {
-                    if (response.isSuccessful()) callback.onSuccess(response.body() != null ? response.body() : new ArrayList<>());
-                    else callback.onError(extractApiError(response, "Lỗi server: " + response.code()));
-                }
+        String chatId = generateChatId(currentUid, friendUid);
 
-                @Override
-                public void onFailure(retrofit2.Call<List<com.example.cashify.data.model.ChatMessage>> call, Throwable t) {
-                    callback.onError("Lỗi mạng: " + t.getMessage());
-                }
-            });
-        }).addOnFailureListener(e -> callback.onError("Lỗi Auth: " + e.getMessage()));
+        // Cắm vòi hút vào Firebase, hễ có tin mới là hàm này tự chạy lại
+        return db.collection("direct_chats").document(chatId).collection("messages")
+                .orderBy("timestamp")
+                .addSnapshotListener((snapshots, e) -> {
+                    if (e != null) {
+                        callback.onError(e.getMessage());
+                        return;
+                    }
+
+                    List<com.example.cashify.data.model.ChatMessage> list = new ArrayList<>();
+                    if (snapshots != null) {
+                        for (com.google.firebase.firestore.QueryDocumentSnapshot doc : snapshots) {
+                            com.example.cashify.data.model.ChatMessage msg = doc.toObject(com.example.cashify.data.model.ChatMessage.class);
+                            msg.setMessageId(doc.getId()); // Gắn ID phòng hờ sau này làm tính năng thu hồi
+                            list.add(msg);
+                        }
+                    }
+                    callback.onSuccess(list);
+                });
     }
 
     private String extractApiError(retrofit2.Response<?> response, String fallback) {

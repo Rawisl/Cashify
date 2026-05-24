@@ -48,6 +48,11 @@ public class CategoryViewModel extends AndroidViewModel {
         repository.deleteCategory(categoryId, this::refreshData);
     }
 
+    public void restoreCategory(int categoryId)
+    {
+        repository.restoreCategory(categoryId, this::refreshData);
+    }
+
     public void getCategoriesByType(int type, CategoryRepository.Callback<List<Category>> callback) {
         repository.getCategoriesByType(type, callback);
     }
