@@ -125,10 +125,20 @@ public static class SocialEndpoints
                     return Results.Unauthorized();
 
                 var token = authHeader.Substring("Bearer ".Length);
-                var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token)).Uid;
+                var decodedToken = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token);
+                var uid = decodedToken.Uid;
 
-                if (string.IsNullOrEmpty(body.Content))
+                if (string.IsNullOrEmpty(body.Content) && string.IsNullOrEmpty(body.ImageUrl))
                     return Results.BadRequest("Nội dung không được để trống");
+
+                // Lấy tên tác giả từ Firestore
+                var userSnap = await db.Collection("users").Document(uid).GetSnapshotAsync();
+                var authorName = userSnap.Exists && userSnap.ContainsField("displayName")
+                    ? userSnap.GetValue<string>("displayName")
+                    : "Người dùng Cashify";
+
+                var authorAvatarUrl = userSnap.Exists && userSnap.ContainsField("avatarUrl")
+                    ? userSnap.GetValue<string>("avatarUrl") : "";
 
                 var postId = Guid.NewGuid().ToString();
                 var postRef = db.Collection("posts").Document(postId);
@@ -137,8 +147,10 @@ public static class SocialEndpoints
         {
             { "postId", postId },
             { "userId", uid },
+            { "authorName", authorName },
+            { "authorAvatarUrl", authorAvatarUrl },
             { "type", body.Type ?? "USER_POST" },
-            { "content", body.Content },
+            { "content", body.Content ?? "" },
             { "imageUrl", body.ImageUrl ?? "" },
             { "milestoneData", body.MilestoneData },
             { "likeCount", 0 },
@@ -296,6 +308,12 @@ public static class SocialEndpoints
                 var commentId = Guid.NewGuid().ToString();
                 var commentRef = postRef.Collection("comments").Document(commentId);
 
+                var userSnap = await db.Collection("users").Document(uid).GetSnapshotAsync();
+                var authorName = userSnap.Exists && userSnap.ContainsField("displayName")
+                    ? userSnap.GetValue<string>("displayName") : "Người dùng Cashify";
+                var authorAvatarUrl = userSnap.Exists && userSnap.ContainsField("avatarUrl")
+                    ? userSnap.GetValue<string>("avatarUrl") : "";
+
                 await db.RunTransactionAsync(async transaction =>
                 {
                     DocumentSnapshot postSnap = await transaction.GetSnapshotAsync(postRef);
@@ -306,6 +324,8 @@ public static class SocialEndpoints
             {
                 { "commentId", commentId },
                 { "userId", uid },
+                { "authorName", authorName },
+                { "authorAvatarUrl", authorAvatarUrl },
                 { "content", body.Content },
                 { "timestamp", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() },
                 { "isEdited", false }
@@ -607,5 +627,37 @@ public static class SocialEndpoints
             }
         });
 
+        // LẤY CHI TIẾT 1 BÀI VIẾT
+        group.MapGet("/post/{postId}", async (HttpRequest request, string postId, FirestoreDb db) =>
+        {
+            try
+            {
+                var authHeader = request.Headers["Authorization"].FirstOrDefault();
+                if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
+                    return Results.Unauthorized();
+
+                var token = authHeader.Substring("Bearer ".Length);
+                var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token)).Uid;
+
+                var postRef = db.Collection("posts").Document(postId);
+                var postSnap = await postRef.GetSnapshotAsync();
+
+                if (!postSnap.Exists)
+                    return Results.NotFound(new { message = "Bài viết không tồn tại" });
+
+                var postDict = postSnap.ToDictionary();
+
+                // Check xem người đang xem đã like chưa
+                var likeSnap = await postRef.Collection("likes").Document(uid).GetSnapshotAsync();
+                postDict["isLiked"] = likeSnap.Exists;
+
+                // Đảm bảo có shareCount (field cũ có thể chưa có)
+                if (!postDict.ContainsKey("shareCount"))
+                    postDict["shareCount"] = 0L;
+
+                return Results.Ok(postDict);
+            }
+            catch (Exception ex) { return Results.Problem(ex.Message); }
+        });
     }
 }

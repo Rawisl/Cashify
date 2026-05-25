@@ -1,6 +1,10 @@
 package com.example.cashify.utils;
 
 import com.example.cashify.utils.InvoiceParser.ParsedInvoice;
+import com.google.gson.annotations.SerializedName;
+
+import java.util.List;
+
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.GET;
@@ -90,17 +94,12 @@ public interface ApiService {
     @POST("/api/v1/post/feed")
     Call<java.util.List<Object>> getFeed(@Header("Authorization") String token, @Body FeedRequest request);
 
-    //load bài viết trên trang cá nhân riêng
-    @GET("/api/v1/post/wall/{targetUid}")
-    Call<java.util.List<Object>> getWall(
-            @Path("targetUid") String targetUid,
-            @Query("limit") int limit,
-            @Query("lastTimestamp") long lastTimestamp,
-            @Header("Authorization") String token);
-
     //load comment của bài viết
     @GET("/api/v1/post/{postId}/comments")
-    Call<java.util.List<Object>> getComments(@Path("postId") String postId, @Header("Authorization") String token);
+    Call<List<Object>> getComments(
+            @Path("postId") String postId,
+            @Header("Authorization") String auth
+    );
 
     //tạo/sửa/xóa post
     @POST("/api/v1/post/create")
@@ -114,10 +113,16 @@ public interface ApiService {
 
     //các tương tác trên post
     @POST("/api/v1/post/like")
-    Call<Object> toggleLike(@Header("Authorization") String token, @Body LikeActionRequest request);
+    Call<Object> toggleLike(
+            @Header("Authorization") String auth,
+            @Body LikeActionRequest body
+    );
 
     @POST("/api/v1/comment/add")
-    Call<Object> addComment(@Header("Authorization") String token, @Body AddCommentRequest request);
+    Call<Object> addComment(
+            @Header("Authorization") String auth,
+            @Body AddCommentRequest body
+    );
 
     @POST("/api/v1/comment/edit")
     Call<Object> editComment(@Header("Authorization") String token, @Body EditCommentRequest request);
@@ -129,10 +134,13 @@ public interface ApiService {
     @POST("/api/v1/user/batch-profiles")
     Call<Object> getBatchProfiles(@Body BatchProfileRequest request);
 
-    @GET("/api/v1/social/posts/{postId}")
-    Call<SocialPostDetailResponse> getPostDetail(@Path("postId") String postId, @Header("Authorization") String token);
+    @GET("/api/v1/post/{postId}")
+    Call<SocialPostDetailResponse> getPostDetail(
+            @Path("postId") String postId,
+            @Header("Authorization") String token
+    );
 
-    @GET("/api/v1/social/posts/{postId}/comments")
+    @GET("/api/v1/post/{postId}/comments")
     Call<java.util.List<SocialCommentResponse>> getPostComments(@Path("postId") String postId, @Header("Authorization") String token);
 
     @POST("/api/v1/social/posts/{postId}/like")
@@ -143,6 +151,16 @@ public interface ApiService {
 
     @POST("/api/v1/social/posts/{postId}/share")
     Call<SocialReactionResponse> sharePost(@Path("postId") String postId, @Header("Authorization") String token);
+
+    //load bài viết trên trang cá nhân riêng
+
+    @GET("/api/v1/post/wall/{targetUid}")
+    Call<List<Object>> getWall(
+            @Header("Authorization") String token,
+            @Path("targetUid") String targetUid,
+            @Query("limit") int limit,
+            @Query("lastTimestamp") long lastTimestamp
+    );
 
     // --- CÁC CLASS MODEL DÙNG ĐỂ HỨNG DATA ---
 
@@ -253,13 +271,23 @@ public interface ApiService {
         public String Content;
         public String ImageUrl;
         public String Type;
+        public String MilestoneData; // Tui thêm lại biến này để đồng bộ với Fragment
         public String Visibility;
         public String Audience;
         public String Title;
         public String AmountText;
         public int Progress;
 
+        // Constructor rỗng (Phòng hờ thư viện JSON cần dùng)
         public CreatePostRequest() {}
+
+        // Constructor 4 tham số để dùng bên Fragment
+        public CreatePostRequest(String content, String type, String imageUrl, String milestoneData) {
+            this.Content = content;
+            this.Type = type;
+            this.ImageUrl = imageUrl;
+            this.MilestoneData = milestoneData;
+        }
     }
 
     class EditPostRequest {
@@ -283,7 +311,10 @@ public interface ApiService {
     }
 
     class LikeActionRequest {
+        @SerializedName("postId")
         public String PostId;
+
+        @SerializedName("liked")
         public boolean Liked;
 
         public LikeActionRequest() {}
@@ -295,14 +326,18 @@ public interface ApiService {
     }
 
     class AddCommentRequest {
+        @SerializedName("postId")
+
         public String PostId;
+        @SerializedName("content")
+
         public String Content;
 
         public AddCommentRequest() {}
 
         public AddCommentRequest(String postId, String content) {
-            PostId = postId;
-            Content = content;
+            this.PostId = postId;
+            this.Content = content;
         }
     }
 
@@ -331,17 +366,35 @@ public interface ApiService {
         }
     }
 
-    class SocialPostDetailResponse {
-        public String id;
+    public static class SocialPostDetailResponse {
+        @SerializedName("userId")
         public String authorId;
+
+        @SerializedName("authorName")
         public String authorName;
+
+        @SerializedName("authorAvatarUrl")
         public String authorAvatarUrl;
+
+        @SerializedName("content")
         public String content;
+
+        @SerializedName("imageUrl")
         public String imageUrl;
-        public long timestamp;
+
+        @SerializedName("likeCount")
         public int likeCount;
+
+        @SerializedName("commentCount")
         public int commentCount;
+
+        @SerializedName("shareCount")
         public int shareCount;
+
+        @SerializedName("timestamp")
+        public long timestamp;
+
+        @SerializedName("isLiked")
         public boolean likedByMe;
     }
 
