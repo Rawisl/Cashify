@@ -340,8 +340,10 @@
     <style name="filter_tab_item">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:paddingHorizontal">20dp</item>
-        <item name="android:paddingVertical">8dp</item>
+        <item name="android:paddingStart">20dp</item>
+        <item name="android:paddingEnd">20dp</item>
+        <item name="android:paddingTop">8dp</item>
+        <item name="android:paddingBottom">8dp</item>
         <item name="android:textSize">14sp</item>
         <item name="android:fontFamily">@font/inter_medium</item>
         <item name="android:gravity">center</item>
@@ -359,6 +361,62 @@
         <item name="android:background">@drawable/bg_filter_inactive</item>
         <item name="android:textColor">@color/item_title</item>
         <item name="android:layout_marginStart">8dp</item>
+    </style>
+
+    <style name="feed_action_text">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">36dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:gravity">center</item>
+        <item name="android:layout_marginStart">3dp</item>
+        <item name="android:layout_marginEnd">3dp</item>
+        <item name="android:background">@drawable/bg_action_button</item>
+        <item name="android:fontFamily">@font/inter_bold</item>
+        <item name="android:textColor">@color/item_description</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:paddingStart">12dp</item>
+        <item name="android:paddingEnd">12dp</item>
+        <item name="android:drawablePadding">7dp</item>
+        <item name="android:drawableTint">@color/icon_inactive</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+    </style>
+
+    <style name="feed_create_action">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:gravity">center</item>
+        <item name="android:layout_marginStart">5dp</item>
+        <item name="android:layout_marginEnd">5dp</item>
+        <item name="android:background">@drawable/bg_action_button</item>
+        <item name="android:fontFamily">@font/inter_bold</item>
+        <item name="android:textColor">@color/item_description</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:paddingStart">12dp</item>
+        <item name="android:paddingEnd">12dp</item>
+        <item name="android:drawablePadding">7dp</item>
+        <item name="android:drawableTint">@color/icon_inactive</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+    </style>
+
+    <style name="feed_filter_chip">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">42dp</item>
+        <item name="android:layout_marginEnd">8dp</item>
+        <item name="android:background">@drawable/bg_composer_privacy</item>
+        <item name="android:fontFamily">@font/inter_bold</item>
+        <item name="android:gravity">center</item>
+        <item name="android:paddingStart">18dp</item>
+        <item name="android:paddingEnd">18dp</item>
+        <item name="android:textColor">@color/brand_primary</item>
+        <item name="android:textSize">13sp</item>
+    </style>
+
+    <style name="feed_filter_chip_active" parent="feed_filter_chip">
+        <item name="android:background">@drawable/bg_feed_filter_chip_active</item>
+        <item name="android:textColor">@color/white</item>
     </style>
 
     <style name="empty_state_title">

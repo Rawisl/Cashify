@@ -4,10 +4,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg_main"
-    android:orientation="vertical"
-    android:fitsSystemWindows="true">
+    android:fitsSystemWindows="true"
+    android:orientation="vertical">
 
-    <!-- Toolbar -->
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -26,14 +25,13 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:text="Post Detail"
-                android:textColor="@color/white"
-                android:textAppearance="@style/ToolbarTitleFont" />
+                android:text="Chi tiết bài viết"
+                android:textAppearance="@style/ToolbarTitleFont"
+                android:textColor="@color/white" />
 
         </com.google.android.material.appbar.MaterialToolbar>
     </com.google.android.material.appbar.AppBarLayout>
 
-    <!-- Scrollable Content -->
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -43,15 +41,42 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:paddingStart="16dp"
+            android:paddingTop="16dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="18dp">
 
-            <!-- Post Card -->
-            <androidx.cardview.widget.CardView
+            <ProgressBar
+                android:id="@+id/progressPostDetail"
+                style="?android:attr/progressBarStyle"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="20dp"
+                android:indeterminateTint="@color/brand_primary"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/tvPostDetailMessage"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_margin="16dp"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="2dp">
+                android:layout_marginBottom="14dp"
+                android:background="@drawable/bg_social_soft_panel"
+                android:gravity="center"
+                android:padding="14dp"
+                android:textColor="@color/item_description"
+                android:textSize="14sp"
+                android:visibility="gone" />
+
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cardPostDetail"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="4dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -59,32 +84,32 @@
                     android:orientation="vertical"
                     android:padding="16dp">
 
-                    <!-- User Info Header -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical">
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
 
                         <de.hdodenhof.circleimageview.CircleImageView
                             android:id="@+id/imgPostAvatar"
-                            android:layout_width="48dp"
-                            android:layout_height="48dp"
+                            android:layout_width="50dp"
+                            android:layout_height="50dp"
                             android:src="@drawable/ic_default_user"
-                            app:civ_border_width="0dp" />
+                            app:civ_border_color="@color/bg_main"
+                            app:civ_border_width="2dp" />
 
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
                             android:layout_marginStart="12dp"
+                            android:layout_weight="1"
                             android:orientation="vertical">
 
                             <TextView
                                 android:id="@+id/tvPostUsername"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="User Name"
+                                android:text="Người dùng"
                                 android:textColor="@color/item_title"
                                 android:textSize="16sp"
                                 android:textStyle="bold" />
@@ -94,72 +119,104 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="2dp"
-                                android:text="2 hours ago"
+                                android:text="2 giờ trước"
                                 android:textColor="@color/item_description"
                                 android:textSize="13sp" />
-
                         </LinearLayout>
 
-                        <!-- Post Options Menu -->
                         <ImageView
                             android:id="@+id/imgPostMenu"
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:src="@drawable/ic_more_vert"
-                            app:tint="@color/item_description"
-                            android:background="?attr/selectableItemBackground"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:background="@drawable/bg_action_button"
                             android:clickable="true"
                             android:focusable="true"
-                            android:padding="4dp" />
-
+                            android:padding="9dp"
+                            android:src="@drawable/ic_more_vert"
+                            app:tint="@color/item_description" />
                     </LinearLayout>
 
-                    <!-- Post Content -->
                     <TextView
                         android:id="@+id/tvPostContent"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:text="This is a sample post content. It can contain multiple lines of text describing the post."
+                        android:layout_marginTop="18dp"
+                        android:lineSpacingExtra="5dp"
+                        android:text="Tháng này tiết kiệm được 2 triệu. Mình đặt lịch chuyển tiền tự động ngay sau khi nhận lương nên đỡ phải tự đấu tranh với bản thân."
                         android:textColor="@color/item_title"
-                        android:textSize="15sp"
-                        android:lineSpacingExtra="4dp" />
+                        android:textSize="16sp" />
 
-                    <!-- Post Image (Optional) -->
                     <ImageView
                         android:id="@+id/imgPostImage"
                         android:layout_width="match_parent"
-                        android:layout_height="200dp"
+                        android:layout_height="210dp"
                         android:layout_marginTop="16dp"
+                        android:background="@drawable/bg_social_illustration_card"
                         android:scaleType="centerCrop"
-                        android:visibility="gone"
-                        android:src="@drawable/ic_empty" />
+                        android:src="@drawable/ic_empty"
+                        android:visibility="gone" />
 
-                    <!-- Action Bar -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="16dp"
+                        android:background="@drawable/bg_social_soft_panel"
+                        android:gravity="center_vertical"
                         android:orientation="horizontal"
-                        android:gravity="center_vertical">
+                        android:padding="12dp">
 
-                        <!-- Like Button -->
+                        <ImageView
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:background="@drawable/bg_social_metric_chip"
+                            android:padding="8dp"
+                            android:src="@drawable/ic_cozy_chart"
+                            app:tint="@color/brand_primary" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="10dp"
+                            android:layout_weight="1"
+                            android:text="Góc thói quen tiền bạc"
+                            android:textColor="@color/item_title"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Cashify"
+                            android:textColor="@color/brand_primary"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="44dp"
+                        android:layout_marginTop="14dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
                         <LinearLayout
                             android:id="@+id/layoutLikeButton"
                             android:layout_width="0dp"
-                            android:layout_height="wrap_content"
+                            android:layout_height="match_parent"
+                            android:layout_marginEnd="4dp"
                             android:layout_weight="1"
-                            android:orientation="horizontal"
-                            android:gravity="center"
+                            android:background="@drawable/bg_action_button"
                             android:clickable="true"
                             android:focusable="true"
-                            android:background="@drawable/bg_action_button"
-                            android:padding="8dp">
+                            android:gravity="center"
+                            android:orientation="horizontal"
+                            android:paddingStart="12dp"
+                            android:paddingEnd="12dp">
 
                             <ImageView
                                 android:id="@+id/imgLikeHeart"
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
+                                android:layout_width="22dp"
+                                android:layout_height="22dp"
                                 android:src="@drawable/ic_heart_outline"
                                 app:tint="@color/icon_inactive" />
 
@@ -170,30 +227,28 @@
                                 android:layout_marginStart="8dp"
                                 android:text="0"
                                 android:textColor="@color/item_description"
-                                android:textSize="14sp" />
-
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
                         </LinearLayout>
 
-                        <!-- Spacing -->
-                        <View
-                            android:layout_width="8dp"
-                            android:layout_height="1dp" />
-
-                        <!-- Comment Button -->
                         <LinearLayout
+                            android:id="@+id/layoutCommentButton"
                             android:layout_width="0dp"
-                            android:layout_height="wrap_content"
+                            android:layout_height="match_parent"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginEnd="4dp"
                             android:layout_weight="1"
-                            android:orientation="horizontal"
-                            android:gravity="center"
+                            android:background="@drawable/bg_action_button"
                             android:clickable="true"
                             android:focusable="true"
-                            android:background="@drawable/bg_action_button"
-                            android:padding="8dp">
+                            android:gravity="center"
+                            android:orientation="horizontal"
+                            android:paddingStart="12dp"
+                            android:paddingEnd="12dp">
 
                             <ImageView
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
+                                android:layout_width="22dp"
+                                android:layout_height="22dp"
                                 android:src="@drawable/ic_comment"
                                 app:tint="@color/icon_inactive" />
 
@@ -204,118 +259,143 @@
                                 android:layout_marginStart="8dp"
                                 android:text="0"
                                 android:textColor="@color/item_description"
-                                android:textSize="14sp" />
-
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
                         </LinearLayout>
 
-                        <!-- Spacing -->
-                        <View
-                            android:layout_width="8dp"
-                            android:layout_height="1dp" />
-
-                        <!-- Share Button -->
                         <LinearLayout
+                            android:id="@+id/layoutShareButton"
                             android:layout_width="0dp"
-                            android:layout_height="wrap_content"
+                            android:layout_height="match_parent"
+                            android:layout_marginStart="4dp"
                             android:layout_weight="1"
-                            android:orientation="horizontal"
-                            android:gravity="center"
+                            android:background="@drawable/bg_action_button"
                             android:clickable="true"
                             android:focusable="true"
-                            android:background="@drawable/bg_action_button"
-                            android:padding="8dp">
+                            android:gravity="center"
+                            android:orientation="horizontal"
+                            android:paddingStart="12dp"
+                            android:paddingEnd="12dp">
 
                             <ImageView
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
+                                android:layout_width="22dp"
+                                android:layout_height="22dp"
                                 android:src="@drawable/ic_share"
                                 app:tint="@color/icon_inactive" />
 
                             <TextView
+                                android:id="@+id/tvShareCount"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginStart="8dp"
-                                android:text="Share"
+                                android:text="Chia sẻ"
                                 android:textColor="@color/item_description"
-                                android:textSize="14sp" />
-
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
                         </LinearLayout>
-
                     </LinearLayout>
-
                 </LinearLayout>
-
             </androidx.cardview.widget.CardView>
 
-            <!-- Comments Section Title -->
-            <TextView
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginTop="10dp"
-                android:text="Comments"
-                android:textColor="@color/item_title"
-                android:textSize="18sp"
-                android:textStyle="bold" />
+                android:layout_marginTop="20dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
-            <!-- Comments RecyclerView -->
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Bình luận"
+                    android:textColor="@color/item_title"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="34dp"
+                    android:background="@drawable/bg_social_soft_panel"
+                    android:gravity="center"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:text="Đang thảo luận"
+                    android:textColor="@color/brand_primary"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recyclerViewComments"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginEnd="16dp"
-                android:layout_marginBottom="16dp"
+                android:layout_marginTop="10dp"
+                android:layout_marginBottom="8dp"
                 android:nestedScrollingEnabled="false" />
 
+            <TextView
+                android:id="@+id/tvEmptyComments"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/bg_social_soft_panel"
+                android:gravity="center"
+                android:padding="16dp"
+                android:text="Chưa có bình luận nào."
+                android:textColor="@color/item_description"
+                android:textSize="14sp"
+                android:visibility="gone" />
         </LinearLayout>
-
     </androidx.core.widget.NestedScrollView>
 
-    <!-- Comment Input Section -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="12dp"
         android:background="@color/white"
-        android:elevation="4dp">
+        android:elevation="6dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="14dp"
+        android:paddingTop="12dp"
+        android:paddingEnd="14dp"
+        android:paddingBottom="12dp">
 
         <de.hdodenhof.circleimageview.CircleImageView
             android:id="@+id/imgCurrentUserAvatar"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
             android:layout_gravity="center_vertical"
             android:src="@drawable/ic_default_user"
-            app:civ_border_width="0dp" />
+            app:civ_border_color="@color/bg_main"
+            app:civ_border_width="2dp" />
 
         <EditText
             android:id="@+id/etCommentInput"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
+            android:layout_gravity="center_vertical"
             android:layout_marginStart="12dp"
             android:layout_marginEnd="8dp"
-            android:layout_gravity="center_vertical"
-            android:background="@drawable/bg_chat_input"
-            android:padding="12dp"
-            android:hint="Write a comment..."
-            android:textSize="14sp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_social_input_lifted"
+            android:hint="Viết bình luận..."
+            android:inputType="textMultiLine"
             android:maxLines="3"
-            android:inputType="textMultiLine" />
+            android:padding="13dp"
+            android:textSize="14sp" />
 
         <ImageView
             android:id="@+id/imgSendComment"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
             android:layout_gravity="center_vertical"
-            android:src="@drawable/ic_send"
-            app:tint="@color/brand_primary"
-            android:background="?attr/selectableItemBackground"
+            android:background="@drawable/bg_social_primary_pill"
             android:clickable="true"
             android:focusable="true"
-            android:padding="8dp" />
-
+            android:padding="10dp"
+            android:src="@drawable/ic_send"
+            app:tint="@color/white" />
     </LinearLayout>
 
 </LinearLayout>

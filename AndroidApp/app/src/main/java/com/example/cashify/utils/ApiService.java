@@ -124,6 +124,21 @@ public interface ApiService {
     @POST("/api/v1/user/batch-profiles")
     Call<Object> getBatchProfiles(@Body BatchProfileRequest request);
 
+    @GET("/api/v1/social/posts/{postId}")
+    Call<SocialPostDetailResponse> getPostDetail(@Path("postId") String postId, @Header("Authorization") String token);
+
+    @GET("/api/v1/social/posts/{postId}/comments")
+    Call<java.util.List<SocialCommentResponse>> getPostComments(@Path("postId") String postId, @Header("Authorization") String token);
+
+    @POST("/api/v1/social/posts/{postId}/like")
+    Call<SocialReactionResponse> setPostLike(@Path("postId") String postId, @Header("Authorization") String token, @Body SocialLikeRequest request);
+
+    @POST("/api/v1/social/posts/{postId}/comments")
+    Call<SocialCommentResponse> addPostComment(@Path("postId") String postId, @Header("Authorization") String token, @Body SocialCommentRequest request);
+
+    @POST("/api/v1/social/posts/{postId}/share")
+    Call<SocialReactionResponse> sharePost(@Path("postId") String postId, @Header("Authorization") String token);
+
     // --- CÁC CLASS MODEL DÙNG ĐỂ HỨNG DATA ---
 
     class CloudinarySignatureResponse {
@@ -196,59 +211,45 @@ public interface ApiService {
             this.WorkspaceId = wId; this.InvitationId = iId;
         }
     }
-    class EditCategoryRequest {
-        public String WorkspaceId, CategoryId, Name, IconName, ColorCode;
-        public int Type;
-        public EditCategoryRequest(String wId, String cId, String name, String icon, String color, int type) {
-            WorkspaceId = wId; CategoryId = cId; Name = name; IconName = icon; ColorCode = color; Type = type;
-        }
+
+    class SocialPostDetailResponse {
+        public String id;
+        public String authorId;
+        public String authorName;
+        public String authorAvatarUrl;
+        public String content;
+        public String imageUrl;
+        public long timestamp;
+        public int likeCount;
+        public int commentCount;
+        public int shareCount;
+        public boolean likedByMe;
     }
 
-    class FeedRequest {
-        public java.util.List<String> FriendIds;
-        public long LastTimestamp;
-        public int Limit;
-        public FeedRequest(java.util.List<String> fIds, long lTs, int lim) { FriendIds = fIds; LastTimestamp = lTs; Limit = lim; }
+    class SocialCommentResponse {
+        public String id;
+        public String authorId;
+        public String authorName;
+        public String authorAvatarUrl;
+        public String content;
+        public long timestamp;
+        public int likeCount;
     }
 
-    class CreatePostRequest {
-        public String Content, ImageUrl, Type;
-        public Object MilestoneData;
-        public CreatePostRequest(String c, String img, String type, Object m) { Content = c; ImageUrl = img; Type = type; MilestoneData = m; }
+    class SocialLikeRequest {
+        public boolean Liked;
+        public SocialLikeRequest(boolean liked) { Liked = liked; }
     }
 
-    class EditPostRequest {
-        public String PostId, NewContent, NewImageUrl;
-        public EditPostRequest(String pid, String nc, String nimg) { PostId = pid; NewContent = nc; NewImageUrl = nimg; }
+    class SocialCommentRequest {
+        public String Content;
+        public SocialCommentRequest(String content) { Content = content; }
     }
 
-    class DeletePostRequest {
-        public String PostId;
-        public DeletePostRequest(String id) { PostId = id; }
-    }
-
-    class LikeActionRequest {
-        public String PostId;
-        public LikeActionRequest(String id) { PostId = id; }
-    }
-
-    class AddCommentRequest {
-        public String PostId, Content;
-        public AddCommentRequest(String p, String c) { PostId = p; Content = c; }
-    }
-
-    class EditCommentRequest {
-        public String PostId, CommentId, NewContent;
-        public EditCommentRequest(String p, String c, String nc) { PostId = p; CommentId = c; NewContent = nc; }
-    }
-
-    class DeleteCommentRequest {
-        public String PostId, CommentId;
-        public DeleteCommentRequest(String p, String c) { PostId = p; CommentId = c; }
-    }
-
-    class BatchProfileRequest {
-        public java.util.List<String> UserIds;
-        public BatchProfileRequest(java.util.List<String> ids) { UserIds = ids; }
+    class SocialReactionResponse {
+        public int likeCount;
+        public int commentCount;
+        public int shareCount;
+        public boolean likedByMe;
     }
 }
