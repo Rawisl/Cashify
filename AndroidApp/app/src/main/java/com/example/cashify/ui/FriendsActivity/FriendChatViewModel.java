@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModel;
 import com.example.cashify.data.model.ChatMessage;
 import com.example.cashify.data.remote.FirebaseManager;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.ListenerRegistration;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,40 +22,32 @@ public class FriendChatViewModel extends ViewModel {
     private final MutableLiveData<String> sendErrorMessage = new MutableLiveData<>();
     private boolean sending;
 
-    public LiveData<List<ChatMessage>> getChatMessages() {
-        return chatMessages;
-    }
+    // Lưu lại cái vòi hút để lát rút ra
+    private ListenerRegistration messageListener;
 
-    public LiveData<String> getLoadErrorMessage() {
-        return loadErrorMessage;
-    }
+    public LiveData<List<ChatMessage>> getChatMessages() { return chatMessages; }
+    public LiveData<String> getLoadErrorMessage() { return loadErrorMessage; }
+    public LiveData<String> getSendErrorMessage() { return sendErrorMessage; }
 
-    public LiveData<String> getSendErrorMessage() {
-        return sendErrorMessage;
-    }
+    public void startListeningMessages(String friendUid) {
+        if (friendUid == null || friendUid.isEmpty()) return;
 
-    public void loadMessages(String friendUid) {
-        String currentUid = FirebaseAuth.getInstance().getUid();
-        if (currentUid == null) {
-            Log.w(TAG, "Loading messages failed: current user is not authenticated");
-            loadErrorMessage.setValue("Chua dang nhap!");
-            return;
-        }
-        if (friendUid == null || friendUid.isEmpty()) {
-            Log.w(TAG, "Loading messages failed: friendUid is missing");
-            loadErrorMessage.setValue("Khong the tai tin nhan");
-            return;
+        // Nếu đang cắm vòi hút cũ thì rút ra trước
+        if (messageListener != null) {
+            messageListener.remove();
         }
 
-        FirebaseManager.getInstance().getDirectFriendMessages(friendUid, new FirebaseManager.DataCallback<List<ChatMessage>>() {
+        // Bắt đầu lắng nghe Real-time
+        messageListener = FirebaseManager.getInstance().listenToDirectMessages(friendUid, new FirebaseManager.DataCallback<List<ChatMessage>>() {
             @Override
             public void onSuccess(List<ChatMessage> messages) {
-                chatMessages.postValue(messages != null ? messages : new ArrayList<>());
+                // Có tin nhắn mới (hoặc có người thu hồi) là UI tự nảy số ngay lập tức!
+                chatMessages.postValue(messages);
             }
 
             @Override
             public void onError(String message) {
-                Log.e(TAG, "Loading messages failed: " + message);
+                Log.e(TAG, "Lỗi tải tin nhắn: " + message);
                 loadErrorMessage.postValue(message);
             }
         });
@@ -62,33 +55,30 @@ public class FriendChatViewModel extends ViewModel {
 
     public void sendMessage(String friendUid, String text) {
         String trimmed = text != null ? text.trim() : "";
-        String currentUid = FirebaseAuth.getInstance().getUid();
-        if (currentUid == null) {
-            Log.w(TAG, "Sending message failed: current user is not authenticated");
-            sendErrorMessage.setValue("Chua dang nhap!");
-            return;
-        }
-        if (friendUid == null || friendUid.isEmpty()) {
-            Log.w(TAG, "Sending message failed: friendUid is missing");
-            sendErrorMessage.setValue("Nguoi nhan khong hop le");
-            return;
-        }
         if (trimmed.isEmpty() || sending) return;
 
         sending = true;
+        // VẪN GỌI QUA C# ĐỂ GHI DỮ LIỆU
         FirebaseManager.getInstance().sendDirectFriendMessage(friendUid, trimmed, new FirebaseManager.DataCallback<Void>() {
             @Override
             public void onSuccess(Void data) {
                 sending = false;
-                loadMessages(friendUid);
             }
 
             @Override
             public void onError(String message) {
                 sending = false;
-                Log.e(TAG, "Sending message failed: " + message);
                 sendErrorMessage.postValue(message);
             }
         });
+    }
+
+    @Override
+    protected void onCleared() {
+        super.onCleared();
+        // Cực kỳ quan trọng: Rút vòi hút khi Activity bị hủy để tránh Memory Leak
+        if (messageListener != null) {
+            messageListener.remove();
+        }
     }
 }

@@ -97,6 +97,26 @@ public class CategoryManagement extends AppCompatActivity {
             public void onEditClick(Category category) {
                 CategoryBottomSheet.newInstance(category).show(getSupportFragmentManager(), "EditCategory");
             }
+
+            @Override
+            public void onRestoreClick(Category category) {
+                // Bật Dialog xác nhận khôi phục cho lịch sự (Tùy chọn)
+                DialogHelper.showCustomDialog(
+                        CategoryManagement.this,
+                        "Restore Category", // Tùy sếp đổi sang String Resource
+                        "Are you sure you want to restore " + category.name + "?",
+                        "Restore",
+                        "Cancel",
+                        DialogHelper.DialogType.NORMAL, // Chữ Restore màu Xanh lá
+                        true,
+                        () -> {
+                            // BẤM KHÔI PHỤC -> GỌI VIEWMODEL
+                            // (Sếp nhớ tạo hàm restoreCategory bên trong CategoryViewModel nhé)
+                            viewModel.restoreCategory(category.id);
+                        },
+                        null
+                );
+            }
         };
 
         adapterChi = new CategoryAdapter(this, filteredChi, listener);

@@ -5,6 +5,7 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
@@ -29,6 +30,8 @@ import com.example.cashify.utils.ApiService;
 import com.example.cashify.utils.ImageHelper;
 import com.example.cashify.utils.TimeFormatter;
 import com.google.android.material.appbar.MaterialToolbar;
+// ✅ Kept both imports: Firebase for auth, BottomSheet for post menu
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
@@ -63,6 +66,7 @@ public class PostDetailActivity extends AppCompatActivity {
     private ImageView imgSendComment;
     private ImageView imgPostMenu;
 
+    // ✅ Full state fields from feature/social-ui (master's hardcoded strings removed)
     private final List<Comment> commentList = new ArrayList<>();
     private CommentAdapter commentAdapter;
     private ApiService apiService;
@@ -96,25 +100,26 @@ public class PostDetailActivity extends AppCompatActivity {
     }
 
     private void initViews() {
-        imgLikeHeart = findViewById(R.id.imgLikeHeart);
-        imgPostAvatar = findViewById(R.id.imgPostAvatar);
-        imgPostImage = findViewById(R.id.imgPostImage);
-        tvLikeCount = findViewById(R.id.tvLikeCount);
-        tvCommentCount = findViewById(R.id.tvCommentCount);
-        tvShareCount = findViewById(R.id.tvShareCount);
-        tvPostUsername = findViewById(R.id.tvPostUsername);
-        tvPostTime = findViewById(R.id.tvPostTime);
-        tvPostContent = findViewById(R.id.tvPostContent);
-        tvPostDetailMessage = findViewById(R.id.tvPostDetailMessage);
-        tvEmptyComments = findViewById(R.id.tvEmptyComments);
-        progressPostDetail = findViewById(R.id.progressPostDetail);
-        cardPostDetail = findViewById(R.id.cardPostDetail);
-        layoutLikeButton = findViewById(R.id.layoutLikeButton);
-        layoutShareButton = findViewById(R.id.layoutShareButton);
+        // ✅ Full view initialization from feature/social-ui (master's partial list removed)
+        imgLikeHeart         = findViewById(R.id.imgLikeHeart);
+        imgPostAvatar        = findViewById(R.id.imgPostAvatar);
+        imgPostImage         = findViewById(R.id.imgPostImage);
+        tvLikeCount          = findViewById(R.id.tvLikeCount);
+        tvCommentCount       = findViewById(R.id.tvCommentCount);
+        tvShareCount         = findViewById(R.id.tvShareCount);
+        tvPostUsername       = findViewById(R.id.tvPostUsername);
+        tvPostTime           = findViewById(R.id.tvPostTime);
+        tvPostContent        = findViewById(R.id.tvPostContent);
+        tvPostDetailMessage  = findViewById(R.id.tvPostDetailMessage);
+        tvEmptyComments      = findViewById(R.id.tvEmptyComments);
+        progressPostDetail   = findViewById(R.id.progressPostDetail);
+        cardPostDetail       = findViewById(R.id.cardPostDetail);
+        layoutLikeButton     = findViewById(R.id.layoutLikeButton);
+        layoutShareButton    = findViewById(R.id.layoutShareButton);
         recyclerViewComments = findViewById(R.id.recyclerViewComments);
-        etCommentInput = findViewById(R.id.etCommentInput);
-        imgSendComment = findViewById(R.id.imgSendComment);
-        imgPostMenu = findViewById(R.id.imgPostMenu);
+        etCommentInput       = findViewById(R.id.etCommentInput);
+        imgSendComment       = findViewById(R.id.imgSendComment);
+        imgPostMenu          = findViewById(R.id.imgPostMenu);
     }
 
     private void setupToolbar() {
@@ -165,20 +170,52 @@ public class PostDetailActivity extends AppCompatActivity {
         imgSendComment.setOnClickListener(v -> sendComment());
     }
 
+    // ✅ setupPostMenu uses BottomSheet from master (replaces PopupMenu from feature/social-ui)
+    //    and applies proper Firebase-based ownership check (currentUserId vs postOwnerId)
     private void setupPostMenu() {
-        imgPostMenu.setOnClickListener(v -> {
-            android.widget.PopupMenu popup = new android.widget.PopupMenu(this, imgPostMenu);
-            popup.getMenuInflater().inflate(R.menu.menu_post, popup.getMenu());
-            popup.setOnMenuItemClickListener(item -> {
-                int id = item.getItemId();
-                if (id == R.id.action_hide_post || id == R.id.action_delete_post) {
-                    finish();
-                    return true;
-                }
-                return false;
+        imgPostMenu.setOnClickListener(v -> showPostBottomSheet());
+    }
+
+    private void showPostBottomSheet() {
+        BottomSheetDialog dialog = new BottomSheetDialog(this);
+        View sheetView = LayoutInflater.from(this)
+                .inflate(R.layout.bottom_sheet_option, null);
+
+        sheetView.findViewById(R.id.btnEditComment).setVisibility(View.GONE);
+
+        boolean isOwner = !currentUserId.isEmpty() && currentUserId.equals(postOwnerId);
+
+        if (isOwner) {
+            sheetView.findViewById(R.id.btnDeleteComment).setVisibility(View.VISIBLE);
+            sheetView.findViewById(R.id.btnHideComment).setVisibility(View.GONE);
+            sheetView.findViewById(R.id.btnReportPost).setVisibility(View.GONE);
+
+            sheetView.findViewById(R.id.btnDeleteComment).setOnClickListener(v -> {
+                dialog.dismiss();
+                finish();
             });
-            popup.show();
-        });
+        } else {
+            sheetView.findViewById(R.id.btnDeleteComment).setVisibility(View.GONE);
+            sheetView.findViewById(R.id.btnHideComment).setVisibility(View.VISIBLE);
+            sheetView.findViewById(R.id.btnReportPost).setVisibility(View.VISIBLE);
+
+            sheetView.findViewById(R.id.btnHideComment).setOnClickListener(v -> {
+                dialog.dismiss();
+                finish();
+            });
+
+            sheetView.findViewById(R.id.btnReportPost).setOnClickListener(v -> {
+                dialog.dismiss();
+                Toast.makeText(this, "Post reported", Toast.LENGTH_SHORT).show();
+            });
+        }
+
+        sheetView.findViewById(R.id.btnCancelComment).setOnClickListener(v ->
+                dialog.dismiss()
+        );
+
+        dialog.setContentView(sheetView);
+        dialog.show();
     }
 
     private void loadPostDetail() {
