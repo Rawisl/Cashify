@@ -127,8 +127,6 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentV
 
             boolean isCommentOwner = currentUserId != null && currentUserId.equals(comment.getAuthorId());
             boolean isPostOwner = currentUserId != null && currentUserId.equals(postOwnerId);
-            boolean isCommentOwner = comment.getUsername().equals("You");
-            boolean isPostOwner    = currentUserId.equals(postOwnerId);
 
             View btnEdit   = sheetView.findViewById(R.id.btnEditComment);
             View btnDelete = sheetView.findViewById(R.id.btnDeleteComment);

@@ -7,6 +7,7 @@ import retrofit2.http.GET;
 import retrofit2.http.Header;
 import retrofit2.http.POST;
 import retrofit2.http.Path;
+import retrofit2.http.Query;
 
 public interface ApiService {
     @GET("/api/v1/cloudinary/sign")
@@ -79,7 +80,7 @@ public interface ApiService {
     @GET("/api/v1/friend/messages/{friendUid}")
     Call<java.util.List<com.example.cashify.data.model.ChatMessage>> getDirectFriendMessages(@Path("friendUid") String friendUid, @Header("Authorization") String token);
 
-    @POST("/api/v1/friend/messages/send")
+    @POST("/api/v1/friend/message/send")
     Call<Object> sendDirectFriendMessage(@Header("Authorization") String token, @Body DirectFriendMessageRequest request);
 
     //SOCIAL API
@@ -91,7 +92,11 @@ public interface ApiService {
 
     //load bài viết trên trang cá nhân riêng
     @GET("/api/v1/post/wall/{targetUid}")
-    Call<java.util.List<Object>> getWall(@Path("targetUid") String targetUid, int limit, long lastTimestamp, @Header("Authorization") String token);
+    Call<java.util.List<Object>> getWall(
+            @Path("targetUid") String targetUid,
+            @Query("limit") int limit,
+            @Query("lastTimestamp") long lastTimestamp,
+            @Header("Authorization") String token);
 
     //load comment của bài viết
     @GET("/api/v1/post/{postId}/comments")
@@ -181,6 +186,24 @@ public interface ApiService {
         public String WorkspaceId, NewOwnerId, TargetUid, TransactionId, CategoryId, MessageId;
     }
 
+    class EditCategoryRequest {
+        public String WorkspaceId;
+        public String CategoryId;
+        public String Name;
+        public String IconName;
+        public String ColorCode;
+        public int Type;
+
+        public EditCategoryRequest(String workspaceId, String categoryId, String name, String iconName, String colorCode, int type) {
+            WorkspaceId = workspaceId;
+            CategoryId = categoryId;
+            Name = name;
+            IconName = iconName;
+            ColorCode = colorCode;
+            Type = type;
+        }
+    }
+
     class FriendActionRequest {
         public String TargetUid;
         public FriendActionRequest(String targetUid) { TargetUid = targetUid; }
@@ -209,6 +232,102 @@ public interface ApiService {
         public String InvitationId;
         public WorkspaceInviteHandleRequest(String wId, String iId) {
             this.WorkspaceId = wId; this.InvitationId = iId;
+        }
+    }
+
+    class FeedRequest {
+        public int Limit;
+        public long LastTimestamp;
+        public String Scope;
+
+        public FeedRequest() {}
+
+        public FeedRequest(int limit, long lastTimestamp, String scope) {
+            Limit = limit;
+            LastTimestamp = lastTimestamp;
+            Scope = scope;
+        }
+    }
+
+    class CreatePostRequest {
+        public String Content;
+        public String ImageUrl;
+        public String Type;
+        public String Visibility;
+        public String Audience;
+        public String Title;
+        public String AmountText;
+        public int Progress;
+
+        public CreatePostRequest() {}
+    }
+
+    class EditPostRequest {
+        public String PostId;
+        public String Content;
+        public String ImageUrl;
+        public String Visibility;
+        public String Audience;
+
+        public EditPostRequest() {}
+    }
+
+    class DeletePostRequest {
+        public String PostId;
+
+        public DeletePostRequest() {}
+
+        public DeletePostRequest(String postId) {
+            PostId = postId;
+        }
+    }
+
+    class LikeActionRequest {
+        public String PostId;
+        public boolean Liked;
+
+        public LikeActionRequest() {}
+
+        public LikeActionRequest(String postId, boolean liked) {
+            PostId = postId;
+            Liked = liked;
+        }
+    }
+
+    class AddCommentRequest {
+        public String PostId;
+        public String Content;
+
+        public AddCommentRequest() {}
+
+        public AddCommentRequest(String postId, String content) {
+            PostId = postId;
+            Content = content;
+        }
+    }
+
+    class EditCommentRequest {
+        public String PostId;
+        public String CommentId;
+        public String Content;
+
+        public EditCommentRequest() {}
+    }
+
+    class DeleteCommentRequest {
+        public String PostId;
+        public String CommentId;
+
+        public DeleteCommentRequest() {}
+    }
+
+    class BatchProfileRequest {
+        public java.util.List<String> Uids;
+
+        public BatchProfileRequest() {}
+
+        public BatchProfileRequest(java.util.List<String> uids) {
+            Uids = uids;
         }
     }
 
