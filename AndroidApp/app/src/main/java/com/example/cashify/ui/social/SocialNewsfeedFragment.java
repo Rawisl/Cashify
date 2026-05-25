@@ -4,10 +4,12 @@ import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -15,12 +17,20 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.drawable.DrawableCompat;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
+import com.example.cashify.ui.feed.CommunityFeedAdapter;
+import com.example.cashify.ui.feed.FeedItem;
+import com.example.cashify.utils.ApiClient;
+import com.example.cashify.utils.ApiService;
 import com.example.cashify.utils.ImageHelper;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -28,6 +38,15 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 /**
  * SocialNewsfeedFragment — Tab "Bảng tin".
@@ -37,6 +56,12 @@ public class SocialNewsfeedFragment extends Fragment {
 
     private SocialViewModel socialViewModel;
     private final boolean[] likedPosts = new boolean[5];
+
+    // Thêm mới
+    private RecyclerView rvFeed;
+    private CommunityFeedAdapter feedAdapter;
+    private View layoutFeedEmpty;
+    private ProgressBar progressFeed;
 
     @Nullable
     @Override
@@ -51,10 +76,10 @@ public class SocialNewsfeedFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
         initViewModel();
         initViews(view);
+        loadRealFeed(); // ← GỌI Ở ĐÂY
     }
 
     private void initViewModel() {
-        // Dùng scope của Activity để chia sẻ ViewModel với SocialProfileFragment
         socialViewModel = new ViewModelProvider(requireActivity()).get(SocialViewModel.class);
     }
 
@@ -63,25 +88,151 @@ public class SocialNewsfeedFragment extends Fragment {
         FloatingActionButton fabCreatePost = view.findViewById(R.id.fabCreatePost);
         View createPostPrompt = view.findViewById(R.id.cardCreatePostPrompt);
 
-        // Vươn tay ra MainActivity để mở sidebar — giống WorkspaceHomeFragment
+        // Bind RecyclerView mới (thêm vào layout XML)
+        rvFeed = view.findViewById(R.id.rvNewsfeed);
+        layoutFeedEmpty = view.findViewById(R.id.layoutNewsfeedEmpty);
+        progressFeed = view.findViewById(R.id.progressNewsfeed);
+
+        if (rvFeed != null) {
+            feedAdapter = new CommunityFeedAdapter(item -> {
+                Intent intent = new Intent(requireContext(), PostDetailActivity.class);
+                intent.putExtra(PostDetailActivity.EXTRA_POST_ID, item.getId());
+                startActivity(intent);
+            });
+            rvFeed.setLayoutManager(new LinearLayoutManager(requireContext()));
+            rvFeed.setAdapter(feedAdapter);
+        }
+
         toolbar.setNavigationOnClickListener(v -> {
             if (getActivity() != null) {
-                androidx.drawerlayout.widget.DrawerLayout drawer =
-                        getActivity().findViewById(R.id.drawerLayout);
-                if (drawer != null) {
-                    drawer.openDrawer(androidx.core.view.GravityCompat.START);
-                }
+                DrawerLayout drawer = getActivity().findViewById(R.id.drawerLayout);
+                if (drawer != null) drawer.openDrawer(GravityCompat.START);
             }
         });
 
         fabCreatePost.setOnClickListener(v -> runPressAnimation(v, this::openCreatePost));
         createPostPrompt.setOnClickListener(v -> runPressAnimation(v, this::openCreatePost));
         setupProfileSurfaces(view);
-        setupDemoPost(view, R.id.cardPost1, R.id.btnLikePost1, R.id.btnCommentPost1, R.id.btnSharePost1, 0, 24, "post1");
-        setupDemoPost(view, R.id.cardPost2, R.id.btnLikePost2, R.id.btnCommentPost2, R.id.btnSharePost2, 1, 17, "post2");
-        setupDemoPost(view, R.id.cardPost3, R.id.btnLikePost3, R.id.btnCommentPost3, R.id.btnSharePost3, 2, 31, "post3");
-        setupDemoPost(view, R.id.cardPost4, R.id.btnLikePost4, R.id.btnCommentPost4, R.id.btnSharePost4, 3, 12, "post4");
-        setupDemoPost(view, R.id.cardPost5, R.id.btnLikePost5, R.id.btnCommentPost5, R.id.btnSharePost5, 4, 45, "post5");
+    }
+
+    // =========================================================
+    // LOAD FEED THẬT — ĐÃ FIX
+    // =========================================================
+    private void loadRealFeed() {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) return;
+
+        if (progressFeed != null) progressFeed.setVisibility(View.VISIBLE);
+
+        user.getIdToken(true).addOnSuccessListener(result -> {
+            String token = "Bearer " + result.getToken();
+            ApiService apiService = ApiClient.getClient().create(ApiService.class);
+            ApiService.FeedRequest req = new ApiService.FeedRequest(20, 0, "PUBLIC");
+
+            apiService.getFeed(token, req).enqueue(new Callback<List<Object>>() {
+                @Override
+                public void onResponse(@NonNull Call<List<Object>> call,
+                                       @NonNull Response<List<Object>> response) {
+                    if (!isAdded()) return;
+                    if (progressFeed != null) progressFeed.setVisibility(View.GONE);
+
+                    if (!response.isSuccessful() || response.body() == null) {
+                        Log.e("FEED", "API lỗi: " + response.code());
+                        showFeedEmpty(true);
+                        return;
+                    }
+
+                    List<FeedItem> items = mapResponseToFeedItems(response.body());
+                    if (feedAdapter != null) feedAdapter.submitList(items);
+                    showFeedEmpty(items.isEmpty());
+                }
+
+                @Override
+                public void onFailure(@NonNull Call<List<Object>> call, @NonNull Throwable t) {
+                    if (!isAdded()) return;
+                    if (progressFeed != null) progressFeed.setVisibility(View.GONE);
+                    Log.e("FEED", "Mạng lỗi: " + t.getMessage());
+                    showFeedEmpty(true);
+                }
+            });
+        }).addOnFailureListener(e -> {
+            if (progressFeed != null) progressFeed.setVisibility(View.GONE);
+            Log.e("FEED", "Token lỗi: " + e.getMessage());
+        });
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<FeedItem> mapResponseToFeedItems(List<Object> raw) {
+        List<FeedItem> result = new ArrayList<>();
+        for (Object obj : raw) {
+            if (!(obj instanceof Map)) continue;
+            Map<String, Object> map = (Map<String, Object>) obj;
+
+            String id       = str(map, "postId");
+            String content  = str(map, "content");
+            String imageUrl = str(map, "imageUrl");
+
+            // Backend lưu "kind" thay vì "type" — kiểm tra cả hai
+            String type = str(map, "type");
+            if (type.isEmpty()) type = str(map, "kind");
+
+            long timestamp  = num(map, "timestamp");
+            String userId   = str(map, "userId");
+            String name     = str(map, "authorName");
+            String avatarUrl = str(map, "authorAvatarUrl");
+
+            boolean isLiked = Boolean.TRUE.equals(map.get("isLiked"));
+            boolean hasImage   = !imageUrl.isEmpty();
+            boolean expandable = content.length() > 120;
+
+            if (isLiked) feedAdapter.addLikedId(id);
+
+
+            if (type.toLowerCase().contains("milestone")) {
+                result.add(new FeedItem.MilestonePost(
+                        id, content, content, "Cột mốc", imageUrl, "100%", 100, expandable));
+            } else {
+                result.add(new FeedItem.NormalPost(
+                        id,
+                        name.isEmpty() ? "Người dùng Cashify" : name,
+                        com.example.cashify.utils.TimeFormatter.format(timestamp),
+                        content,
+                        hasImage,
+                        imageUrl,
+                        ContextCompat.getColor(requireContext(), R.color.brand_primary),
+                        initials(name),
+                        expandable,
+                        avatarUrl
+                ));
+            }
+        }
+        return result;
+    }
+
+    private void showFeedEmpty(boolean show) {
+        if (layoutFeedEmpty != null)
+            layoutFeedEmpty.setVisibility(show ? View.VISIBLE : View.GONE);
+        if (rvFeed != null)
+            rvFeed.setVisibility(show ? View.GONE : View.VISIBLE);
+    }
+
+    // Helpers
+    private String str(Map<String, Object> map, String key) {
+        Object v = map.get(key);
+        return v instanceof String ? (String) v : "";
+    }
+
+    private long num(Map<String, Object> map, String key) {
+        Object v = map.get(key);
+        return v instanceof Number ? ((Number) v).longValue() : 0L;
+    }
+
+    private String initials(String name) {
+        if (name == null || name.trim().isEmpty()) return "CF";
+        String[] parts = name.trim().split("\\s+");
+        String f = parts[0].substring(0, 1);
+        String s = parts.length > 1 ? parts[parts.length - 1].substring(0, 1) : "";
+        return (f + s).toUpperCase(Locale.getDefault());
     }
 
     private void setupDemoPost(View root, int cardId, int likeId, int commentId, int shareId, int index, int baseLikes, String postId) {

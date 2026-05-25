@@ -304,6 +304,30 @@
                     android:textSize="12sp"
                     android:visibility="gone" />
 
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="16dp"
+                    android:alpha="0.25"
+                    android:background="@color/white" />
+
+                <TextView
+                    android:id="@+id/btnShareMilestone"
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/bg_action_button"
+                    android:drawablePadding="8dp"
+                    android:fontFamily="@font/inter_bold"
+                    android:gravity="center"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:text="Share Milestone"
+                    android:textColor="@color/brand_primary"
+                    android:textSize="13sp"
+                    android:clickable="true"
+                    android:focusable="true" />
+
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 

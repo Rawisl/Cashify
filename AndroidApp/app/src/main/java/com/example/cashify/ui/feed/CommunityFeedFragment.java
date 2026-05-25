@@ -44,6 +44,7 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.io.File;
 import java.util.Locale;
 
 public class CommunityFeedFragment extends Fragment {
@@ -279,9 +280,13 @@ public class CommunityFeedFragment extends Fragment {
         updateSubmitState();
     }
 
+    // =========================================================================
+    // XỬ LÝ ĐĂNG BÀI: TÍCH HỢP CLOUDINARY & C# BACKEND
+    // =========================================================================
     private void submitPost() {
-        String text = editPostContent.getText().toString().trim();
-        if (text.isEmpty() && selectedImageUri == null) {
+        String content = editPostContent.getText().toString().trim();
+
+        if (content.isEmpty() && selectedImageUri == null) {
             Toast.makeText(requireContext(), "Hãy viết nội dung hoặc thêm ảnh trước nhé.", Toast.LENGTH_SHORT).show();
             editPostContent.requestFocus();
             InputMethodManager imm = (InputMethodManager) requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);
@@ -292,15 +297,113 @@ public class CommunityFeedFragment extends Fragment {
         }
 
         setPosting(true);
-        boolean sharedMilestone = milestoneMode;
-        handler.postDelayed(() -> {
-            String topic = getSelectedTopic();
-            resetComposer();
-            setPosting(false);
-            Toast.makeText(requireContext(), sharedMilestone
-                    ? "Đã chia sẻ cột mốc với " + selectedAudience
-                    : "Đã chia sẻ bài viết với " + selectedAudience + " · " + topic, Toast.LENGTH_SHORT).show();
-        }, 650);
+        String type = milestoneMode ? "MILESTONE_POST" : "USER_POST";
+        String milestoneData = null; // TODO: Khang ráp chuỗi JSON của Auto-Milestone vào đây sau
+
+        if (selectedImageUri != null) {
+            // TRƯỜNG HỢP CÓ ẢNH: Đẩy qua Cloudinary trước
+            txtComposerHint.setText("Đang tải ảnh lên máy chủ...");
+            File imageFile = getFileFromUri(selectedImageUri);
+
+            if (imageFile == null) {
+                setPosting(false);
+                Toast.makeText(requireContext(), "Lỗi đọc file ảnh!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            com.example.cashify.utils.CloudinaryHelper.uploadImage(imageFile, new com.example.cashify.utils.CloudinaryHelper.UploadCallback() {
+                @Override
+                public void onSuccess(String imageUrl) {
+                    // Up ảnh xong, lấy URL gọi Backend
+                    callBackendToCreatePost(content, type, imageUrl, milestoneData);
+                }
+
+                @Override
+                public void onFailure(String error) {
+                    requireActivity().runOnUiThread(() -> {
+                        setPosting(false);
+                        Toast.makeText(requireContext(), "Lỗi tải ảnh: " + error, Toast.LENGTH_SHORT).show();
+                    });
+                }
+            });
+        } else {
+            // TRƯỜNG HỢP KHÔNG ẢNH: Đẩy thẳng lên Backend
+            callBackendToCreatePost(content, type, "", milestoneData);
+        }
+    }
+
+    // Hàm gọi C# API để lưu Post vào Firestore
+    private void callBackendToCreatePost(String content, String type, String imageUrl, String milestoneData) {
+        requireActivity().runOnUiThread(() -> txtComposerHint.setText("Đang lưu bài viết..."));
+
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) {
+            requireActivity().runOnUiThread(() -> {
+                setPosting(false);
+                Toast.makeText(requireContext(), "Chưa đăng nhập!", Toast.LENGTH_SHORT).show();
+            });
+            return;
+        }
+
+        user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
+            String token = "Bearer " + getTokenResult.getToken();
+            com.example.cashify.utils.ApiService apiService = com.example.cashify.utils.ApiClient.getClient().create(com.example.cashify.utils.ApiService.class);
+
+            // Khởi tạo Request Model (Nhớ đảm bảo ApiService đã có class này)
+            com.example.cashify.utils.ApiService.CreatePostRequest request =
+                    new com.example.cashify.utils.ApiService.CreatePostRequest(content, type, imageUrl, milestoneData);
+
+            apiService.createPost(token, request).enqueue(new retrofit2.Callback<Object>() {
+                @Override
+                public void onResponse(@NonNull retrofit2.Call<Object> call, @NonNull retrofit2.Response<Object> response) {
+                    requireActivity().runOnUiThread(() -> {
+                        setPosting(false);
+                        if (response.isSuccessful()) {
+                            Toast.makeText(requireContext(), "Đăng bài thành công!", Toast.LENGTH_SHORT).show();
+                            resetComposer();
+                            navigateBack(); // Quay lại trang Feed
+                        } else {
+                            Toast.makeText(requireContext(), "Lỗi tạo bài: " + response.code(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+
+                @Override
+                public void onFailure(@NonNull retrofit2.Call<Object> call, @NonNull Throwable t) {
+                    requireActivity().runOnUiThread(() -> {
+                        setPosting(false);
+                        Toast.makeText(requireContext(), "Lỗi mạng: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                    });
+                }
+            });
+        }).addOnFailureListener(e -> {
+            requireActivity().runOnUiThread(() -> {
+                setPosting(false);
+                Toast.makeText(requireContext(), "Lỗi xác thực Firebase", Toast.LENGTH_SHORT).show();
+            });
+        });
+    }
+
+    // Hàm phụ trợ: Chuyển Uri của Android thành File vật lý để OkHttp (CloudinaryHelper) đọc được
+    private File getFileFromUri(Uri uri) {
+        try {
+            java.io.InputStream inputStream = requireContext().getContentResolver().openInputStream(uri);
+            if (inputStream == null) return null;
+
+            File tempFile = new File(requireContext().getCacheDir(), "upload_img_" + System.currentTimeMillis() + ".jpg");
+            java.io.OutputStream outputStream = new java.io.FileOutputStream(tempFile);
+            byte[] buffer = new byte[1024];
+            int length;
+            while ((length = inputStream.read(buffer)) > 0) {
+                outputStream.write(buffer, 0, length);
+            }
+            outputStream.close();
+            inputStream.close();
+            return tempFile;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     private String getSelectedTopic() {
@@ -335,7 +438,7 @@ public class CommunityFeedFragment extends Fragment {
     private void updateSubmitState() {
         boolean hasText = editPostContent != null && editPostContent.getText().toString().trim().length() > 0;
         boolean hasImage = selectedImageUri != null;
-        boolean canSubmit = hasText || hasImage;
+        boolean canSubmit = hasText;
         btnSubmitPost.setEnabled(canSubmit);
         btnSubmitPost.setAlpha(canSubmit ? 1f : 0.55f);
         int count = editPostContent == null ? 0 : editPostContent.length();

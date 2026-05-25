@@ -211,6 +211,12 @@ public class BudgetFragment extends Fragment {
                     null
             );
         });
+
+        TextView btnShareMilestone = view.findViewById(R.id.btnShareMilestone);
+        btnShareMilestone.setOnClickListener(v -> {
+            // TODO: gọi API auto-milestone ở đây
+            Toast.makeText(requireContext(), "Generating milestone... (Coming soon)", Toast.LENGTH_SHORT).show();
+        });
     }
 
     private void triggerLoadData() {

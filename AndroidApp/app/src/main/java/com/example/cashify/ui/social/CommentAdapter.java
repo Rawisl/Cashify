@@ -23,12 +23,16 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentV
     private final List<Comment> commentList;
     private final OnCommentActionListener listener;
     private final String currentUserId;
-    private final String postOwnerId;
+    private String postOwnerId;
 
     public interface OnCommentActionListener {
         void onEditComment(int position);
         void onDeleteComment(int position);
         void onHideComment(int position);
+    }
+
+    public void updatePostOwnerId(String postOwnerId) {
+        this.postOwnerId = postOwnerId;
     }
 
     public CommentAdapter(List<Comment> commentList, OnCommentActionListener listener,
@@ -88,31 +92,34 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentV
             tvTime.setText(comment.getTime());
             tvContent.setText(comment.getContent());
 
+            // Reset state mỗi lần bind
             isLiked = false;
             likeCount = Math.max(0, comment.getLikeCount());
             imgCommentLike.clearColorFilter();
-            tvCommentLikeCount.setText(String.valueOf(likeCount));
+            tvCommentLikeCount.setText(likeCount > 0 ? String.valueOf(likeCount) : "");
 
+            // Avatar
             Glide.with(itemView.getContext())
                     .load(comment.getAvatarUrl())
                     .placeholder(R.drawable.ic_default_user)
                     .error(R.drawable.ic_default_user)
+                    .circleCrop()
                     .into(imgAvatar);
 
+            // Like comment — local only (không cần API)
             layoutCommentLike.setOnClickListener(v -> {
-                isLiked = HeartAnimation.toggleLike(
-                        itemView.getContext(),
-                        imgCommentLike,
-                        tvCommentLikeCount,
-                        isLiked,
-                        likeCount,
-                        R.color.status_red
-                );
+                isLiked = !isLiked;
                 if (isLiked) {
                     likeCount++;
+                    imgCommentLike.setColorFilter(
+                            itemView.getContext().getColor(R.color.status_red)
+                    );
+                    HeartAnimation.playRubberBand(imgCommentLike); // ← animation chạy ở đây
                 } else {
-                    likeCount--;
+                    likeCount = Math.max(0, likeCount - 1);
+                    imgCommentLike.clearColorFilter();
                 }
+                tvCommentLikeCount.setText(likeCount > 0 ? String.valueOf(likeCount) : "");
             });
 
             imgCommentMenu.setOnClickListener(v ->

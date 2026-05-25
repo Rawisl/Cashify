@@ -18,21 +18,28 @@ import com.example.cashify.R;
 import com.example.cashify.ui.auth.EditProfileActivity;
 import com.example.cashify.ui.feed.CommunityFeedAdapter;
 import com.example.cashify.ui.feed.FeedItem;
+import com.example.cashify.utils.ApiClient;
+import com.example.cashify.utils.ApiService;
 import com.example.cashify.utils.ImageHelper;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.imageview.ShapeableImageView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.ListenerRegistration;
-import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.DocumentSnapshot;  // GIỮ — dùng trong observeViewModel
+
+// ĐÃ XÓA: import FirebaseFirestore, ListenerRegistration, Query
+// (không còn dùng Firestore snapshot listener để load posts nữa)
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;  // THÊM MỚI — dùng trong bindProfilePosts
+
+import retrofit2.Call;       // THÊM MỚI
+import retrofit2.Callback;   // THÊM MỚI
+import retrofit2.Response;   // THÊM MỚI
 
 public class SocialProfileFragment extends Fragment {
 
@@ -51,8 +58,12 @@ public class SocialProfileFragment extends Fragment {
 
     private SocialViewModel socialViewModel;
     private CommunityFeedAdapter myPostsAdapter;
-    private ListenerRegistration postsRegistration;
+    // ĐÃ XÓA: private ListenerRegistration postsRegistration; — không cần nữa
     private String currentUserId = "";
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // LIFECYCLE — GIỮ NGUYÊN, chỉ bỏ cleanup listener
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     @Nullable
     @Override
@@ -76,12 +87,13 @@ public class SocialProfileFragment extends Fragment {
 
     @Override
     public void onDestroyView() {
-        if (postsRegistration != null) {
-            postsRegistration.remove();
-            postsRegistration = null;
-        }
+        // ĐÃ XÓA: postsRegistration.remove() — API call tự hủy, không cần cleanup
         super.onDestroyView();
     }
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // CÁC HÀM SETUP — GIỮ NGUYÊN 100%, không đổi gì
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     private void bindViews(View view) {
         imgAvatar = view.findViewById(R.id.imgAvatar);
@@ -101,9 +113,7 @@ public class SocialProfileFragment extends Fragment {
     private void initToolbar(View view) {
         MaterialToolbar toolbar = view.findViewById(R.id.toolbarSocialProfile);
         toolbar.setNavigationOnClickListener(v -> {
-            if (getActivity() == null) {
-                return;
-            }
+            if (getActivity() == null) return;
             androidx.drawerlayout.widget.DrawerLayout drawer =
                     getActivity().findViewById(R.id.drawerLayout);
             if (drawer != null) {
@@ -140,20 +150,16 @@ public class SocialProfileFragment extends Fragment {
 
     private void observeViewModel() {
         socialViewModel.getProfile().observe(getViewLifecycleOwner(), doc -> {
-            if (doc == null) {
-                return;
-            }
-
-            String displayName = firstNonEmpty(doc.getString("displayName"), doc.getString("username"), "Người dùng Cashify");
-            String bio = firstNonEmpty(doc.getString("bio"), doc.getString("status"), doc.getString("about"),
-                    "Sẵn sàng chia sẻ hành trình tài chính.");
+            if (doc == null) return;
+            String displayName = firstNonEmpty(doc.getString("displayName"),
+                    doc.getString("username"), "Người dùng Cashify");
+            String bio = firstNonEmpty(doc.getString("bio"), doc.getString("status"),
+                    doc.getString("about"), "Sẵn sàng chia sẻ hành trình tài chính.");
             String avatarUrl = doc.getString("avatarUrl");
-
             tvDisplayName.setText(displayName);
             tvBio.setText(bio);
             tvJoinedDate.setText(joinedLabel(doc));
             tvStreakCount.setText("Streak " + Math.max(0, numberField(doc, "streakDays", 0)) + " ngày");
-
             if (avatarUrl != null && !avatarUrl.trim().isEmpty()) {
                 ImageHelper.loadAvatar(avatarUrl, imgAvatar);
             }
@@ -163,77 +169,121 @@ public class SocialProfileFragment extends Fragment {
                 tvFriendCount.setText(Math.max(0, count) + " bạn bè"));
     }
 
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // LOAD POSTS — THAY HOÀN TOÀN: Firestore snapshot → gọi API wall
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    // ĐÃ XÓA toàn bộ hàm loadMyPosts() cũ (dùng addSnapshotListener)
+    // THAY BẰNG hàm này: gọi API /post/wall/{uid}
     private void loadMyPosts() {
         if (currentUserId == null || currentUserId.trim().isEmpty()) {
             showEmptyState(true);
             return;
         }
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) {
+            showEmptyState(true);
+            return;
+        }
 
-        postsRegistration = FirebaseFirestore.getInstance()
-                .collection("posts")
-                .whereEqualTo("authorId", currentUserId)
-                .orderBy("timestamp", Query.Direction.DESCENDING)
-                .addSnapshotListener((snapshot, error) -> {
-                    if (!isAdded()) {
-                        return;
-                    }
-                    if (error != null || snapshot == null) {
-                        showEmptyState(true);
-                        return;
-                    }
+        user.getIdToken(true).addOnSuccessListener(result -> {
+            String token = "Bearer " + result.getToken();
+            ApiService apiService = ApiClient.getClient().create(ApiService.class);
 
-                    List<FeedItem> posts = new ArrayList<>();
-                    int achievementCount = 0;
-                    FeedItem firstAchievement = null;
-
-                    for (DocumentSnapshot doc : snapshot.getDocuments()) {
-                        FeedItem item = mapPost(doc);
-                        posts.add(item);
-                        if (item instanceof FeedItem.MilestonePost) {
-                            achievementCount++;
-                            if (firstAchievement == null) {
-                                firstAchievement = item;
+            apiService.getWall(token, currentUserId, 30, 0)
+                    .enqueue(new Callback<List<Object>>() {
+                        @Override
+                        public void onResponse(@NonNull Call<List<Object>> call,
+                                               @NonNull Response<List<Object>> response) {
+                            if (!isAdded()) return;
+                            if (!response.isSuccessful() || response.body() == null) {
+                                android.util.Log.e("PROFILE", "API lỗi: " + response.code());
+                                showEmptyState(true);
+                                return;
                             }
+                            bindProfilePosts(response.body());
                         }
-                    }
 
-                    myPostsAdapter.submitList(posts);
-                    tvPostCount.setText(posts.size() + " bài viết");
-                    tvTrophyCount.setText(achievementCount + " thành tựu");
-                    bindPinnedAchievement(firstAchievement, posts.size());
-                    showEmptyState(posts.isEmpty());
-                });
+                        @Override
+                        public void onFailure(@NonNull Call<List<Object>> call, @NonNull Throwable t) {
+                            if (!isAdded()) return;
+                            android.util.Log.e("PROFILE", "Mạng lỗi: " + t.getMessage());
+                            showEmptyState(true);
+                        }
+                    });
+
+        }).addOnFailureListener(e -> {
+            android.util.Log.e("PROFILE", "Token lỗi: " + e.getMessage());
+            showEmptyState(true);
+        });
     }
 
-    private FeedItem mapPost(DocumentSnapshot doc) {
-        String id = doc.getId();
-        String content = firstNonEmpty(doc.getString("content"), doc.getString("text"), "");
-        String name = firstNonEmpty(doc.getString("authorName"), doc.getString("displayName"), "Bạn");
-        long timestamp = numberField(doc, "timestamp", 0);
-        String imageUrl = doc.getString("imageUrl");
-        boolean hasImage = imageUrl != null && !imageUrl.trim().isEmpty();
-        boolean expandable = content.length() > 120;
-        String type = firstNonEmpty(doc.getString("type"), doc.getString("postType"), "").toLowerCase(Locale.US);
+    // ĐÃ XÓA: mapPost(DocumentSnapshot doc) — không còn nhận Firestore doc nữa
+    // THAY BẰNG 2 hàm dưới đây:
 
-        if (type.contains("milestone") || type.contains("achievement") || doc.contains("progress")) {
-            int progress = (int) Math.max(0, Math.min(100, numberField(doc, "progress", 100)));
-            String title = firstNonEmpty(doc.getString("title"), achievementTitle(content));
-            String amount = firstNonEmpty(doc.getString("amountText"), doc.getString("amount"), progress + "% hoàn thành");
-            String month = firstNonEmpty(doc.getString("period"), doc.getString("month"), "Thành tựu");
-            return new FeedItem.MilestonePost(id, title, content, month, amount, progress + "%", progress, expandable);
+    // Hàm nhận List<Object> từ API response, tạo danh sách FeedItem
+    @SuppressWarnings("unchecked")
+    private void bindProfilePosts(List<Object> raw) {
+        List<FeedItem> posts = new ArrayList<>();
+        int achievementCount = 0;
+        FeedItem firstAchievement = null;
+
+        for (Object obj : raw) {
+            if (!(obj instanceof Map)) continue;
+            Map<String, Object> map = (Map<String, Object>) obj;
+            FeedItem item = mapPostFromMap(map);
+            posts.add(item);
+            if (item instanceof FeedItem.MilestonePost) {
+                achievementCount++;
+                if (firstAchievement == null) firstAchievement = item;
+            }
+        }
+
+        myPostsAdapter.submitList(posts);
+        tvPostCount.setText(posts.size() + " bài viết");
+        tvTrophyCount.setText(achievementCount + " thành tựu");
+        bindPinnedAchievement(firstAchievement, posts.size());
+        showEmptyState(posts.isEmpty());
+    }
+
+    // Hàm map 1 record (Map) từ API → FeedItem
+    private FeedItem mapPostFromMap(Map<String, Object> map) {
+        String id       = str(map, "postId");
+        String content  = str(map, "content");
+        String imageUrl = str(map, "imageUrl");
+        String type     = str(map, "type").toLowerCase(Locale.US);
+        long timestamp  = num(map, "timestamp");
+        String name     = str(map, "authorName");
+        String avatarUrl = str(map, "authorAvatarUrl");
+        boolean hasImage   = !imageUrl.isEmpty();
+        boolean expandable = content.length() > 120;
+
+        if (type.contains("milestone") || type.contains("achievement")) {
+            long progress = Math.max(0, Math.min(100, num(map, "progress")));
+            String title  = firstNonEmpty(str(map, "title"), achievementTitle(content));
+            String amount = firstNonEmpty(str(map, "amountText"), progress + "% hoàn thành");
+            String month  = firstNonEmpty(str(map, "period"), "Thành tựu");
+            return new FeedItem.MilestonePost(
+                    id, title, content, month, amount, progress + "%", (int) progress, expandable);
         }
 
         return new FeedItem.NormalPost(
                 id,
-                name,
+                name.isEmpty() ? "Bạn" : name,
                 formatTime(timestamp),
                 content,
                 hasImage,
+                imageUrl,           // ← truyền URL thật để Glide load
                 avatarColor(name),
                 initials(name),
-                expandable
+                expandable,
+                avatarUrl
         );
     }
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // CÁC HÀM HELPER — GIỮ NGUYÊN, chỉ thêm str() và num()
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     private void bindPinnedAchievement(@Nullable FeedItem achievement, int postCount) {
         if (achievement instanceof FeedItem.MilestonePost) {
@@ -253,53 +303,49 @@ public class SocialProfileFragment extends Fragment {
 
     private String joinedLabel(DocumentSnapshot doc) {
         long createdAt = numberField(doc, "createdAt", 0);
-        if (createdAt <= 0) {
-            createdAt = numberField(doc, "joinedAt", 0);
-        }
-        if (createdAt <= 0) {
-            return "Thành viên Cashify";
-        }
+        if (createdAt <= 0) createdAt = numberField(doc, "joinedAt", 0);
+        if (createdAt <= 0) return "Thành viên Cashify";
         return "Tham gia " + new SimpleDateFormat("MM/yyyy", Locale.getDefault()).format(new Date(createdAt));
     }
 
     private String achievementTitle(String content) {
-        if (content == null || content.trim().isEmpty()) {
-            return "Cột mốc tài chính mới";
-        }
+        if (content == null || content.trim().isEmpty()) return "Cột mốc tài chính mới";
         return content.length() > 54 ? content.substring(0, 54).trim() + "..." : content.trim();
     }
 
     private String firstNonEmpty(String... values) {
-        if (values == null) {
-            return "";
-        }
+        if (values == null) return "";
         for (String value : values) {
-            if (value != null && !value.trim().isEmpty()) {
-                return value.trim();
-            }
+            if (value != null && !value.trim().isEmpty()) return value.trim();
         }
         return "";
     }
 
+    // GIỮ NGUYÊN — dùng cho DocumentSnapshot trong observeViewModel
     private long numberField(DocumentSnapshot doc, String field, long fallback) {
         Object value = doc.get(field);
-        if (value instanceof Number) {
-            return ((Number) value).longValue();
-        }
-        return fallback;
+        return value instanceof Number ? ((Number) value).longValue() : fallback;
+    }
+
+    // THÊM MỚI — dùng cho Map từ API response
+    private String str(Map<String, Object> map, String key) {
+        Object v = map.get(key);
+        return v instanceof String ? (String) v : "";
+    }
+
+    // THÊM MỚI — dùng cho Map từ API response
+    private long num(Map<String, Object> map, String key) {
+        Object v = map.get(key);
+        return v instanceof Number ? ((Number) v).longValue() : 0L;
     }
 
     private String formatTime(long timestamp) {
-        if (timestamp <= 0) {
-            return "Vừa xong";
-        }
+        if (timestamp <= 0) return "Vừa xong";
         return com.example.cashify.utils.TimeFormatter.format(timestamp);
     }
 
     private String initials(String name) {
-        if (name == null || name.trim().isEmpty()) {
-            return "CF";
-        }
+        if (name == null || name.trim().isEmpty()) return "CF";
         String[] parts = name.trim().split("\\s+");
         String first = parts[0].substring(0, 1);
         String second = parts.length > 1 ? parts[parts.length - 1].substring(0, 1) : "";

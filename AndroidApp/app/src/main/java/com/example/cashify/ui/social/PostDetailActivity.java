@@ -27,6 +27,7 @@ import com.bumptech.glide.Glide;
 import com.example.cashify.R;
 import com.example.cashify.utils.ApiClient;
 import com.example.cashify.utils.ApiService;
+import com.example.cashify.utils.HeartAnimation;
 import com.example.cashify.utils.ImageHelper;
 import com.example.cashify.utils.TimeFormatter;
 import com.google.android.material.appbar.MaterialToolbar;
@@ -159,7 +160,6 @@ public class PostDetailActivity extends AppCompatActivity {
 
     private void setupLikeButton() {
         layoutLikeButton.setOnClickListener(v -> togglePostLike());
-        imgLikeHeart.setOnClickListener(v -> togglePostLike());
     }
 
     private void setupShareButton() {
@@ -242,6 +242,7 @@ public class PostDetailActivity extends AppCompatActivity {
                         return;
                     }
                     bindPost(response.body());
+                    setLoading(false);
                     loadComments();
                 }
 
@@ -254,25 +255,38 @@ public class PostDetailActivity extends AppCompatActivity {
     }
 
     private void loadComments() {
-        apiService.getPostComments(postId, authHeader).enqueue(new Callback<List<ApiService.SocialCommentResponse>>() {
+        // ĐỔI: getPostComments → getComments (trả List<Object>)
+        apiService.getComments(postId, authHeader).enqueue(new Callback<List<Object>>() {
             @Override
-            public void onResponse(@NonNull Call<List<ApiService.SocialCommentResponse>> call,
-                                   @NonNull Response<List<ApiService.SocialCommentResponse>> response) {
+            @SuppressWarnings("unchecked")
+            public void onResponse(@NonNull Call<List<Object>> call,
+                                   @NonNull Response<List<Object>> response) {
                 setLoading(false);
                 if (!response.isSuccessful() || response.body() == null) {
                     showInlineMessage("Không tải được bình luận.");
                     return;
                 }
                 commentList.clear();
-                for (ApiService.SocialCommentResponse item : response.body()) {
-                    commentList.add(mapComment(item));
+                for (Object obj : response.body()) {
+                    if (!(obj instanceof java.util.Map)) continue;
+                    java.util.Map<String, Object> map = (java.util.Map<String, Object>) obj;
+                    String cId      = mapStr(map, "commentId");
+                    String cUid     = mapStr(map, "userId");
+                    String cAvatar  = mapStr(map, "authorAvatarUrl");
+                    String cName    = mapStr(map, "authorName");
+                    String cContent = mapStr(map, "content");
+                    long   cTs      = mapNum(map, "timestamp");
+                    commentList.add(new Comment(cId, cUid, cAvatar,
+                            cName.isEmpty() ? "Người dùng Cashify" : cName,
+                            cContent,
+                            cTs > 0 ? TimeFormatter.format(cTs) : "Vừa xong", 0));
                 }
                 commentAdapter.notifyDataSetChanged();
                 updateEmptyComments();
             }
 
             @Override
-            public void onFailure(@NonNull Call<List<ApiService.SocialCommentResponse>> call, @NonNull Throwable t) {
+            public void onFailure(@NonNull Call<List<Object>> call, @NonNull Throwable t) {
                 setLoading(false);
                 showInlineMessage("Không kết nối được bình luận.");
             }
@@ -281,6 +295,7 @@ public class PostDetailActivity extends AppCompatActivity {
 
     private void bindPost(ApiService.SocialPostDetailResponse post) {
         postOwnerId = post.authorId == null ? "" : post.authorId;
+        commentAdapter.updatePostOwnerId(postOwnerId);
         tvPostUsername.setText(nonEmpty(post.authorName, "Người dùng Cashify"));
         tvPostTime.setText(post.timestamp > 0 ? TimeFormatter.format(post.timestamp) : "");
         tvPostContent.setText(nonEmpty(post.content, ""));
@@ -307,31 +322,44 @@ public class PostDetailActivity extends AppCompatActivity {
     }
 
     private void togglePostLike() {
-        if (authHeader == null) {
-            return;
-        }
+        if (authHeader == null) return;
         boolean targetLiked = !isLiked;
         layoutLikeButton.setEnabled(false);
-        apiService.setPostLike(postId, authHeader, new ApiService.SocialLikeRequest(targetLiked))
-                .enqueue(new Callback<ApiService.SocialReactionResponse>() {
+
+        // Optimistic UI: play animation + đổi màu ngay, không chờ API
+        isLiked = targetLiked;
+        likeCount = targetLiked ? likeCount + 1 : Math.max(0, likeCount - 1);
+        tvLikeCount.setText(String.valueOf(likeCount));
+        applyPostLikeState();
+        if (targetLiked) HeartAnimation.playRubberBand(imgLikeHeart); // ← THÊM
+
+        apiService.toggleLike(authHeader, new ApiService.LikeActionRequest(postId, targetLiked))
+                .enqueue(new Callback<Object>() {
                     @Override
-                    public void onResponse(@NonNull Call<ApiService.SocialReactionResponse> call,
-                                           @NonNull Response<ApiService.SocialReactionResponse> response) {
+                    public void onResponse(@NonNull Call<Object> call,
+                                           @NonNull Response<Object> response) {
                         layoutLikeButton.setEnabled(true);
-                        if (!response.isSuccessful() || response.body() == null) {
-                            Toast.makeText(PostDetailActivity.this, "Không cập nhật được lượt thích", Toast.LENGTH_SHORT).show();
-                            return;
+                        if (!response.isSuccessful()) {
+                            // Rollback nếu API lỗi
+                            isLiked = !targetLiked;
+                            likeCount = targetLiked ? Math.max(0, likeCount - 1) : likeCount + 1;
+                            tvLikeCount.setText(String.valueOf(likeCount));
+                            applyPostLikeState();
+                            Toast.makeText(PostDetailActivity.this,
+                                    "Không cập nhật được lượt thích", Toast.LENGTH_SHORT).show();
                         }
-                        isLiked = response.body().likedByMe;
-                        likeCount = Math.max(0, response.body().likeCount);
-                        tvLikeCount.setText(String.valueOf(likeCount));
-                        applyPostLikeState();
                     }
 
                     @Override
-                    public void onFailure(@NonNull Call<ApiService.SocialReactionResponse> call, @NonNull Throwable t) {
+                    public void onFailure(@NonNull Call<Object> call, @NonNull Throwable t) {
                         layoutLikeButton.setEnabled(true);
-                        Toast.makeText(PostDetailActivity.this, "Không kết nối được backend", Toast.LENGTH_SHORT).show();
+                        // Rollback
+                        isLiked = !targetLiked;
+                        likeCount = targetLiked ? Math.max(0, likeCount - 1) : likeCount + 1;
+                        tvLikeCount.setText(String.valueOf(likeCount));
+                        applyPostLikeState();
+                        Toast.makeText(PostDetailActivity.this,
+                                "Không kết nối được backend", Toast.LENGTH_SHORT).show();
                     }
                 });
     }
@@ -339,35 +367,58 @@ public class PostDetailActivity extends AppCompatActivity {
     private void sendComment() {
         String text = etCommentInput.getText().toString().trim();
         if (text.isEmpty()) {
-            Toast.makeText(this, "Hãy nhập bình luận trước nhé", Toast.LENGTH_SHORT).show();
+            etCommentInput.setError("Nhập bình luận trước nhé");
             return;
         }
+        if (authHeader == null) {
+            Toast.makeText(this, "Chưa đăng nhập", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         imgSendComment.setEnabled(false);
-        apiService.addPostComment(postId, authHeader, new ApiService.SocialCommentRequest(text))
-                .enqueue(new Callback<ApiService.SocialCommentResponse>() {
+        etCommentInput.setText(""); // clear ngay để UX mượt hơn
+
+        apiService.addComment(authHeader, new ApiService.AddCommentRequest(postId, text))
+                .enqueue(new Callback<Object>() {
                     @Override
-                    public void onResponse(@NonNull Call<ApiService.SocialCommentResponse> call,
-                                           @NonNull Response<ApiService.SocialCommentResponse> response) {
+                    public void onResponse(@NonNull Call<Object> call,
+                                           @NonNull Response<Object> response) {
                         imgSendComment.setEnabled(true);
-                        if (!response.isSuccessful() || response.body() == null) {
-                            Toast.makeText(PostDetailActivity.this, "Không gửi được bình luận", Toast.LENGTH_SHORT).show();
+                        if (!response.isSuccessful()) {
+                            etCommentInput.setText(text); // restore nếu lỗi
+                            Toast.makeText(PostDetailActivity.this,
+                                    "Không gửi được bình luận (" + response.code() + ")",
+                                    Toast.LENGTH_SHORT).show();
                             return;
                         }
-                        commentList.add(mapComment(response.body()));
+                        // Build comment local
+                        commentList.add(new Comment(null, currentUserId, null,
+                                "Bạn", text, "Vừa xong", 0));
                         commentAdapter.notifyItemInserted(commentList.size() - 1);
                         commentCount++;
                         tvCommentCount.setText(String.valueOf(commentCount));
-                        etCommentInput.setText("");
-                        updateEmptyComments();
                         recyclerViewComments.smoothScrollToPosition(commentList.size() - 1);
+                        updateEmptyComments();
                     }
 
                     @Override
-                    public void onFailure(@NonNull Call<ApiService.SocialCommentResponse> call, @NonNull Throwable t) {
+                    public void onFailure(@NonNull Call<Object> call, @NonNull Throwable t) {
                         imgSendComment.setEnabled(true);
-                        Toast.makeText(PostDetailActivity.this, "Không kết nối được backend", Toast.LENGTH_SHORT).show();
+                        etCommentInput.setText(text); // restore nếu mạng chết
+                        Toast.makeText(PostDetailActivity.this,
+                                "Lỗi mạng: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 });
+    }
+
+    private String mapStr(java.util.Map<String, Object> map, String key) {
+        Object v = map.get(key);
+        return v instanceof String ? (String) v : "";
+    }
+
+    private long mapNum(java.util.Map<String, Object> map, String key) {
+        Object v = map.get(key);
+        return v instanceof Number ? ((Number) v).longValue() : 0L;
     }
 
     private void sharePost() {
