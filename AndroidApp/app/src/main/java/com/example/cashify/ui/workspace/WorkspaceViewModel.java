@@ -194,7 +194,7 @@ public class WorkspaceViewModel extends ViewModel {
                 .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.ASCENDING)
                 .addSnapshotListener((snapshots, e) -> {
                     if (e != null) {
-                        _errorMessage.setValue("Listen failed: " + e.getMessage());
+                        _errorMessage.postValue("Listen failed: " + e.getMessage());
                         return;
                     }
                     if (snapshots != null) {
@@ -212,72 +212,36 @@ public class WorkspaceViewModel extends ViewModel {
     }
 
     public void sendChatMessage(String workspaceId, String text) {
-        com.google.firebase.auth.FirebaseUser user = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
-        if (user == null || text.trim().isEmpty()) return;
+        if (text == null || text.trim().isEmpty()) return;
 
-        com.google.firebase.firestore.FirebaseFirestore db = com.google.firebase.firestore.FirebaseFirestore.getInstance();
-
-        // 1. Chuẩn bị cục data Tin nhắn
-        com.example.cashify.data.model.ChatMessage newMsg = new com.example.cashify.data.model.ChatMessage(
-                user.getUid(),
-                user.getDisplayName() != null ? user.getDisplayName() : "User",
-                user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : "",
-                text.trim(),
-                System.currentTimeMillis()
-        );
-
-        // Lấy thông tin Quỹ hiện tại (Đã được load sẵn trong ViewModel)
-        com.example.cashify.data.model.Workspace currentWorkspace = _workspaceLiveData.getValue();
-        List<String> members = currentWorkspace != null ? currentWorkspace.getMembers() : new java.util.ArrayList<>();
-        String workspaceName = currentWorkspace != null ? currentWorkspace.getName() : "Workspace";
-
-        // Mở Batch để đảm bảo Ghi tin nhắn & Ghi thông báo diễn ra đồng thời
-        com.google.firebase.firestore.WriteBatch batch = db.batch();
-
-        // 2. Ghi tin nhắn vào collection messages của Quỹ
-        com.google.firebase.firestore.DocumentReference msgRef = db.collection("workspaces")
-                .document(workspaceId)
-                .collection("messages")
-                .document();
-        batch.set(msgRef, newMsg);
-
-        // 3. Rải thông báo cho TẤT CẢ thành viên (ngoại trừ người gửi)
-        String senderName = user.getDisplayName() != null ? user.getDisplayName() : "Unknown user";
-        for (String memberId : members) {
-            if (!memberId.equals(user.getUid())) {
-                com.google.firebase.firestore.DocumentReference notifRef = db.collection("users")
-                        .document(memberId)
-                        .collection("notifications")
-                        .document();
-
-                // Build cục data thông báo y chang định dạng bên C#
-                java.util.Map<String, Object> notifData = new java.util.HashMap<>();
-                notifData.put("type", "WORKSPACE_CHAT");
-                notifData.put("title", workspaceName);
-                notifData.put("message", senderName + ": " + text.trim());
-                notifData.put("timestamp", System.currentTimeMillis());
-                notifData.put("isRead", false);
-                notifData.put("referenceId", workspaceId); // ID nhóm để lúc click vào nó bay thẳng tới nhóm
-
-                batch.set(notifRef, notifData);
+        FirebaseManager.getInstance().sendWorkspaceMessage(workspaceId, text, new FirebaseManager.DataCallback<Void>() {
+            @Override
+            public void onSuccess(Void data) {
+                // Thành công: KHÔNG CẦN LÀM GÌ CẢ.
+                // Hàm listenForChatMessages() có sẵn trong ViewModel sẽ tự động kéo tin nhắn mới về và cập nhật UI.
             }
-        }
 
-        // 4. Bóp cò chạy lệnh!
-        batch.commit().addOnFailureListener(e -> _errorMessage.setValue("Send failed: " + e.getMessage()));
+            @Override
+            public void onError(String message) {
+                _errorMessage.postValue("Gửi tin nhắn thất bại: " + message);
+            }
+        });
     }
 
     public void deleteChatMessage(String workspaceId, String messageId) {
         if (workspaceId == null || messageId == null) return;
-        com.google.firebase.firestore.FirebaseFirestore db = com.google.firebase.firestore.FirebaseFirestore.getInstance();
 
-        db.collection("workspaces").document(workspaceId)
-                .collection("messages").document(messageId)
-                .update(
-                        "text", "",
-                        "recalled", true
-                )
-                .addOnFailureListener(e -> _errorMessage.setValue("Message recall failed: " + e.getMessage()));
+        FirebaseManager.getInstance().recallMessage(workspaceId, messageId, new FirebaseManager.DataCallback<Void>() {
+            @Override
+            public void onSuccess(Void data) {
+                // Listener tự cập nhật UI
+            }
+
+            @Override
+            public void onError(String message) {
+                _errorMessage.postValue("Thu hồi tin nhắn thất bại: " + message);
+            }
+        });
     }
 
     // Đừng quên dọn rác khi đóng màn hình

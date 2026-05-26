@@ -599,6 +599,27 @@ public class FirebaseManager {
     // LOGIC WORKSPACE & CÁC THAO TÁC CẦN CALL C# BACKEND (ĐÃ REFACTOR)
     // ============================================================
 
+    public void sendWorkspaceMessage(String workspaceId, String text, DataCallback<Void> callback) {
+        FirebaseUser user = auth.getCurrentUser();
+        if (user == null) { callback.onError("Chưa đăng nhập!"); return; }
+
+        user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
+            String token = "Bearer " + getTokenResult.getToken();
+            ApiService apiService = ApiClient.getClient().create(ApiService.class);
+            ApiService.WorkspaceMessageSendRequest request = new ApiService.WorkspaceMessageSendRequest(workspaceId, text);
+
+            apiService.sendWorkspaceMessage(token, request).enqueue(new retrofit2.Callback<Object>() {
+                @Override
+                public void onResponse(retrofit2.Call<Object> call, retrofit2.Response<Object> response) {
+                    if (response.isSuccessful()) callback.onSuccess(null);
+                    else callback.onError(extractApiError(response, "Lỗi server: " + response.code()));
+                }
+                @Override
+                public void onFailure(retrofit2.Call<Object> call, Throwable t) { callback.onError("Lỗi mạng: " + t.getMessage()); }
+            });
+        }).addOnFailureListener(e -> callback.onError("Lỗi Auth: " + e.getMessage()));
+    }
+
     public void createSharedWorkspace(String workspaceName, String type, String iconName, List<String> memberIds, DataCallback<String> callback) {
         FirebaseUser user = auth.getCurrentUser();
         if (user == null) {

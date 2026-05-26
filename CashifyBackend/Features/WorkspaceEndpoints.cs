@@ -331,49 +331,6 @@ public static class WorkspaceEndpoints
             catch (Exception ex) { return Results.Problem($"System error: {ex.Message}"); }
         });
 
-        //THU HỒI TIN NHẮN CHAT (KÈM GOD MODE)
-        group.MapPost("/message/recall", async (HttpRequest request, MessageRecallRequest body, FirestoreDb db) =>
-        {
-            try
-            {
-                var authHeader = request.Headers["Authorization"].FirstOrDefault();
-                if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
-                    return Results.Unauthorized();
-
-                var token = authHeader.Substring("Bearer ".Length);
-                var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token)).Uid;
-
-                if (string.IsNullOrEmpty(body.WorkspaceId) || string.IsNullOrEmpty(body.MessageId))
-                    return Results.BadRequest("Thiếu Data");
-
-                
-                var wsRef = db.Collection("workspaces").Document(body.WorkspaceId);
-                var wsSnap = await wsRef.GetSnapshotAsync();
-
-                if (!wsSnap.Exists)
-                    return Results.NotFound();
-
-                var ownerId = wsSnap.GetValue<string>("ownerId");
-                var msgRef = wsRef.Collection("messages").Document(body.MessageId);
-                var msgSnap = await msgRef.GetSnapshotAsync();
-
-                if (!msgSnap.Exists)
-                    return Results.NotFound("Tin nhắn không tồn tại");
-
-                var senderId = msgSnap.GetValue<string>("senderId");
-
-                // Tác giả HOẶC Trưởng nhóm mới được thu hồi
-                if (uid != senderId && uid != ownerId)
-                    return Results.StatusCode(403);
-
-                // Đánh dấu là đã thu hồi, giữ nguyên Data để Log
-                await msgRef.UpdateAsync("isRecalled", true);
-
-                return Results.Ok(new { message = "Thu hồi tin nhắn thành công" });
-            }
-            catch (Exception ex) { return Results.Problem($"Lỗi hệ thống: {ex.Message}"); }
-        });
-
         //GỬI LỜI MỜI VÀO QUỸ (WORKSPACE INVITATIONS)
         group.MapPost("/invite/send", async (HttpRequest request, WorkspaceInviteSendRequest body, FirestoreDb db) =>
         {
@@ -668,6 +625,125 @@ public static class WorkspaceEndpoints
                 await catRef.UpdateAsync("isDeleted", 0);
 
                 return Results.Ok(new { message = "Khôi phục danh mục thành công!" });
+            }
+            catch (Exception ex) { return Results.Problem($"Lỗi hệ thống: {ex.Message}"); }
+        });
+
+        //GỬI TIN NHẮN VÀO QUỸ CHUNG (KÈM BẮN THÔNG BÁO)
+        group.MapPost("/message/send", async (HttpRequest request, WorkspaceMessageSendRequest body, FirestoreDb db) =>
+        {
+            try
+            {
+                var authHeader = request.Headers["Authorization"].FirstOrDefault();
+                if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
+                    return Results.Unauthorized();
+
+                var token = authHeader.Substring("Bearer ".Length);
+                var decodedToken = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token);
+                var uid = decodedToken.Uid;
+
+                if (string.IsNullOrEmpty(body.WorkspaceId) || string.IsNullOrWhiteSpace(body.Text))
+                    return Results.BadRequest(new { error = "Data lacking" });
+
+                var wsRef = db.Collection("workspaces").Document(body.WorkspaceId);
+                var wsSnap = await wsRef.GetSnapshotAsync();
+
+                if (!wsSnap.Exists)
+                    return Results.NotFound(new { error = "Không tìm thấy Quỹ" });
+
+                var members = wsSnap.GetValue<List<string>>("members");
+                if (members == null || !members.Contains(uid))
+                    return Results.StatusCode(403); // Phải là thành viên mới được chat
+
+                var workspaceName = wsSnap.ContainsField("name") ? wsSnap.GetValue<string>("name") : "Group";
+
+                var userSnap = await db.Collection("users").Document(uid).GetSnapshotAsync();
+                string senderName = userSnap.Exists && userSnap.ContainsField("displayName") ? userSnap.GetValue<string>("displayName") : "User";
+                string senderAvatar = userSnap.Exists && userSnap.ContainsField("avatarUrl") ? userSnap.GetValue<string>("avatarUrl") : "";
+
+                var batch = db.StartBatch();
+                var msgRef = wsRef.Collection("messages").Document();
+                var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+                // Lưu tin nhắn
+                var messageData = new Dictionary<string, object>
+                {
+                    { "senderId", uid },
+                    { "senderName", senderName },
+                    { "senderAvatar", senderAvatar },
+                    { "text", body.Text.Trim() },
+                    { "timestamp", timestamp },
+                    { "isRecalled", false }
+                };
+                batch.Set(msgRef, messageData);
+
+                // Rải thông báo cho các thành viên khác
+                foreach (var memberId in members)
+                {
+                    if (memberId != uid)
+                    {
+                        var notifRef = db.Collection("users").Document(memberId).Collection("notifications").Document();
+                        batch.Set(notifRef, new
+                        {
+                            type = "WORKSPACE_CHAT",
+                            title = workspaceName,
+                            message = $"{senderName}: {body.Text.Trim()}",
+                            timestamp = timestamp,
+                            isRead = false,
+                            referenceId = body.WorkspaceId
+                        });
+                    }
+                }
+
+                await batch.CommitAsync();
+                return Results.Ok(new { message = "Gửi tin nhắn thành công", messageId = msgRef.Id });
+            }
+            catch (Exception ex) { return Results.Problem($"Lỗi hệ thống: {ex.Message}"); }
+        });
+
+        //THU HỒI TIN NHẮN QUỸ (ĐÃ CÓ TRONG MẪU CỦA ÔNG, TUI CHUẨN HÓA LẠI CHÚT)
+        group.MapPost("/message/recall", async (HttpRequest request, MessageRecallRequest body, FirestoreDb db) =>
+        {
+            try
+            {
+                var authHeader = request.Headers["Authorization"].FirstOrDefault();
+                if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
+                    return Results.Unauthorized();
+
+                var token = authHeader.Substring("Bearer ".Length);
+                var decodedToken = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token);
+                var uid = decodedToken.Uid;
+
+                if (string.IsNullOrEmpty(body.WorkspaceId) || string.IsNullOrEmpty(body.MessageId))
+                    return Results.BadRequest(new { error = "Thiếu Data" });
+
+                var wsRef = db.Collection("workspaces").Document(body.WorkspaceId);
+                var wsSnap = await wsRef.GetSnapshotAsync();
+
+                if (!wsSnap.Exists)
+                    return Results.NotFound(new { error = "Không tìm thấy Quỹ" });
+
+                var ownerId = wsSnap.GetValue<string>("ownerId");
+                var msgRef = wsRef.Collection("messages").Document(body.MessageId);
+                var msgSnap = await msgRef.GetSnapshotAsync();
+
+                if (!msgSnap.Exists)
+                    return Results.NotFound(new { error = "Tin nhắn không tồn tại" });
+
+                var senderId = msgSnap.GetValue<string>("senderId");
+
+                // Tác giả HOẶC Trưởng nhóm mới được thu hồi
+                if (uid != senderId && uid != ownerId)
+                    return Results.StatusCode(403);
+
+                // Cập nhật text thành rỗng và ghim cờ isRecalled
+                await msgRef.UpdateAsync(new Dictionary<string, object>
+                {
+                    { "text", "" },
+                    { "isRecalled", true }
+                });
+
+                return Results.Ok(new { message = "Thu hồi tin nhắn thành công" });
             }
             catch (Exception ex) { return Results.Problem($"Lỗi hệ thống: {ex.Message}"); }
         });
