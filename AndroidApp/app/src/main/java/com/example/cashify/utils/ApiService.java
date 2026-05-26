@@ -64,6 +64,9 @@ public interface ApiService {
     @POST("/api/v1/workspace/message/recall")
     Call<Object> recallMessage(@Header("Authorization") String token, @Body WorkspaceActionRequest request);
 
+    @POST("/api/v1/workspace/message/send")
+    Call<Object> sendWorkspaceMessage(@Header("Authorization") String token, @Body WorkspaceMessageSendRequest request);
+
     //FRIENDS API
 
     //thao tác CƠ BẢN trên FRIENDS (gửi, từ chối, đồng ý lời mời,...)
@@ -423,5 +426,15 @@ public interface ApiService {
         public int commentCount;
         public int shareCount;
         public boolean likedByMe;
+    }
+
+    class WorkspaceMessageSendRequest {
+        public String WorkspaceId;
+        public String Text;
+
+        public WorkspaceMessageSendRequest(String workspaceId, String text) {
+            this.WorkspaceId = workspaceId;
+            this.Text = text;
+        }
     }
 }

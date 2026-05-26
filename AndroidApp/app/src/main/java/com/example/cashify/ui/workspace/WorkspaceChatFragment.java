@@ -78,18 +78,8 @@ public class WorkspaceChatFragment extends Fragment {
             com.example.cashify.utils.DialogHelper.showCustomDialog(
                     requireContext(), "Recall Message", "Are you sure you want to recall this message?", "Recall", "Cancel", com.example.cashify.utils.DialogHelper.DialogType.DANGER, true,
                     () -> {
-                        // GỌI CÁP API C# ĐỂ THU HỒI TIN NHẮN
-                        com.example.cashify.data.remote.FirebaseManager.getInstance().recallMessage(workspaceId, message.getMessageId(), new com.example.cashify.data.remote.FirebaseManager.DataCallback<Void>() {
-                            @Override
-                            public void onSuccess(Void data) {
-                            } // Firebase snapshot sẽ tự động cập nhật UI
-
-                            @Override
-                            public void onError(String msg) {
-                                if (getActivity() != null)
-                                    getActivity().runOnUiThread(() -> ToastHelper.show(requireContext(), msg));
-                            }
-                        });
+                        // GỌI QUA VIEWMODEL (CHUẨN MVVM)
+                        workspaceViewModel.deleteChatMessage(workspaceId, message.getMessageId());
                     }, null
             );
         });
