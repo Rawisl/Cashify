@@ -308,9 +308,8 @@ public class PostDetailActivity extends AppCompatActivity {
         updateShareText();
         applyPostLikeState();
 
-        if (post.authorAvatarUrl != null && !post.authorAvatarUrl.trim().isEmpty()) {
-            ImageHelper.loadAvatar(post.authorAvatarUrl, imgPostAvatar);
-        }
+        ImageHelper.loadAvatar(post.authorAvatarUrl, imgPostAvatar,
+                nonEmpty(post.authorName, nonEmpty(post.authorId, "Người dùng Cashify")));
         if (post.imageUrl != null && !post.imageUrl.trim().isEmpty()) {
             imgPostImage.setVisibility(View.VISIBLE);
             Glide.with(this).load(post.imageUrl).into(imgPostImage);

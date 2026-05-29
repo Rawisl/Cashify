@@ -46,11 +46,8 @@ public class InvitationAdapter extends RecyclerView.Adapter<InvitationAdapter.Vi
         holder.tvInviterName.setText(invite.getInviterName());
         holder.tvWorkspaceName.setText("Has invited you to: " + invite.getWorkspaceName());
 
-        if (invite.getInviterAvatar() != null && !invite.getInviterAvatar().isEmpty()) {
-            com.example.cashify.utils.ImageHelper.loadAvatar(invite.getInviterAvatar(), holder.imgAvatar);
-        } else {
-            holder.imgAvatar.setImageResource(R.drawable.ic_default_user);
-        }
+        com.example.cashify.utils.ImageHelper.loadAvatar(
+                invite.getInviterAvatar(), holder.imgAvatar, invite.getInviterName());
 
         holder.btnAccept.setOnClickListener(v -> listener.onAccept(invite));
         holder.btnDecline.setOnClickListener(v -> listener.onDecline(invite));

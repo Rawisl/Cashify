@@ -4,6 +4,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -12,7 +13,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.cashify.R;
 import com.example.cashify.data.model.User;
 import com.example.cashify.utils.ImageHelper;
-import com.google.android.material.imageview.ShapeableImageView;
 
 import java.util.List;
 import java.util.Set;
@@ -50,11 +50,7 @@ public class SelectFriendAdapter extends RecyclerView.Adapter<SelectFriendAdapte
         User user = list.get(position);
         holder.tvName.setText(user.getNameToShow());
 
-        if (user.getAvatarUrl() != null && !user.getAvatarUrl().isEmpty()) {
-            ImageHelper.loadAvatar(user.getAvatarUrl(), holder.imgAvatar);
-        } else {
-            holder.imgAvatar.setImageResource(R.drawable.ic_default_user);
-        }
+        ImageHelper.loadAvatar(user.getAvatarUrl(), holder.imgAvatar, user.getNameToShow());
 
         // Gỡ listener trước khi set trạng thái để không bị lặp vô tận
         holder.cbSelect.setOnCheckedChangeListener(null);
@@ -73,7 +69,7 @@ public class SelectFriendAdapter extends RecyclerView.Adapter<SelectFriendAdapte
     public int getItemCount() { return list != null ? list.size() : 0; }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        ShapeableImageView imgAvatar;
+        ImageView imgAvatar;
         TextView tvName;
         CheckBox cbSelect;
 

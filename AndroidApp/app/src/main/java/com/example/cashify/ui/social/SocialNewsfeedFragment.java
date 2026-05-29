@@ -29,6 +29,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.cashify.R;
 import com.example.cashify.ui.feed.CommunityFeedAdapter;
 import com.example.cashify.ui.feed.FeedItem;
+import com.example.cashify.ui.main.MainActivity;
 import com.example.cashify.utils.ApiClient;
 import com.example.cashify.utils.ApiService;
 import com.example.cashify.utils.ImageHelper;
@@ -263,8 +264,9 @@ public class SocialNewsfeedFragment extends Fragment {
     private void setupProfileSurfaces(View root) {
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         ImageView createAvatar = root.findViewById(R.id.imgCreatePromptAvatar);
-        if (user != null && user.getPhotoUrl() != null) {
-            ImageHelper.loadAvatar(user.getPhotoUrl(), createAvatar);
+        if (user != null) {
+            ImageHelper.loadAvatar(user.getPhotoUrl(), createAvatar,
+                    firstNonEmpty(user.getDisplayName(), user.getEmail(), user.getUid()));
         }
 
         FirebaseFirestore.getInstance().collection("users").limit(5).get()
@@ -289,9 +291,8 @@ public class SocialNewsfeedFragment extends Fragment {
                             return;
                         }
                         String avatarUrl = doc.getString("avatarUrl");
-                        if (avatarUrl != null && !avatarUrl.trim().isEmpty()) {
-                            ImageHelper.loadAvatar(avatarUrl, createAvatar);
-                        }
+                        ImageHelper.loadAvatar(avatarUrl, createAvatar,
+                                firstNonEmpty(displayNameFromProfile(doc), user.getEmail(), user.getUid()));
                     });
         }
     }
@@ -306,9 +307,17 @@ public class SocialNewsfeedFragment extends Fragment {
             nameView.setText(name);
         }
         String avatarUrl = doc.getString("avatarUrl");
-        if (avatarView != null && avatarUrl != null && !avatarUrl.trim().isEmpty()) {
-            ImageHelper.loadAvatar(avatarUrl, avatarView);
+        if (avatarView != null) {
+            ImageHelper.loadAvatar(avatarUrl, avatarView, name);
         }
+    }
+
+    private String firstNonEmpty(String... values) {
+        if (values == null) return "";
+        for (String value : values) {
+            if (value != null && !value.trim().isEmpty()) return value.trim();
+        }
+        return "";
     }
 
     private String displayNameFromProfile(DocumentSnapshot doc) {
@@ -355,12 +364,15 @@ public class SocialNewsfeedFragment extends Fragment {
             return;
         }
 
-        NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment);
-        if (navController.getCurrentDestination() != null
-                && navController.getCurrentDestination().getId() == R.id.nav_post_feed) {
+        if (requireActivity() instanceof MainActivity) {
+            ((MainActivity) requireActivity()).openCreatePostScreen();
             return;
         }
-        navController.navigate(R.id.nav_post_feed);
+
+        NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment);
+        if (navController.getGraph().findNode(R.id.nav_post_feed) != null) {
+            navController.navigate(R.id.nav_post_feed);
+        }
     }
 
     private void runPressAnimation(View view, Runnable action) {

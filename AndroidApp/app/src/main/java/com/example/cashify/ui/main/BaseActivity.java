@@ -158,18 +158,34 @@ public abstract class BaseActivity extends AppCompatActivity {
             View headerView = navigationView.getHeaderView(0);
             TextView tvName = headerView.findViewById(R.id.tvNameHeader);
             TextView tvEmail = headerView.findViewById(R.id.tvEmailHeader);
-            de.hdodenhof.circleimageview.CircleImageView imgAvatar = headerView.findViewById(R.id.imgAvatarHeader);
+            android.widget.ImageView imgAvatar = headerView.findViewById(R.id.imgAvatarHeader);
 
             tvEmail.setText(currentUser.getEmail());
+            if (imgAvatar != null) {
+                ImageHelper.loadAvatar(currentUser.getPhotoUrl(), imgAvatar,
+                        firstNonEmpty(currentUser.getDisplayName(), currentUser.getEmail(), currentUser.getUid()));
+            }
             com.google.firebase.firestore.FirebaseFirestore.getInstance().collection("users")
                     .document(currentUser.getUid()).get()
                     .addOnSuccessListener(doc -> {
                         if (doc.exists()) {
-                            if (tvName != null) tvName.setText(doc.getString("displayName"));
-                            if (imgAvatar != null) ImageHelper.loadAvatar(doc.getString("avatarUrl"), imgAvatar);
+                            String displayName = doc.getString("displayName");
+                            if (tvName != null) tvName.setText(displayName);
+                            if (imgAvatar != null) {
+                                ImageHelper.loadAvatar(doc.getString("avatarUrl"), imgAvatar,
+                                        firstNonEmpty(displayName, currentUser.getEmail(), currentUser.getUid()));
+                            }
                         }
                     });
         }
+    }
+
+    private String firstNonEmpty(String... values) {
+        if (values == null) return "";
+        for (String value : values) {
+            if (value != null && !value.trim().isEmpty()) return value.trim();
+        }
+        return "";
     }
 
     private void updateSidebarMenu(List<Workspace> workspaces) {

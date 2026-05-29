@@ -16,12 +16,12 @@
         android:paddingVertical="14dp">
 
         <!-- Avatar tròn -->
-        <com.google.android.material.imageview.ShapeableImageView
+        <com.example.cashify.ui.common.AvatarImageView
             android:id="@+id/imgAvatar"
             android:layout_width="52dp"
             android:layout_height="52dp"
-            android:src="@android:drawable/ic_menu_report_image"
-            app:shapeAppearanceOverlay="@style/RoundedAppearance"
+            android:scaleType="centerCrop"
+            android:src="@drawable/bg_default_avatar_pastel"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 

@@ -1,11 +1,16 @@
 package com.example.cashify.ui.social;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -18,11 +23,12 @@ import com.example.cashify.R;
 import com.example.cashify.ui.auth.EditProfileActivity;
 import com.example.cashify.ui.feed.CommunityFeedAdapter;
 import com.example.cashify.ui.feed.FeedItem;
+import com.example.cashify.ui.main.MainActivity;
+import com.example.cashify.ui.notifications.InvitationsActivity;
 import com.example.cashify.utils.ApiClient;
 import com.example.cashify.utils.ApiService;
 import com.example.cashify.utils.ImageHelper;
 import com.google.android.material.appbar.MaterialToolbar;
-import com.google.android.material.imageview.ShapeableImageView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;  // GIỮ — dùng trong observeViewModel
@@ -43,7 +49,7 @@ import retrofit2.Response;   // THÊM MỚI
 
 public class SocialProfileFragment extends Fragment {
 
-    private ShapeableImageView imgAvatar;
+    private ImageView imgAvatar;
     private TextView tvDisplayName;
     private TextView tvBio;
     private TextView tvFriendCount;
@@ -79,7 +85,7 @@ public class SocialProfileFragment extends Fragment {
         bindViews(view);
         initToolbar(view);
         initViewModel();
-        setupActions();
+        setupActions(view);
         setupRecyclerView();
         observeViewModel();
         loadMyPosts();
@@ -131,9 +137,57 @@ public class SocialProfileFragment extends Fragment {
         }
     }
 
-    private void setupActions() {
+    private void setupActions(View view) {
         btnEditProfile.setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), EditProfileActivity.class)));
+
+        view.findViewById(R.id.btnShareProfile).setOnClickListener(v -> shareProfile());
+        view.findViewById(R.id.txtProfileLink).setOnClickListener(v -> copyProfileLink());
+        view.findViewById(R.id.btnProfileNotifications).setOnClickListener(v ->
+                startActivity(new Intent(requireContext(), InvitationsActivity.class)));
+        view.findViewById(R.id.btnStartGrowing).setOnClickListener(v -> openCreatePost("thoughts"));
+        view.findViewById(R.id.actionSetMilestone).setOnClickListener(v -> openCreatePost("milestone"));
+        view.findViewById(R.id.actionFirstEntry).setOnClickListener(v -> openCreatePost("thoughts"));
+        view.findViewById(R.id.actionAchievementEarly).setOnClickListener(v ->
+                Toast.makeText(requireContext(), "Khởi đầu sớm: đăng bài đầu tiên để mở khóa.", Toast.LENGTH_SHORT).show());
+        view.findViewById(R.id.actionAchievementTop).setOnClickListener(v ->
+                Toast.makeText(requireContext(), "Top 1%: duy trì tương tác đều đặn.", Toast.LENGTH_SHORT).show());
+        view.findViewById(R.id.actionAchievementVault).setOnClickListener(v ->
+                Toast.makeText(requireContext(), "Két an toàn: hoàn thành một cột mốc tiết kiệm.", Toast.LENGTH_SHORT).show());
+        view.findViewById(R.id.actionAchievementGiver).setOnClickListener(v ->
+                Toast.makeText(requireContext(), "Người chia sẻ: lan tỏa một mẹo tài chính hữu ích.", Toast.LENGTH_SHORT).show());
+    }
+
+    private void shareProfile() {
+        String name = tvDisplayName.getText().toString().trim();
+        String text = (name.isEmpty() ? "Hồ sơ Cashify" : name)
+                + "\n" + profileLink()
+                + "\nCùng xem hành trình tài chính của mình trên Cashify.";
+        Intent intent = new Intent(Intent.ACTION_SEND);
+        intent.setType("text/plain");
+        intent.putExtra(Intent.EXTRA_TEXT, text);
+        startActivity(Intent.createChooser(intent, "Chia sẻ hồ sơ"));
+    }
+
+    private void copyProfileLink() {
+        ClipboardManager clipboard = (ClipboardManager) requireContext()
+                .getSystemService(Context.CLIPBOARD_SERVICE);
+        if (clipboard != null) {
+            clipboard.setPrimaryClip(ClipData.newPlainText("Cashify profile", profileLink()));
+            Toast.makeText(requireContext(), "Đã sao chép liên kết hồ sơ.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private String profileLink() {
+        return currentUserId == null || currentUserId.trim().isEmpty()
+                ? "cashify.vn/ho-so"
+                : "cashify.vn/ho-so/" + currentUserId;
+    }
+
+    private void openCreatePost(String categoryKey) {
+        if (requireActivity() instanceof MainActivity) {
+            ((MainActivity) requireActivity()).openCreatePostScreen(categoryKey);
+        }
     }
 
     private void setupRecyclerView() {
@@ -159,10 +213,8 @@ public class SocialProfileFragment extends Fragment {
             tvDisplayName.setText(displayName);
             tvBio.setText(bio);
             tvJoinedDate.setText(joinedLabel(doc));
-            tvStreakCount.setText("Streak " + Math.max(0, numberField(doc, "streakDays", 0)) + " ngày");
-            if (avatarUrl != null && !avatarUrl.trim().isEmpty()) {
-                ImageHelper.loadAvatar(avatarUrl, imgAvatar);
-            }
+            tvStreakCount.setText(Math.max(0, numberField(doc, "streakDays", 0)) + " ngày");
+            ImageHelper.loadAvatar(avatarUrl, imgAvatar, firstNonEmpty(displayName, currentUserId));
         });
 
         socialViewModel.getFriendCount().observe(getViewLifecycleOwner(), count ->

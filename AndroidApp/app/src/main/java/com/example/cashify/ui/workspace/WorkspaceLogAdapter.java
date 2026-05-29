@@ -102,7 +102,7 @@ public class WorkspaceLogAdapter extends RecyclerView.Adapter<WorkspaceLogAdapte
 
         // Placeholder trước khi fetch xong
         holder.tvMessage.setText(buildSpannable("...", item.getMessage()));
-        ImageHelper.loadAvatar(null, holder.imgAvatar); // reset về placeholder
+        ImageHelper.loadAvatar(null, holder.imgAvatar, item.getUserId()); // reset về placeholder
 
         // Fetch user info (displayName + avatarUrl) từ Firestore
         fetchUserInfo(item.getUserId(), (displayName, avatarUrl) -> {
@@ -113,7 +113,7 @@ public class WorkspaceLogAdapter extends RecyclerView.Adapter<WorkspaceLogAdapte
             holder.tvMessage.setText(buildSpannable(displayName, item.getMessage()));
 
             // Load avatar bằng ImageHelper của team (nhận Object url)
-            ImageHelper.loadAvatar(avatarUrl, holder.imgAvatar);
+            ImageHelper.loadAvatar(avatarUrl, holder.imgAvatar, displayName);
         });
     }
 

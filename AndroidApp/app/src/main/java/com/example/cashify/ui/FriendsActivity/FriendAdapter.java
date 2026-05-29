@@ -55,12 +55,7 @@ public class FriendAdapter extends RecyclerView.Adapter<FriendAdapter.ViewHolder
         // Tên
         holder.tvFriendName.setText(user.getNameToShow());
 
-        // Avatar
-        if (user.getAvatarUrl() != null && !user.getAvatarUrl().isEmpty()) {
-            ImageHelper.loadAvatar(user.getAvatarUrl(), holder.imgAvatar);
-        } else {
-            holder.imgAvatar.setImageResource(R.drawable.ic_default_user);
-        }
+        ImageHelper.loadAvatar(user.getAvatarUrl(), holder.imgAvatar, user.getNameToShow());
 
         // Ẩn hết trước
         hideAllButtons(holder);

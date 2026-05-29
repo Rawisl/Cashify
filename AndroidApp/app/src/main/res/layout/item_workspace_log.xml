@@ -51,14 +51,14 @@
         Dùng ShapeableImageView từ Material để bo tròn đúng cách.
         Nếu team dùng Glide thì có thể dùng ImageView thường + .circleCrop().
     -->
-    <com.google.android.material.imageview.ShapeableImageView
+    <com.example.cashify.ui.common.AvatarImageView
         android:id="@+id/imgAvatar"
         android:layout_width="40dp"
         android:layout_height="40dp"
         android:layout_marginStart="10dp"
         android:layout_marginTop="8dp"
         android:scaleType="centerCrop"
-        android:src="@drawable/ic_default_user"
+        android:src="@drawable/bg_default_avatar_pastel"
         xmlns:app="http://schemas.android.com/apk/res-auto" />
 
     <!-- ── Cột 3: Nội dung text ──────────────────────────────────────────── -->

@@ -3,30 +3,44 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bg_main">
+    android:background="#FFF7EC"
+    android:fitsSystemWindows="true">
 
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appBarProfile"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@android:color/transparent"
+        android:background="#FFF7EC"
         app:elevation="0dp">
 
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbarSocialProfile"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="@drawable/bg_toolbar_rounded"
+            android:background="#FFF7EC"
             app:navigationIcon="@drawable/ic_menu_padded"
-            app:navigationIconTint="@color/white">
+            app:navigationIconTint="@color/brand_primary">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:text="@string/social_profile_title"
+                android:text="Chào buổi sáng,"
                 android:textAppearance="@style/ToolbarTitleFont"
-                android:textColor="@color/white" />
+                android:textColor="#05072E" />
+
+            <ImageView
+                android:id="@+id/btnProfileNotifications"
+                android:layout_width="34dp"
+                android:layout_height="34dp"
+                android:layout_gravity="end|center_vertical"
+                android:layout_marginEnd="12dp"
+                android:background="@drawable/bg_profile_share_circle"
+                android:clickable="true"
+                android:focusable="true"
+                android:padding="8dp"
+                android:src="@drawable/ic_notification_regular"
+                app:tint="#05072E" />
         </com.google.android.material.appbar.MaterialToolbar>
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -34,311 +48,560 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:clipToPadding="false"
-        android:paddingBottom="100dp"
+        android:paddingBottom="110dp"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingStart="16dp"
-            android:paddingTop="14dp"
-            android:paddingEnd="16dp"
-            android:paddingBottom="24dp">
+            android:orientation="vertical">
 
-            <androidx.cardview.widget.CardView
+            <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:cardBackgroundColor="@color/brand_primary"
-                app:cardCornerRadius="24dp"
-                app:cardElevation="2dp">
+                android:layout_height="294dp">
 
-                <FrameLayout
+                <ImageView
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
+                    android:layout_height="244dp"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/bg_profile_hero_scene" />
 
-                    <View
-                        android:layout_width="120dp"
-                        android:layout_height="120dp"
-                        android:layout_gravity="top|end"
-                        android:layout_marginTop="-42dp"
-                        android:layout_marginEnd="-28dp"
-                        android:background="@drawable/bg_milestone_glow" />
+                <com.example.cashify.ui.common.AvatarImageView
+                    android:id="@+id/imgAvatar"
+                    android:layout_width="90dp"
+                    android:layout_height="90dp"
+                    android:layout_gravity="bottom|start"
+                    android:layout_marginStart="18dp"
+                    android:layout_marginBottom="12dp"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/bg_default_avatar_pastel" />
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="18dp">
+                <TextView
+                    android:id="@+id/btnEditProfile"
+                    android:layout_width="wrap_content"
+                    android:layout_height="30dp"
+                    android:layout_gravity="bottom|start"
+                    android:layout_marginStart="26dp"
+                    android:layout_marginBottom="2dp"
+                    android:background="@drawable/bg_profile_creator_badge"
+                    android:fontFamily="@font/inter_bold"
+                    android:gravity="center"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:text="Hồ sơ của bạn"
+                    android:textColor="@color/white"
+                    android:textSize="12sp" />
 
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal">
-
-                            <com.google.android.material.imageview.ShapeableImageView
-                                android:id="@+id/imgAvatar"
-                                android:layout_width="84dp"
-                                android:layout_height="84dp"
-                                android:scaleType="centerCrop"
-                                android:src="@drawable/ic_profile_regular"
-                                app:shapeAppearanceOverlay="@style/CircleImageView"
-                                app:strokeColor="@color/bg_main"
-                                app:strokeWidth="3dp" />
-
-                            <LinearLayout
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="14dp"
-                                android:layout_weight="1"
-                                android:orientation="vertical">
-
-                                <TextView
-                                    android:id="@+id/tvDisplayName"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="wrap_content"
-                                    android:ellipsize="end"
-                                    android:fontFamily="@font/outfit_bold"
-                                    android:maxLines="1"
-                                    android:text="@string/placeholder_user_name"
-                                    android:textColor="@color/white"
-                                    android:textSize="22sp" />
-
-                                <TextView
-                                    android:id="@+id/tvBio"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="wrap_content"
-                                    android:layout_marginTop="5dp"
-                                    android:lineSpacingExtra="3dp"
-                                    android:maxLines="2"
-                                    android:text="Sẵn sàng chia sẻ hành trình tài chính."
-                                    android:textColor="@color/bg_main"
-                                    android:textSize="13sp" />
-
-                                <TextView
-                                    android:id="@+id/btnEditProfile"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="34dp"
-                                    android:layout_marginTop="10dp"
-                                    android:background="@drawable/bg_achievement_chip"
-                                    android:drawableStart="@drawable/ic_pencil_regular"
-                                    android:drawablePadding="7dp"
-                                    android:drawableTint="@color/brand_primary"
-                                    android:gravity="center"
-                                    android:paddingStart="13dp"
-                                    android:paddingEnd="13dp"
-                                    android:text="Chỉnh sửa"
-                                    android:textColor="@color/brand_primary"
-                                    android:textSize="12sp"
-                                    android:textStyle="bold" />
-                            </LinearLayout>
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="16dp"
-                            android:orientation="horizontal">
-
-                            <TextView
-                                android:id="@+id/tvPostCount"
-                                android:layout_width="0dp"
-                                android:layout_height="54dp"
-                                android:layout_marginEnd="6dp"
-                                android:layout_weight="1"
-                                android:background="@drawable/bg_social_metric_chip"
-                                android:gravity="center"
-                                android:text="0 bài viết"
-                                android:textColor="@color/brand_primary"
-                                android:textSize="13sp"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:id="@+id/tvFriendCount"
-                                android:layout_width="0dp"
-                                android:layout_height="54dp"
-                                android:layout_marginStart="6dp"
-                                android:layout_marginEnd="6dp"
-                                android:layout_weight="1"
-                                android:background="@drawable/bg_social_metric_chip"
-                                android:gravity="center"
-                                android:text="0 bạn bè"
-                                android:textColor="@color/brand_primary"
-                                android:textSize="13sp"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:id="@+id/tvTrophyCount"
-                                android:layout_width="0dp"
-                                android:layout_height="54dp"
-                                android:layout_marginStart="6dp"
-                                android:layout_weight="1"
-                                android:background="@drawable/bg_social_metric_chip"
-                                android:gravity="center"
-                                android:text="0 thành tựu"
-                                android:textColor="@color/brand_primary"
-                                android:textSize="13sp"
-                                android:textStyle="bold" />
-                        </LinearLayout>
-                    </LinearLayout>
-                </FrameLayout>
-            </androidx.cardview.widget.CardView>
+                <ImageView
+                    android:id="@+id/btnShareProfile"
+                    android:layout_width="42dp"
+                    android:layout_height="42dp"
+                    android:layout_gravity="bottom|end"
+                    android:layout_marginEnd="16dp"
+                    android:layout_marginBottom="28dp"
+                    android:background="@drawable/bg_profile_share_circle"
+                    android:clickable="true"
+                    android:elevation="2dp"
+                    android:focusable="true"
+                    android:padding="11dp"
+                    android:src="@drawable/ic_share"
+                    app:tint="#05072E" />
+            </FrameLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:background="@drawable/bg_achievement_feed_card"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp">
+
+                <TextView
+                    android:id="@+id/tvDisplayName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:fontFamily="@font/outfit_bold"
+                    android:maxLines="1"
+                    android:text="@string/placeholder_user_name"
+                    android:textColor="#05072E"
+                    android:textSize="23sp" />
+
+                <TextView
+                    android:id="@+id/tvBio"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:fontFamily="@font/inter_regular"
+                    android:lineSpacingExtra="4dp"
+                    android:maxLines="4"
+                    android:text="Nuôi dưỡng thói quen tài chính lành mạnh, chia sẻ góc nhìn về quản lý tiền bạc, tiết kiệm và sống có chủ đích."
+                    android:textColor="#282637"
+                    android:textSize="14sp" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
-
-                    <ImageView
-                        android:layout_width="36dp"
-                        android:layout_height="36dp"
-                        android:background="@drawable/bg_achievement_chip"
-                        android:padding="8dp"
-                        android:src="@drawable/ic_feed_trophy"
-                        app:tint="@color/brand_primary" />
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="11dp"
-                        android:layout_weight="1"
-                        android:text="Góc nổi bật"
-                        android:textColor="@color/item_title"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
 
                     <TextView
                         android:id="@+id/tvJoinedDate"
                         android:layout_width="wrap_content"
-                        android:layout_height="30dp"
-                        android:background="@drawable/bg_achievement_stat_cell"
-                        android:gravity="center"
-                        android:paddingStart="10dp"
-                        android:paddingEnd="10dp"
+                        android:layout_height="wrap_content"
+                        android:drawableStart="@drawable/ic_cozy_leaf"
+                        android:drawablePadding="5dp"
+                        android:drawableTint="#A8492E"
+                        android:fontFamily="@font/inter_medium"
                         android:text="Thành viên Cashify"
-                        android:textColor="@color/brand_primary"
-                        android:textSize="11sp"
-                        android:textStyle="bold" />
+                        android:textColor="#A8492E"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/txtProfileLink"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:clickable="true"
+                        android:drawableStart="@drawable/ic_share"
+                        android:drawablePadding="5dp"
+                        android:drawableTint="#05072E"
+                        android:focusable="true"
+                        android:fontFamily="@font/inter_medium"
+                        android:text="cashify.vn/ho-so"
+                        android:textColor="#05072E"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="122dp"
+                    android:layout_marginTop="28dp"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginEnd="7dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_profile_stat_peach"
+                        android:gravity="center_vertical"
+                        android:orientation="vertical"
+                        android:padding="18dp">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_friends"
+                            app:tint="#A33C1F" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="18dp"
+                            android:fontFamily="@font/inter_medium"
+                            android:letterSpacing="0.08"
+                            android:text="BẠN BÈ"
+                            android:textColor="#A33C1F"
+                            android:textSize="11sp" />
+
+                        <TextView
+                            android:id="@+id/tvFriendCount"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/outfit_bold"
+                            android:text="0 bạn bè"
+                            android:textColor="#7E220E"
+                            android:textSize="23sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="7dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_profile_stat_navy"
+                        android:gravity="center_vertical"
+                        android:orientation="vertical"
+                        android:padding="18dp">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_statistic_regular"
+                            app:tint="#AEB8E4" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="18dp"
+                            android:fontFamily="@font/inter_medium"
+                            android:letterSpacing="0.08"
+                            android:text="DẤU ẤN"
+                            android:textColor="#AEB8E4"
+                            android:textSize="11sp" />
+
+                        <TextView
+                            android:id="@+id/tvTrophyCount"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/outfit_bold"
+                            android:text="0 thành tựu"
+                            android:textColor="#D8DEF8"
+                            android:textSize="23sp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="86dp"
+                    android:layout_marginTop="14dp"
+                    android:background="@drawable/bg_profile_harvest_card"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="20dp"
+                    android:paddingEnd="18dp">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/inter_medium"
+                            android:letterSpacing="0.08"
+                            android:text="MẦM TÀI CHÍNH"
+                            android:textColor="#5A3718"
+                            android:textSize="11sp" />
+
+                        <TextView
+                            android:id="@+id/tvPostCount"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/outfit_bold"
+                            android:text="0 bài viết"
+                            android:textColor="#05072E"
+                            android:textSize="24sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvStreakCount"
+                        android:layout_width="58dp"
+                        android:layout_height="58dp"
+                        android:background="@drawable/bg_profile_leaf_circle"
+                        android:fontFamily="@font/inter_bold"
+                        android:gravity="center"
+                        android:text="0d"
+                        android:textColor="#05072E"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="30dp"
+                    android:fontFamily="@font/inter_medium"
+                    android:letterSpacing="0.08"
+                    android:text="THÀNH TỰU"
+                    android:textColor="#05072E"
+                    android:textSize="12sp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:orientation="vertical">
+
+                        <ImageView
+                            android:id="@+id/actionAchievementEarly"
+                            android:layout_width="62dp"
+                            android:layout_height="62dp"
+                            android:background="@drawable/bg_profile_achievement_circle_peach"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:padding="18dp"
+                            android:src="@drawable/ic_feed_trophy"
+                            app:tint="#A8492E" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="7dp"
+                            android:fontFamily="@font/inter_regular"
+                            android:text="Khởi đầu sớm"
+                            android:textColor="#55515A"
+                            android:textSize="10sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:orientation="vertical">
+
+                        <ImageView
+                            android:id="@+id/actionAchievementTop"
+                            android:layout_width="62dp"
+                            android:layout_height="62dp"
+                            android:background="@drawable/bg_profile_achievement_circle_blue"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:padding="18dp"
+                            android:src="@drawable/ic_cozy_leaf"
+                            app:tint="@color/brand_primary" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="7dp"
+                            android:fontFamily="@font/inter_regular"
+                            android:text="Top 1%"
+                            android:textColor="#55515A"
+                            android:textSize="10sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:orientation="vertical">
+
+                        <ImageView
+                            android:id="@+id/actionAchievementVault"
+                            android:layout_width="62dp"
+                            android:layout_height="62dp"
+                            android:background="@drawable/bg_profile_achievement_circle_gold"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:padding="18dp"
+                            android:src="@drawable/ic_security_regular"
+                            app:tint="#B58B3B" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="7dp"
+                            android:fontFamily="@font/inter_regular"
+                            android:text="Két an toàn"
+                            android:textColor="#55515A"
+                            android:textSize="10sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:orientation="vertical">
+
+                        <ImageView
+                            android:id="@+id/actionAchievementGiver"
+                            android:layout_width="62dp"
+                            android:layout_height="62dp"
+                            android:background="@drawable/bg_profile_achievement_circle_peach"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:padding="18dp"
+                            android:src="@drawable/ic_heart_outline"
+                            app:tint="#FF8B75" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="7dp"
+                            android:fontFamily="@font/inter_regular"
+                            android:text="Người chia sẻ"
+                            android:textColor="#55515A"
+                            android:textSize="10sp" />
+                    </LinearLayout>
                 </LinearLayout>
 
                 <TextView
                     android:id="@+id/tvPinnedAchievement"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:background="@drawable/bg_achievement_header"
-                    android:drawableStart="@drawable/ic_cozy_wallet"
+                    android:layout_marginTop="14dp"
+                    android:background="@drawable/bg_social_soft_panel"
+                    android:drawableStart="@drawable/ic_feed_trophy"
                     android:drawablePadding="9dp"
-                    android:drawableTint="@color/bg_main"
+                    android:drawableTint="#A8492E"
+                    android:fontFamily="@font/inter_medium"
                     android:lineSpacingExtra="3dp"
                     android:padding="13dp"
-                    android:text="Đang xây thói quen tài chính đều đặn."
-                    android:textColor="@color/white"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
+                    android:text="Ghim một cột mốc để khu vườn tài chính của bạn sáng hơn."
+                    android:textColor="#332C2C"
+                    android:textSize="12sp" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="18dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="28dp"
+                    android:fontFamily="@font/outfit_bold"
+                    android:text="Hành trình của bạn"
+                    android:textColor="#05072E"
+                    android:textSize="21sp" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvMyPosts"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:clipToPadding="false"
+                    android:nestedScrollingEnabled="false"
+                    android:overScrollMode="never" />
 
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:id="@+id/layoutEmptyState"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
+                    android:layout_marginTop="14dp"
+                    android:background="@drawable/bg_profile_journey_card"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:paddingStart="28dp"
+                    android:paddingTop="24dp"
+                    android:paddingEnd="28dp"
+                    android:paddingBottom="28dp"
+                    android:visibility="gone">
+
+                    <ImageView
+                        android:layout_width="100dp"
+                        android:layout_height="100dp"
+                        android:scaleType="centerInside"
+                        android:src="@drawable/ic_post_image" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Dòng thời gian"
-                        android:textColor="@color/item_title"
-                        android:textSize="19sp"
-                        android:textStyle="bold" />
+                        android:layout_marginTop="18dp"
+                        android:fontFamily="@font/outfit_bold"
+                        android:gravity="center"
+                        android:text="Gieo suy nghĩ đầu tiên"
+                        android:textColor="#05072E"
+                        android:textSize="21sp" />
 
                     <TextView
-                        android:id="@+id/tvTimelineSubtitle"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Bài mới nhất hiển thị trước"
-                        android:textColor="@color/item_description"
+                        android:layout_marginTop="8dp"
+                        android:fontFamily="@font/inter_regular"
+                        android:gravity="center"
+                        android:lineSpacingExtra="3dp"
+                        android:text="Không gian của bạn đang chờ một câu chuyện đầu tiên. Chia sẻ một cột mốc tài chính hoặc một mục tiêu nhỏ."
+                        android:textColor="#55515A"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:id="@+id/btnStartGrowing"
+                        android:layout_width="136dp"
+                        android:layout_height="46dp"
+                        android:layout_marginTop="20dp"
+                        android:background="@drawable/bg_profile_start_button"
+                        android:clickable="true"
+                        android:elevation="3dp"
+                        android:focusable="true"
+                        android:fontFamily="@font/inter_bold"
+                        android:gravity="center"
+                        android:text="Bắt đầu viết"
+                        android:textColor="@color/white"
                         android:textSize="13sp" />
                 </LinearLayout>
 
-                <TextView
-                    android:id="@+id/tvStreakCount"
-                    android:layout_width="wrap_content"
-                    android:layout_height="34dp"
-                    android:background="@drawable/bg_social_soft_panel"
-                    android:gravity="center"
-                    android:paddingStart="12dp"
-                    android:paddingEnd="12dp"
-                    android:text="Streak 0 ngày"
-                    android:textColor="@color/brand_primary"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvMyPosts"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:clipToPadding="false"
-                android:nestedScrollingEnabled="false"
-                android:overScrollMode="never" />
-
-            <LinearLayout
-                android:id="@+id/layoutEmptyState"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:background="@drawable/bg_social_soft_panel"
-                android:gravity="center"
-                android:orientation="vertical"
-                android:padding="28dp"
-                android:visibility="gone">
-
-                <ImageView
-                    android:layout_width="58dp"
-                    android:layout_height="58dp"
-                    android:background="@drawable/bg_social_icon_badge"
-                    android:padding="14dp"
-                    android:src="@drawable/ic_cozy_notebook"
-                    app:tint="@color/brand_primary" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:text="Chưa có bài viết nào"
-                    android:textColor="@color/item_title"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <TextView
+                <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="5dp"
-                    android:gravity="center"
-                    android:lineSpacingExtra="3dp"
-                    android:text="Chia sẻ một cột mốc tiết kiệm, ảnh chi tiêu hoặc mẹo nhỏ để làm đầy ngôi nhà cá nhân của bạn."
-                    android:textColor="@color/item_description"
-                    android:textSize="13sp" />
+                    android:layout_height="126dp"
+                    android:layout_marginTop="18dp"
+                    android:layout_marginBottom="28dp"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:id="@+id/actionSetMilestone"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginEnd="7dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_profile_action_card"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:orientation="vertical"
+                        android:padding="18dp">
+
+                        <ImageView
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:src="@drawable/ic_pencil_regular"
+                            app:tint="#05072E" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="22dp"
+                            android:fontFamily="@font/inter_bold"
+                            android:text="Tạo cột mốc"
+                            android:textColor="#05072E"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="5dp"
+                            android:fontFamily="@font/inter_regular"
+                            android:lineSpacingExtra="2dp"
+                            android:text="Định hình hành trình tài chính"
+                            android:textColor="#55515A"
+                            android:textSize="10sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/actionFirstEntry"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="7dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_profile_action_card"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:orientation="vertical"
+                        android:padding="18dp">
+
+                        <ImageView
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:src="@drawable/ic_cozy_notebook"
+                            app:tint="#A8492E" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="22dp"
+                            android:fontFamily="@font/inter_bold"
+                            android:text="Bài đầu tiên"
+                            android:textColor="#A8492E"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="5dp"
+                            android:fontFamily="@font/inter_regular"
+                            android:lineSpacingExtra="2dp"
+                            android:text="Bắt đầu dòng chia sẻ"
+                            android:textColor="#55515A"
+                            android:textSize="10sp" />
+                    </LinearLayout>
+                </LinearLayout>
             </LinearLayout>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>

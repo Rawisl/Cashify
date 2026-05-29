@@ -1,64 +1,153 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bg_main"
-    android:fitsSystemWindows="true"
-    android:orientation="vertical">
+    android:background="@drawable/bg_creator_paper"
+    android:fitsSystemWindows="true">
 
-    <com.google.android.material.appbar.AppBarLayout
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@android:color/transparent"
-        app:elevation="0dp">
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbarCreatePost"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="@drawable/bg_toolbar_rounded"
+            android:background="@android:color/transparent"
             app:navigationIcon="@drawable/ic_arrow_left_back"
-            app:navigationIconTint="@color/white">
+            app:navigationIconTint="@color/brand_primary" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:text="Tạo bài viết"
-                android:textAppearance="@style/ToolbarTitleFont"
-                android:textColor="@color/white" />
-
-        </com.google.android.material.appbar.MaterialToolbar>
-    </com.google.android.material.appbar.AppBarLayout>
-
-    <androidx.core.widget.NestedScrollView
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:clipToPadding="false"
-        android:fillViewport="true">
-
-        <LinearLayout
+        <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingStart="16dp"
-            android:paddingTop="16dp"
-            android:paddingEnd="16dp"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:clipToPadding="false"
+            android:fillViewport="true"
             android:paddingBottom="24dp">
 
-            <androidx.cardview.widget.CardView
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="@color/brand_primary"
-                app:cardCornerRadius="24dp"
-                app:cardElevation="2dp">
+                android:orientation="vertical"
+                android:paddingStart="22dp"
+                android:paddingTop="18dp"
+                android:paddingEnd="22dp"
+                android:paddingBottom="32dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
+                    android:layout_height="62dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <com.example.cashify.ui.common.AvatarImageView
+                        android:id="@+id/imgComposerAvatar"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/bg_default_avatar_pastel" />
+
+                    <TextView
+                        android:id="@+id/txtComposerName"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:ellipsize="end"
+                        android:fontFamily="@font/inter_bold"
+                        android:maxLines="1"
+                        android:text="Chào bạn, nhà sáng tạo"
+                        android:textColor="@color/brand_primary"
+                        android:textSize="22sp" />
+
+                    <ImageView
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="@drawable/bg_mini_pill"
+                        android:padding="10dp"
+                        android:src="@drawable/ic_notification_regular"
+                        app:tint="@color/brand_primary" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="58dp"
+                    android:layout_marginTop="18dp"
+                    android:background="@drawable/bg_privacy_editorial_dock"
+                    android:elevation="3dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="10dp"
+                    android:paddingEnd="10dp">
+
+                    <TextView
+                        android:id="@+id/btnAudience"
+                        android:layout_width="0dp"
+                        android:layout_height="42dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_publish_editorial"
+                        android:clickable="true"
+                        android:drawableStart="@drawable/ic_privacy_public"
+                        android:drawablePadding="6dp"
+                        android:drawableTint="@color/white"
+                        android:focusable="true"
+                        android:fontFamily="@font/inter_bold"
+                        android:gravity="center"
+                        android:paddingStart="6dp"
+                        android:paddingEnd="6dp"
+                        android:text="Công khai"
+                        android:textColor="@color/white"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:id="@+id/btnAudienceFriends"
+                        android:layout_width="0dp"
+                        android:layout_height="42dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_privacy_option_inactive"
+                        android:clickable="true"
+                        android:drawableStart="@drawable/ic_friends"
+                        android:drawablePadding="6dp"
+                        android:drawableTint="@color/item_title"
+                        android:focusable="true"
+                        android:fontFamily="@font/inter_medium"
+                        android:gravity="center"
+                        android:paddingStart="6dp"
+                        android:paddingEnd="6dp"
+                        android:text="Bạn bè"
+                        android:textColor="@color/item_title"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:id="@+id/btnAudiencePrivate"
+                        android:layout_width="0dp"
+                        android:layout_height="42dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_privacy_option_inactive"
+                        android:clickable="true"
+                        android:drawableStart="@drawable/ic_privacy_lock"
+                        android:drawablePadding="6dp"
+                        android:drawableTint="@color/item_title"
+                        android:focusable="true"
+                        android:fontFamily="@font/inter_medium"
+                        android:gravity="center"
+                        android:paddingStart="6dp"
+                        android:paddingEnd="6dp"
+                        android:text="Riêng tư"
+                        android:textColor="@color/item_title"
+                        android:textSize="13sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/panelCategoryMode"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:background="@drawable/bg_mode_panel_thoughts"
+                    android:elevation="2dp"
                     android:orientation="vertical"
                     android:padding="18dp">
 
@@ -69,140 +158,224 @@
                         android:orientation="horizontal">
 
                         <ImageView
-                            android:layout_width="40dp"
-                            android:layout_height="40dp"
-                            android:background="@drawable/bg_social_metric_chip"
-                            android:padding="9dp"
+                            android:id="@+id/imgModeIcon"
+                            android:layout_width="52dp"
+                            android:layout_height="52dp"
+                            android:background="@drawable/bg_mode_icon_soft"
+                            android:padding="13dp"
                             android:src="@drawable/ic_cozy_notebook"
                             app:tint="@color/brand_primary" />
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="12dp"
-                            android:layout_weight="1"
-                            android:text="Hôm nay ví của bạn có gì mới?"
-                            android:textColor="@color/white"
-                            android:textSize="24sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="5dp"
-                        android:lineSpacingExtra="2dp"
-                        android:text="Chia sẻ một khoản tiết kiệm, bài học chi tiêu hoặc cột mốc đáng nhớ."
-                        android:textColor="@color/bg_main"
-                        android:textSize="14sp" />
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
-
-            <androidx.cardview.widget.CardView
-                android:id="@+id/cardCreatePost"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="-10dp"
-                app:cardBackgroundColor="@color/white"
-                app:cardCornerRadius="24dp"
-                app:cardElevation="4dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <de.hdodenhof.circleimageview.CircleImageView
-                            android:id="@+id/imgComposerAvatar"
-                            android:layout_width="50dp"
-                            android:layout_height="50dp"
-                            android:src="@drawable/ic_default_user"
-                            app:civ_border_color="@color/bg_main"
-                            app:civ_border_width="2dp" />
 
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginStart="12dp"
+                            android:layout_marginStart="14dp"
                             android:layout_weight="1"
                             android:orientation="vertical">
 
                             <TextView
-                                android:id="@+id/txtComposerName"
+                                android:id="@+id/txtModeKicker"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:ellipsize="end"
-                                android:maxLines="1"
-                                android:text="Bạn"
-                                android:textColor="@color/item_title"
-                                android:textSize="16sp"
-                                android:textStyle="bold" />
+                                android:fontFamily="@font/inter_bold"
+                                android:letterSpacing="0.08"
+                                android:text="DIGITAL JOURNAL"
+                                android:textColor="#8F6842"
+                                android:textSize="10sp" />
 
                             <TextView
-                                android:id="@+id/btnAudience"
-                                android:layout_width="wrap_content"
-                                android:layout_height="38dp"
-                                android:layout_marginTop="6dp"
-                                android:background="@drawable/bg_composer_privacy"
-                                android:clickable="true"
-                                android:drawableStart="@drawable/ic_friends"
-                                android:drawableEnd="@drawable/ic_angle_down_regular"
-                                android:drawablePadding="8dp"
-                                android:drawableTint="@color/brand_primary"
-                                android:focusable="true"
-                                android:gravity="center"
-                                android:minWidth="132dp"
-                                android:paddingStart="14dp"
-                                android:paddingEnd="14dp"
-                                android:text="Bạn bè"
+                                android:id="@+id/txtModeTitle"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="5dp"
+                                android:fontFamily="@font/outfit_bold"
+                                android:text="Chia sẻ suy nghĩ"
                                 android:textColor="@color/brand_primary"
-                                android:textSize="13sp"
-                                android:textStyle="bold" />
+                                android:textSize="22sp" />
                         </LinearLayout>
-
-                        <TextView
-                            android:id="@+id/txtComposerCount"
-                            android:layout_width="wrap_content"
-                            android:layout_height="32dp"
-                            android:background="@drawable/bg_social_metric_chip"
-                            android:gravity="center"
-                            android:minWidth="64dp"
-                            android:text="0/280"
-                            android:textColor="@color/brand_primary"
-                            android:textSize="12sp"
-                            android:textStyle="bold" />
                     </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/txtModeDescription"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:fontFamily="@font/inter_regular"
+                        android:lineSpacingExtra="3dp"
+                        android:text="Một không gian nhẹ để kể lại điều bạn học được trong hành trình tài chính hôm nay."
+                        android:textColor="@color/item_description"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:id="@+id/txtModePrompt"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:background="@drawable/bg_creator_panel"
+                        android:fontFamily="@font/inter_regular"
+                        android:lineSpacingExtra="3dp"
+                        android:padding="13dp"
+                        android:text="Gợi ý: Hôm nay bạn nhận ra điều gì về cách mình tiêu tiền?"
+                        android:textColor="@color/item_title"
+                        android:textSize="13sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/cardCreatePost"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:background="@drawable/bg_editorial_composer"
+                    android:elevation="4dp"
+                    android:orientation="vertical"
+                    android:paddingStart="30dp"
+                    android:paddingTop="34dp"
+                    android:paddingEnd="30dp"
+                    android:paddingBottom="20dp">
 
                     <EditText
                         android:id="@+id/editPostContent"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:background="@drawable/bg_social_input_lifted"
+                        android:background="@android:color/transparent"
+                        android:fontFamily="@font/inter_bold"
                         android:gravity="top|start"
-                        android:hint="Bạn muốn chia sẻ chuyện tiền bạc gì hôm nay?"
+                        android:hint="Hôm nay bạn muốn chia sẻ điều gì về tiền bạc?"
                         android:inputType="textMultiLine|textCapSentences"
                         android:lineSpacingExtra="5dp"
                         android:maxLength="280"
-                        android:minHeight="172dp"
-                        android:padding="16dp"
+                        android:minHeight="164dp"
+                        android:padding="0dp"
                         android:textColor="@color/item_title"
-                        android:textColorHint="@color/screen_subtitle"
-                        android:textSize="15sp" />
+                        android:textColorHint="#C1C2C8"
+                        android:textSize="24sp" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="16dp"
+                        android:background="#E9E1D5" />
+
+                    <TextView
+                        android:id="@+id/txtComposerCount"
+                        android:layout_width="match_parent"
+                        android:layout_height="40dp"
+                        android:fontFamily="@font/outfit_regular"
+                        android:gravity="center_vertical|end"
+                        android:text="0/280"
+                        android:textColor="#B6B0AA"
+                        android:textSize="13sp" />
+                </LinearLayout>
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupTopics"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    app:chipSpacingHorizontal="8dp"
+                    app:chipSpacingVertical="8dp"
+                    app:selectionRequired="false"
+                    app:singleLine="false"
+                    app:singleSelection="false">
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipBudgeting"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/inter_bold"
+                        android:text="Ngân sách"
+                        android:textColor="@color/brand_primary"
+                        app:checkedIconVisible="false"
+                        app:chipBackgroundColor="@color/bg_main"
+                        app:chipStrokeColor="#E8DCCB"
+                        app:chipStrokeWidth="1dp" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipSaving"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/inter_bold"
+                        android:text="Tiết kiệm"
+                        android:textColor="@color/brand_primary"
+                        app:checkedIconVisible="false"
+                        app:chipBackgroundColor="@color/bg_main"
+                        app:chipStrokeColor="#E8DCCB"
+                        app:chipStrokeWidth="1dp" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipDebt"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/inter_bold"
+                        android:text="Nợ"
+                        android:textColor="@color/brand_primary"
+                        app:checkedIconVisible="false"
+                        app:chipBackgroundColor="@color/bg_main"
+                        app:chipStrokeColor="#E8DCCB"
+                        app:chipStrokeWidth="1dp" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipInvesting"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/inter_bold"
+                        android:text="Đầu tư"
+                        android:textColor="@color/brand_primary"
+                        app:checkedIconVisible="false"
+                        app:chipBackgroundColor="@color/bg_main"
+                        app:chipStrokeColor="#E8DCCB"
+                        app:chipStrokeWidth="1dp" />
+                </com.google.android.material.chip.ChipGroup>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="34dp"
+                    android:fontFamily="@font/inter_bold"
+                    android:text="Tư liệu hình ảnh"
+                    android:textColor="@color/brand_primary"
+                    android:textSize="24sp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="104dp"
+                    android:layout_marginTop="18dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/actionPhoto"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginEnd="10dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_asset_add_tile"
+                        android:clickable="true"
+                        android:drawableTop="@drawable/ic_camera"
+                        android:drawablePadding="4dp"
+                        android:drawableTint="@color/brand_primary"
+                        android:focusable="true"
+                        android:fontFamily="@font/inter_medium"
+                        android:gravity="center"
+                        android:includeFontPadding="false"
+                        android:paddingTop="32dp"
+                        android:paddingBottom="8dp"
+                        android:text="Thêm ảnh"
+                        android:textColor="@color/item_title"
+                        android:textSize="12sp" />
 
                     <FrameLayout
                         android:id="@+id/imagePreviewContainer"
-                        android:layout_width="match_parent"
-                        android:layout_height="196dp"
-                        android:layout_marginTop="14dp"
-                        android:background="@drawable/bg_composer_preview"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="10dp"
+                        android:layout_marginEnd="10dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_asset_preview_tile"
                         android:visibility="gone"
                         tools:visibility="visible">
 
@@ -216,168 +389,182 @@
 
                         <ImageButton
                             android:id="@+id/btnRemoveImage"
-                            android:layout_width="38dp"
-                            android:layout_height="38dp"
+                            android:layout_width="34dp"
+                            android:layout_height="34dp"
                             android:layout_gravity="top|end"
-                            android:layout_margin="10dp"
+                            android:layout_margin="8dp"
                             android:background="@drawable/bg_social_primary_pill"
                             android:contentDescription="Gỡ ảnh"
-                            android:padding="10dp"
+                            android:padding="9dp"
                             app:srcCompat="@drawable/ic_delete"
                             app:tint="@color/white" />
                     </FrameLayout>
 
                     <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:text="Chủ đề"
-                        android:textColor="@color/item_title"
-                        android:textSize="13sp"
-                        android:textStyle="bold" />
-
-                    <HorizontalScrollView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:overScrollMode="never"
-                        android:scrollbars="none">
-
-                        <com.google.android.material.chip.ChipGroup
-                            android:id="@+id/chipGroupTopics"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            app:singleSelection="true">
-
-                            <com.google.android.material.chip.Chip
-                                android:id="@+id/chipBudgeting"
-                                style="@style/Widget.Material3.Chip.Filter"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:checked="true"
-                                android:text="Ngân sách" />
-
-                            <com.google.android.material.chip.Chip
-                                android:id="@+id/chipSaving"
-                                style="@style/Widget.Material3.Chip.Filter"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Tiết kiệm" />
-
-                            <com.google.android.material.chip.Chip
-                                android:id="@+id/chipDebt"
-                                style="@style/Widget.Material3.Chip.Filter"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Nợ" />
-
-                            <com.google.android.material.chip.Chip
-                                android:id="@+id/chipInvesting"
-                                style="@style/Widget.Material3.Chip.Filter"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Đầu tư" />
-                        </com.google.android.material.chip.ChipGroup>
-                    </HorizontalScrollView>
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="52dp"
-                        android:layout_marginTop="14dp"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="10dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_asset_preview_tile"
+                        android:fontFamily="@font/inter_semibold"
                         android:gravity="center"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/actionPhoto"
-                            style="@style/feed_create_action"
-                            android:drawableStart="@drawable/ic_post_image"
-                            android:text="Ảnh" />
-
-                        <TextView
-                            android:id="@+id/actionMilestone"
-                            style="@style/feed_create_action"
-                            android:drawableStart="@drawable/ic_feed_trophy"
-                            android:text="Cột mốc" />
-                    </LinearLayout>
-
-                    <TextView
-                        android:id="@+id/txtComposerHint"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="14dp"
-                        android:background="@drawable/bg_social_comment_preview"
-                        android:drawableStart="@drawable/ic_cozy_leaf"
-                        android:drawablePadding="8dp"
-                        android:drawableTint="@color/brand_primary"
                         android:lineSpacingExtra="2dp"
-                        android:padding="12dp"
-                        android:text="Bắt đầu một câu chuyện tài chính nhỏ."
-                        android:textColor="@color/item_description"
-                        android:textSize="12sp" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnSubmitPost"
-                        android:layout_width="match_parent"
-                        android:layout_height="52dp"
-                        android:layout_marginTop="14dp"
-                        android:text="Đăng"
-                        android:textAllCaps="false"
-                        android:textColor="@color/white"
-                        android:textSize="15sp"
-                        android:textStyle="bold"
-                        app:backgroundTint="@color/brand_primary"
-                        app:cornerRadius="18dp"
-                        app:icon="@drawable/ic_send"
-                        app:iconGravity="textStart"
-                        app:iconTint="@color/white" />
-
-                    <ProgressBar
-                        android:id="@+id/progressPosting"
-                        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
-                        android:layout_width="match_parent"
-                        android:layout_height="4dp"
-                        android:layout_marginTop="12dp"
-                        android:indeterminate="true"
-                        android:indeterminateTint="@color/brand_primary"
-                        android:visibility="gone"
-                        tools:visibility="visible" />
+                        android:text="Xem trước\nbài đăng"
+                        android:textAllCaps="true"
+                        android:textColor="#8F6842"
+                        android:textSize="10sp" />
                 </LinearLayout>
-            </androidx.cardview.widget.CardView>
 
-            <androidx.cardview.widget.CardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                app:cardBackgroundColor="@color/white"
-                app:cardCornerRadius="20dp"
-                app:cardElevation="1dp">
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="36dp"
+                    android:fontFamily="@font/inter_bold"
+                    android:text="Phân loại nội dung"
+                    android:textColor="@color/brand_primary"
+                    android:textSize="24sp" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:padding="14dp">
+                    android:layout_marginTop="18dp"
+                    android:orientation="vertical">
 
-                    <ImageView
-                        android:layout_width="36dp"
-                        android:layout_height="36dp"
-                        android:background="@drawable/bg_social_icon_badge"
-                        android:padding="9dp"
-                        android:src="@drawable/ic_cozy_chart"
-                        app:tint="@color/brand_primary" />
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="120dp"
+                        android:orientation="horizontal">
 
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:layout_weight="1"
-                        android:lineSpacingExtra="3dp"
-                        android:text="Gợi ý: những chiến thắng nhỏ, bài học hữu ích và ảnh cột mốc giúp cộng đồng Cashify học cùng bạn."
-                        android:textColor="@color/item_description"
-                        android:textSize="13sp" />
+                        <TextView
+                            android:id="@+id/actionMilestone"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_marginEnd="9dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_category_tile_milestone"
+                            android:clickable="true"
+                            android:drawableTop="@drawable/ic_feed_trophy"
+                            android:drawablePadding="8dp"
+                            android:drawableTint="#8A6237"
+                            android:focusable="true"
+                            android:fontFamily="@font/inter_medium"
+                            android:gravity="center"
+                            android:includeFontPadding="false"
+                            android:paddingTop="32dp"
+                            android:paddingBottom="10dp"
+                            android:text="Cột mốc"
+                            android:textColor="#4B2A11"
+                            android:textSize="15sp" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_marginStart="9dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_category_tile_thoughts"
+                            android:drawableTop="@drawable/ic_cozy_notebook"
+                            android:drawablePadding="8dp"
+                            android:drawableTint="#B07D62"
+                            android:fontFamily="@font/inter_medium"
+                            android:gravity="center"
+                            android:id="@+id/actionThoughts"
+                            android:includeFontPadding="false"
+                            android:paddingTop="32dp"
+                            android:paddingBottom="10dp"
+                            android:text="Suy nghĩ"
+                            android:textColor="#5A3422"
+                            android:textSize="15sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="120dp"
+                        android:layout_marginTop="18dp"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_marginEnd="9dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_category_tile_analysis"
+                            android:drawableTop="@drawable/ic_cozy_chart"
+                            android:drawablePadding="8dp"
+                            android:drawableTint="#8A6237"
+                            android:fontFamily="@font/inter_medium"
+                            android:gravity="center"
+                            android:id="@+id/actionAnalysis"
+                            android:includeFontPadding="false"
+                            android:paddingTop="32dp"
+                            android:paddingBottom="10dp"
+                            android:text="Phân tích"
+                            android:textColor="#3E260F"
+                            android:textSize="15sp" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_marginStart="9dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_category_tile_share"
+                            android:drawableTop="@drawable/ic_share"
+                            android:drawablePadding="8dp"
+                            android:drawableTint="#D4A373"
+                            android:fontFamily="@font/inter_medium"
+                            android:gravity="center"
+                            android:id="@+id/actionShare"
+                            android:includeFontPadding="false"
+                            android:paddingTop="32dp"
+                            android:paddingBottom="10dp"
+                            android:text="Chia sẻ"
+                            android:textColor="#5C3920"
+                            android:textSize="15sp" />
+                    </LinearLayout>
                 </LinearLayout>
-            </androidx.cardview.widget.CardView>
-        </LinearLayout>
-    </androidx.core.widget.NestedScrollView>
-</LinearLayout>
+
+                <TextView
+                    android:id="@+id/txtComposerHint"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:background="@drawable/bg_creator_panel"
+                    android:drawableStart="@drawable/ic_cozy_leaf"
+                    android:drawablePadding="10dp"
+                    android:drawableTint="@color/brand_primary"
+                    android:fontFamily="@font/inter_regular"
+                    android:lineSpacingExtra="3dp"
+                    android:padding="14dp"
+                    android:text="Bắt đầu một câu chuyện tài chính nhỏ."
+                    android:textColor="@color/item_description"
+                    android:textSize="13sp" />
+
+                <ProgressBar
+                    android:id="@+id/progressPosting"
+                    style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="4dp"
+                    android:layout_marginTop="22dp"
+                    android:indeterminate="true"
+                    android:indeterminateTint="@color/brand_primary"
+                    android:visibility="gone"
+                    tools:visibility="visible" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSubmitPost"
+                    android:layout_width="match_parent"
+                    android:layout_height="70dp"
+                    android:layout_marginTop="14dp"
+                    android:fontFamily="@font/inter_bold"
+                    android:text="Đăng bài"
+                    android:textAllCaps="false"
+                    android:textColor="@color/white"
+                    android:textSize="24sp"
+                    app:backgroundTint="@color/brand_primary"
+                    app:cornerRadius="22dp"
+                    app:icon="@drawable/ic_send"
+                    app:iconGravity="textEnd"
+                    app:iconTint="@color/white" />
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
+    </LinearLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

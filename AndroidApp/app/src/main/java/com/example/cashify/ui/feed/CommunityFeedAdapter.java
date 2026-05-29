@@ -1,8 +1,6 @@
 package com.example.cashify.ui.feed;
 
 import android.content.res.ColorStateList;
-import android.graphics.Color;
-import android.graphics.drawable.GradientDrawable;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -24,6 +22,7 @@ import com.bumptech.glide.Glide;
 import com.example.cashify.R;
 import com.example.cashify.utils.ApiClient;
 import com.example.cashify.utils.ApiService;
+import com.example.cashify.utils.ImageHelper;
 import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.HashSet;
@@ -183,17 +182,11 @@ public class CommunityFeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vie
             if (post.avatarUrl != null && !post.avatarUrl.isEmpty()) {
                 imgAvatar.setVisibility(View.VISIBLE);
                 txtAvatar.setVisibility(View.GONE);
-                Glide.with(itemView.getContext())
-                        .load(post.avatarUrl)
-                        .placeholder(R.drawable.ic_default_user)
-                        .circleCrop()
-                        .into(imgAvatar);
+                ImageHelper.loadAvatar(post.avatarUrl, imgAvatar, post.userName);
             } else {
-                imgAvatar.setVisibility(View.GONE);
-                txtAvatar.setVisibility(View.VISIBLE);
-                txtAvatar.setText(post.initials);
-                // FIX 5: truyền context vào makeAvatarBlock để lấy density thật
-                txtAvatar.setBackground(makeAvatarBlock(post.avatarColor, itemView.getContext()));
+                imgAvatar.setVisibility(View.VISIBLE);
+                txtAvatar.setVisibility(View.GONE);
+                ImageHelper.loadAvatar(null, imgAvatar, post.userName);
             }
 
             name.setText(post.userName);
@@ -343,16 +336,6 @@ public class CommunityFeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vie
     }
 
     // FIX 5: Nhận Context để lấy display density thật, không hardcode 1f
-    private GradientDrawable makeAvatarBlock(int color, android.content.Context context) {
-        float density = context.getResources().getDisplayMetrics().density;
-        GradientDrawable drawable = new GradientDrawable();
-        drawable.setShape(GradientDrawable.RECTANGLE);
-        drawable.setCornerRadius(12 * density);
-        drawable.setColor(color);
-        drawable.setStroke((int) (3 * density), Color.BLACK);
-        return drawable;
-    }
-
     private static final DiffUtil.ItemCallback<FeedItem> DIFF_CALLBACK =
             new DiffUtil.ItemCallback<FeedItem>() {
                 @Override

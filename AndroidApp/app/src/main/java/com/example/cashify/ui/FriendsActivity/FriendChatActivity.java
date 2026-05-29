@@ -47,11 +47,7 @@ public class FriendChatActivity extends AppCompatActivity {
 
         btnBack.setOnClickListener(v -> finish());
         tvFriendName.setText(friendName != null ? friendName : "Friend");
-        if (friendAvatar != null && !friendAvatar.isEmpty()) {
-            ImageHelper.loadAvatar(friendAvatar, imgFriendAvatar);
-        } else {
-            imgFriendAvatar.setImageResource(R.drawable.ic_default_user);
-        }
+        ImageHelper.loadAvatar(friendAvatar, imgFriendAvatar, friendName);
 
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         layoutManager.setStackFromEnd(true);
