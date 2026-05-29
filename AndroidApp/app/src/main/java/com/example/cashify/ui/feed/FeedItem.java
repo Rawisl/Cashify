@@ -7,7 +7,7 @@ public abstract class FeedItem {
     public static final int TYPE_MILESTONE = 2;
 
     private final String id;
-    private final String userId; // THÊM USER ID VÀO LỚP CHA
+    private final String userId;
 
     protected FeedItem(String id, String userId) {
         this.id = id;
@@ -24,6 +24,9 @@ public abstract class FeedItem {
 
     public abstract int getType();
 
+    // =========================================================================
+    // NormalPost — Lớp con tĩnh cho bài viết thông thường
+    // =========================================================================
     public static class NormalPost extends FeedItem {
         public final String userName;
         public final String time;
@@ -37,7 +40,7 @@ public abstract class FeedItem {
 
         public NormalPost(
                 String id,
-                String userId, // THÊM THAM SỐ NÀY
+                String userId,
                 String userName,
                 String time,
                 String text,
@@ -81,6 +84,9 @@ public abstract class FeedItem {
         }
     }
 
+    // =========================================================================
+    // MilestonePost — Lớp con tĩnh cho bài viết cột mốc
+    // =========================================================================
     public static class MilestonePost extends FeedItem {
         public final String title;
         public final String description;
@@ -93,7 +99,7 @@ public abstract class FeedItem {
 
         public MilestonePost(
                 String id,
-                String userId, // THÊM THAM SỐ NÀY
+                String userId,
                 String title,
                 String description,
                 String month,
@@ -103,7 +109,7 @@ public abstract class FeedItem {
                 boolean expandable,
                 String milestoneJson // THÊM THAM SỐ NÀY
         ) {
-            super(id, userId); // ĐẨY LÊN LỚP CHA
+            super(id, userId); // FIX: Truyền userId an toàn thông qua tham số constructor
             this.title = title;
             this.description = description;
             this.month = month;
