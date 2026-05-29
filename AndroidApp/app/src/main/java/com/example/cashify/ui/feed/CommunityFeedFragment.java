@@ -68,6 +68,11 @@ public class CommunityFeedFragment extends Fragment {
     private String selectedAudience = "Bạn bè";
     private PopupWindow audiencePopup;
 
+    private View milestonePreviewContainer;
+    private TextView tvPreviewIcon, tvPreviewTitle, tvPreviewMonth, tvPreviewAmount;
+    private ProgressBar pbPreviewProgress;
+    private String generatedMilestoneJson = null; // Cục JSON để dành lúc bấm Đăng
+
     private final ActivityResultLauncher<String> pickImageLauncher =
             registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
                 if (uri == null) {
@@ -115,6 +120,12 @@ public class CommunityFeedFragment extends Fragment {
         imgPostPreview = view.findViewById(R.id.imgPostPreview);
         imgComposerAvatar = view.findViewById(R.id.imgComposerAvatar);
         chipGroupTopics = view.findViewById(R.id.chipGroupTopics);
+        milestonePreviewContainer = view.findViewById(R.id.milestonePreviewContainer);
+        tvPreviewIcon = view.findViewById(R.id.tvPreviewIcon);
+        tvPreviewTitle = view.findViewById(R.id.tvPreviewTitle);
+        tvPreviewMonth = view.findViewById(R.id.tvPreviewMonth);
+        tvPreviewAmount = view.findViewById(R.id.tvPreviewAmount);
+        pbPreviewProgress = view.findViewById(R.id.pbPreviewProgress);
     }
 
     private void setupToolbar(View view) {
@@ -153,6 +164,86 @@ public class CommunityFeedFragment extends Fragment {
                         : "Bắt đầu một câu chuyện tài chính nhỏ.");
             }
         });
+
+        // HỨNG "BƯU KIỆN" TỪ BUDGET FRAGMENT TRUYỀN SANG
+        if (getArguments() != null && getArguments().containsKey("milestone_limit")) {
+            long limit = getArguments().getLong("milestone_limit");
+            long spent = getArguments().getLong("milestone_spent");
+            String periodType = getArguments().getString("milestone_period");
+            String periodLabel = getArguments().getString("milestone_label");
+
+            // Server không làm thì Client làm: Tự tính toán
+            long remaining = limit - spent;
+            int progress = (int) ((spent * 100) / limit);
+            int uiProgress = progress > 100 ? 100 : progress;
+
+            String amountLabel = remaining >= 0
+                    ? "Còn dư: " + com.example.cashify.utils.CurrencyFormatter.formatCompactVND(remaining)
+                    : "Vượt mức: " + com.example.cashify.utils.CurrencyFormatter.formatCompactVND(Math.abs(remaining));
+            String iconText = progress + "%";
+            String title = "Tổng kết " + ("MONTH".equals(periodType) ? "Ngân sách tháng" : "Ngân sách tuần");
+            String defaultDescription = remaining >= 0
+                    ? "Mình đã quản lý chi tiêu rất tốt trong kỳ này. Rất đáng tự hào! 🚀"
+                    : "Kỳ này đã chi tiêu vượt ngân sách, cần kỷ luật hơn vào kỳ sau. 🥲";
+
+            // Hiển thị lên giao diện thẻ Bo góc
+            milestoneMode = true;
+            milestonePreviewContainer.setVisibility(View.VISIBLE);
+            tvPreviewIcon.setText(iconText);
+            tvPreviewTitle.setText(title);
+            tvPreviewMonth.setText(periodLabel);
+            tvPreviewAmount.setText(amountLabel);
+            pbPreviewProgress.setProgress(uiProgress);
+
+            // Tắt nút Thêm Ảnh đi vì đã có cột mốc
+            actionPhoto.setVisibility(View.GONE);
+            actionMilestone.setVisibility(View.GONE);
+
+            // Gợi ý cho người dùng viết caption
+            txtComposerHint.setText("Cột mốc của bạn đã sẵn sàng! Gõ thêm cảm nghĩ phía trên.");
+
+            // Đóng gói JSON sẵn, đợi bấm Đăng là phi lên C#
+            try {
+                org.json.JSONObject obj = new org.json.JSONObject();
+                obj.put("iconText", iconText);
+                obj.put("title", title);
+                obj.put("description", defaultDescription); // Đề phòng user lười k gõ gì
+                obj.put("month", periodLabel);
+                obj.put("amount", amountLabel);
+                obj.put("progress", uiProgress);
+                generatedMilestoneJson = obj.toString();
+            } catch (Exception ignored) {}
+        }
+
+        // HỨNG DỮ LIỆU ĐỂ MỞ CHẾ ĐỘ CHỈNH SỬA
+        if (getArguments() != null && getArguments().containsKey("edit_post_id")) {
+            String editId = getArguments().getString("edit_post_id");
+            String oldContent = getArguments().getString("edit_post_content");
+            String oldMilestone = getArguments().getString("edit_milestone_data");
+
+            // Fill data cũ vào
+            editPostContent.setText(oldContent);
+            btnSubmitPost.setText("Lưu cập nhật");
+            txtComposerHint.setText("Chỉnh sửa nội dung bài viết của bạn.");
+
+            // Nếu là bài Cột mốc thì dựng lại thẻ Preview
+            if (oldMilestone != null && !oldMilestone.isEmpty()) {
+                milestoneMode = true;
+                generatedMilestoneJson = oldMilestone;
+                try {
+                    org.json.JSONObject json = new org.json.JSONObject(oldMilestone);
+                    milestonePreviewContainer.setVisibility(View.VISIBLE);
+                    tvPreviewIcon.setText(json.optString("iconText", "🏆"));
+                    tvPreviewTitle.setText(json.optString("title", "Cột mốc"));
+                    tvPreviewMonth.setText(json.optString("month", ""));
+                    tvPreviewAmount.setText(json.optString("amount", ""));
+                    pbPreviewProgress.setProgress(json.optInt("progress", 0));
+
+                    actionPhoto.setVisibility(View.GONE);
+                    actionMilestone.setVisibility(View.GONE);
+                } catch (Exception ignored) {}
+            }
+        }
 
         updateAudienceButton();
         btnAudience.setOnClickListener(this::showAudienceMenu);
@@ -285,9 +376,13 @@ public class CommunityFeedFragment extends Fragment {
     // =========================================================================
     private void submitPost() {
         String content = editPostContent.getText().toString().trim();
+        String type = milestoneMode ? "MILESTONE_POST" : "USER_POST";
+        String milestoneData = generatedMilestoneJson;
+        String editPostId = getArguments() != null ? getArguments().getString("edit_post_id") : null;
 
-        if (content.isEmpty() && selectedImageUri == null) {
-            Toast.makeText(requireContext(), "Hãy viết nội dung hoặc thêm ảnh trước nhé.", Toast.LENGTH_SHORT).show();
+        // 1. VALIDATE LÊN ĐẦU: Chặn ngay nếu không có chữ/ảnh/cột mốc (Dù là tạo mới hay sửa bài)
+        if (content.isEmpty() && selectedImageUri == null && milestoneData == null) {
+            Toast.makeText(requireContext(), "Hãy viết nội dung, thêm ảnh hoặc cột mốc trước nhé.", Toast.LENGTH_SHORT).show();
             editPostContent.requestFocus();
             InputMethodManager imm = (InputMethodManager) requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);
             if (imm != null) {
@@ -296,12 +391,55 @@ public class CommunityFeedFragment extends Fragment {
             return;
         }
 
-        setPosting(true);
-        String type = milestoneMode ? "MILESTONE_POST" : "USER_POST";
-        String milestoneData = null; // TODO: Khang ráp chuỗi JSON của Auto-Milestone vào đây sau
+        String audienceParam = "FRIENDS"; // Mặc định
+        if ("Công khai".equals(selectedAudience)) {
+            audienceParam = "PUBLIC";
+        } else if ("Chỉ mình tôi".equals(selectedAudience)) {
+            audienceParam = "PRIVATE";
+        }
 
+        setPosting(true);
+
+        final String finalContentToSubmit = content;
+        final String finalAudienceToSubmit = audienceParam;
+
+        // ==========================================
+        // LUỒNG 1: NẾU LÀ CHẾ ĐỘ SỬA BÀI
+        // ==========================================
+        if (editPostId != null) {
+            FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+            if (user == null) { setPosting(false); return; }
+
+            user.getIdToken(true).addOnSuccessListener(tokenResult -> {
+                String token = "Bearer " + tokenResult.getToken();
+                com.example.cashify.utils.ApiService.EditPostRequest req = new com.example.cashify.utils.ApiService.EditPostRequest();
+                req.PostId = editPostId;
+
+                // Dùng biến final ở đây
+                req.NewContent = finalContentToSubmit;
+                req.Audience = finalAudienceToSubmit;
+
+                com.example.cashify.utils.ApiClient.getClient().create(com.example.cashify.utils.ApiService.class)
+                        .editPost(token, req).enqueue(new retrofit2.Callback<Object>() {
+                            @Override public void onResponse(@NonNull retrofit2.Call<Object> call, @NonNull retrofit2.Response<Object> response) {
+                                setPosting(false);
+                                if (response.isSuccessful()) {
+                                    Toast.makeText(requireContext(), "Sửa bài thành công!", Toast.LENGTH_SHORT).show();
+                                    navigateBack();
+                                } else Toast.makeText(requireContext(), "Lỗi server!", Toast.LENGTH_SHORT).show();
+                            }
+                            @Override public void onFailure(@NonNull retrofit2.Call<Object> call, @NonNull Throwable t) {
+                                setPosting(false);
+                            }
+                        });
+            });
+            return;
+        }
+
+        // ==========================================
+        // LUỒNG 2: NẾU LÀ TẠO BÀI ĐĂNG MỚI
+        // ==========================================
         if (selectedImageUri != null) {
-            // TRƯỜNG HỢP CÓ ẢNH: Đẩy qua Cloudinary trước
             txtComposerHint.setText("Đang tải ảnh lên máy chủ...");
             File imageFile = getFileFromUri(selectedImageUri);
 
@@ -314,8 +452,8 @@ public class CommunityFeedFragment extends Fragment {
             com.example.cashify.utils.CloudinaryHelper.uploadImage(imageFile, new com.example.cashify.utils.CloudinaryHelper.UploadCallback() {
                 @Override
                 public void onSuccess(String imageUrl) {
-                    // Up ảnh xong, lấy URL gọi Backend
-                    callBackendToCreatePost(content, type, imageUrl, milestoneData);
+                    // Dùng biến final ở đây
+                    callBackendToCreatePost(finalContentToSubmit, type, imageUrl, milestoneData, finalAudienceToSubmit);
                 }
 
                 @Override
@@ -327,9 +465,60 @@ public class CommunityFeedFragment extends Fragment {
                 }
             });
         } else {
-            // TRƯỜNG HỢP KHÔNG ẢNH: Đẩy thẳng lên Backend
-            callBackendToCreatePost(content, type, "", milestoneData);
+            // Dùng biến final ở đây
+            callBackendToCreatePost(finalContentToSubmit, type, "", milestoneData, finalAudienceToSubmit);
         }
+    }
+
+    // Nhớ update lại hàm callBackendToCreatePost để nó nhận tham số Audience nha sếp
+    private void callBackendToCreatePost(String content, String type, String imageUrl, String milestoneData, String audienceParam) {
+        requireActivity().runOnUiThread(() -> txtComposerHint.setText("Đang lưu bài viết..."));
+
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) {
+            requireActivity().runOnUiThread(() -> {
+                setPosting(false);
+                Toast.makeText(requireContext(), "Chưa đăng nhập!", Toast.LENGTH_SHORT).show();
+            });
+            return;
+        }
+
+        user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
+            String token = "Bearer " + getTokenResult.getToken();
+            com.example.cashify.utils.ApiService apiService = com.example.cashify.utils.ApiClient.getClient().create(com.example.cashify.utils.ApiService.class);
+
+            com.example.cashify.utils.ApiService.CreatePostRequest request =
+                    new com.example.cashify.utils.ApiService.CreatePostRequest(content, type, imageUrl, milestoneData, audienceParam);
+
+            apiService.createPost(token, request).enqueue(new retrofit2.Callback<Object>() {
+                @Override
+                public void onResponse(@NonNull retrofit2.Call<Object> call, @NonNull retrofit2.Response<Object> response) {
+                    requireActivity().runOnUiThread(() -> {
+                        setPosting(false);
+                        if (response.isSuccessful()) {
+                            Toast.makeText(requireContext(), "Đăng bài thành công!", Toast.LENGTH_SHORT).show();
+                            resetComposer();
+                            navigateBack();
+                        } else {
+                            Toast.makeText(requireContext(), "Lỗi tạo bài: " + response.code(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+
+                @Override
+                public void onFailure(@NonNull retrofit2.Call<Object> call, @NonNull Throwable t) {
+                    requireActivity().runOnUiThread(() -> {
+                        setPosting(false);
+                        Toast.makeText(requireContext(), "Lỗi mạng: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                    });
+                }
+            });
+        }).addOnFailureListener(e -> {
+            requireActivity().runOnUiThread(() -> {
+                setPosting(false);
+                Toast.makeText(requireContext(), "Lỗi xác thực Firebase", Toast.LENGTH_SHORT).show();
+            });
+        });
     }
 
     // Hàm gọi C# API để lưu Post vào Firestore
@@ -349,9 +538,16 @@ public class CommunityFeedFragment extends Fragment {
             String token = "Bearer " + getTokenResult.getToken();
             com.example.cashify.utils.ApiService apiService = com.example.cashify.utils.ApiClient.getClient().create(com.example.cashify.utils.ApiService.class);
 
+            String audienceParam = "FRIENDS"; // Mặc định là Bạn bè
+            if ("Công khai".equals(selectedAudience)) {
+                audienceParam = "PUBLIC";
+            } else if ("Chỉ mình tôi".equals(selectedAudience)) {
+                audienceParam = "PRIVATE";
+            }
+
             // Khởi tạo Request Model (Nhớ đảm bảo ApiService đã có class này)
             com.example.cashify.utils.ApiService.CreatePostRequest request =
-                    new com.example.cashify.utils.ApiService.CreatePostRequest(content, type, imageUrl, milestoneData);
+                    new com.example.cashify.utils.ApiService.CreatePostRequest(content, type, imageUrl, milestoneData,audienceParam);
 
             apiService.createPost(token, request).enqueue(new retrofit2.Callback<Object>() {
                 @Override
@@ -438,7 +634,11 @@ public class CommunityFeedFragment extends Fragment {
     private void updateSubmitState() {
         boolean hasText = editPostContent != null && editPostContent.getText().toString().trim().length() > 0;
         boolean hasImage = selectedImageUri != null;
-        boolean canSubmit = hasText;
+        boolean hasMilestone = generatedMilestoneJson != null; // Kiểm tra có Milestone không
+
+        // SỬA: Chỉ cần 1 trong 3 cái có dữ liệu là nút Đăng sẽ sáng lên
+        boolean canSubmit = hasText || hasImage || hasMilestone;
+
         btnSubmitPost.setEnabled(canSubmit);
         btnSubmitPost.setAlpha(canSubmit ? 1f : 0.55f);
         int count = editPostContent == null ? 0 : editPostContent.length();

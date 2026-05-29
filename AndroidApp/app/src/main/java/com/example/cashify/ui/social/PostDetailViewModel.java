@@ -1,0 +1,171 @@
+package com.example.cashify.ui.social;
+
+import android.util.Log;
+import androidx.annotation.NonNull;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MutableLiveData;
+import androidx.lifecycle.ViewModel;
+
+import com.example.cashify.utils.ApiClient;
+import com.example.cashify.utils.ApiService;
+
+import java.util.List;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
+public class PostDetailViewModel extends ViewModel {
+
+    private final ApiService apiService = ApiClient.getClient().create(ApiService.class);
+
+    private final MutableLiveData<ApiService.SocialPostDetailResponse> postDetail = new MutableLiveData<>();
+    public LiveData<ApiService.SocialPostDetailResponse> getPostDetail() { return postDetail; }
+
+    private final MutableLiveData<List<Object>> comments = new MutableLiveData<>();
+    public LiveData<List<Object>> getComments() { return comments; }
+
+    private final MutableLiveData<String> errorMessage = new MutableLiveData<>();
+    public LiveData<String> getErrorMessage() { return errorMessage; }
+
+    private final MutableLiveData<Boolean> isLoading = new MutableLiveData<>();
+    public LiveData<Boolean> getIsLoading() { return isLoading; }
+
+    private final MutableLiveData<Boolean> isActionSuccess = new MutableLiveData<>();
+    public LiveData<Boolean> getIsActionSuccess() { return isActionSuccess; }
+
+    // Tải bài viết
+    public void loadPost(String postId, String token) {
+        isLoading.setValue(true);
+        apiService.getPostDetail(postId, token).enqueue(new Callback<ApiService.SocialPostDetailResponse>() {
+            @Override
+            public void onResponse(@NonNull Call<ApiService.SocialPostDetailResponse> call, @NonNull Response<ApiService.SocialPostDetailResponse> response) {
+                isLoading.setValue(false);
+                if (response.isSuccessful() && response.body() != null) {
+                    postDetail.setValue(response.body());
+                } else {
+                    errorMessage.setValue("Bài viết không tồn tại.");
+                }
+            }
+            @Override
+            public void onFailure(@NonNull Call<ApiService.SocialPostDetailResponse> call, @NonNull Throwable t) {
+                isLoading.setValue(false);
+                errorMessage.setValue("Lỗi mạng: " + t.getMessage());
+            }
+        });
+    }
+
+    // Tải bình luận
+    public void loadComments(String postId, String token) {
+        apiService.getComments(postId, token).enqueue(new Callback<List<Object>>() {
+            @Override
+            public void onResponse(@NonNull Call<List<Object>> call, @NonNull Response<List<Object>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    comments.setValue(response.body());
+                }
+            }
+            @Override
+            public void onFailure(@NonNull Call<List<Object>> call, @NonNull Throwable t) {
+                Log.e("PostDetailVM", "Lỗi load comments: " + t.getMessage());
+            }
+        });
+    }
+
+    // Like Bài
+    public void toggleLike(String postId, String token, boolean isLiked) {
+        apiService.toggleLike(token, new ApiService.LikeActionRequest(postId, isLiked)).enqueue(new Callback<Object>() {
+            @Override public void onResponse(@NonNull Call<Object> call, @NonNull Response<Object> response) {}
+            @Override public void onFailure(@NonNull Call<Object> call, @NonNull Throwable t) {}
+        });
+    }
+
+    // Gửi bình luận
+    public void addComment(String postId, String token, String content) {
+        apiService.addComment(token, new ApiService.AddCommentRequest(postId, content)).enqueue(new Callback<Object>() {
+            @Override
+            public void onResponse(@NonNull Call<Object> call, @NonNull Response<Object> response) {
+                if (response.isSuccessful()) loadComments(postId, token); // Reload lại list
+                else errorMessage.setValue("Lỗi gửi bình luận");
+            }
+            @Override
+            public void onFailure(@NonNull Call<Object> call, @NonNull Throwable t) {
+                errorMessage.setValue("Lỗi mạng: " + t.getMessage());
+            }
+        });
+    }
+
+    // ==========================================
+    // API XÓA / SỬA THẬT SỰ Ở ĐÂY SẾP ƠI
+    // ==========================================
+    public void deletePost(String postId, String token) {
+        isLoading.setValue(true);
+        apiService.deletePost(token, new ApiService.DeletePostRequest(postId)).enqueue(new Callback<Object>() {
+            @Override
+            public void onResponse(@NonNull Call<Object> call, @NonNull Response<Object> response) {
+                isLoading.setValue(false);
+                if (response.isSuccessful()) isActionSuccess.setValue(true); // Báo về UI để đóng màn hình
+                else errorMessage.setValue("Lỗi xóa bài");
+            }
+            @Override
+            public void onFailure(@NonNull Call<Object> call, @NonNull Throwable t) {
+                isLoading.setValue(false);
+                errorMessage.setValue("Lỗi mạng");
+            }
+        });
+    }
+
+    public void deleteComment(String postId, String commentId, String token) {
+        apiService.deleteComment(token, new ApiService.DeleteCommentRequest(postId, commentId)).enqueue(new Callback<Object>() {
+            @Override
+            public void onResponse(@NonNull Call<Object> call, @NonNull Response<Object> response) {
+                if (response.isSuccessful()) loadComments(postId, token);
+                else errorMessage.setValue("Lỗi xóa bình luận");
+            }
+            @Override public void onFailure(@NonNull Call<Object> call, @NonNull Throwable t) {}
+        });
+    }
+
+    public void editComment(String postId, String commentId, String newContent, String token) {
+        ApiService.EditCommentRequest req = new ApiService.EditCommentRequest();
+        req.PostId = postId;
+        req.CommentId = commentId;
+        req.NewContent = newContent;
+
+        apiService.editComment(token, req).enqueue(new Callback<Object>() {
+            @Override
+            public void onResponse(@NonNull Call<Object> call, @NonNull Response<Object> response) {
+                if (response.isSuccessful()) loadComments(postId, token);
+                else errorMessage.setValue("Lỗi sửa bình luận");
+            }
+            @Override public void onFailure(@NonNull Call<Object> call, @NonNull Throwable t) {}
+        });
+    }
+    // ==========================================
+    // API SỬA BÀI VIẾT
+    // ==========================================
+    public void editPost(String postId, String newContent, String token) {
+        isLoading.setValue(true);
+
+        ApiService.EditPostRequest req = new ApiService.EditPostRequest();
+        req.PostId = postId;
+        req.NewContent = newContent;
+
+        apiService.editPost(token, req).enqueue(new Callback<Object>() {
+            @Override
+            public void onResponse(@NonNull Call<Object> call, @NonNull Response<Object> response) {
+                isLoading.setValue(false);
+                if (response.isSuccessful()) {
+                    loadPost(postId, token); // Sửa xong thì load lại bài mới
+                } else {
+                    errorMessage.setValue("Lỗi sửa bài viết");
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<Object> call, @NonNull Throwable t) {
+                isLoading.setValue(false);
+                errorMessage.setValue("Lỗi mạng: " + t.getMessage());
+            }
+        });
+    }
+}
