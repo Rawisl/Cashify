@@ -23,6 +23,7 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
+import androidx.navigation.fragment.NavHostFragment; // THÊM IMPORT NÀY
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -99,6 +100,21 @@ public class SocialNewsfeedFragment extends Fragment {
                 intent.putExtra(PostDetailActivity.EXTRA_POST_ID, item.getId());
                 startActivity(intent);
             });
+
+            // CẬP NHẬT CHÍNH XÁC: Điều hướng sang điểm ẩn nav_other_profile qua Action nội bộ
+            feedAdapter.setOnAvatarClickListener(targetUserId -> {
+                Bundle args = new Bundle();
+                args.putString("userId", targetUserId);
+
+                try {
+                    // Sử dụng NavHostFragment để tìm đúng bộ điều hướng nội bộ quản lý đồ thị Social
+                    NavController innerNavController = NavHostFragment.findNavController(this);
+                    innerNavController.navigate(R.id.action_newsfeed_to_other_profile, args);
+                } catch (Exception e) {
+                    Log.e("NAV_ERROR", "Lỗi điều hướng mở hồ sơ người khác: " + e.getMessage());
+                }
+            });
+
             rvFeed.setLayoutManager(new LinearLayoutManager(requireContext()));
             rvFeed.setAdapter(feedAdapter);
         }
@@ -187,13 +203,15 @@ public class SocialNewsfeedFragment extends Fragment {
 
             if (isLiked) feedAdapter.addLikedId(id);
 
-
             if (type.toLowerCase().contains("milestone")) {
+                // FIX LỖI: Đã điền thêm tham số 'userId' vào vị trí số 2
                 result.add(new FeedItem.MilestonePost(
-                        id, content, content, "Cột mốc", imageUrl, "100%", 100, expandable));
+                        id, userId, content, content, "Cột mốc", imageUrl, "100%", 100, expandable));
             } else {
+                // FIX LỖI: Đã điền thêm tham số 'userId' vào vị trí số 2
                 result.add(new FeedItem.NormalPost(
                         id,
+                        userId,
                         name.isEmpty() ? "Người dùng Cashify" : name,
                         com.example.cashify.utils.TimeFormatter.format(timestamp),
                         content,
@@ -355,6 +373,7 @@ public class SocialNewsfeedFragment extends Fragment {
             return;
         }
 
+        // Sửa nhẹ context lấy NavController cho khớp toàn dự án
         NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment);
         if (navController.getCurrentDestination() != null
                 && navController.getCurrentDestination().getId() == R.id.nav_post_feed) {

@@ -42,8 +42,16 @@ public class CommunityFeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vie
 
     private final OnPostClickListener postClickListener;
 
+    // THÊM MỚI: Lắng nghe sự kiện bấm vào Avatar từ Bảng tin
+    private OnAvatarClickListener avatarClickListener;
+
     public interface OnPostClickListener {
         void onPostClick(FeedItem item);
+    }
+
+    // THÊM MỚI: Interface định nghĩa sự kiện click Avatar
+    public interface OnAvatarClickListener {
+        void onAvatarClick(String userId);
     }
 
     public CommunityFeedAdapter() {
@@ -53,6 +61,11 @@ public class CommunityFeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vie
     public CommunityFeedAdapter(OnPostClickListener postClickListener) {
         super(DIFF_CALLBACK);
         this.postClickListener = postClickListener;
+    }
+
+    // THÊM MỚI: Setter để Fragment cấu hình hành động điều hướng sang Profile
+    public void setOnAvatarClickListener(OnAvatarClickListener avatarClickListener) {
+        this.avatarClickListener = avatarClickListener;
     }
 
     /** Gọi từ Fragment sau khi parse feed để đánh dấu các post đã liked */
@@ -119,8 +132,6 @@ public class CommunityFeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vie
         btn.setTextColor(color);
     }
 
-
-
     // =========================================================================
     // FIX 4: rollback() dùng applyLikeState() đã được implement ở trên
     // =========================================================================
@@ -179,6 +190,13 @@ public class CommunityFeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vie
         void bind(FeedItem.NormalPost post, boolean expanded) {
             itemView.setOnClickListener(v -> notifyPostClick(post));
 
+            // THÊM MỚI: Tách hàm xử lý click Avatar (gọi an toàn từ instance context)
+            View.OnClickListener onAvatarClicked = v -> {
+                if (avatarClickListener != null && post.getUserId() != null) {
+                    avatarClickListener.onAvatarClick(post.getUserId());
+                }
+            };
+
             // Avatar
             if (post.avatarUrl != null && !post.avatarUrl.isEmpty()) {
                 imgAvatar.setVisibility(View.VISIBLE);
@@ -195,6 +213,11 @@ public class CommunityFeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vie
                 // FIX 5: truyền context vào makeAvatarBlock để lấy density thật
                 txtAvatar.setBackground(makeAvatarBlock(post.avatarColor, itemView.getContext()));
             }
+
+            // THÊM MỚI: Đăng ký click sự kiện cho cả ảnh Avatar hoặc Text Avatar đại diện
+            imgAvatar.setOnClickListener(onAvatarClicked);
+            txtAvatar.setOnClickListener(onAvatarClicked);
+            name.setOnClickListener(onAvatarClicked); // Bấm vào tên tác giả cũng mở được trang cá nhân
 
             name.setText(post.userName);
             time.setText(post.time);

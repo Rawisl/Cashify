@@ -7,10 +7,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.fragment.NavHostFragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -25,21 +27,18 @@ import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.imageview.ShapeableImageView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.DocumentSnapshot;  // GIỮ — dùng trong observeViewModel
-
-// ĐÃ XÓA: import FirebaseFirestore, ListenerRegistration, Query
-// (không còn dùng Firestore snapshot listener để load posts nữa)
+import com.google.firebase.firestore.DocumentSnapshot;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;  // THÊM MỚI — dùng trong bindProfilePosts
+import java.util.Map;
 
-import retrofit2.Call;       // THÊM MỚI
-import retrofit2.Callback;   // THÊM MỚI
-import retrofit2.Response;   // THÊM MỚI
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class SocialProfileFragment extends Fragment {
 
@@ -58,11 +57,12 @@ public class SocialProfileFragment extends Fragment {
 
     private SocialViewModel socialViewModel;
     private CommunityFeedAdapter myPostsAdapter;
-    // ĐÃ XÓA: private ListenerRegistration postsRegistration; — không cần nữa
     private String currentUserId = "";
+    private boolean isOwnProfile = true;
+    private boolean isFromNewsfeed = false; // CỜ ĐIỀU HƯỚNG: Xác định có phải đi từ Bảng tin sang không
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // LIFECYCLE — GIỮ NGUYÊN, chỉ bỏ cleanup listener
+    // LIFECYCLE
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     @Nullable
@@ -77,23 +77,53 @@ public class SocialProfileFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         bindViews(view);
-        initToolbar(view);
+
+        // ĐÃ SỬA: Xác định nguồn gốc điều hướng dựa trên Destination ID trong NavGraph
+        checkNavigationSource();
+
         initViewModel();
+        initToolbar(view);
+
         setupActions();
         setupRecyclerView();
         observeViewModel();
         loadMyPosts();
+
+        // ĐÃ SỬA: Cứ đi từ bảng tin sang là kích hoạt nút Back hệ thống, chấp nhận cả trường hợp click vào chính mình
+        if (isFromNewsfeed) {
+            requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(),
+                    new OnBackPressedCallback(true) {
+                        @Override
+                        public void handleOnBackPressed() {
+                            androidx.navigation.NavController navController = NavHostFragment.findNavController(SocialProfileFragment.this);
+                            if (!navController.popBackStack()) {
+                                setEnabled(false);
+                                requireActivity().getOnBackPressedDispatcher().onBackPressed();
+                                setEnabled(true);
+                            }
+                        }
+                    });
+        }
     }
 
     @Override
     public void onDestroyView() {
-        // ĐÃ XÓA: postsRegistration.remove() — API call tự hủy, không cần cleanup
         super.onDestroyView();
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // CÁC HÀM SETUP — GIỮ NGUYÊN 100%, không đổi gì
+    // CÁC HÀM SETUP
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    private void checkNavigationSource() {
+        try {
+            int currentDestId = NavHostFragment.findNavController(this).getCurrentDestination().getId();
+            // Nếu ID trùng với nav_other_profile trong bản đồ định tuyến -> Đi từ Newsfeed sang
+            isFromNewsfeed = (currentDestId == R.id.nav_other_profile);
+        } catch (Exception e) {
+            isFromNewsfeed = false;
+        }
+    }
 
     private void bindViews(View view) {
         imgAvatar = view.findViewById(R.id.imgAvatar);
@@ -112,14 +142,27 @@ public class SocialProfileFragment extends Fragment {
 
     private void initToolbar(View view) {
         MaterialToolbar toolbar = view.findViewById(R.id.toolbarSocialProfile);
-        toolbar.setNavigationOnClickListener(v -> {
-            if (getActivity() == null) return;
-            androidx.drawerlayout.widget.DrawerLayout drawer =
-                    getActivity().findViewById(R.id.drawerLayout);
-            if (drawer != null) {
-                drawer.openDrawer(androidx.core.view.GravityCompat.START);
-            }
-        });
+
+        // ĐÃ SỬA: Logic hiển thị nút bấm Toolbar dựa vào nguồn gốc di chuyển thay vì ID chủ sở hữu
+        if (isFromNewsfeed) {
+            toolbar.setNavigationIcon(R.drawable.ic_arrow_left_back);
+            toolbar.setNavigationOnClickListener(v -> {
+                androidx.navigation.NavController navController = NavHostFragment.findNavController(this);
+                if (!navController.popBackStack()) {
+                    requireActivity().getOnBackPressedDispatcher().onBackPressed();
+                }
+            });
+        } else {
+            // Nếu chọn từ Menu Tab chính: Hiện nút Hamburger để mở thanh Menu Drawer cạnh giường
+            toolbar.setNavigationOnClickListener(v -> {
+                if (getActivity() == null) return;
+                androidx.drawerlayout.widget.DrawerLayout drawer =
+                        getActivity().findViewById(R.id.drawerLayout);
+                if (drawer != null) {
+                    drawer.openDrawer(androidx.core.view.GravityCompat.START);
+                }
+            });
+        }
     }
 
     private void initViewModel() {
@@ -127,6 +170,23 @@ public class SocialProfileFragment extends Fragment {
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser != null) {
             currentUserId = currentUser.getUid();
+            isOwnProfile = true;
+
+            if (getArguments() != null && getArguments().containsKey("userId")) {
+                String targetUid = getArguments().getString("userId");
+                if (targetUid != null && !targetUid.trim().isEmpty()) {
+                    currentUserId = targetUid;
+                    isOwnProfile = currentUserId.equals(currentUser.getUid());
+                }
+            }
+
+            // Nút Chỉnh sửa chỉ phụ thuộc vào việc có phải chính chủ hay không (vẫn giữ nguyên)
+            if (!isOwnProfile) {
+                btnEditProfile.setVisibility(View.GONE);
+            } else {
+                btnEditProfile.setVisibility(View.VISIBLE);
+            }
+
             socialViewModel.loadProfile(currentUserId);
         }
     }
@@ -170,11 +230,9 @@ public class SocialProfileFragment extends Fragment {
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // LOAD POSTS — THAY HOÀN TOÀN: Firestore snapshot → gọi API wall
+    // LOAD POSTS
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    // ĐÃ XÓA toàn bộ hàm loadMyPosts() cũ (dùng addSnapshotListener)
-    // THAY BẰNG hàm này: gọi API /post/wall/{uid}
     private void loadMyPosts() {
         if (currentUserId == null || currentUserId.trim().isEmpty()) {
             showEmptyState(true);
@@ -218,10 +276,6 @@ public class SocialProfileFragment extends Fragment {
         });
     }
 
-    // ĐÃ XÓA: mapPost(DocumentSnapshot doc) — không còn nhận Firestore doc nữa
-    // THAY BẰNG 2 hàm dưới đây:
-
-    // Hàm nhận List<Object> từ API response, tạo danh sách FeedItem
     @SuppressWarnings("unchecked")
     private void bindProfilePosts(List<Object> raw) {
         List<FeedItem> posts = new ArrayList<>();
@@ -246,7 +300,6 @@ public class SocialProfileFragment extends Fragment {
         showEmptyState(posts.isEmpty());
     }
 
-    // Hàm map 1 record (Map) từ API → FeedItem
     private FeedItem mapPostFromMap(Map<String, Object> map) {
         String id       = str(map, "postId");
         String content  = str(map, "content");
@@ -258,22 +311,26 @@ public class SocialProfileFragment extends Fragment {
         boolean hasImage   = !imageUrl.isEmpty();
         boolean expandable = content.length() > 120;
 
+        String userId = firstNonEmpty(str(map, "authorId"), str(map, "userId"), currentUserId);
+
         if (type.contains("milestone") || type.contains("achievement")) {
             long progress = Math.max(0, Math.min(100, num(map, "progress")));
             String title  = firstNonEmpty(str(map, "title"), achievementTitle(content));
             String amount = firstNonEmpty(str(map, "amountText"), progress + "% hoàn thành");
             String month  = firstNonEmpty(str(map, "period"), "Thành tựu");
+
             return new FeedItem.MilestonePost(
-                    id, title, content, month, amount, progress + "%", (int) progress, expandable);
+                    id, userId, title, content, month, amount, progress + "%", (int) progress, expandable);
         }
 
         return new FeedItem.NormalPost(
                 id,
-                name.isEmpty() ? "Bạn" : name,
+                userId,
+                name.isEmpty() ? (isOwnProfile ? "Bạn" : "Thành viên Cashify") : name,
                 formatTime(timestamp),
                 content,
                 hasImage,
-                imageUrl,           // ← truyền URL thật để Glide load
+                imageUrl,
                 avatarColor(name),
                 initials(name),
                 expandable,
@@ -282,7 +339,7 @@ public class SocialProfileFragment extends Fragment {
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // CÁC HÀM HELPER — GIỮ NGUYÊN, chỉ thêm str() và num()
+    // CÁC HÀM HELPER
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     private void bindPinnedAchievement(@Nullable FeedItem achievement, int postCount) {
@@ -297,8 +354,8 @@ public class SocialProfileFragment extends Fragment {
     }
 
     private void showEmptyState(boolean show) {
-        layoutEmptyState.setVisibility(show ? View.VISIBLE : View.GONE);
-        rvMyPosts.setVisibility(show ? View.GONE : View.VISIBLE);
+        if (layoutEmptyState != null) layoutEmptyState.setVisibility(show ? View.VISIBLE : View.GONE);
+        if (rvMyPosts != null) rvMyPosts.setVisibility(show ? View.GONE : View.VISIBLE);
     }
 
     private String joinedLabel(DocumentSnapshot doc) {
@@ -321,19 +378,16 @@ public class SocialProfileFragment extends Fragment {
         return "";
     }
 
-    // GIỮ NGUYÊN — dùng cho DocumentSnapshot trong observeViewModel
     private long numberField(DocumentSnapshot doc, String field, long fallback) {
         Object value = doc.get(field);
         return value instanceof Number ? ((Number) value).longValue() : fallback;
     }
 
-    // THÊM MỚI — dùng cho Map từ API response
     private String str(Map<String, Object> map, String key) {
         Object v = map.get(key);
         return v instanceof String ? (String) v : "";
     }
 
-    // THÊM MỚI — dùng cho Map từ API response
     private long num(Map<String, Object> map, String key) {
         Object v = map.get(key);
         return v instanceof Number ? ((Number) v).longValue() : 0L;

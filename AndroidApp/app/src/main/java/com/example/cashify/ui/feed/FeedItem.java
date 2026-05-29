@@ -7,17 +7,26 @@ public abstract class FeedItem {
     public static final int TYPE_MILESTONE = 2;
 
     private final String id;
+    private final String userId;
 
-    protected FeedItem(String id) {
+    protected FeedItem(String id, String userId) {
         this.id = id;
+        this.userId = userId;
     }
 
     public String getId() {
         return id;
     }
 
+    public String getUserId() {
+        return userId;
+    }
+
     public abstract int getType();
 
+    // =========================================================================
+    // NormalPost — Lớp con tĩnh cho bài viết thông thường
+    // =========================================================================
     public static class NormalPost extends FeedItem {
         public final String userName;
         public final String time;
@@ -31,6 +40,7 @@ public abstract class FeedItem {
 
         public NormalPost(
                 String id,
+                String userId, // FIX: Thêm tham số userId vào đây
                 String userName,
                 String time,
                 String text,
@@ -41,7 +51,7 @@ public abstract class FeedItem {
                 boolean expandable,
                 String avatarUrl
         ) {
-            super(id);
+            super(id, userId); // FIX: Truyền userId an toàn thông qua tham số constructor
             this.userName = userName;
             this.time = time;
             this.text = text;
@@ -74,6 +84,9 @@ public abstract class FeedItem {
         }
     }
 
+    // =========================================================================
+    // MilestonePost — Lớp con tĩnh cho bài viết cột mốc
+    // =========================================================================
     public static class MilestonePost extends FeedItem {
         public final String title;
         public final String description;
@@ -85,6 +98,7 @@ public abstract class FeedItem {
 
         public MilestonePost(
                 String id,
+                String userId, // FIX: Thêm tham số userId vào đây
                 String title,
                 String description,
                 String month,
@@ -93,7 +107,7 @@ public abstract class FeedItem {
                 int progress,
                 boolean expandable
         ) {
-            super(id);
+            super(id, userId); // FIX: Truyền userId an toàn thông qua tham số constructor
             this.title = title;
             this.description = description;
             this.month = month;
