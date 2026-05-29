@@ -319,8 +319,6 @@ public class SocialProfileFragment extends Fragment {
         boolean hasImage   = !imageUrl.isEmpty();
         boolean expandable = content.length() > 120;
 
-        String userId = firstNonEmpty(str(map, "authorId"), str(map, "userId"), currentUserId);
-
         if (type.contains("milestone") || type.contains("achievement")) {
             // Bóc tách JSON Milestone cho chuẩn
             String mIconText = "🏆";
