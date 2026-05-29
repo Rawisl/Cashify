@@ -7,14 +7,20 @@ public abstract class FeedItem {
     public static final int TYPE_MILESTONE = 2;
 
     private final String id;
+    private final String userId; // THÊM USER ID VÀO LỚP CHA
 
-    protected FeedItem(String id) {
+    protected FeedItem(String id, String userId) {
         this.id = id;
+        this.userId = userId;
     }
 
     public String getId() {
         return id;
     }
+
+    public String getUserId() {
+        return userId;
+    } // GETTER GỌN GÀNG
 
     public abstract int getType();
 
@@ -31,6 +37,7 @@ public abstract class FeedItem {
 
         public NormalPost(
                 String id,
+                String userId, // THÊM THAM SỐ NÀY
                 String userName,
                 String time,
                 String text,
@@ -41,7 +48,7 @@ public abstract class FeedItem {
                 boolean expandable,
                 String avatarUrl
         ) {
-            super(id);
+            super(id, userId); // ĐẨY LÊN LỚP CHA
             this.userName = userName;
             this.time = time;
             this.text = text;
@@ -82,18 +89,21 @@ public abstract class FeedItem {
         public final String iconText;
         public final int progress;
         public final boolean expandable;
+        public final String milestoneJson; // THÊM CHUỖI JSON ĐỂ TRUYỀN SANG MÀN HÌNH EDIT
 
         public MilestonePost(
                 String id,
+                String userId, // THÊM THAM SỐ NÀY
                 String title,
                 String description,
                 String month,
                 String amount,
                 String iconText,
                 int progress,
-                boolean expandable
+                boolean expandable,
+                String milestoneJson // THÊM THAM SỐ NÀY
         ) {
-            super(id);
+            super(id, userId); // ĐẨY LÊN LỚP CHA
             this.title = title;
             this.description = description;
             this.month = month;
@@ -101,6 +111,7 @@ public abstract class FeedItem {
             this.iconText = iconText;
             this.progress = progress;
             this.expandable = expandable;
+            this.milestoneJson = milestoneJson;
         }
 
         @Override
