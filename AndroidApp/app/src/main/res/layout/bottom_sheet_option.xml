@@ -44,6 +44,34 @@
 
     </LinearLayout>
 
+    <LinearLayout
+        android:id="@+id/btnEditPost"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="20dp"
+        android:background="?attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone">
+
+        <ImageView
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:src="@drawable/ic_pencil_regular"
+            android:layout_marginEnd="16dp"
+            app:tint="@color/item_title" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Chỉnh sửa bài viết"
+            android:textSize="15sp"
+            android:textColor="@color/item_title" />
+
+    </LinearLayout>
+
     <!-- Delete (comment owner / post owner / post delete) -->
     <LinearLayout
         android:id="@+id/btnDeleteComment"

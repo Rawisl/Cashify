@@ -7,17 +7,26 @@ public abstract class FeedItem {
     public static final int TYPE_MILESTONE = 2;
 
     private final String id;
+    private final String userId;
 
-    protected FeedItem(String id) {
+    protected FeedItem(String id, String userId) {
         this.id = id;
+        this.userId = userId;
     }
 
     public String getId() {
         return id;
     }
 
+    public String getUserId() {
+        return userId;
+    } // GETTER GỌN GÀNG
+
     public abstract int getType();
 
+    // =========================================================================
+    // NormalPost — Lớp con tĩnh cho bài viết thông thường
+    // =========================================================================
     public static class NormalPost extends FeedItem {
         public final String userName;
         public final String time;
@@ -41,7 +50,23 @@ public abstract class FeedItem {
                 boolean expandable,
                 String avatarUrl
         ) {
-            super(id);
+            this(id, "", userName, time, text, hasImage, imageUrl, avatarColor, initials, expandable, avatarUrl);
+        }
+
+        public NormalPost(
+                String id,
+                String userId,
+                String userName,
+                String time,
+                String text,
+                boolean hasImage,
+                String imageUrl,
+                int avatarColor,
+                String initials,
+                boolean expandable,
+                String avatarUrl
+        ) {
+            super(id, userId); // ĐẨY LÊN LỚP CHA
             this.userName = userName;
             this.time = time;
             this.text = text;
@@ -74,6 +99,9 @@ public abstract class FeedItem {
         }
     }
 
+    // =========================================================================
+    // MilestonePost — Lớp con tĩnh cho bài viết cột mốc
+    // =========================================================================
     public static class MilestonePost extends FeedItem {
         public final String title;
         public final String description;
@@ -82,6 +110,7 @@ public abstract class FeedItem {
         public final String iconText;
         public final int progress;
         public final boolean expandable;
+        public final String milestoneJson; // THÊM CHUỖI JSON ĐỂ TRUYỀN SANG MÀN HÌNH EDIT
 
         public MilestonePost(
                 String id,
@@ -93,7 +122,22 @@ public abstract class FeedItem {
                 int progress,
                 boolean expandable
         ) {
-            super(id);
+            this(id, "", title, description, month, amount, iconText, progress, expandable, null);
+        }
+
+        public MilestonePost(
+                String id,
+                String userId,
+                String title,
+                String description,
+                String month,
+                String amount,
+                String iconText,
+                int progress,
+                boolean expandable,
+                String milestoneJson // THÊM THAM SỐ NÀY
+        ) {
+            super(id, userId); // FIX: Truyền userId an toàn thông qua tham số constructor
             this.title = title;
             this.description = description;
             this.month = month;
@@ -101,6 +145,7 @@ public abstract class FeedItem {
             this.iconText = iconText;
             this.progress = progress;
             this.expandable = expandable;
+            this.milestoneJson = milestoneJson;
         }
 
         @Override

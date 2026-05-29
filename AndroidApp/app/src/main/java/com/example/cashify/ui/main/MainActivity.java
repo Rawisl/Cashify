@@ -97,6 +97,13 @@ public class MainActivity extends BaseActivity {
         });
     }
 
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent); // Cập nhật lại Intent mới nhất
+        setupDeferredNavigationFromIntent(); // Chạy lại logic kiểm tra bưu kiện
+    }
+
     private void setupDeferredNavigationFromIntent() {
         if (getIntent().hasExtra("OPEN_WORKSPACE_ID")) {
             currentWorkspaceId = getIntent().getStringExtra("OPEN_WORKSPACE_ID");
@@ -109,6 +116,22 @@ public class MainActivity extends BaseActivity {
 
         if (getIntent().getBooleanExtra("OPEN_SOCIAL", false)) {
             navigateWhenHome(controller -> controller.navigate(R.id.nav_social_container));
+        }
+
+        if (getIntent().getBooleanExtra("ACTION_EDIT_POST", false)) {
+            navigateWhenHome(controller -> {
+                Bundle bundle = new Bundle();
+                bundle.putString("edit_post_id", getIntent().getStringExtra("edit_post_id"));
+                bundle.putString("edit_post_content", getIntent().getStringExtra("edit_post_content"));
+
+                // Hứng luôn cục Milestone (nếu là bài Cột mốc)
+                if (getIntent().hasExtra("edit_milestone_data")) {
+                    bundle.putString("edit_milestone_data", getIntent().getStringExtra("edit_milestone_data"));
+                }
+
+                // Ném Bundle sang màn hình Đăng bài
+                controller.navigate(R.id.nav_post_feed, bundle);
+            });
         }
 
         if (getIntent().getBooleanExtra("OPEN_POST_FEED", false)) {

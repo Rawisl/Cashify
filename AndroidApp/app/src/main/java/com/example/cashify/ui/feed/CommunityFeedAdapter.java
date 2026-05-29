@@ -40,18 +40,37 @@ public class CommunityFeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vie
     private final Set<String> likedItemIds = new HashSet<>();
 
     private final OnPostClickListener postClickListener;
+    private final OnPostMenuClickListener menuClickListener; // Khai báo biến
+
+    // THÊM MỚI: Lắng nghe sự kiện bấm vào Avatar từ Bảng tin
+    private OnAvatarClickListener avatarClickListener;
 
     public interface OnPostClickListener {
         void onPostClick(FeedItem item);
     }
 
-    public CommunityFeedAdapter() {
-        this(null);
+    // THÊM MỚI: Interface định nghĩa sự kiện click Avatar
+    public interface OnAvatarClickListener {
+        void onAvatarClick(String userId);
+    }
+
+    public interface OnPostMenuClickListener {
+        void onMenuClick(FeedItem item);
     }
 
     public CommunityFeedAdapter(OnPostClickListener postClickListener) {
+        this(postClickListener, null);
+    }
+
+    public CommunityFeedAdapter(OnPostClickListener postClickListener, OnPostMenuClickListener menuClickListener) {
         super(DIFF_CALLBACK);
         this.postClickListener = postClickListener;
+        this.menuClickListener = menuClickListener;
+    }
+
+    // THÊM MỚI: Setter để Fragment cấu hình hành động điều hướng sang Profile
+    public void setOnAvatarClickListener(OnAvatarClickListener avatarClickListener) {
+        this.avatarClickListener = avatarClickListener;
     }
 
     /** Gọi từ Fragment sau khi parse feed để đánh dấu các post đã liked */
@@ -96,17 +115,6 @@ public class CommunityFeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vie
         notifyItemChanged(position);
     }
 
-    private void showCardMenu(View anchor) {
-        PopupMenu popupMenu = new PopupMenu(anchor.getContext(), anchor);
-        popupMenu.getMenu().add("Chỉnh sửa");
-        popupMenu.getMenu().add("Xóa");
-        popupMenu.setOnMenuItemClickListener(item -> {
-            Toast.makeText(anchor.getContext(), item.getTitle() + " bài viết", Toast.LENGTH_SHORT).show();
-            return true;
-        });
-        popupMenu.show();
-    }
-
     // =========================================================================
     // FIX 3: Implement applyLikeState() — trước đây được gọi nhưng không tồn tại
     // =========================================================================
@@ -117,8 +125,6 @@ public class CommunityFeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vie
         btn.setCompoundDrawableTintList(ColorStateList.valueOf(color));
         btn.setTextColor(color);
     }
-
-
 
     // =========================================================================
     // FIX 4: rollback() dùng applyLikeState() đã được implement ở trên
@@ -178,6 +184,13 @@ public class CommunityFeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vie
         void bind(FeedItem.NormalPost post, boolean expanded) {
             itemView.setOnClickListener(v -> notifyPostClick(post));
 
+            // THÊM MỚI: Tách hàm xử lý click Avatar (gọi an toàn từ instance context)
+            View.OnClickListener onAvatarClicked = v -> {
+                if (avatarClickListener != null && post.getUserId() != null) {
+                    avatarClickListener.onAvatarClick(post.getUserId());
+                }
+            };
+
             // Avatar
             if (post.avatarUrl != null && !post.avatarUrl.isEmpty()) {
                 imgAvatar.setVisibility(View.VISIBLE);
@@ -189,13 +202,19 @@ public class CommunityFeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vie
                 ImageHelper.loadAvatar(null, imgAvatar, post.userName);
             }
 
+            // THÊM MỚI: Đăng ký click sự kiện cho cả ảnh Avatar hoặc Text Avatar đại diện
+            imgAvatar.setOnClickListener(onAvatarClicked);
+            txtAvatar.setOnClickListener(onAvatarClicked);
+            name.setOnClickListener(onAvatarClicked); // Bấm vào tên tác giả cũng mở được trang cá nhân
+
             name.setText(post.userName);
             time.setText(post.time);
             content.setText(post.text);
             content.setMaxLines(expanded ? Integer.MAX_VALUE : 3);
             bindSeeMore(seeMore, content, post.getId(), post.expandable, expanded, this);
-            menuButton.setOnClickListener(CommunityFeedAdapter.this::showCardMenu);
-
+            menuButton.setOnClickListener(v -> {
+                if (menuClickListener != null) menuClickListener.onMenuClick(post); // post hoặc milestone tùy ViewHolder
+            });
             // Ảnh bài viết
             if (post.hasImage && post.imageUrl != null && !post.imageUrl.isEmpty()) {
                 imagePlaceholder.setVisibility(View.VISIBLE);
@@ -299,7 +318,9 @@ public class CommunityFeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vie
             amount.setText(milestone.amount);
             progressBar.setProgress(milestone.progress);
             bindSeeMore(seeMore, description, milestone.getId(), milestone.expandable, expanded, this);
-            menuButton.setOnClickListener(CommunityFeedAdapter.this::showCardMenu);
+            menuButton.setOnClickListener(v -> {
+                if (menuClickListener != null) menuClickListener.onMenuClick(milestone); // post hoặc milestone tùy ViewHolder
+            });
         }
     }
 

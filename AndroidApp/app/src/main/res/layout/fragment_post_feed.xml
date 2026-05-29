@@ -522,6 +522,92 @@
                     </LinearLayout>
                 </LinearLayout>
 
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/milestonePreviewContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:visibility="gone"
+                    app:cardBackgroundColor="@color/white"
+                    app:cardCornerRadius="20dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/brand_primary"
+                    app:strokeWidth="1.5dp"
+                    tools:visibility="visible">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/tvPreviewIcon"
+                                android:layout_width="52dp"
+                                android:layout_height="52dp"
+                                android:background="@drawable/bg_social_metric_chip"
+                                android:fontFamily="@font/inter_bold"
+                                android:gravity="center"
+                                android:textColor="@color/brand_primary"
+                                android:textSize="16sp"
+                                tools:text="85%" />
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="14dp"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:id="@+id/tvPreviewTitle"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:fontFamily="@font/inter_bold"
+                                    android:textColor="@color/item_title"
+                                    android:textSize="16sp"
+                                    tools:text="Tá»•ng káº¿t NgÃ¢n sÃ¡ch" />
+
+                                <TextView
+                                    android:id="@+id/tvPreviewMonth"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:fontFamily="@font/inter_medium"
+                                    android:textColor="@color/item_description"
+                                    android:textSize="13sp"
+                                    tools:text="ThÃ¡ng 05/2026" />
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <ProgressBar
+                            android:id="@+id/pbPreviewProgress"
+                            style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                            android:layout_width="match_parent"
+                            android:layout_height="8dp"
+                            android:layout_marginTop="18dp"
+                            android:max="100"
+                            android:progressDrawable="@drawable/bg_achievement_progress"
+                            tools:progress="85" />
+
+                        <TextView
+                            android:id="@+id/tvPreviewAmount"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:fontFamily="@font/inter_bold"
+                            android:textColor="@color/brand_primary"
+                            android:textSize="15sp"
+                            tools:text="CÃ²n dÆ°: 2.500.000 Ä‘" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
                 <TextView
                     android:id="@+id/txtComposerHint"
                     android:layout_width="match_parent"

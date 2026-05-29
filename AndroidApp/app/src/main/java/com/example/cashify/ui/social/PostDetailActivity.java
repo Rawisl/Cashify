@@ -301,7 +301,6 @@ public class PostDetailActivity extends AppCompatActivity {
         tvPostContent.setText(nonEmpty(post.content, ""));
         likeCount = Math.max(0, post.likeCount);
         commentCount = Math.max(0, post.commentCount);
-        shareCount = Math.max(0, post.shareCount);
         isLiked = post.likedByMe;
         tvLikeCount.setText(String.valueOf(likeCount));
         tvCommentCount.setText(String.valueOf(commentCount));
@@ -422,21 +421,6 @@ public class PostDetailActivity extends AppCompatActivity {
 
     private void sharePost() {
         copyPostLink();
-        if (authHeader == null) {
-            return;
-        }
-        apiService.sharePost(postId, authHeader).enqueue(new Callback<ApiService.SocialReactionResponse>() {
-            @Override
-            public void onResponse(@NonNull Call<ApiService.SocialReactionResponse> call,
-                                   @NonNull Response<ApiService.SocialReactionResponse> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    shareCount = Math.max(0, response.body().shareCount);
-                    updateShareText();
-                }
-            }
-
-            @Override public void onFailure(@NonNull Call<ApiService.SocialReactionResponse> call, @NonNull Throwable t) {}
-        });
     }
 
     private void copyPostLink() {
