@@ -214,8 +214,28 @@ public class BudgetFragment extends Fragment {
 
         TextView btnShareMilestone = view.findViewById(R.id.btnShareMilestone);
         btnShareMilestone.setOnClickListener(v -> {
-            // TODO: gọi API auto-milestone ở đây
-            Toast.makeText(requireContext(), "Generating milestone... (Coming soon)", Toast.LENGTH_SHORT).show();
+            // 1. CHUẨN MVVM: Lấy thẳng trạng thái mới nhất từ ViewModel ngay lúc bấm nút
+            BudgetViewModel.BudgetUIState state = budgetViewModel.getUiState().getValue();
+
+            // 2. Kiểm tra an toàn
+            if (state == null || state.masterBudget == null || state.masterBudget.limitAmount <= 0) {
+                showToastOnUI("Bạn chưa thiết lập ngân sách tổng!");
+                return;
+            }
+
+            long limit = state.masterBudget.limitAmount;
+            long spent = state.masterSpent;
+            String periodLabel = currentPeriodType.equals("MONTH") ? state.monthLabel : state.weekLabel;
+
+            // 3. Đóng gói Bưu kiện (Bundle)
+            android.os.Bundle bundle = new android.os.Bundle();
+            bundle.putLong("milestone_limit", limit);
+            bundle.putLong("milestone_spent", spent);
+            bundle.putString("milestone_period", currentPeriodType);
+            bundle.putString("milestone_label", periodLabel);
+
+            // 4. Chuyển trang
+            androidx.navigation.Navigation.findNavController(v).navigate(R.id.nav_post_feed, bundle);
         });
     }
 

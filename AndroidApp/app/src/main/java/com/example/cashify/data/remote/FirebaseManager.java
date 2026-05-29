@@ -940,15 +940,15 @@ public class FirebaseManager {
                 @Override
                 public void onResponse(retrofit2.Call<List<DirectConversation>> call, retrofit2.Response<List<DirectConversation>> response) {
                     if (response.isSuccessful()) callback.onSuccess(response.body() != null ? response.body() : new ArrayList<>());
-                    else callback.onError(extractApiError(response, "Lá»—i server: " + response.code()));
+                    else callback.onError(extractApiError(response, "Lỗi server: " + response.code()));
                 }
 
                 @Override
                 public void onFailure(retrofit2.Call<List<DirectConversation>> call, Throwable t) {
-                    callback.onError("Lá»—i máº¡ng: " + t.getMessage());
+                    callback.onError("Lỗi mạng: " + t.getMessage());
                 }
             });
-        }).addOnFailureListener(e -> callback.onError("Lá»—i Auth: " + e.getMessage()));
+        }).addOnFailureListener(e -> callback.onError("Lỗi Auth: " + e.getMessage()));
     }
 
     // Hàm tạo ID phòng chat y hệt bên C# (Xếp theo bảng chữ cái)

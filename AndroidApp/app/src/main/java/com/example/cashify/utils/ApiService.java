@@ -143,20 +143,7 @@ public interface ApiService {
             @Header("Authorization") String token
     );
 
-    @GET("/api/v1/post/{postId}/comments")
-    Call<java.util.List<SocialCommentResponse>> getPostComments(@Path("postId") String postId, @Header("Authorization") String token);
-
-    @POST("/api/v1/social/posts/{postId}/like")
-    Call<SocialReactionResponse> setPostLike(@Path("postId") String postId, @Header("Authorization") String token, @Body SocialLikeRequest request);
-
-    @POST("/api/v1/social/posts/{postId}/comments")
-    Call<SocialCommentResponse> addPostComment(@Path("postId") String postId, @Header("Authorization") String token, @Body SocialCommentRequest request);
-
-    @POST("/api/v1/social/posts/{postId}/share")
-    Call<SocialReactionResponse> sharePost(@Path("postId") String postId, @Header("Authorization") String token);
-
     //load bài viết trên trang cá nhân riêng
-
     @GET("/api/v1/post/wall/{targetUid}")
     Call<List<Object>> getWall(
             @Header("Authorization") String token,
@@ -164,6 +151,9 @@ public interface ApiService {
             @Query("limit") int limit,
             @Query("lastTimestamp") long lastTimestamp
     );
+
+    @POST("/api/v1/post/milestone-auto")
+    Call<Object> generateAutoMilestone(@Header("Authorization") String token, @Body AutoMilestoneRequest request);
 
     // --- CÁC CLASS MODEL DÙNG ĐỂ HỨNG DATA ---
 
@@ -285,18 +275,19 @@ public interface ApiService {
         public CreatePostRequest() {}
 
         // Constructor 4 tham số để dùng bên Fragment
-        public CreatePostRequest(String content, String type, String imageUrl, String milestoneData) {
+        public CreatePostRequest(String content, String type, String imageUrl, String milestoneData, String audience) {
             this.Content = content;
             this.Type = type;
             this.ImageUrl = imageUrl;
             this.MilestoneData = milestoneData;
+            this.Audience = audience;
         }
     }
 
     class EditPostRequest {
         public String PostId;
-        public String Content;
-        public String ImageUrl;
+        public String NewContent;
+        public String NewImageUrl;
         public String Visibility;
         public String Audience;
 
@@ -347,7 +338,7 @@ public interface ApiService {
     class EditCommentRequest {
         public String PostId;
         public String CommentId;
-        public String Content;
+        public String NewContent;
 
         public EditCommentRequest() {}
     }
@@ -356,7 +347,10 @@ public interface ApiService {
         public String PostId;
         public String CommentId;
 
-        public DeleteCommentRequest() {}
+        public DeleteCommentRequest(String postId, String commentId) {
+            this.PostId = postId;
+            this.CommentId = commentId;
+        }
     }
 
     class BatchProfileRequest {
@@ -391,14 +385,17 @@ public interface ApiService {
         @SerializedName("commentCount")
         public int commentCount;
 
-        @SerializedName("shareCount")
-        public int shareCount;
-
         @SerializedName("timestamp")
         public long timestamp;
 
         @SerializedName("isLiked")
         public boolean likedByMe;
+
+        @SerializedName("type")
+        public String type;
+
+        @SerializedName("milestoneData")
+        public String milestoneData;
     }
 
     class SocialCommentResponse {
@@ -411,20 +408,9 @@ public interface ApiService {
         public int likeCount;
     }
 
-    class SocialLikeRequest {
-        public boolean Liked;
-        public SocialLikeRequest(boolean liked) { Liked = liked; }
-    }
-
-    class SocialCommentRequest {
-        public String Content;
-        public SocialCommentRequest(String content) { Content = content; }
-    }
-
     class SocialReactionResponse {
         public int likeCount;
         public int commentCount;
-        public int shareCount;
         public boolean likedByMe;
     }
 
@@ -435,6 +421,16 @@ public interface ApiService {
         public WorkspaceMessageSendRequest(String workspaceId, String text) {
             this.WorkspaceId = workspaceId;
             this.Text = text;
+        }
+    }
+    class AutoMilestoneRequest {
+        public long LimitAmount;
+        public long SpentAmount;
+        public String PeriodType;
+        public String PeriodLabel;
+
+        public AutoMilestoneRequest(long limit, long spent, String type, String label) {
+            this.LimitAmount = limit; this.SpentAmount = spent; this.PeriodType = type; this.PeriodLabel = label;
         }
     }
 }

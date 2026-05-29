@@ -20,7 +20,7 @@ public abstract class FeedItem {
 
     public String getUserId() {
         return userId;
-    }
+    } // GETTER GỌN GÀNG
 
     public abstract int getType();
 
@@ -40,7 +40,7 @@ public abstract class FeedItem {
 
         public NormalPost(
                 String id,
-                String userId, // FIX: Thêm tham số userId vào đây
+                String userId,
                 String userName,
                 String time,
                 String text,
@@ -51,7 +51,7 @@ public abstract class FeedItem {
                 boolean expandable,
                 String avatarUrl
         ) {
-            super(id, userId); // FIX: Truyền userId an toàn thông qua tham số constructor
+            super(id, userId); // ĐẨY LÊN LỚP CHA
             this.userName = userName;
             this.time = time;
             this.text = text;
@@ -95,17 +95,19 @@ public abstract class FeedItem {
         public final String iconText;
         public final int progress;
         public final boolean expandable;
+        public final String milestoneJson; // THÊM CHUỖI JSON ĐỂ TRUYỀN SANG MÀN HÌNH EDIT
 
         public MilestonePost(
                 String id,
-                String userId, // FIX: Thêm tham số userId vào đây
+                String userId,
                 String title,
                 String description,
                 String month,
                 String amount,
                 String iconText,
                 int progress,
-                boolean expandable
+                boolean expandable,
+                String milestoneJson // THÊM THAM SỐ NÀY
         ) {
             super(id, userId); // FIX: Truyền userId an toàn thông qua tham số constructor
             this.title = title;
@@ -115,6 +117,7 @@ public abstract class FeedItem {
             this.iconText = iconText;
             this.progress = progress;
             this.expandable = expandable;
+            this.milestoneJson = milestoneJson;
         }
 
         @Override

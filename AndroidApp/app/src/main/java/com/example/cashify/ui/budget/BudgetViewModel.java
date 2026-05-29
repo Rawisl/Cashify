@@ -307,4 +307,42 @@ public class BudgetViewModel extends AndroidViewModel {
             }
         });
     }
+
+    public void shareMilestoneToFeed(String periodType, BudgetActionCallback callback) {
+        BudgetUIState state = uiState.getValue();
+        if (state == null || state.masterBudget == null || state.masterBudget.limitAmount <= 0) {
+            callback.onError("Bạn chưa thiết lập ngân sách tổng!");
+            return;
+        }
+
+        String periodLabel = periodType.equals("MONTH") ? state.monthLabel : state.weekLabel;
+
+        com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser().getIdToken(false)
+                .addOnSuccessListener(tokenResult -> {
+                    String token = "Bearer " + tokenResult.getToken();
+
+                    // Client chỉ đưa cho Server số thô thám
+                    com.example.cashify.utils.ApiService.AutoMilestoneRequest req =
+                            new com.example.cashify.utils.ApiService.AutoMilestoneRequest(
+                                    state.masterBudget.limitAmount,
+                                    state.masterSpent,
+                                    periodType,
+                                    periodLabel
+                            );
+
+                    com.example.cashify.utils.ApiClient.getClient().create(com.example.cashify.utils.ApiService.class)
+                            .generateAutoMilestone(token, req).enqueue(new retrofit2.Callback<Object>() {
+                                @Override
+                                public void onResponse(@NonNull retrofit2.Call<Object> call, @NonNull retrofit2.Response<Object> response) {
+                                    if (response.isSuccessful()) callback.onSuccess("Đã khoe cột mốc lên bảng tin!");
+                                    else callback.onError("Lỗi tạo bài: " + response.code());
+                                }
+
+                                @Override
+                                public void onFailure(@NonNull retrofit2.Call<Object> call, @NonNull Throwable t) {
+                                    callback.onError("Lỗi mạng: " + t.getMessage());
+                                }
+                            });
+                }).addOnFailureListener(e -> callback.onError("Lỗi xác thực Firebase!"));
+    }
 }

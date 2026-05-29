@@ -10,7 +10,9 @@ public static class SocialEndpoints
     {
         var group = app.MapGroup("/api/v1");
 
-        //load các bài đăng
+        // ---------------------------------------------------------
+        // 1. TẢI FEED BẢNG TIN
+        // ---------------------------------------------------------
         group.MapPost("/post/feed", async (HttpRequest request, FeedRequest body, FirestoreDb db) =>
         {
             try
@@ -20,7 +22,7 @@ public static class SocialEndpoints
                     return Results.Unauthorized();
 
                 var token = authHeader.Substring("Bearer ".Length);
-                var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token)).Uid; // LẤY UID ĐỂ CHECK LIKE
+                var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token)).Uid;
 
                 Query query = db.Collection("posts");
 
@@ -37,28 +39,23 @@ public static class SocialEndpoints
 
                 var snapshot = await query.GetSnapshotAsync();
 
-                // CHẠY SONG SONG KỂM TRA LIKE CHO 10 BÀI POST CÙNG LÚC
                 var likeCheckTasks = snapshot.Documents.Select(async doc =>
                 {
                     var postDict = doc.ToDictionary();
-
-                    // Chọc vào sub-collection likes để xem uid này có tồn tại không
                     var likeSnap = await db.Collection("posts").Document(doc.Id).Collection("likes").Document(uid).GetSnapshotAsync();
-
-                    // Gắn thêm trường isLiked cho Android
                     postDict["isLiked"] = likeSnap.Exists;
-
                     return postDict;
                 });
 
                 var posts = (await Task.WhenAll(likeCheckTasks)).ToList();
-
                 return Results.Ok(posts);
             }
             catch (Exception ex) { return Results.Problem($"Lỗi lấy feed: {ex.Message}"); }
         });
 
-        //load bình luận của 1 bài viết
+        // ---------------------------------------------------------
+        // 2. TẢI BÌNH LUẬN
+        // ---------------------------------------------------------
         group.MapGet("/post/{postId}/comments", async (HttpRequest request, string postId, FirestoreDb db) =>
         {
             try
@@ -68,8 +65,6 @@ public static class SocialEndpoints
                     return Results.Unauthorized();
 
                 var commentsRef = db.Collection("posts").Document(postId).Collection("comments");
-
-                // Load comment xếp theo thời gian cũ nhất lên trước (như Facebook)
                 var snapshot = await commentsRef.OrderBy("timestamp").GetSnapshotAsync();
 
                 var comments = snapshot.Documents.Select(doc => doc.ToDictionary()).ToList();
@@ -78,7 +73,9 @@ public static class SocialEndpoints
             catch (Exception ex) { return Results.Problem(ex.Message); }
         });
 
-        //load bài viết tường nhà của riêng 1 user (chỉ load bài của riêng nó)
+        // ---------------------------------------------------------
+        // 3. TẢI BÀI TƯỜNG NHÀ 
+        // ---------------------------------------------------------
         group.MapGet("/post/wall/{targetUid}", async (HttpRequest request, FirestoreDb db, string targetUid, int limit = 10, long lastTimestamp = 0) =>
         {
             try
@@ -87,7 +84,6 @@ public static class SocialEndpoints
                 if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
                     return Results.Unauthorized();
 
-                // Lấy UID của người ĐANG XEM để check xem nó đã like bài trên tường này chưa
                 var token = authHeader.Substring("Bearer ".Length);
                 var currentViewerUid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token)).Uid;
 
@@ -99,7 +95,6 @@ public static class SocialEndpoints
 
                 var snapshot = await query.GetSnapshotAsync();
 
-                // ỐP LOGIC CHECK LIKE SONG SONG Y HỆT BÊN FEED VÀO ĐÂY
                 var likeCheckTasks = snapshot.Documents.Select(async doc =>
                 {
                     var postDict = doc.ToDictionary();
@@ -109,13 +104,14 @@ public static class SocialEndpoints
                 });
 
                 var posts = (await Task.WhenAll(likeCheckTasks)).ToList();
-
                 return Results.Ok(posts);
             }
             catch (Exception ex) { return Results.Problem(ex.Message); }
         });
 
-        //tạo bài
+        // ---------------------------------------------------------
+        // 4. TẠO BÀI ĐĂNG
+        // ---------------------------------------------------------
         group.MapPost("/post/create", async (HttpRequest request, CreatePostRequest body, FirestoreDb db) =>
         {
             try
@@ -128,10 +124,9 @@ public static class SocialEndpoints
                 var decodedToken = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token);
                 var uid = decodedToken.Uid;
 
-                if (string.IsNullOrEmpty(body.Content) && string.IsNullOrEmpty(body.ImageUrl))
+                if (string.IsNullOrEmpty(body.Content) && string.IsNullOrEmpty(body.ImageUrl) && string.IsNullOrEmpty(body.MilestoneData))
                     return Results.BadRequest("Nội dung không được để trống");
 
-                // Lấy tên tác giả từ Firestore
                 var userSnap = await db.Collection("users").Document(uid).GetSnapshotAsync();
                 var authorName = userSnap.Exists && userSnap.ContainsField("displayName")
                     ? userSnap.GetValue<string>("displayName")
@@ -144,20 +139,21 @@ public static class SocialEndpoints
                 var postRef = db.Collection("posts").Document(postId);
 
                 var postData = new Dictionary<string, object>
-        {
-            { "postId", postId },
-            { "userId", uid },
-            { "authorName", authorName },
-            { "authorAvatarUrl", authorAvatarUrl },
-            { "type", body.Type ?? "USER_POST" },
-            { "content", body.Content ?? "" },
-            { "imageUrl", body.ImageUrl ?? "" },
-            { "milestoneData", body.MilestoneData },
-            { "likeCount", 0 },
-            { "commentCount", 0 },
-            { "timestamp", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() },
-            { "isEdited", false }
-        };
+                {
+                    { "postId", postId },
+                    { "userId", uid },
+                    { "authorName", authorName },
+                    { "authorAvatarUrl", authorAvatarUrl },
+                    { "type", body.Type ?? "USER_POST" },
+                    { "audience", body.Audience ?? "FRIENDS" }, // HỨNG Audience TỪ ANDROID
+                    { "content", body.Content ?? "" },
+                    { "imageUrl", body.ImageUrl ?? "" },
+                    { "milestoneData", body.MilestoneData },
+                    { "likeCount", 0 },
+                    { "commentCount", 0 },
+                    { "timestamp", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() },
+                    { "isEdited", false }
+                };
 
                 await postRef.SetAsync(postData);
                 return Results.Ok(new { message = "Đăng bài thành công", postId });
@@ -165,7 +161,9 @@ public static class SocialEndpoints
             catch (Exception ex) { return Results.Problem($"Lỗi tạo bài: {ex.Message}"); }
         });
 
-        //thả chim
+        // ---------------------------------------------------------
+        // 5. THẢ TIM (LIKE)
+        // ---------------------------------------------------------
         group.MapPost("/post/like", async (HttpRequest request, LikeActionRequest body, FirestoreDb db) =>
         {
             try
@@ -180,7 +178,6 @@ public static class SocialEndpoints
                 var postRef = db.Collection("posts").Document(body.PostId);
                 var likeRef = postRef.Collection("likes").Document(uid);
 
-                // Dùng Transaction để đảm bảo tính toán số lượng Tim chuẩn xác 100%
                 await db.RunTransactionAsync(async transaction =>
                 {
                     DocumentSnapshot postSnap = await transaction.GetSnapshotAsync(postRef);
@@ -192,13 +189,11 @@ public static class SocialEndpoints
 
                     if (likeSnap.Exists)
                     {
-                        // Đã like rồi -> Giờ là UNLIKE
                         transaction.Delete(likeRef);
                         transaction.Update(postRef, "likeCount", Math.Max(0, currentLikes - 1));
                     }
                     else
                     {
-                        // Chưa like -> Giờ là LIKE
                         transaction.Set(likeRef, new Dictionary<string, object> { { "likedAt", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() } });
                         transaction.Update(postRef, "likeCount", currentLikes + 1);
                     }
@@ -209,7 +204,9 @@ public static class SocialEndpoints
             catch (Exception ex) { return Results.Problem(ex.Message); }
         });
 
-        //sửa bài
+        // ---------------------------------------------------------
+        // 6. SỬA BÀI VIẾT (Đã fix Update Audience)
+        // ---------------------------------------------------------
         group.MapPost("/post/edit", async (HttpRequest request, EditPostRequest body, FirestoreDb db) =>
         {
             try
@@ -227,16 +224,19 @@ public static class SocialEndpoints
                 if (!postSnap.Exists)
                     return Results.NotFound("Bài viết không tồn tại");
                 if (postSnap.GetValue<string>("userId") != uid)
-                    return Results.StatusCode(403); // Cấm sửa trộm
+                    return Results.StatusCode(403);
 
                 var updates = new Dictionary<string, object>
-        {
-            { "content", body.NewContent },
-            { "isEdited", true }
-        };
-                // Nếu có update ảnh mới thì lưu, không thì giữ nguyên ảnh cũ
+                {
+                    { "content", body.NewContent },
+                    { "isEdited", true }
+                };
                 if (body.NewImageUrl != null)
                     updates["imageUrl"] = body.NewImageUrl;
+
+                // Nếu Android có truyền Audience lên thì C# mới Update
+                if (body.Audience != null)
+                    updates["audience"] = body.Audience;
 
                 await postRef.UpdateAsync(updates);
                 return Results.Ok(new { message = "Đã sửa bài viết" });
@@ -244,7 +244,9 @@ public static class SocialEndpoints
             catch (Exception ex) { return Results.Problem(ex.Message); }
         });
 
-        //xóa bài viết (Dọn sạch cả Sub-collection để chống rác Data)
+        // ---------------------------------------------------------
+        // 7. XÓA BÀI VIẾT
+        // ---------------------------------------------------------
         group.MapPost("/post/delete", async (HttpRequest request, DeletePostRequest body, FirestoreDb db) =>
         {
             try
@@ -262,29 +264,19 @@ public static class SocialEndpoints
                 if (!postSnap.Exists)
                     return Results.NotFound("Bài viết không tồn tại");
                 if (postSnap.GetValue<string>("userId") != uid)
-                    return Results.StatusCode(403); // Cấm xóa trộm
+                    return Results.StatusCode(403);
 
-                // Khởi tạo xe rác (Batch) để gom lệnh xóa
                 var batch = db.StartBatch();
 
-                // 1. Quét dọn collection "likes"
                 var likesSnap = await postRef.Collection("likes").GetSnapshotAsync();
                 foreach (var doc in likesSnap.Documents)
-                {
                     batch.Delete(doc.Reference);
-                }
 
-                // 2. Quét dọn collection "comments"
                 var commentsSnap = await postRef.Collection("comments").GetSnapshotAsync();
                 foreach (var doc in commentsSnap.Documents)
-                {
                     batch.Delete(doc.Reference);
-                }
 
-                // 3. Đập bỏ Document gốc (Post)
                 batch.Delete(postRef);
-
-                // 4. Bấm nút hủy diệt cùng lúc toàn bộ
                 await batch.CommitAsync();
 
                 return Results.Ok(new { message = "Đã xóa bài viết và các dữ liệu liên quan" });
@@ -292,7 +284,9 @@ public static class SocialEndpoints
             catch (Exception ex) { return Results.Problem(ex.Message); }
         });
 
-        //add bình luận
+        // ---------------------------------------------------------
+        // 8. TẠO BÌNH LUẬN
+        // ---------------------------------------------------------
         group.MapPost("/comment/add", async (HttpRequest request, AddCommentRequest body, FirestoreDb db) =>
         {
             try
@@ -321,15 +315,15 @@ public static class SocialEndpoints
                         throw new Exception("Bài viết không tồn tại");
 
                     var commentData = new Dictionary<string, object>
-            {
-                { "commentId", commentId },
-                { "userId", uid },
-                { "authorName", authorName },
-                { "authorAvatarUrl", authorAvatarUrl },
-                { "content", body.Content },
-                { "timestamp", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() },
-                { "isEdited", false }
-            };
+                    {
+                        { "commentId", commentId },
+                        { "userId", uid },
+                        { "authorName", authorName },
+                        { "authorAvatarUrl", authorAvatarUrl },
+                        { "content", body.Content },
+                        { "timestamp", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() },
+                        { "isEdited", false }
+                    };
 
                     transaction.Set(commentRef, commentData);
                     long currentComments = postSnap.GetValue<long>("commentCount");
@@ -341,7 +335,9 @@ public static class SocialEndpoints
             catch (Exception ex) { return Results.Problem(ex.Message); }
         });
 
-        //sửa bình luận
+        // ---------------------------------------------------------
+        // 9. SỬA BÌNH LUẬN
+        // ---------------------------------------------------------
         group.MapPost("/comment/edit", async (HttpRequest request, EditCommentRequest body, FirestoreDb db) =>
         {
             try
@@ -362,17 +358,19 @@ public static class SocialEndpoints
                     return Results.StatusCode(403);
 
                 await commentRef.UpdateAsync(new Dictionary<string, object>
-        {
-            { "content", body.NewContent },
-            { "isEdited", true }
-        });
+                {
+                    { "content", body.NewContent },
+                    { "isEdited", true }
+                });
 
                 return Results.Ok(new { message = "Đã sửa bình luận" });
             }
             catch (Exception ex) { return Results.Problem(ex.Message); }
         });
 
-        //xóa bình luận
+        // ---------------------------------------------------------
+        // 10. XÓA BÌNH LUẬN
+        // ---------------------------------------------------------
         group.MapPost("/comment/delete", async (HttpRequest request, DeleteCommentRequest body, FirestoreDb db) =>
         {
             try
@@ -398,13 +396,11 @@ public static class SocialEndpoints
                     var postOwnerId = postSnap.GetValue<string>("userId");
                     var commentOwnerId = commentSnap.GetValue<string>("userId");
 
-                    // Chỉ chủ comment hoặc chủ bài viết mới có quyền xóa
                     if (uid != commentOwnerId && uid != postOwnerId)
                         throw new Exception("Không có quyền xóa");
 
                     transaction.Delete(commentRef);
 
-                    // Giảm số đếm comment
                     long currentComments = postSnap.GetValue<long>("commentCount");
                     transaction.Update(postRef, "commentCount", Math.Max(0, currentComments - 1));
                 });
@@ -414,7 +410,9 @@ public static class SocialEndpoints
             catch (Exception ex) { return Results.Problem(ex.Message); }
         });
 
-        //bulk profile fetch (ý tưởng cái này đại loại phục vụ cho Client-side Join. Khi tải 10 bài post, Andr gom 10 userId (loại bỏ trùng lặp), bắn lên rồi gọi API backend này để lấy về tên + avt của những người đó nhét vào cache trong ViewModel)
+        // ---------------------------------------------------------
+        // 11. BATCH PROFILE FETCH
+        // ---------------------------------------------------------
         group.MapPost("/user/batch-profiles", async (HttpRequest request, BatchProfileRequest body, FirestoreDb db) =>
         {
             try
@@ -423,8 +421,6 @@ public static class SocialEndpoints
                     return Results.Ok(new Dictionary<string, object>());
 
                 var profiles = new Dictionary<string, object>();
-
-                // Lọc trùng ID trước khi đi tìm trong Database để tối ưu hiệu năng
                 var uniqueUids = body.UserIds.Distinct().ToList();
 
                 foreach (var uid in uniqueUids)
@@ -445,7 +441,9 @@ public static class SocialEndpoints
             catch (Exception ex) { return Results.Problem(ex.Message); }
         });
 
-        // GỬI LỜI MỜI KẾT BẠN
+        // ---------------------------------------------------------
+        // 12. GỬI YÊU CẦU KẾT BẠN
+        // ---------------------------------------------------------
         group.MapPost("/friend/request", async (HttpRequest request, FriendActionRequest body, FirestoreDb db) =>
         {
             try
@@ -484,23 +482,12 @@ public static class SocialEndpoints
                 var batch = db.StartBatch();
                 var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
-                var sentRequestData = new Dictionary<string, object>
-        {
-            { "toUid", body.TargetUid },
-            { "timestamp", timestamp }
-        };
+                var sentRequestData = new Dictionary<string, object> { { "toUid", body.TargetUid }, { "timestamp", timestamp } };
+                var incomingRequestData = new Dictionary<string, object> { { "fromUid", uid }, { "timestamp", timestamp } };
 
-                var incomingRequestData = new Dictionary<string, object>
-        {
-            { "fromUid", uid },
-            { "timestamp", timestamp }
-        };
-
-                // Google.Cloud.Firestore serializes dictionaries reliably here; anonymous objects can fail at runtime.
                 batch.Set(currentUserRef.Collection("sent_requests").Document(body.TargetUid), sentRequestData);
                 batch.Set(targetUserRef.Collection("friend_requests").Document(uid), incomingRequestData);
 
-                // BẮN THÔNG BÁO KẾT BẠN
                 var notifRef = db.Collection("users").Document(body.TargetUid).Collection("notifications").Document();
                 batch.Set(notifRef, new
                 {
@@ -509,7 +496,7 @@ public static class SocialEndpoints
                     message = $"{senderName} has sent you a friend request.",
                     timestamp = timestamp,
                     isRead = false,
-                    referenceId = uid // ID người gửi
+                    referenceId = uid
                 });
 
                 await batch.CommitAsync();
@@ -517,15 +504,13 @@ public static class SocialEndpoints
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"Friend request failed: {ex}");
-                return Results.Problem(
-                    title: "Gửi lời mời thất bại",
-                    detail: ex.Message,
-                    statusCode: 500);
+                return Results.Problem(title: "Gửi lời mời thất bại", detail: ex.Message, statusCode: 500);
             }
         });
 
-        //ĐỒNG Ý KẾT BẠN
+        // ---------------------------------------------------------
+        // 13. CHẤP NHẬN YÊU CẦU KẾT BẠN
+        // ---------------------------------------------------------
         group.MapPost("/friend/accept", async (HttpRequest request, FriendActionRequest body, FirestoreDb db) =>
         {
             try
@@ -541,11 +526,9 @@ public static class SocialEndpoints
                 var batch = db.StartBatch();
                 var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
-                // 1. Xóa lời mời ở 2 bên
                 batch.Delete(db.Collection("users").Document(uid).Collection("friend_requests").Document(body.TargetUid));
                 batch.Delete(db.Collection("users").Document(body.TargetUid).Collection("sent_requests").Document(uid));
 
-                // 2. Thêm vào danh sách bạn bè của cả 2 (Ghi 1 phát ăn luôn, không sợ lệch Data)
                 batch.Set(db.Collection("users").Document(uid).Collection("friends").Document(body.TargetUid), new { timestamp });
                 batch.Set(db.Collection("users").Document(body.TargetUid).Collection("friends").Document(uid), new { timestamp });
 
@@ -555,7 +538,9 @@ public static class SocialEndpoints
             catch (Exception ex) { return Results.Problem(ex.Message); }
         });
 
-        //TỪ CHỐI / HỦY LỜI MỜI / HỦY KẾT BẠN (GỘP CHUNG 3 IN 1)
+        // ---------------------------------------------------------
+        // 14. TỪ CHỐI / XÓA BẠN BÈ
+        // ---------------------------------------------------------
         group.MapPost("/friend/remove", async (HttpRequest request, FriendActionRequest body, FirestoreDb db) =>
         {
             try
@@ -569,8 +554,6 @@ public static class SocialEndpoints
                     return Results.BadRequest("UID invalid");
 
                 var batch = db.StartBatch();
-
-                // Diệt cỏ tận gốc: Quét sạch mọi dấu vết (Bạn bè, Lời mời gửi, Lời mời đến) ở cả 2 người
                 string[] collections = { "friends", "friend_requests", "sent_requests" };
                 foreach (var col in collections)
                 {
@@ -584,7 +567,9 @@ public static class SocialEndpoints
             catch (Exception ex) { return Results.Problem(ex.Message); }
         });
 
-        //GỢI Ý KẾT BẠN CHỈ GỒM NGƯỜI CHƯA CÓ QUAN HỆ
+        // ---------------------------------------------------------
+        // 15. GỢI Ý KẾT BẠN
+        // ---------------------------------------------------------
         group.MapGet("/friend/suggestions", async (HttpRequest request, FirestoreDb db) =>
         {
             try
@@ -619,15 +604,13 @@ public static class SocialEndpoints
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"Friend suggestions failed: {ex}");
-                return Results.Problem(
-                    title: "Tải gợi ý kết bạn thất bại",
-                    detail: ex.Message,
-                    statusCode: 500);
+                return Results.Problem(title: "Tải gợi ý kết bạn thất bại", detail: ex.Message, statusCode: 500);
             }
         });
 
-        // LẤY CHI TIẾT 1 BÀI VIẾT
+        // ---------------------------------------------------------
+        // 16. LẤY CHI TIẾT 1 BÀI VIẾT
+        // ---------------------------------------------------------
         group.MapGet("/post/{postId}", async (HttpRequest request, string postId, FirestoreDb db) =>
         {
             try
@@ -647,13 +630,8 @@ public static class SocialEndpoints
 
                 var postDict = postSnap.ToDictionary();
 
-                // Check xem người đang xem đã like chưa
                 var likeSnap = await postRef.Collection("likes").Document(uid).GetSnapshotAsync();
                 postDict["isLiked"] = likeSnap.Exists;
-
-                // Đảm bảo có shareCount (field cũ có thể chưa có)
-                if (!postDict.ContainsKey("shareCount"))
-                    postDict["shareCount"] = 0L;
 
                 return Results.Ok(postDict);
             }

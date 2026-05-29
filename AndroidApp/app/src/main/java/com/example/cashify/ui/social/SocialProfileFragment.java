@@ -6,6 +6,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
@@ -20,6 +21,7 @@ import com.example.cashify.R;
 import com.example.cashify.ui.auth.EditProfileActivity;
 import com.example.cashify.ui.feed.CommunityFeedAdapter;
 import com.example.cashify.ui.feed.FeedItem;
+import com.example.cashify.ui.main.MainActivity;
 import com.example.cashify.utils.ApiClient;
 import com.example.cashify.utils.ApiService;
 import com.example.cashify.utils.ImageHelper;
@@ -197,11 +199,16 @@ public class SocialProfileFragment extends Fragment {
     }
 
     private void setupRecyclerView() {
-        myPostsAdapter = new CommunityFeedAdapter(item -> {
-            Intent intent = new Intent(requireContext(), PostDetailActivity.class);
-            intent.putExtra(PostDetailActivity.EXTRA_POST_ID, item.getId());
-            startActivity(intent);
-        });
+        myPostsAdapter = new CommunityFeedAdapter(
+                // Tham số 1: Click vào bài -> Mở Detail
+                item -> {
+                    Intent intent = new Intent(requireContext(), PostDetailActivity.class);
+                    intent.putExtra(PostDetailActivity.EXTRA_POST_ID, item.getId());
+                    startActivity(intent);
+                },
+                // Tham số 2: Click vào 3 chấm -> Mở Menu
+                this::showPostBottomSheet
+        );
         rvMyPosts.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvMyPosts.setNestedScrollingEnabled(false);
         rvMyPosts.setHasFixedSize(false);
@@ -302,6 +309,7 @@ public class SocialProfileFragment extends Fragment {
 
     private FeedItem mapPostFromMap(Map<String, Object> map) {
         String id       = str(map, "postId");
+        String userId   = str(map, "userId"); // Bổ sung bóc tách userId
         String content  = str(map, "content");
         String imageUrl = str(map, "imageUrl");
         String type     = str(map, "type").toLowerCase(Locale.US);
@@ -314,15 +322,44 @@ public class SocialProfileFragment extends Fragment {
         String userId = firstNonEmpty(str(map, "authorId"), str(map, "userId"), currentUserId);
 
         if (type.contains("milestone") || type.contains("achievement")) {
-            long progress = Math.max(0, Math.min(100, num(map, "progress")));
-            String title  = firstNonEmpty(str(map, "title"), achievementTitle(content));
-            String amount = firstNonEmpty(str(map, "amountText"), progress + "% hoàn thành");
-            String month  = firstNonEmpty(str(map, "period"), "Thành tựu");
+            // Bóc tách JSON Milestone cho chuẩn
+            String mIconText = "🏆";
+            String mTitle = "Thành tựu mới";
+            String mDesc = content;
+            String mMonth = "Kỳ này";
+            String mAmount = "";
+            int mProgress = 0;
+            String milestoneDataStr = str(map, "milestoneData"); // Lấy chuỗi gốc truyền qua Edit
 
+            if (!milestoneDataStr.isEmpty()) {
+                try {
+                    org.json.JSONObject json = new org.json.JSONObject(milestoneDataStr);
+                    mIconText = json.optString("iconText", mIconText);
+                    mTitle    = json.optString("title", mTitle);
+                    mMonth    = json.optString("month", mMonth);
+                    mAmount   = json.optString("amount", mAmount);
+                    mProgress = json.optInt("progress", 0);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+            // ĐỦ 10 THAM SỐ CHO MilestonePost
             return new FeedItem.MilestonePost(
-                    id, userId, title, content, month, amount, progress + "%", (int) progress, expandable);
+                    id,
+                    userId,
+                    mTitle,
+                    mDesc,
+                    mMonth,
+                    mAmount,
+                    mIconText,
+                    mProgress,
+                    expandable,
+                    milestoneDataStr
+            );
         }
 
+        // ĐỦ 10 THAM SỐ CHO NormalPost
         return new FeedItem.NormalPost(
                 id,
                 userId,
@@ -336,6 +373,86 @@ public class SocialProfileFragment extends Fragment {
                 expandable,
                 avatarUrl
         );
+    }
+
+    private void showPostBottomSheet(FeedItem item) {
+        com.google.android.material.bottomsheet.BottomSheetDialog dialog = new com.google.android.material.bottomsheet.BottomSheetDialog(requireContext());
+        View sheetView = LayoutInflater.from(requireContext()).inflate(R.layout.bottom_sheet_option, null);
+
+        sheetView.findViewById(R.id.btnEditComment).setVisibility(View.GONE);
+
+        // Đứng ở trang Profile cá nhân thì 99% bài viết là của mình, nhưng cứ check cho chắc ăn
+        boolean isOwner = !currentUserId.isEmpty() && currentUserId.equals(item.getUserId());
+
+        View btnEditPost = sheetView.findViewById(R.id.btnEditPost);
+        View btnDeletePost = sheetView.findViewById(R.id.btnDeleteComment);
+
+        if (isOwner) {
+            btnEditPost.setVisibility(View.VISIBLE);
+            btnDeletePost.setVisibility(View.VISIBLE);
+            sheetView.findViewById(R.id.btnHideComment).setVisibility(View.GONE);
+            sheetView.findViewById(R.id.btnReportPost).setVisibility(View.GONE);
+
+            // LOGIC XÓA BÀI
+            btnDeletePost.setOnClickListener(v -> {
+                dialog.dismiss();
+                FirebaseAuth.getInstance().getCurrentUser().getIdToken(true).addOnSuccessListener(result -> {
+                    String token = "Bearer " + result.getToken();
+                    ApiClient.getClient().create(ApiService.class)
+                            .deletePost(token, new ApiService.DeletePostRequest(item.getId()))
+                            .enqueue(new Callback<Object>() {
+                                @Override
+                                public void onResponse(@NonNull Call<Object> call, @NonNull Response<Object> response) {
+                                    if (response.isSuccessful()) {
+                                        Toast.makeText(requireContext(), "Đã xóa bài", Toast.LENGTH_SHORT).show();
+                                        loadMyPosts(); // Load lại tường nhà
+                                    } else {
+                                        Toast.makeText(requireContext(), "Lỗi xóa bài", Toast.LENGTH_SHORT).show();
+                                    }
+                                }
+                                @Override
+                                public void onFailure(@NonNull Call<Object> call, @NonNull Throwable t) {
+                                    Toast.makeText(requireContext(), "Lỗi mạng", Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                });
+            });
+
+            // LOGIC SỬA BÀI
+            btnEditPost.setOnClickListener(v -> {
+                dialog.dismiss();
+                Intent intent = new Intent(requireContext(), MainActivity.class);
+                intent.putExtra("ACTION_EDIT_POST", true);
+                intent.putExtra("edit_post_id", item.getId());
+
+                if (item instanceof FeedItem.NormalPost) {
+                    intent.putExtra("edit_post_content", ((FeedItem.NormalPost) item).text);
+                } else if (item instanceof FeedItem.MilestonePost) {
+                    intent.putExtra("edit_post_content", ((FeedItem.MilestonePost) item).description);
+                    intent.putExtra("edit_milestone_data", ((FeedItem.MilestonePost) item).milestoneJson);
+                }
+                startActivity(intent);
+            });
+        } else {
+            // Đề phòng trường hợp mở tường nhà người khác (Tương lai sếp phát triển)
+            if (btnEditPost != null) btnEditPost.setVisibility(View.GONE);
+            btnDeletePost.setVisibility(View.GONE);
+            sheetView.findViewById(R.id.btnHideComment).setVisibility(View.VISIBLE);
+            sheetView.findViewById(R.id.btnReportPost).setVisibility(View.VISIBLE);
+
+            sheetView.findViewById(R.id.btnHideComment).setOnClickListener(v -> {
+                dialog.dismiss();
+                Toast.makeText(requireContext(), "Hided", Toast.LENGTH_SHORT).show();
+            });
+            sheetView.findViewById(R.id.btnReportPost).setOnClickListener(v -> {
+                dialog.dismiss();
+                Toast.makeText(requireContext(), "Reported", Toast.LENGTH_SHORT).show();
+            });
+        }
+
+        sheetView.findViewById(R.id.btnCancelComment).setOnClickListener(v -> dialog.dismiss());
+        dialog.setContentView(sheetView);
+        dialog.show();
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
