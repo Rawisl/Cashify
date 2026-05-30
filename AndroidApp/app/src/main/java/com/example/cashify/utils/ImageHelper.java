@@ -13,6 +13,7 @@ import android.graphics.drawable.Drawable;
 import android.widget.ImageView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.load.resource.bitmap.CenterCrop;
 import com.example.cashify.R;
 
@@ -38,7 +39,10 @@ public class ImageHelper {
                 .load(url)
                 .placeholder(fallback)
                 .error(fallback)
+                .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC)
+                .override(resolveTargetSize(target, 96), resolveTargetSize(target, 96))
                 .transform(new CenterCrop())
+                .dontAnimate()
                 .into(target);
     }
 
@@ -48,7 +52,15 @@ public class ImageHelper {
 
     public static void loadRectImage(String url, ImageView target) {
         if (target == null || target.getContext() == null) return;
-        Glide.with(target.getContext()).load(url).centerCrop().into(target);
+        Glide.with(target.getContext())
+                .load(url)
+                .placeholder(R.drawable.bg_feed_image_placeholder)
+                .error(R.drawable.bg_feed_image_placeholder)
+                .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC)
+                .override(resolveTargetSize(target, 720), resolveTargetSize(target, 480))
+                .centerCrop()
+                .dontAnimate()
+                .into(target);
     }
 
     private static Drawable createInitialsAvatar(Context context, String identity, int viewWidth, int viewHeight) {
@@ -121,6 +133,12 @@ public class ImageHelper {
 
     private static int dp(Context context, int value) {
         return Math.round(value * context.getResources().getDisplayMetrics().density);
+    }
+
+    private static int resolveTargetSize(ImageView target, int fallbackDp) {
+        int measured = Math.max(target.getWidth(), target.getHeight());
+        if (measured > 0) return measured;
+        return dp(target.getContext(), fallbackDp);
     }
 
     private static class AvatarPalette {

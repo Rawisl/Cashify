@@ -1,11 +1,8 @@
 package com.example.cashify.ui.FriendsActivity;
 
-import android.content.Context;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -13,14 +10,13 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
 import com.example.cashify.data.model.User;
+import com.example.cashify.ui.common.AvatarImageView;
 import com.example.cashify.utils.ImageHelper;
 import com.google.android.material.button.MaterialButton;
 
 import java.util.List;
 
 public class FriendAdapter extends RecyclerView.Adapter<FriendAdapter.ViewHolder> {
-
-    private static final String TAG = "CASHIFY";
 
     public interface ActionListener {
         void onAddFriend(User user);
@@ -50,48 +46,33 @@ public class FriendAdapter extends RecyclerView.Adapter<FriendAdapter.ViewHolder
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         User user = users.get(position);
-        Log.e(TAG, "Bind: " + user.getNameToShow() + " | status=" + user.getFriendStatus());
-
-        // Tên
         holder.tvFriendName.setText(user.getNameToShow());
-
         ImageHelper.loadAvatar(user.getAvatarUrl(), holder.imgAvatar, user.getNameToShow());
-
-        // Ẩn hết trước
         hideAllButtons(holder);
 
         switch (user.getFriendStatus()) {
-            case 1: // ĐÃ LÀ BẠN
-                holder.tvAlreadyFriend.setVisibility(View.VISIBLE);
+            case 1:
                 holder.btnMessage.setVisibility(View.VISIBLE);
                 holder.btnUnfriend.setVisibility(View.VISIBLE);
                 holder.tvStatus.setText("Bạn bè");
-
                 holder.btnMessage.setOnClickListener(v -> listener.onMessage(user));
                 holder.btnUnfriend.setOnClickListener(v -> listener.onUnfriend(user));
                 break;
-
-            case 2: // MÌNH ĐÃ GỬI LỜI MỜI
+            case 2:
                 holder.tvSentRequest.setVisibility(View.VISIBLE);
-                holder.tvStatus.setText("Đã gửi lời mời...");
-
-                // Bấm vào "Sent" để huỷ
+                holder.tvStatus.setText("Đang chờ phản hồi");
                 holder.tvSentRequest.setOnClickListener(v -> listener.onCancelRequest(user));
                 break;
-
-            case 3: // HỌ GỬI LỜI MỜI CHO MÌNH
+            case 3:
                 holder.btnAccept.setVisibility(View.VISIBLE);
                 holder.btnDecline.setVisibility(View.VISIBLE);
                 holder.tvStatus.setText("Đã gửi lời mời kết bạn");
-
                 holder.btnAccept.setOnClickListener(v -> listener.onAccept(user));
                 holder.btnDecline.setOnClickListener(v -> listener.onDecline(user));
                 break;
-
-            default: // NGƯỜI LẠ
+            default:
                 holder.btnAddFriend.setVisibility(View.VISIBLE);
                 holder.tvStatus.setText(user.getEmail() != null ? user.getEmail() : "");
-
                 holder.btnAddFriend.setOnClickListener(v -> listener.onAddFriend(user));
                 break;
         }
@@ -103,7 +84,7 @@ public class FriendAdapter extends RecyclerView.Adapter<FriendAdapter.ViewHolder
     }
 
     public void updateList(List<User> newList) {
-        this.users = newList;
+        users = newList;
         notifyDataSetChanged();
     }
 
@@ -117,12 +98,19 @@ public class FriendAdapter extends RecyclerView.Adapter<FriendAdapter.ViewHolder
         holder.tvSentRequest.setVisibility(View.GONE);
     }
 
-    public static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvFriendName, tvStatus, tvAlreadyFriend, tvSentRequest;
-        ImageView imgAvatar;
-        MaterialButton btnMessage, btnUnfriend, btnAddFriend, btnAccept, btnDecline;
+    static class ViewHolder extends RecyclerView.ViewHolder {
+        TextView tvFriendName;
+        TextView tvStatus;
+        TextView tvAlreadyFriend;
+        TextView tvSentRequest;
+        AvatarImageView imgAvatar;
+        MaterialButton btnMessage;
+        MaterialButton btnUnfriend;
+        MaterialButton btnAddFriend;
+        MaterialButton btnAccept;
+        MaterialButton btnDecline;
 
-        public ViewHolder(@NonNull View itemView) {
+        ViewHolder(@NonNull View itemView) {
             super(itemView);
             tvFriendName = itemView.findViewById(R.id.tvFriendName);
             tvStatus = itemView.findViewById(R.id.tvStatus);

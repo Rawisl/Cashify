@@ -145,6 +145,7 @@ public class SocialProfileFragment extends Fragment {
         view.findViewById(R.id.txtProfileLink).setOnClickListener(v -> copyProfileLink());
         view.findViewById(R.id.btnProfileNotifications).setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), InvitationsActivity.class)));
+        view.findViewById(R.id.fabProfileCreatePost).setOnClickListener(v -> openCreatePost("thoughts"));
         view.findViewById(R.id.btnStartGrowing).setOnClickListener(v -> openCreatePost("thoughts"));
         view.findViewById(R.id.actionSetMilestone).setOnClickListener(v -> openCreatePost("milestone"));
         view.findViewById(R.id.actionFirstEntry).setOnClickListener(v -> openCreatePost("thoughts"));
@@ -315,8 +316,23 @@ public class SocialProfileFragment extends Fragment {
             String title  = firstNonEmpty(str(map, "title"), achievementTitle(content));
             String amount = firstNonEmpty(str(map, "amountText"), progress + "% hoàn thành");
             String month  = firstNonEmpty(str(map, "period"), "Thành tựu");
+            String description = title.trim().equalsIgnoreCase(content.trim()) ? "" : content;
             return new FeedItem.MilestonePost(
-                    id, title, content, month, amount, progress + "%", (int) progress, expandable);
+                    id,
+                    "",
+                    name.isEmpty() ? "Bạn" : name,
+                    formatTime(timestamp),
+                    title,
+                    description,
+                    month,
+                    amount,
+                    progress + "%",
+                    (int) progress,
+                    description.length() > 120,
+                    null,
+                    avatarUrl,
+                    initials(name)
+            );
         }
 
         return new FeedItem.NormalPost(

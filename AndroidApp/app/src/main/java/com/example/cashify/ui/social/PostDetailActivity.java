@@ -24,6 +24,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.example.cashify.R;
 import com.example.cashify.utils.ApiClient;
 import com.example.cashify.utils.ApiService;
@@ -311,7 +312,15 @@ public class PostDetailActivity extends AppCompatActivity {
                 nonEmpty(post.authorName, nonEmpty(post.authorId, "Người dùng Cashify")));
         if (post.imageUrl != null && !post.imageUrl.trim().isEmpty()) {
             imgPostImage.setVisibility(View.VISIBLE);
-            Glide.with(this).load(post.imageUrl).into(imgPostImage);
+            Glide.with(this)
+                    .load(post.imageUrl)
+                    .placeholder(R.drawable.bg_feed_image_placeholder)
+                    .error(R.drawable.bg_feed_image_placeholder)
+                    .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC)
+                    .override(1080, 720)
+                    .centerCrop()
+                    .dontAnimate()
+                    .into(imgPostImage);
         } else {
             imgPostImage.setVisibility(View.GONE);
         }

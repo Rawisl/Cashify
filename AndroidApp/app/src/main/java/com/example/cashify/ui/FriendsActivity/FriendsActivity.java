@@ -4,7 +4,9 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.view.View;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.core.view.GravityCompat;
@@ -16,90 +18,128 @@ import com.example.cashify.R;
 import com.example.cashify.data.model.User;
 import com.example.cashify.ui.main.BaseActivity;
 import com.example.cashify.ui.main.MainActivity;
-import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.tabs.TabLayout;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class FriendsActivity extends BaseActivity { // Đã kế thừa BaseActivity
-
-    private static final String TAG = "CASHIFY";
+public class FriendsActivity extends BaseActivity {
 
     private SocialViewModel socialViewModel;
-    private BottomNavigationView bottomNavigation;
     private FloatingActionButton fabAddFriend;
     private RecyclerView rvFriends;
-    private TabLayout tabLayout;
+    private RecyclerView rvSuggestions;
     private FriendAdapter friendAdapter;
+    private SuggestionAdapter suggestionAdapter;
+    private TextView tvFriendsEmpty;
+    private TextView tvSuggestionsEmpty;
+    private TextView tvSuggestionCount;
+    private TextView tvRequestsSummary;
     private final List<User> friendList = new ArrayList<>();
     private final List<User> suggestionList = new ArrayList<>();
-    private boolean isShowingFriends = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_friends);
-
-        // 1. GỌI HÀM CỦA CHA ĐỂ SETUP SIDEBAR CỰC MƯỢT
         setupBaseSidebar();
 
-        // Ánh xạ view
-        bottomNavigation = findViewById(R.id.bottomNavigation);
+        bindViews();
+        socialViewModel = new ViewModelProvider(this).get(SocialViewModel.class);
+        setupAdapters();
+        setupActions();
+        observeViewModel();
+        setupSearch();
+
+        socialViewModel.fetchOnlyFriends();
+    }
+
+    private void bindViews() {
         fabAddFriend = findViewById(R.id.fabAddFriend);
         rvFriends = findViewById(R.id.rvFriends);
-        tabLayout = findViewById(R.id.tabLayout);
-        com.google.android.material.appbar.MaterialToolbar toolbarFriends = findViewById(R.id.toolbarFriends);
+        rvSuggestions = findViewById(R.id.rvSuggestions);
+        tvFriendsEmpty = findViewById(R.id.tvFriendsEmpty);
+        tvSuggestionsEmpty = findViewById(R.id.tvSuggestionsEmpty);
+        tvSuggestionCount = findViewById(R.id.tvSuggestionCount);
+        tvRequestsSummary = findViewById(R.id.tvRequestsSummary);
+    }
 
-        socialViewModel = new ViewModelProvider(this).get(SocialViewModel.class);
-
-        // Adapter giờ chỉ cần xử lý 2 việc: Nhắn tin và Hủy kết bạn
-        friendAdapter = new FriendAdapter(friendList, new FriendAdapter.ActionListener() {
+    private void setupAdapters() {
+        FriendAdapter.ActionListener listener = new FriendAdapter.ActionListener() {
             @Override public void onAddFriend(User user) { socialViewModel.sendFriendRequest(user); }
-            @Override public void onCancelRequest(User user) {} // Bỏ qua
-            @Override public void onAccept(User user) {} // Bỏ qua
-            @Override public void onDecline(User user) {} // Bỏ qua
-
-            @Override
-            public void onUnfriend(User user) {
-                socialViewModel.unfriend(user);
-            }
+            @Override public void onCancelRequest(User user) { socialViewModel.cancelFriendRequest(user); }
+            @Override public void onAccept(User user) { socialViewModel.acceptFriendRequest(user); }
+            @Override public void onDecline(User user) { socialViewModel.declineFriendRequest(user); }
+            @Override public void onUnfriend(User user) { socialViewModel.unfriend(user); }
 
             @Override
             public void onMessage(User user) {
-                Intent intent = new Intent(FriendsActivity.this, FriendChatActivity.class);
-                intent.putExtra(FriendChatActivity.EXTRA_FRIEND_UID, user.getUid());
-                intent.putExtra(FriendChatActivity.EXTRA_FRIEND_NAME, user.getNameToShow());
-                intent.putExtra(FriendChatActivity.EXTRA_FRIEND_AVATAR, user.getAvatarUrl());
-                startActivity(intent);
+                openChat(user);
             }
-        });
+        };
 
+        friendAdapter = new FriendAdapter(friendList, listener);
         rvFriends.setLayoutManager(new LinearLayoutManager(this));
+        rvFriends.setNestedScrollingEnabled(false);
         rvFriends.setAdapter(friendAdapter);
-        setupTabs();
 
-        if (bottomNavigation != null) setupBottomNav();
+        suggestionAdapter = new SuggestionAdapter(suggestionList, new SuggestionAdapter.ActionListener() {
+            @Override public void onAddFriend(User user) { socialViewModel.sendFriendRequest(user); }
+            @Override public void onCancelRequest(User user) { socialViewModel.cancelFriendRequest(user); }
+            @Override public void onSeeAll() { openSuggestedFriends(); }
+        });
+        rvSuggestions.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+        rvSuggestions.setAdapter(suggestionAdapter);
+    }
 
-        // HIỆN POPUP TÌM BẠN QUA EMAIL CHUẨN CONCEPT
+    private void setupActions() {
+        com.google.android.material.appbar.MaterialToolbar toolbarFriends = findViewById(R.id.toolbarFriends);
+        if (toolbarFriends != null) {
+            toolbarFriends.setNavigationOnClickListener(v -> {
+                if (drawerLayout != null) drawerLayout.openDrawer(GravityCompat.START);
+            });
+        }
+
+        View btnMessages = findViewById(R.id.btnMessages);
+        if (btnMessages != null) {
+            btnMessages.setOnClickListener(v -> startActivity(new Intent(this, MessagesActivity.class)));
+        }
+
+        View cardRequests = findViewById(R.id.cardRequests);
+        if (cardRequests != null) {
+            cardRequests.setOnClickListener(v -> startActivity(new Intent(this, RequestsActivity.class)));
+        }
+
         if (fabAddFriend != null) {
             fabAddFriend.setOnClickListener(v -> showAddFriendDialog());
         }
+    }
 
-        // Lắng nghe danh sách BẠN BÈ
+    private void observeViewModel() {
         socialViewModel.friendList.observe(this, users -> {
-            if (users != null) {
-                friendList.clear();
-                friendList.addAll(users);
-                if (isShowingFriends) friendAdapter.updateList(friendList);
-            }
+            friendList.clear();
+            if (users != null) friendList.addAll(users);
+            friendAdapter.updateList(friendList);
+            tvFriendsEmpty.setVisibility(friendList.isEmpty() ? View.VISIBLE : View.GONE);
+            rvFriends.setVisibility(friendList.isEmpty() ? View.GONE : View.VISIBLE);
         });
 
         socialViewModel.suggestionList.observe(this, users -> {
+            int fullCount = users == null ? 0 : users.size();
             suggestionList.clear();
-            if (users != null) suggestionList.addAll(users);
-            if (!isShowingFriends) friendAdapter.updateList(suggestionList);
+            if (users != null) suggestionList.addAll(users.subList(0, Math.min(5, users.size())));
+            suggestionAdapter.setShowSeeAllCard(fullCount > 5);
+            suggestionAdapter.updateList(suggestionList);
+            tvSuggestionCount.setText(fullCount + " người");
+            tvSuggestionsEmpty.setVisibility(fullCount == 0 ? View.VISIBLE : View.GONE);
+            rvSuggestions.setVisibility(fullCount == 0 ? View.GONE : View.VISIBLE);
+        });
+
+        socialViewModel.incomingList.observe(this, users -> {
+            int count = users == null ? 0 : users.size();
+            tvRequestsSummary.setText(count > 0
+                    ? count + " lời mời đang chờ bạn phản hồi"
+                    : "Xem lời mời kết bạn đang chờ");
         });
 
         socialViewModel.error.observe(this, msg -> {
@@ -109,51 +149,25 @@ public class FriendsActivity extends BaseActivity { // Đã kế thừa BaseActi
         socialViewModel.toast.observe(this, msg -> {
             if (msg != null) Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
         });
-
-        // Search Bar (Chỉ search những người đã là bạn)
-        EditText edtSearch = findViewById(R.id.edtSearch);
-        if (edtSearch != null) {
-            edtSearch.addTextChangedListener(new TextWatcher() {
-                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-                @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
-                    if (isShowingFriends) socialViewModel.filterFriendsLocal(s.toString().trim());
-                    else socialViewModel.filterSuggestionsLocal(s.toString().trim());
-                }
-                @Override public void afterTextChanged(Editable s) {}
-            });
-        }
-
-        // 2. MỞ CỬA SIDEBAR KHI BẤM NÚT 3 GẠCH
-        if (toolbarFriends != null) {
-            toolbarFriends.setNavigationOnClickListener(v -> {
-                if (drawerLayout != null) drawerLayout.openDrawer(GravityCompat.START);
-            });
-        }
-
-        // Khởi động!
-        socialViewModel.fetchOnlyFriends();
     }
 
-    private void setupTabs() {
-        tabLayout.addTab(tabLayout.newTab().setText("Friends"));
-        tabLayout.addTab(tabLayout.newTab().setText("Suggestions"));
-        tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
-            @Override
-            public void onTabSelected(TabLayout.Tab tab) {
-                isShowingFriends = tab.getPosition() == 0;
-                friendAdapter.updateList(isShowingFriends ? friendList : suggestionList);
-            }
+    private void setupSearch() {
+        EditText edtSearch = findViewById(R.id.edtSearch);
+        if (edtSearch == null) return;
+        edtSearch.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
             @Override
-            public void onTabUnselected(TabLayout.Tab tab) {
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                String query = s == null ? "" : s.toString().trim();
+                socialViewModel.filterFriendsLocal(query);
+                socialViewModel.filterSuggestionsLocal(query);
             }
 
-            @Override
-            public void onTabReselected(TabLayout.Tab tab) {
-            }
+            @Override public void afterTextChanged(Editable s) {}
         });
     }
-    // 3. XỬ LÝ LOGIC KHI BẤM VÀO ITEM QUỸ TRÊN SIDEBAR (BẮT BUỘC VÌ IMPLEMENTS TỪ BASEACTIVITY)
+
     @Override
     protected void onNavigationItemSelected(int itemId) {
         if (menuIdToWorkspaceIdMap.containsKey(itemId)) {
@@ -162,8 +176,7 @@ public class FriendsActivity extends BaseActivity { // Đã kế thừa BaseActi
             startActivity(intent);
             finish();
         } else if (itemId == R.id.nav_workspace_personal) {
-            Intent intent = new Intent(this, MainActivity.class);
-            startActivity(intent);
+            startActivity(new Intent(this, MainActivity.class));
             finish();
         }
     }
@@ -173,32 +186,15 @@ public class FriendsActivity extends BaseActivity { // Đã kế thừa BaseActi
         bottomSheet.show(getSupportFragmentManager(), "AddFriendBottomSheet");
     }
 
-    private void setupBottomNav() {
-        bottomNavigation.setItemActiveIndicatorEnabled(false);
-        bottomNavigation.setOnItemSelectedListener(item -> {
-            int id = item.getItemId();
+    private void openChat(User user) {
+        Intent intent = new Intent(FriendsActivity.this, FriendChatActivity.class);
+        intent.putExtra(FriendChatActivity.EXTRA_FRIEND_UID, user.getUid());
+        intent.putExtra(FriendChatActivity.EXTRA_FRIEND_NAME, user.getNameToShow());
+        intent.putExtra(FriendChatActivity.EXTRA_FRIEND_AVATAR, user.getAvatarUrl());
+        startActivity(intent);
+    }
 
-            if (id == R.id.nav_friends) {
-                return true; // Đang ở màn Friends rồi thì đứng im
-            }
-            else if (id == R.id.nav_requests) {
-                // Phóng xe sang màn hình Requests (Lời mời)
-                startActivity(new Intent(FriendsActivity.this, RequestsActivity.class));
-                overridePendingTransition(0, 0); // Tắt hiệu ứng trượt màn hình cho nó mượt như đổi Tab
-                finish(); // Đóng màn cũ lại cho đỡ nặng máy
-                return true;
-            }
-            else if (id == R.id.nav_messages) {
-                startActivity(new Intent(FriendsActivity.this, MessagesActivity.class));
-                overridePendingTransition(0, 0);
-                finish();
-                // TODO: Sếp thả intent mở ChatActivity ở đây nếu sau này làm
-                return true;
-            }
-            return false;
-        });
-
-        // Sáng đèn tab Friends khi đang ở màn này
-        bottomNavigation.setSelectedItemId(R.id.nav_friends);
+    private void openSuggestedFriends() {
+        startActivity(new Intent(this, SuggestedFriendsActivity.class));
     }
 }

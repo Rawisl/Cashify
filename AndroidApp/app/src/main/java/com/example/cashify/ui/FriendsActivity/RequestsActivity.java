@@ -1,6 +1,5 @@
 package com.example.cashify.ui.FriendsActivity;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -13,7 +12,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
 import com.example.cashify.data.model.User;
-import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.tabs.TabLayout;
 
 import java.util.ArrayList;
@@ -25,7 +24,6 @@ public class RequestsActivity extends AppCompatActivity {
     private TabLayout tabLayout;
     private RecyclerView rvRequests;
     private LinearLayout layoutEmpty;
-    private BottomNavigationView bottomNavigation;
 
     private RequestAdapter adapter;
     private List<User> incomingList = new ArrayList<>();
@@ -40,13 +38,13 @@ public class RequestsActivity extends AppCompatActivity {
         tabLayout = findViewById(R.id.tabLayout);
         rvRequests = findViewById(R.id.rvRequests);
         layoutEmpty = findViewById(R.id.layoutEmpty);
-        bottomNavigation = findViewById(R.id.bottomNavigation);
+        MaterialToolbar toolbar = findViewById(R.id.toolbarRequests);
+        toolbar.setNavigationOnClickListener(v -> finish());
 
         socialViewModel = new ViewModelProvider(this).get(SocialViewModel.class);
 
         setupTabs();
         setupRecyclerView();
-        setupBottomNav();
         setupObservers();
 
         socialViewModel.fetchRequests(); // Gọi load data
@@ -150,6 +148,7 @@ public class RequestsActivity extends AppCompatActivity {
     }
 
     private void setupBottomNav() {
+        /*
         bottomNavigation.setItemActiveIndicatorEnabled(false);
         bottomNavigation.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
@@ -172,6 +171,6 @@ public class RequestsActivity extends AppCompatActivity {
             }
             return false;
         });
-        bottomNavigation.setSelectedItemId(R.id.nav_requests); // Sáng đèn tab Requests
+        */
     }
 }

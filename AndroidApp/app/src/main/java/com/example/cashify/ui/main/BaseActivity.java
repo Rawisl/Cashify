@@ -89,16 +89,6 @@ public abstract class BaseActivity extends AppCompatActivity {
                     startActivity(new Intent(this, com.example.cashify.ui.notifications.InvitationsActivity.class));
                     overridePendingTransition(0, 0); // TẮT HIỆU ỨNG CHUYỂN CẢNH
                 }
-            } else if (id == R.id.nav_post_feed) {
-                if (this instanceof MainActivity) {
-                    onNavigationItemSelected(id);
-                } else {
-                    Intent intent = new Intent(this, MainActivity.class);
-                    intent.putExtra("OPEN_POST_FEED", true);
-                    startActivity(intent);
-                    overridePendingTransition(0, 0);
-                    finish();
-                }
             }else if (id == R.id.nav_add_workspace) {
                 drawerLayout.closeDrawer(GravityCompat.START);
                 if (this instanceof MainActivity) {

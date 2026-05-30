@@ -1,5 +1,7 @@
 package com.example.cashify.ui.feed;
 
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
 import android.content.res.ColorStateList;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -7,7 +9,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -19,6 +20,7 @@ import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.example.cashify.R;
 import com.example.cashify.utils.ApiClient;
 import com.example.cashify.utils.ApiService;
@@ -78,6 +80,10 @@ public class CommunityFeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vie
         likedItemIds.add(id);
     }
 
+    public void clearLikedIds() {
+        likedItemIds.clear();
+    }
+
     @Override
     public int getItemViewType(int position) {
         return getItem(position).getType();
@@ -103,6 +109,14 @@ public class CommunityFeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vie
             ((NormalPostViewHolder) holder).bind((FeedItem.NormalPost) item, expanded);
         } else if (holder instanceof MilestoneViewHolder && item instanceof FeedItem.MilestonePost) {
             ((MilestoneViewHolder) holder).bind((FeedItem.MilestonePost) item, expanded);
+        }
+    }
+
+    @Override
+    public void onViewRecycled(@NonNull RecyclerView.ViewHolder holder) {
+        super.onViewRecycled(holder);
+        if (holder instanceof MilestoneViewHolder) {
+            ((MilestoneViewHolder) holder).stopShineAnimation();
         }
     }
 
@@ -226,7 +240,10 @@ public class CommunityFeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vie
                         .load(post.imageUrl)
                         .placeholder(R.drawable.bg_feed_image_placeholder)
                         .error(R.drawable.bg_feed_image_placeholder)
+                        .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC)
+                        .override(1080, 720)
                         .centerCrop()
+                        .dontAnimate()
                         .into(imgPostImage);
             } else {
                 imagePlaceholder.setVisibility(View.GONE);
@@ -287,40 +304,158 @@ public class CommunityFeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vie
     // MilestoneViewHolder
     // =========================================================================
     class MilestoneViewHolder extends RecyclerView.ViewHolder {
+        private final ImageView imgAvatar;
+        private final TextView txtAvatar;
+        private final TextView name;
         private final TextView icon;
         private final TextView title;
         private final TextView description;
         private final TextView seeMore;
         private final TextView month;
         private final TextView amount;
-        private final ProgressBar progressBar;
+        private final View goalPanel;
         private final ImageButton menuButton;
+        private final TextView btnLike;
+        private final TextView btnComment;
+        private final TextView btnShare;
+        private final View shineView;
+        private AnimatorSet shineAnimator;
 
         MilestoneViewHolder(@NonNull View itemView) {
             super(itemView);
+            shineView   = itemView.findViewById(R.id.viewMilestoneShine);
+            imgAvatar   = itemView.findViewById(R.id.imgMilestoneAvatar);
+            txtAvatar   = itemView.findViewById(R.id.txtMilestoneAvatar);
+            name        = itemView.findViewById(R.id.txtMilestoneUserName);
             icon        = itemView.findViewById(R.id.txtMilestoneIcon);
             title       = itemView.findViewById(R.id.txtMilestoneTitle);
             description = itemView.findViewById(R.id.txtMilestoneDescription);
             seeMore     = itemView.findViewById(R.id.txtMilestoneSeeMore);
             month       = itemView.findViewById(R.id.txtMilestoneMonth);
             amount      = itemView.findViewById(R.id.txtMilestoneAmount);
-            progressBar = itemView.findViewById(R.id.progressMilestone);
+            goalPanel   = itemView.findViewById(R.id.layoutMilestoneGoalPanel);
             menuButton  = itemView.findViewById(R.id.btnMilestoneMenu);
+            btnLike     = itemView.findViewById(R.id.btnMilestoneLike);
+            btnComment  = itemView.findViewById(R.id.btnMilestoneComment);
+            btnShare    = itemView.findViewById(R.id.btnMilestoneShare);
         }
 
         void bind(FeedItem.MilestonePost milestone, boolean expanded) {
             itemView.setOnClickListener(v -> notifyPostClick(milestone));
-            icon.setText(milestone.iconText);
+            startShineAnimation();
+            icon.setText("");
+            name.setText(milestone.userName);
             title.setText(milestone.title);
             description.setText(milestone.description);
+            description.setVisibility(milestone.description == null || milestone.description.trim().isEmpty()
+                    ? View.GONE : View.VISIBLE);
             description.setMaxLines(expanded ? Integer.MAX_VALUE : 3);
-            month.setText(milestone.month);
+            month.setText(milestone.time == null || milestone.time.isEmpty() ? milestone.month : milestone.time);
             amount.setText(milestone.amount);
-            progressBar.setProgress(milestone.progress);
+            goalPanel.setVisibility(hasMeaningfulMilestoneAmount(milestone.amount) ? View.VISIBLE : View.GONE);
             bindSeeMore(seeMore, description, milestone.getId(), milestone.expandable, expanded, this);
             menuButton.setOnClickListener(v -> {
                 if (menuClickListener != null) menuClickListener.onMenuClick(milestone); // post hoặc milestone tùy ViewHolder
             });
+
+            View.OnClickListener onAvatarClicked = v -> {
+                if (avatarClickListener != null && milestone.getUserId() != null) {
+                    avatarClickListener.onAvatarClick(milestone.getUserId());
+                }
+            };
+            imgAvatar.setVisibility(View.VISIBLE);
+            txtAvatar.setVisibility(View.GONE);
+            ImageHelper.loadAvatar(milestone.avatarUrl, imgAvatar, milestone.userName);
+            imgAvatar.setOnClickListener(onAvatarClicked);
+            txtAvatar.setOnClickListener(onAvatarClicked);
+            name.setOnClickListener(onAvatarClicked);
+
+            boolean currentlyLiked = likedItemIds.contains(milestone.getId());
+            applyLikeState(btnLike, currentlyLiked);
+            btnLike.setOnClickListener(v -> {
+                boolean nowLiked = !likedItemIds.contains(milestone.getId());
+                if (nowLiked) {
+                    likedItemIds.add(milestone.getId());
+                } else {
+                    likedItemIds.remove(milestone.getId());
+                }
+                applyLikeState(btnLike, nowLiked);
+
+                FirebaseAuth.getInstance().getCurrentUser().getIdToken(false)
+                        .addOnSuccessListener(tokenResult -> {
+                            String token = "Bearer " + tokenResult.getToken();
+                            ApiClient.getClient()
+                                    .create(ApiService.class)
+                                    .toggleLike(token, new ApiService.LikeActionRequest(milestone.getId(), nowLiked))
+                                    .enqueue(new retrofit2.Callback<Object>() {
+                                        @Override
+                                        public void onResponse(
+                                                @NonNull retrofit2.Call<Object> call,
+                                                @NonNull retrofit2.Response<Object> response) {
+                                            if (!response.isSuccessful()) {
+                                                rollback(milestone.getId(), nowLiked, btnLike);
+                                            }
+                                        }
+
+                                        @Override
+                                        public void onFailure(
+                                                @NonNull retrofit2.Call<Object> call,
+                                                @NonNull Throwable t) {
+                                            rollback(milestone.getId(), nowLiked, btnLike);
+                                        }
+                                    });
+                        })
+                        .addOnFailureListener(e -> rollback(milestone.getId(), nowLiked, btnLike));
+            });
+            btnComment.setOnClickListener(v -> notifyPostClick(milestone));
+            btnShare.setOnClickListener(v ->
+                    Toast.makeText(itemView.getContext(), "Đã sao chép liên kết bài viết", Toast.LENGTH_SHORT).show());
+        }
+
+        void startShineAnimation() {
+            if (shineView == null) return;
+            stopShineAnimation();
+            shineView.setAlpha(0f);
+            shineView.setTranslationX(0f);
+            shineView.setTranslationY(0f);
+            shineView.post(() -> {
+                if (shineView.getWindowToken() == null) return;
+                float travelX = Math.max(itemView.getWidth(), 360);
+                ObjectAnimator moveX = ObjectAnimator.ofFloat(shineView, View.TRANSLATION_X, 0f, travelX + 140f);
+                ObjectAnimator moveY = ObjectAnimator.ofFloat(shineView, View.TRANSLATION_Y, 0f, -220f);
+                ObjectAnimator fadeIn = ObjectAnimator.ofFloat(shineView, View.ALPHA, 0f, 0.22f, 0f);
+                shineAnimator = new AnimatorSet();
+                shineAnimator.playTogether(moveX, moveY, fadeIn);
+                shineAnimator.setDuration(2600L);
+                shineAnimator.setStartDelay(650L);
+                shineAnimator.addListener(new android.animation.AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(android.animation.Animator animation) {
+                        if (shineView.getWindowToken() != null) {
+                            startShineAnimation();
+                        }
+                    }
+                });
+                shineAnimator.start();
+            });
+        }
+
+        void stopShineAnimation() {
+            if (shineAnimator != null) {
+                shineAnimator.removeAllListeners();
+                shineAnimator.cancel();
+                shineAnimator = null;
+            }
+            if (shineView != null) shineView.clearAnimation();
+        }
+
+        private boolean hasMeaningfulMilestoneAmount(String value) {
+            if (value == null) return false;
+            String clean = value.trim();
+            return !clean.isEmpty()
+                    && !clean.equals("100%")
+                    && !clean.startsWith("http://")
+                    && !clean.startsWith("https://");
         }
     }
 

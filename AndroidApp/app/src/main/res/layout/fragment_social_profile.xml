@@ -3,23 +3,23 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFF7EC"
+    android:background="#F0F2F8"
     android:fitsSystemWindows="true">
 
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appBarProfile"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#FFF7EC"
+        android:background="#F0F2F8"
         app:elevation="0dp">
 
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbarSocialProfile"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="#FFF7EC"
+            android:background="#1A237E"
             app:navigationIcon="@drawable/ic_menu_padded"
-            app:navigationIconTint="@color/brand_primary">
+            app:navigationIconTint="@color/white">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -27,7 +27,7 @@
                 android:layout_gravity="center"
                 android:text="Chào buổi sáng,"
                 android:textAppearance="@style/ToolbarTitleFont"
-                android:textColor="#05072E" />
+                android:textColor="@color/white" />
 
             <ImageView
                 android:id="@+id/btnProfileNotifications"
@@ -40,7 +40,7 @@
                 android:focusable="true"
                 android:padding="8dp"
                 android:src="@drawable/ic_notification_regular"
-                app:tint="#05072E" />
+                app:tint="#1A237E" />
         </com.google.android.material.appbar.MaterialToolbar>
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -105,7 +105,7 @@
                     android:focusable="true"
                     android:padding="11dp"
                     android:src="@drawable/ic_share"
-                    app:tint="#05072E" />
+                app:tint="#1A237E" />
             </FrameLayout>
 
             <LinearLayout
@@ -123,7 +123,7 @@
                     android:fontFamily="@font/outfit_bold"
                     android:maxLines="1"
                     android:text="@string/placeholder_user_name"
-                    android:textColor="#05072E"
+                    android:textColor="#1A237E"
                     android:textSize="23sp" />
 
                 <TextView
@@ -135,7 +135,7 @@
                     android:lineSpacingExtra="4dp"
                     android:maxLines="4"
                     android:text="Nuôi dưỡng thói quen tài chính lành mạnh, chia sẻ góc nhìn về quản lý tiền bạc, tiết kiệm và sống có chủ đích."
-                    android:textColor="#282637"
+                    android:textColor="#607D8B"
                     android:textSize="14sp" />
 
                 <LinearLayout
@@ -151,10 +151,10 @@
                         android:layout_height="wrap_content"
                         android:drawableStart="@drawable/ic_cozy_leaf"
                         android:drawablePadding="5dp"
-                        android:drawableTint="#A8492E"
+                        android:drawableTint="#1A237E"
                         android:fontFamily="@font/inter_medium"
                         android:text="Thành viên Cashify"
-                        android:textColor="#A8492E"
+                        android:textColor="#1A237E"
                         android:textSize="12sp" />
 
                     <TextView
@@ -165,11 +165,11 @@
                         android:clickable="true"
                         android:drawableStart="@drawable/ic_share"
                         android:drawablePadding="5dp"
-                        android:drawableTint="#05072E"
+                        android:drawableTint="#1A237E"
                         android:focusable="true"
                         android:fontFamily="@font/inter_medium"
                         android:text="cashify.vn/ho-so"
-                        android:textColor="#05072E"
+                        android:textColor="#1A237E"
                         android:textSize="12sp" />
                 </LinearLayout>
 
@@ -193,7 +193,7 @@
                             android:layout_width="24dp"
                             android:layout_height="24dp"
                             android:src="@drawable/ic_friends"
-                            app:tint="#A33C1F" />
+                            app:tint="#1A237E" />
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -202,7 +202,7 @@
                             android:fontFamily="@font/inter_medium"
                             android:letterSpacing="0.08"
                             android:text="BẠN BÈ"
-                            android:textColor="#A33C1F"
+                            android:textColor="#1A237E"
                             android:textSize="11sp" />
 
                         <TextView
@@ -211,7 +211,7 @@
                             android:layout_height="wrap_content"
                             android:fontFamily="@font/outfit_bold"
                             android:text="0 bạn bè"
-                            android:textColor="#7E220E"
+                            android:textColor="#607D8B"
                             android:textSize="23sp" />
                     </LinearLayout>
 
@@ -229,7 +229,7 @@
                             android:layout_width="24dp"
                             android:layout_height="24dp"
                             android:src="@drawable/ic_statistic_regular"
-                            app:tint="#AEB8E4" />
+                            app:tint="@color/white" />
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -238,7 +238,7 @@
                             android:fontFamily="@font/inter_medium"
                             android:letterSpacing="0.08"
                             android:text="DẤU ẤN"
-                            android:textColor="#AEB8E4"
+                            android:textColor="@color/white"
                             android:textSize="11sp" />
 
                         <TextView
@@ -247,7 +247,7 @@
                             android:layout_height="wrap_content"
                             android:fontFamily="@font/outfit_bold"
                             android:text="0 thành tựu"
-                            android:textColor="#D8DEF8"
+                            android:textColor="#DCE2F0"
                             android:textSize="23sp" />
                     </LinearLayout>
                 </LinearLayout>
@@ -274,7 +274,7 @@
                             android:fontFamily="@font/inter_medium"
                             android:letterSpacing="0.08"
                             android:text="MẦM TÀI CHÍNH"
-                            android:textColor="#5A3718"
+                            android:textColor="#607D8B"
                             android:textSize="11sp" />
 
                         <TextView
@@ -283,20 +283,25 @@
                             android:layout_height="wrap_content"
                             android:fontFamily="@font/outfit_bold"
                             android:text="0 bài viết"
-                            android:textColor="#05072E"
+                            android:textColor="#1A237E"
                             android:textSize="24sp" />
                     </LinearLayout>
 
                     <TextView
                         android:id="@+id/tvStreakCount"
-                        android:layout_width="58dp"
-                        android:layout_height="58dp"
-                        android:background="@drawable/bg_profile_leaf_circle"
+                        android:layout_width="62dp"
+                        android:layout_height="62dp"
+                        android:background="@drawable/bg_profile_streak_fire_circle"
+                        android:drawableTop="@drawable/ic_fire_regular"
+                        android:drawablePadding="0dp"
                         android:fontFamily="@font/inter_bold"
                         android:gravity="center"
+                        android:includeFontPadding="false"
+                        android:paddingTop="7dp"
+                        android:paddingBottom="6dp"
                         android:text="0d"
-                        android:textColor="#05072E"
-                        android:textSize="12sp" />
+                        android:textColor="#EF5350"
+                        android:textSize="11sp" />
                 </LinearLayout>
 
                 <TextView
@@ -306,7 +311,7 @@
                     android:fontFamily="@font/inter_medium"
                     android:letterSpacing="0.08"
                     android:text="THÀNH TỰU"
-                    android:textColor="#05072E"
+                    android:textColor="#1A237E"
                     android:textSize="12sp" />
 
                 <LinearLayout
@@ -331,7 +336,7 @@
                             android:focusable="true"
                             android:padding="18dp"
                             android:src="@drawable/ic_feed_trophy"
-                            app:tint="#A8492E" />
+                            app:tint="#EF5350" />
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -339,7 +344,7 @@
                             android:layout_marginTop="7dp"
                             android:fontFamily="@font/inter_regular"
                             android:text="Khởi đầu sớm"
-                            android:textColor="#55515A"
+                            android:textColor="#607D8B"
                             android:textSize="10sp" />
                     </LinearLayout>
 
@@ -359,7 +364,7 @@
                             android:focusable="true"
                             android:padding="18dp"
                             android:src="@drawable/ic_cozy_leaf"
-                            app:tint="@color/brand_primary" />
+                            app:tint="#1A237E" />
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -367,7 +372,7 @@
                             android:layout_marginTop="7dp"
                             android:fontFamily="@font/inter_regular"
                             android:text="Top 1%"
-                            android:textColor="#55515A"
+                            android:textColor="#607D8B"
                             android:textSize="10sp" />
                     </LinearLayout>
 
@@ -395,7 +400,7 @@
                             android:layout_marginTop="7dp"
                             android:fontFamily="@font/inter_regular"
                             android:text="Két an toàn"
-                            android:textColor="#55515A"
+                            android:textColor="#607D8B"
                             android:textSize="10sp" />
                     </LinearLayout>
 
@@ -415,7 +420,7 @@
                             android:focusable="true"
                             android:padding="18dp"
                             android:src="@drawable/ic_heart_outline"
-                            app:tint="#FF8B75" />
+                            app:tint="#EF5350" />
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -423,7 +428,7 @@
                             android:layout_marginTop="7dp"
                             android:fontFamily="@font/inter_regular"
                             android:text="Người chia sẻ"
-                            android:textColor="#55515A"
+                            android:textColor="#607D8B"
                             android:textSize="10sp" />
                     </LinearLayout>
                 </LinearLayout>
@@ -436,12 +441,12 @@
                     android:background="@drawable/bg_social_soft_panel"
                     android:drawableStart="@drawable/ic_feed_trophy"
                     android:drawablePadding="9dp"
-                    android:drawableTint="#A8492E"
+                    android:drawableTint="#1A237E"
                     android:fontFamily="@font/inter_medium"
                     android:lineSpacingExtra="3dp"
                     android:padding="13dp"
                     android:text="Ghim một cột mốc để khu vườn tài chính của bạn sáng hơn."
-                    android:textColor="#332C2C"
+                    android:textColor="#607D8B"
                     android:textSize="12sp" />
 
                 <TextView
@@ -450,7 +455,7 @@
                     android:layout_marginTop="28dp"
                     android:fontFamily="@font/outfit_bold"
                     android:text="Hành trình của bạn"
-                    android:textColor="#05072E"
+                    android:textColor="#1A237E"
                     android:textSize="21sp" />
 
                 <androidx.recyclerview.widget.RecyclerView
@@ -489,7 +494,7 @@
                         android:fontFamily="@font/outfit_bold"
                         android:gravity="center"
                         android:text="Gieo suy nghĩ đầu tiên"
-                        android:textColor="#05072E"
+                        android:textColor="#1A237E"
                         android:textSize="21sp" />
 
                     <TextView
@@ -500,7 +505,7 @@
                         android:gravity="center"
                         android:lineSpacingExtra="3dp"
                         android:text="Không gian của bạn đang chờ một câu chuyện đầu tiên. Chia sẻ một cột mốc tài chính hoặc một mục tiêu nhỏ."
-                        android:textColor="#55515A"
+                        android:textColor="#607D8B"
                         android:textSize="13sp" />
 
                     <TextView
@@ -542,7 +547,7 @@
                             android:layout_width="28dp"
                             android:layout_height="28dp"
                             android:src="@drawable/ic_pencil_regular"
-                            app:tint="#05072E" />
+                            app:tint="#1A237E" />
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -550,7 +555,7 @@
                             android:layout_marginTop="22dp"
                             android:fontFamily="@font/inter_bold"
                             android:text="Tạo cột mốc"
-                            android:textColor="#05072E"
+                            android:textColor="#1A237E"
                             android:textSize="12sp" />
 
                         <TextView
@@ -560,7 +565,7 @@
                             android:fontFamily="@font/inter_regular"
                             android:lineSpacingExtra="2dp"
                             android:text="Định hình hành trình tài chính"
-                            android:textColor="#55515A"
+                            android:textColor="#607D8B"
                             android:textSize="10sp" />
                     </LinearLayout>
 
@@ -580,7 +585,7 @@
                             android:layout_width="28dp"
                             android:layout_height="28dp"
                             android:src="@drawable/ic_cozy_notebook"
-                            app:tint="#A8492E" />
+                            app:tint="#1A237E" />
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -588,7 +593,7 @@
                             android:layout_marginTop="22dp"
                             android:fontFamily="@font/inter_bold"
                             android:text="Bài đầu tiên"
-                            android:textColor="#A8492E"
+                            android:textColor="#1A237E"
                             android:textSize="12sp" />
 
                         <TextView
@@ -598,11 +603,27 @@
                             android:fontFamily="@font/inter_regular"
                             android:lineSpacingExtra="2dp"
                             android:text="Bắt đầu dòng chia sẻ"
-                            android:textColor="#55515A"
+                            android:textColor="#607D8B"
                             android:textSize="10sp" />
                     </LinearLayout>
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabProfileCreatePost"
+        android:layout_width="52dp"
+        android:layout_height="52dp"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="24dp"
+        android:contentDescription="Tạo bài viết"
+        android:src="@drawable/ic_add_bold"
+        app:backgroundTint="#1A237E"
+        app:borderWidth="0dp"
+        app:elevation="8dp"
+        app:fabCustomSize="52dp"
+        app:maxImageSize="22dp"
+        app:tint="@color/white" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

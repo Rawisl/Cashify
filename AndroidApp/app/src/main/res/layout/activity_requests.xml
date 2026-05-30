@@ -6,35 +6,23 @@
     android:background="#F0F2F8"
     android:fitsSystemWindows="true">
 
-    <!-- Header -->
-    <LinearLayout
-        android:id="@+id/headerLayout"
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbarRequests"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:gravity="center"
-        android:orientation="vertical"
-        android:paddingHorizontal="16dp"
-        android:paddingTop="0dp"
-        android:paddingBottom="0dp">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Friend Requests"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            android:textColor="#1A237E"
-            android:layout_gravity="center_horizontal"
-            android:letterSpacing="0.02" />
-
-    </LinearLayout>
+        android:background="#F0F2F8"
+        app:navigationIcon="@drawable/ic_arrow_left_back"
+        app:navigationIconTint="#1A237E"
+        app:title="Lời mời kết bạn"
+        app:titleCentered="true"
+        app:titleTextColor="#1A237E" />
 
     <!-- Tab: Received / Sent -->
     <com.google.android.material.tabs.TabLayout
         android:id="@+id/tabLayout"
         android:layout_width="match_parent"
         android:layout_height="48dp"
-        android:layout_below="@id/headerLayout"
+        android:layout_below="@id/toolbarRequests"
         android:layout_marginHorizontal="16dp"
         android:background="@drawable/bg_tab_container"
         app:tabBackground="@null"
@@ -52,7 +40,6 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_below="@id/tabLayout"
-        android:layout_above="@+id/bottomNavigation"
         android:clipToPadding="false"
         android:paddingTop="8dp"
         android:paddingBottom="16dp" />
@@ -82,21 +69,5 @@
             android:textColor="#9E9E9E"
             android:layout_marginTop="8dp" />
     </LinearLayout>
-
-    <!-- Bottom Nav -->
-    <com.google.android.material.bottomnavigation.BottomNavigationView
-        android:id="@+id/bottomNavigation"
-        android:layout_width="match_parent"
-        android:layout_height="64dp"
-        android:layout_alignParentBottom="true"
-        android:layout_marginHorizontal="20dp"
-        android:layout_marginBottom="20dp"
-        android:background="@drawable/bg_bottom_nav"
-        app:elevation="8dp"
-        app:itemActiveIndicatorStyle="@null"
-        app:itemIconTint="#1A237E"
-        app:itemTextColor="#1A237E"
-        app:labelVisibilityMode="labeled"
-        app:menu="@menu/friends_menu" />
 
 </RelativeLayout>
