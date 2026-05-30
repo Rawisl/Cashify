@@ -16,7 +16,7 @@ import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.List;
 
-import de.hdodenhof.circleimageview.CircleImageView;
+import android.widget.ImageView;
 
 public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder> {
 
@@ -139,7 +139,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
 
             if (isLastInGroup) {
                 holder.imgAvatarLeft.setVisibility(View.VISIBLE);
-                ImageHelper.loadAvatar(currentMessage.getSenderAvatar(), holder.imgAvatarLeft);
+                ImageHelper.loadAvatar(currentMessage.getSenderAvatar(), holder.imgAvatarLeft, currentMessage.getSenderName());
             } else {
                 holder.imgAvatarLeft.setVisibility(View.INVISIBLE);
             }
@@ -159,7 +159,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
     public static class ChatViewHolder extends RecyclerView.ViewHolder {
         LinearLayout layoutLeft, layoutRight;
         TextView tvTextLeft, tvNameLeft, tvTextRight;
-        CircleImageView imgAvatarLeft;
+        ImageView imgAvatarLeft;
 
         public ChatViewHolder(@NonNull View itemView) {
             super(itemView);

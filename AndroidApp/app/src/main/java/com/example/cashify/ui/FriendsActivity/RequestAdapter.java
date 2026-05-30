@@ -49,11 +49,7 @@ public class RequestAdapter extends RecyclerView.Adapter<RequestAdapter.ViewHold
         holder.tvFriendName.setText(user.getNameToShow());
         holder.tvStatus.setText(user.getEmail());
 
-        if (user.getAvatarUrl() != null && !user.getAvatarUrl().isEmpty()) {
-            ImageHelper.loadAvatar(user.getAvatarUrl(), holder.imgAvatar);
-        } else {
-            holder.imgAvatar.setImageResource(R.drawable.ic_default_user);
-        }
+        ImageHelper.loadAvatar(user.getAvatarUrl(), holder.imgAvatar, user.getNameToShow());
 
         // Hiện nút theo Tab (KHÔNG cần ẩn mấy nút thừa nữa vì giao diện sếp làm gì có mà ẩn)
         if (isIncoming) {

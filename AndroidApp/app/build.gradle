@@ -71,6 +71,7 @@ dependencies {
     implementation libs.navigation.fragment.ktx
     implementation libs.navigation.ui.ktx
     implementation("androidx.core:core-splashscreen:1.2.0")
+    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
 
     // ==========================================
     // 2. DATABASE & FIREBASE (Data logic - LUÔN GIỮ)

@@ -15,7 +15,7 @@ import com.example.cashify.utils.ImageHelper;
 
 import java.util.List;
 
-import de.hdodenhof.circleimageview.CircleImageView;
+import android.widget.ImageView;
 
 public class WorkspaceMemberListAdapter extends RecyclerView.Adapter<WorkspaceMemberListAdapter.ViewHolder> {
 
@@ -58,7 +58,7 @@ public class WorkspaceMemberListAdapter extends RecyclerView.Adapter<WorkspaceMe
             displayName += " (You)";
         }
         holder.tvName.setText(displayName);
-        ImageHelper.loadAvatar(user.getAvatarUrl(), holder.imgAvatar);
+        ImageHelper.loadAvatar(user.getAvatarUrl(), holder.imgAvatar, displayName);
 
         // ==========================================
         // LOGIC BIẾN HÌNH THEO MODE
@@ -91,7 +91,7 @@ public class WorkspaceMemberListAdapter extends RecyclerView.Adapter<WorkspaceMe
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        CircleImageView imgAvatar;
+        ImageView imgAvatar;
         TextView tvName;
         ImageView btnKick;
         ImageView btnTransfer;

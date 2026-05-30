@@ -442,7 +442,7 @@
     </style>
 
     <style name="RoundedAppearance">
-        <item name="cornerSize">50%</item>
+        <item name="cornerSize">24%</item>
     </style>
 
     <style name="ToolbarTitleFont" parent="TextAppearance.MaterialComponents.Headline6">
@@ -458,7 +458,11 @@
     </style>
 
     <style name="CircleImageView">
-        <item name="cornerSize">50%</item>
+        <item name="cornerSize">24%</item>
+    </style>
+
+    <style name="RoundedAvatarImageView">
+        <item name="cornerSize">24%</item>
     </style>
 
     <style name="MyCustomToolbarTitle" parent="TextAppearance.MaterialComponents.Headline6">
@@ -466,6 +470,12 @@
         <item name="android:textSize">20sp</item>
         <item name="android:textStyle">bold</item>
         <item name="fontFamily">@font/inter_bold</item>
+    </style>
+
+    <style name="SocialBottomNavActiveIndicator">
+        <item name="android:color">#FF9B7D</item>
+        <item name="android:width">88dp</item>
+        <item name="android:height">46dp</item>
     </style>
 
 </resources>

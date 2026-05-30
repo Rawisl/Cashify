@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/bg_main" />
+        </shape>
+    </item>
+    <item
+        android:left="-80dp"
+        android:top="76dp">
+        <shape android:shape="oval">
+            <size
+                android:width="180dp"
+                android:height="180dp" />
+            <solid android:color="#22FFFFFF" />
+        </shape>
+    </item>
+    <item
+        android:right="-72dp"
+        android:top="18dp">
+        <shape android:shape="oval">
+            <size
+                android:width="170dp"
+                android:height="170dp" />
+            <solid android:color="#1A313B60" />
+        </shape>
+    </item>
+    <item
+        android:right="26dp"
+        android:top="188dp">
+        <shape android:shape="oval">
+            <size
+                android:width="18dp"
+                android:height="18dp" />
+            <solid android:color="#33F5A623" />
+        </shape>
+    </item>
+</layer-list>

@@ -207,8 +207,6 @@ public class MainActivity extends BaseActivity {
             androidx.navigation.Navigation.findNavController(this, R.id.nav_host_fragment)
                     .popBackStack(R.id.nav_home, false);
             transactionViewModel.fetchHistoryData("PERSONAL");
-        } else if (itemId == R.id.nav_post_feed) {
-            openPostFeedFromDrawer();
         } else if (itemId == R.id.nav_social) {
             NavController nav = androidx.navigation.Navigation.findNavController(this, R.id.nav_host_fragment);
             if (nav.getCurrentDestination() == null
@@ -229,6 +227,21 @@ public class MainActivity extends BaseActivity {
         });
 
         BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(fabAddTransaction, (v, windowInsets) -> {
+            androidx.core.graphics.Insets insets = windowInsets.getInsets(
+                    androidx.core.view.WindowInsetsCompat.Type.systemBars());
+            int bottomMargin = (int) (96 * getResources().getDisplayMetrics().density);
+            int endMargin = (int) (22 * getResources().getDisplayMetrics().density);
+
+            android.view.ViewGroup.MarginLayoutParams mlp =
+                    (android.view.ViewGroup.MarginLayoutParams) v.getLayoutParams();
+            mlp.bottomMargin = insets.bottom + bottomMargin;
+            mlp.setMarginEnd(endMargin);
+            v.setLayoutParams(mlp);
+
+            return windowInsets;
+        });
+
         androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(bottomNav, (v, windowInsets) -> {
             androidx.core.graphics.Insets insets = windowInsets.getInsets(
                     androidx.core.view.WindowInsetsCompat.Type.systemBars());
@@ -275,7 +288,15 @@ public class MainActivity extends BaseActivity {
         });
     }
 
-    private void openPostFeedFromDrawer() {
+    public void openCreatePostScreen() {
+        openPostFeedFromDrawer(null);
+    }
+
+    public void openCreatePostScreen(@Nullable String categoryKey) {
+        openPostFeedFromDrawer(categoryKey);
+    }
+
+    private void openPostFeedFromDrawer(@Nullable String categoryKey) {
         NavController navController = androidx.navigation.Navigation.findNavController(this, R.id.nav_host_fragment);
 
         if (navController.getCurrentDestination() != null
@@ -290,7 +311,12 @@ public class MainActivity extends BaseActivity {
         }
 
         try {
-            navController.navigate(R.id.nav_post_feed);
+            Bundle args = null;
+            if (categoryKey != null && !categoryKey.trim().isEmpty()) {
+                args = new Bundle();
+                args.putString("categoryKey", categoryKey);
+            }
+            navController.navigate(R.id.nav_post_feed, args);
         } catch (IllegalArgumentException e) {
             Log.e("NAV_DRAWER", "Failed to navigate to Post feed from drawer.", e);
             ToastHelper.show(this, "Could not open Post screen.");
@@ -303,9 +329,7 @@ public class MainActivity extends BaseActivity {
         }
 
         android.view.Menu menu = navigationView.getMenu();
-        if (destinationId == R.id.nav_post_feed) {
-            setSidebarItemChecked(menu, R.id.nav_post_feed);
-        } else if (destinationId == R.id.nav_social_container) {
+        if (destinationId == R.id.nav_social_container) {
             setSidebarItemChecked(menu, R.id.nav_social);
         } else if (destinationId == R.id.nav_home
                 || destinationId == R.id.nav_budget

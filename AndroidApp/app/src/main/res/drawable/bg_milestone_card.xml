@@ -12,7 +12,7 @@
         android:right="7dp"
         android:bottom="7dp">
         <shape>
-            <solid android:color="@color/bg_main" />
+            <solid android:color="#FFFFFF" />
             <stroke
                 android:width="3dp"
                 android:color="@color/black" />

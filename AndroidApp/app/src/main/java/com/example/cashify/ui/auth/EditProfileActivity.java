@@ -3,6 +3,7 @@ package com.example.cashify.ui.auth;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -10,7 +11,6 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.bumptech.glide.Glide;
 import com.example.cashify.R;
 import com.example.cashify.utils.ImageHelper;
 import com.example.cashify.utils.ToastHelper;
@@ -20,12 +20,10 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
-import de.hdodenhof.circleimageview.CircleImageView;
-
 public class EditProfileActivity extends AppCompatActivity {
 
     private UpdateUserViewModel viewModel;
-    private CircleImageView imgEditAvatar;
+    private ImageView imgEditAvatar;
     private TextInputEditText edtEditName, edtEditEmail;
     private MaterialButton btnSaveProfile;
 
@@ -38,7 +36,8 @@ public class EditProfileActivity extends AppCompatActivity {
                 if (uri != null) {
                     selectedImageUri = uri;
                     // Dùng Glide load ngay tấm ảnh vừa chọn lên hình tròn cho user xem trước
-                    ImageHelper.loadAvatar(uri, imgEditAvatar);                }
+                    ImageHelper.loadAvatar(uri, imgEditAvatar, edtEditName.getText() == null ? "" : edtEditName.getText().toString());
+                }
             });
 
     @Override
@@ -69,7 +68,8 @@ public class EditProfileActivity extends AppCompatActivity {
             }
             if (currentUser.getPhotoUrl() != null) {
                 // Glide sẽ tự động tải ảnh từ Firebase và bo tròn vào imgEditAvatar
-                ImageHelper.loadAvatar(currentUser.getPhotoUrl(), imgEditAvatar);
+                ImageHelper.loadAvatar(currentUser.getPhotoUrl(), imgEditAvatar,
+                        currentUser.getDisplayName() != null ? currentUser.getDisplayName() : currentUser.getEmail());
             }
         }
 

@@ -25,12 +25,13 @@
             android:src="@drawable/ic_arrow_left_back"
             app:tint="@color/black" />
 
-        <ImageView
+        <com.example.cashify.ui.common.AvatarImageView
             android:id="@+id/imgFriendAvatar"
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:layout_marginStart="8dp"
-            android:src="@drawable/ic_default_user" />
+            android:scaleType="centerCrop"
+            android:src="@drawable/bg_default_avatar_pastel" />
 
         <TextView
             android:id="@+id/tvFriendName"

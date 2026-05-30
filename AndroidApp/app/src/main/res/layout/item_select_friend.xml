@@ -8,12 +8,12 @@
     android:paddingHorizontal="8dp"
     android:gravity="center_vertical">
 
-    <com.google.android.material.imageview.ShapeableImageView
+    <com.example.cashify.ui.common.AvatarImageView
         android:id="@+id/imgAvatar"
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:scaleType="centerCrop"
-        app:shapeAppearanceOverlay="@style/RoundedAppearance" />
+        android:src="@drawable/bg_default_avatar_pastel" />
 
     <TextView
         android:id="@+id/tvName"

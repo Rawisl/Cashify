@@ -12,13 +12,13 @@
     android:paddingHorizontal="20dp"
     android:paddingVertical="12dp">
 
-    <de.hdodenhof.circleimageview.CircleImageView
+    <com.example.cashify.ui.common.AvatarImageView
         android:id="@+id/imgListAvatar"
         android:layout_width="48dp"
         android:layout_height="48dp"
-        app:civ_border_color="@color/bg_card"
-        app:civ_border_width="1dp"
-        tools:src="@drawable/ic_default_user" />
+        android:scaleType="centerCrop"
+        android:src="@drawable/bg_default_avatar_pastel"
+        tools:src="@drawable/bg_default_avatar_pastel" />
 
     <TextView
         android:id="@+id/tvListName"

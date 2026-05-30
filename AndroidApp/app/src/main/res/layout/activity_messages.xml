@@ -3,18 +3,19 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F0F2F8">
+    android:background="#F0F2F8"
+    android:fitsSystemWindows="true">
 
-    <TextView
-        android:id="@+id/tvTitle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="20dp"
-        android:text="Messages"
-        android:textColor="#1A237E"
-        android:textSize="24sp"
-        android:textStyle="bold" />
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbarMessages"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="#F0F2F8"
+        app:navigationIcon="@drawable/ic_arrow_left_back"
+        app:navigationIconTint="#1A237E"
+        app:title="Tin nhắn"
+        app:titleCentered="true"
+        app:titleTextColor="#1A237E" />
 
     <ProgressBar
         android:id="@+id/progressLoading"
@@ -50,25 +51,9 @@
         android:id="@+id/rvConversations"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/tvTitle"
-        android:layout_above="@+id/bottomNavigation"
+        android:layout_below="@id/toolbarMessages"
         android:clipToPadding="false"
         android:paddingTop="16dp"
         android:paddingBottom="16dp" />
-
-    <com.google.android.material.bottomnavigation.BottomNavigationView
-        android:id="@+id/bottomNavigation"
-        android:layout_width="match_parent"
-        android:layout_height="64dp"
-        android:layout_alignParentBottom="true"
-        android:layout_marginHorizontal="20dp"
-        android:layout_marginBottom="20dp"
-        android:background="@drawable/bg_bottom_nav"
-        app:elevation="8dp"
-        app:itemActiveIndicatorStyle="@null"
-        app:itemIconTint="#1A237E"
-        app:itemTextColor="#1A237E"
-        app:labelVisibilityMode="labeled"
-        app:menu="@menu/friends_menu" />
 
 </RelativeLayout>

@@ -4,7 +4,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@android:color/white">
+    android:background="@android:color/white"
+    android:fitsSystemWindows="true">
 
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbarEditProfile"
@@ -30,14 +31,13 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="32dp">
 
-                <de.hdodenhof.circleimageview.CircleImageView
+                <com.example.cashify.ui.common.AvatarImageView
                     android:id="@+id/imgEditAvatar"
                     android:layout_width="120dp"
                     android:layout_height="120dp"
-                    android:src="@mipmap/ic_launcher"
-                    app:civ_border_width="2dp"
-                    app:civ_border_color="#E0E0E0"/>
-
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/bg_default_avatar_pastel" />
+    
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
                     android:id="@+id/fabChangePhoto"
                     android:layout_width="wrap_content"

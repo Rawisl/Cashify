@@ -91,13 +91,12 @@
                         android:gravity="center_vertical"
                         android:orientation="horizontal">
 
-                        <de.hdodenhof.circleimageview.CircleImageView
+                        <com.example.cashify.ui.common.AvatarImageView
                             android:id="@+id/imgPostAvatar"
                             android:layout_width="50dp"
                             android:layout_height="50dp"
-                            android:src="@drawable/ic_default_user"
-                            app:civ_border_color="@color/bg_main"
-                            app:civ_border_width="2dp" />
+                            android:scaleType="centerCrop"
+                            android:src="@drawable/bg_default_avatar_pastel" />
 
                         <LinearLayout
                             android:layout_width="0dp"
@@ -446,14 +445,13 @@
         android:paddingEnd="14dp"
         android:paddingBottom="12dp">
 
-        <de.hdodenhof.circleimageview.CircleImageView
+        <com.example.cashify.ui.common.AvatarImageView
             android:id="@+id/imgCurrentUserAvatar"
             android:layout_width="42dp"
             android:layout_height="42dp"
             android:layout_gravity="center_vertical"
-            android:src="@drawable/ic_default_user"
-            app:civ_border_color="@color/bg_main"
-            app:civ_border_width="2dp" />
+            android:scaleType="centerCrop"
+            android:src="@drawable/bg_default_avatar_pastel" />
 
         <EditText
             android:id="@+id/etCommentInput"

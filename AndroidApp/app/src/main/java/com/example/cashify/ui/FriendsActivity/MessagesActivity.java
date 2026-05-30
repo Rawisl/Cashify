@@ -14,7 +14,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.cashify.R;
 import com.example.cashify.data.model.DirectConversation;
 import com.example.cashify.utils.ToastHelper;
-import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.appbar.MaterialToolbar;
 
 import java.util.ArrayList;
 
@@ -35,13 +35,12 @@ public class MessagesActivity extends AppCompatActivity {
         progressLoading = findViewById(R.id.progressLoading);
         tvEmptyState = findViewById(R.id.tvEmptyState);
         tvErrorState = findViewById(R.id.tvErrorState);
-        BottomNavigationView bottomNavigation = findViewById(R.id.bottomNavigation);
+        MaterialToolbar toolbar = findViewById(R.id.toolbarMessages);
+        toolbar.setNavigationOnClickListener(v -> finish());
 
         adapter = new ConversationAdapter(new ArrayList<>(), this::openConversation);
         rvConversations.setLayoutManager(new LinearLayoutManager(this));
         rvConversations.setAdapter(adapter);
-
-        setupBottomNav(bottomNavigation);
 
         viewModel = new ViewModelProvider(this).get(MessagesViewModel.class);
         viewModel.getConversations().observe(this, conversations -> {
@@ -77,25 +76,4 @@ public class MessagesActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
-    private void setupBottomNav(BottomNavigationView bottomNavigation) {
-        bottomNavigation.setItemActiveIndicatorEnabled(false);
-        bottomNavigation.setOnItemSelectedListener(item -> {
-            int id = item.getItemId();
-            if (id == R.id.nav_messages) return true;
-            if (id == R.id.nav_friends) {
-                startActivity(new Intent(this, FriendsActivity.class));
-                overridePendingTransition(0, 0);
-                finish();
-                return true;
-            }
-            if (id == R.id.nav_requests) {
-                startActivity(new Intent(this, RequestsActivity.class));
-                overridePendingTransition(0, 0);
-                finish();
-                return true;
-            }
-            return false;
-        });
-        bottomNavigation.setSelectedItemId(R.id.nav_messages);
-    }
 }

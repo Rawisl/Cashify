@@ -99,12 +99,8 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentV
             tvCommentLikeCount.setText(likeCount > 0 ? String.valueOf(likeCount) : "");
 
             // Avatar
-            Glide.with(itemView.getContext())
-                    .load(comment.getAvatarUrl())
-                    .placeholder(R.drawable.ic_default_user)
-                    .error(R.drawable.ic_default_user)
-                    .circleCrop()
-                    .into(imgAvatar);
+            com.example.cashify.utils.ImageHelper.loadAvatar(
+                    comment.getAvatarUrl(), imgAvatar, comment.getUsername());
 
             // Like comment — local only (không cần API)
             layoutCommentLike.setOnClickListener(v -> {

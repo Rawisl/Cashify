@@ -13,7 +13,7 @@ import com.example.cashify.utils.ImageHelper;
 
 import java.util.List;
 
-import de.hdodenhof.circleimageview.CircleImageView;
+import android.widget.ImageView;
 
 public class WorkspaceMemberAdapter extends RecyclerView.Adapter<WorkspaceMemberAdapter.MemberViewHolder> {
 
@@ -40,7 +40,7 @@ public class WorkspaceMemberAdapter extends RecyclerView.Adapter<WorkspaceMember
             String fullName = currentMember.getDisplayName();
             holder.tvName.setText(fullName != null ? fullName : "Anonymous");
 
-            ImageHelper.loadAvatar(currentMember.getAvatarUrl(), holder.imgAvatar);
+            ImageHelper.loadAvatar(currentMember.getAvatarUrl(), holder.imgAvatar, fullName);
         }
     }
 
@@ -51,7 +51,7 @@ public class WorkspaceMemberAdapter extends RecyclerView.Adapter<WorkspaceMember
 
     // Lớp nội bộ để ánh xạ View
     public static class MemberViewHolder extends RecyclerView.ViewHolder {
-        CircleImageView imgAvatar;
+        ImageView imgAvatar;
         TextView tvName;
 
         public MemberViewHolder(@NonNull View itemView) {

@@ -9,7 +9,9 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.Editable;
+import android.text.Spannable;
 import android.text.TextWatcher;
+import android.text.style.ForegroundColorSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -45,7 +47,12 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.io.File;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class CommunityFeedFragment extends Fragment {
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -54,8 +61,19 @@ public class CommunityFeedFragment extends Fragment {
     private TextView txtComposerCount;
     private TextView txtComposerHint;
     private TextView btnAudience;
+    private TextView btnAudienceFriends;
+    private TextView btnAudiencePrivate;
     private TextView actionMilestone;
+    private TextView actionThoughts;
+    private TextView actionAnalysis;
+    private TextView actionShare;
     private TextView actionPhoto;
+    private LinearLayout panelCategoryMode;
+    private ImageView imgModeIcon;
+    private TextView txtModeKicker;
+    private TextView txtModeTitle;
+    private TextView txtModeDescription;
+    private TextView txtModePrompt;
     private MaterialButton btnSubmitPost;
     private ProgressBar progressPosting;
     private FrameLayout imagePreviewContainer;
@@ -65,7 +83,11 @@ public class CommunityFeedFragment extends Fragment {
 
     private Uri selectedImageUri;
     private boolean milestoneMode;
-    private String selectedAudience = "Bạn bè";
+    private String selectedAudience = "Công khai";
+    private String selectedCategory = "Suy nghĩ";
+    private String selectedCategoryKey = "thoughts";
+    private final Set<String> selectedTopicHashtags = new LinkedHashSet<>();
+    private boolean applyingHashtagStyle = false;
     private PopupWindow audiencePopup;
 
     private View milestonePreviewContainer;
@@ -112,8 +134,19 @@ public class CommunityFeedFragment extends Fragment {
         txtComposerCount = view.findViewById(R.id.txtComposerCount);
         txtComposerHint = view.findViewById(R.id.txtComposerHint);
         btnAudience = view.findViewById(R.id.btnAudience);
+        btnAudienceFriends = view.findViewById(R.id.btnAudienceFriends);
+        btnAudiencePrivate = view.findViewById(R.id.btnAudiencePrivate);
         actionMilestone = view.findViewById(R.id.actionMilestone);
+        actionThoughts = view.findViewById(R.id.actionThoughts);
+        actionAnalysis = view.findViewById(R.id.actionAnalysis);
+        actionShare = view.findViewById(R.id.actionShare);
         actionPhoto = view.findViewById(R.id.actionPhoto);
+        panelCategoryMode = view.findViewById(R.id.panelCategoryMode);
+        imgModeIcon = view.findViewById(R.id.imgModeIcon);
+        txtModeKicker = view.findViewById(R.id.txtModeKicker);
+        txtModeTitle = view.findViewById(R.id.txtModeTitle);
+        txtModeDescription = view.findViewById(R.id.txtModeDescription);
+        txtModePrompt = view.findViewById(R.id.txtModePrompt);
         btnSubmitPost = view.findViewById(R.id.btnSubmitPost);
         progressPosting = view.findViewById(R.id.progressPosting);
         imagePreviewContainer = view.findViewById(R.id.imagePreviewContainer);
@@ -137,10 +170,10 @@ public class CommunityFeedFragment extends Fragment {
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         TextView txtComposerName = view.findViewById(R.id.txtComposerName);
         if (user != null) {
-            txtComposerName.setText(cleanDisplayName(user.getDisplayName()));
-            if (user.getPhotoUrl() != null) {
-                ImageHelper.loadAvatar(user.getPhotoUrl(), imgComposerAvatar);
-            }
+            String composerName = cleanDisplayName(user.getDisplayName());
+            txtComposerName.setText(composerName);
+            ImageHelper.loadAvatar(user.getPhotoUrl(), imgComposerAvatar,
+                    firstNonEmpty(composerName, user.getEmail(), user.getUid()));
             FirebaseFirestore.getInstance().collection("users").document(user.getUid()).get()
                     .addOnSuccessListener(doc -> bindCurrentUserProfile(doc, txtComposerName));
         }
@@ -154,7 +187,10 @@ public class CommunityFeedFragment extends Fragment {
                 updateSubmitState();
             }
 
-            @Override public void afterTextChanged(Editable s) {}
+            @Override
+            public void afterTextChanged(Editable s) {
+                applyHashtagStyle(s);
+            }
         });
 
         editPostContent.setOnFocusChangeListener((v, hasFocus) -> {
@@ -246,12 +282,45 @@ public class CommunityFeedFragment extends Fragment {
         }
 
         updateAudienceButton();
-        btnAudience.setOnClickListener(this::showAudienceMenu);
+        updateAudienceDock();
+        btnAudience.setOnClickListener(v -> selectAudience("Công khai"));
+        btnAudienceFriends.setOnClickListener(v -> selectAudience("Bạn bè"));
+        btnAudiencePrivate.setOnClickListener(v -> selectAudience("Chỉ mình tôi"));
         actionPhoto.setOnClickListener(v -> pickImageLauncher.launch("image/*"));
-        actionMilestone.setOnClickListener(v -> setMilestoneMode(!milestoneMode));
+        actionMilestone.setOnClickListener(v -> selectCategory("Cột mốc", "milestone", true, R.id.chipSaving));
+        actionThoughts.setOnClickListener(v -> selectCategory("Suy nghĩ", "thoughts", false, R.id.chipBudgeting));
+        actionAnalysis.setOnClickListener(v -> selectCategory("Phân tích", "analysis", false, R.id.chipInvesting));
+        actionShare.setOnClickListener(v -> selectCategory("Chia sẻ", "share", false, R.id.chipDebt));
+        setupTopicHashtags();
         view.findViewById(R.id.btnRemoveImage).setOnClickListener(v -> clearSelectedImage());
         btnSubmitPost.setOnClickListener(v -> submitPost());
+        applyInitialCategoryArgument();
+        updateCategoryTiles();
+        updateCategoryDesign();
         updateSubmitState();
+    }
+
+    private void applyInitialCategoryArgument() {
+        Bundle args = getArguments();
+        if (args == null) {
+            return;
+        }
+        String categoryKey = args.getString("categoryKey", "");
+        if ("milestone".equals(categoryKey)) {
+            selectCategory("Cá»™t má»‘c", "milestone", true, R.id.chipSaving);
+        } else if ("analysis".equals(categoryKey)) {
+            selectCategory("PhÃ¢n tÃ­ch", "analysis", false, R.id.chipInvesting);
+        } else if ("share".equals(categoryKey)) {
+            selectCategory("Chia sáº»", "share", false, R.id.chipDebt);
+        } else if ("thoughts".equals(categoryKey)) {
+            selectCategory("Suy nghÄ©", "thoughts", false, R.id.chipBudgeting);
+        }
+    }
+
+    private void selectAudience(String audience) {
+        selectedAudience = audience;
+        updateAudienceButton();
+        updateAudienceDock();
     }
 
     private void showAudienceMenu(View anchor) {
@@ -300,6 +369,7 @@ public class CommunityFeedFragment extends Fragment {
         item.setOnClickListener(v -> {
             selectedAudience = label;
             updateAudienceButton();
+            updateAudienceDock();
             if (audiencePopup != null) {
                 audiencePopup.dismiss();
             }
@@ -345,22 +415,308 @@ public class CommunityFeedFragment extends Fragment {
         return wrapped;
     }
 
+    private void updateAudienceDock() {
+        updateAudienceOption(btnAudience, "Công khai", R.drawable.ic_privacy_public);
+        updateAudienceOption(btnAudienceFriends, "Bạn bè", R.drawable.ic_friends);
+        updateAudienceOption(btnAudiencePrivate, "Chỉ mình tôi", R.drawable.ic_privacy_lock);
+    }
+
+    private void updateAudienceOption(TextView view, String label, int iconRes) {
+        boolean selected = label.equals(selectedAudience);
+        int textColor = ContextCompat.getColor(requireContext(), selected ? R.color.white : R.color.item_title);
+        int iconColor = ContextCompat.getColor(requireContext(), selected ? R.color.white : R.color.item_title);
+
+        view.setText("Chỉ mình tôi".equals(label) ? "Riêng tư" : label);
+        view.setTextColor(textColor);
+        view.setBackgroundResource(selected
+                ? R.drawable.bg_publish_editorial
+                : R.drawable.bg_privacy_option_inactive);
+        view.setCompoundDrawablePadding(dp(6));
+        view.setCompoundDrawablesRelativeWithIntrinsicBounds(
+                tintedDrawable(iconRes, iconColor),
+                null,
+                null,
+                null
+        );
+        view.setCompoundDrawableTintList(ColorStateList.valueOf(iconColor));
+    }
+
+    private Drawable tintedDrawable(int iconRes, int color) {
+        Drawable drawable = ContextCompat.getDrawable(requireContext(), iconRes);
+        if (drawable == null) {
+            return null;
+        }
+        Drawable wrapped = DrawableCompat.wrap(drawable.mutate());
+        DrawableCompat.setTint(wrapped, color);
+        return wrapped;
+    }
+
     private int dp(int value) {
         return Math.round(value * getResources().getDisplayMetrics().density);
     }
 
     private void setMilestoneMode(boolean enabled) {
         milestoneMode = enabled;
-        actionMilestone.setBackgroundResource(enabled
-                ? R.drawable.bg_composer_action_selected
-                : R.drawable.bg_action_button);
         txtComposerHint.setText(enabled
                 ? "Chế độ cột mốc: chia sẻ mục tiêu, chuỗi ngày tốt hoặc một chiến thắng nhỏ."
                 : "Bắt đầu một câu chuyện tài chính nhỏ.");
         editPostContent.setHint(enabled
                 ? "Bạn vừa đạt cột mốc nào?"
                 : "Bạn muốn chia sẻ chuyện tiền bạc gì hôm nay?");
+        updateCategoryTiles();
+        updateCategoryDesign();
         updateSubmitState();
+    }
+
+    private void selectCategory(String category, boolean milestone, int chipId) {
+        selectCategory(category, categoryKeyFromLabel(category), milestone, chipId);
+    }
+
+    private void selectCategory(String category, String categoryKey, boolean milestone, int chipId) {
+        selectedCategory = category;
+        selectedCategoryKey = categoryKey;
+        setMilestoneMode(milestone);
+    }
+
+    private String categoryKeyFromLabel(String category) {
+        if (category == null) {
+            return "thoughts";
+        }
+        if (category.contains("Cột")) {
+            return "milestone";
+        }
+        if (category.contains("Phân")) {
+            return "analysis";
+        }
+        if (category.contains("Chia")) {
+            return "share";
+        }
+        return "thoughts";
+    }
+
+    private void setupTopicHashtags() {
+        if (chipGroupTopics == null) {
+            return;
+        }
+        setupTopicChipStyle();
+        chipGroupTopics.setOnCheckedStateChangeListener((group, checkedIds) -> {
+            Set<String> nextHashtags = hashtagsForCheckedIds(checkedIds);
+            syncTopicHashtags(nextHashtags);
+            updateTopicChipStyle();
+        });
+    }
+
+    private void setupTopicChipStyle() {
+        styleTopicChip(R.id.chipBudgeting, "#FFF0C9", "#F2C15E", "#7A4D09");
+        styleTopicChip(R.id.chipSaving, "#E2F5DA", "#A7D99B", "#31523B");
+        styleTopicChip(R.id.chipDebt, "#FFE1E5", "#F2A9B4", "#7B3640");
+        styleTopicChip(R.id.chipInvesting, "#E2ECFF", "#AFC5F7", "#294A88");
+    }
+
+    private void updateTopicChipStyle() {
+        styleTopicChip(R.id.chipBudgeting, "#FFF0C9", "#F2C15E", "#7A4D09");
+        styleTopicChip(R.id.chipSaving, "#E2F5DA", "#A7D99B", "#31523B");
+        styleTopicChip(R.id.chipDebt, "#FFE1E5", "#F2A9B4", "#7B3640");
+        styleTopicChip(R.id.chipInvesting, "#E2ECFF", "#AFC5F7", "#294A88");
+    }
+
+    private void styleTopicChip(int chipId, String selectedBackgroundColor, String selectedStrokeColor, String selectedTextColor) {
+        Chip chip = chipGroupTopics.findViewById(chipId);
+        if (chip == null) {
+            return;
+        }
+        boolean checked = chip.isChecked();
+        int backgroundColor = checked
+                ? android.graphics.Color.parseColor(selectedBackgroundColor)
+                : ContextCompat.getColor(requireContext(), R.color.bg_main);
+        int strokeColor = android.graphics.Color.parseColor(checked ? selectedStrokeColor : "#E8DCCB");
+        int textColor = checked
+                ? android.graphics.Color.parseColor(selectedTextColor)
+                : ContextCompat.getColor(requireContext(), R.color.brand_primary);
+        chip.setCheckedIconVisible(false);
+        chip.setChipBackgroundColor(ColorStateList.valueOf(backgroundColor));
+        chip.setChipStrokeColor(ColorStateList.valueOf(strokeColor));
+        chip.setTextColor(textColor);
+    }
+
+    private Set<String> hashtagsForCheckedIds(List<Integer> checkedIds) {
+        Set<String> hashtags = new LinkedHashSet<>();
+        if (checkedIds == null) {
+            return hashtags;
+        }
+        for (Integer checkedId : checkedIds) {
+            if (checkedId != null) {
+                hashtags.add(hashtagForTopic(checkedId));
+            }
+        }
+        return hashtags;
+    }
+
+    private String hashtagForTopic(int checkedId) {
+        if (checkedId == R.id.chipSaving) {
+            return "#TietKiem";
+        } else if (checkedId == R.id.chipDebt) {
+            return "#No";
+        } else if (checkedId == R.id.chipInvesting) {
+            return "#DauTu";
+        }
+        return "#NganSach";
+    }
+
+    private void syncTopicHashtags(Set<String> nextHashtags) {
+        String current = editPostContent.getText().toString();
+        for (String hashtag : selectedTopicHashtags) {
+            current = removeHashtagToken(current, hashtag);
+        }
+
+        String next = current.replaceAll("\\s+$", "");
+        if (!nextHashtags.isEmpty()) {
+            String hashtagLine = String.join(" ", nextHashtags);
+            next = next.isEmpty() ? hashtagLine : next + "\n" + hashtagLine;
+        }
+
+        editPostContent.setText(next);
+        editPostContent.setSelection(editPostContent.length());
+        selectedTopicHashtags.clear();
+        selectedTopicHashtags.addAll(nextHashtags);
+        updateSubmitState();
+    }
+
+    private String removeHashtagToken(String text, String hashtag) {
+        String next = text
+                .replace(hashtag + " ", "")
+                .replace(" " + hashtag, "")
+                .replace("\n" + hashtag, "\n")
+                .replace(hashtag, "");
+        return next
+                .replaceAll("[ \\t]+\\n", "\n")
+                .replaceAll("\\n{3,}", "\n\n");
+    }
+
+    private void applyHashtagStyle(Editable editable) {
+        if (applyingHashtagStyle || editable == null) {
+            return;
+        }
+        applyingHashtagStyle = true;
+        ForegroundColorSpan[] existing = editable.getSpans(0, editable.length(), ForegroundColorSpan.class);
+        for (ForegroundColorSpan span : existing) {
+            editable.removeSpan(span);
+        }
+
+        Matcher matcher = Pattern.compile("#[A-Za-z0-9_]+").matcher(editable.toString());
+        while (matcher.find()) {
+            String hashtag = editable.subSequence(matcher.start(), matcher.end()).toString();
+            editable.setSpan(
+                    new ForegroundColorSpan(colorForHashtag(hashtag)),
+                    matcher.start(),
+                    matcher.end(),
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+            );
+        }
+        applyingHashtagStyle = false;
+    }
+
+    private int colorForHashtag(String hashtag) {
+        if ("#TietKiem".equals(hashtag)) {
+            return android.graphics.Color.parseColor("#74A982");
+        }
+        if ("#No".equals(hashtag)) {
+            return android.graphics.Color.parseColor("#D98782");
+        }
+        if ("#DauTu".equals(hashtag)) {
+            return android.graphics.Color.parseColor("#8794DB");
+        }
+        return android.graphics.Color.parseColor("#D29A6F");
+    }
+
+    private void updateCategoryTiles() {
+        updateCategoryTile(actionMilestone, "Cột mốc", R.drawable.bg_category_tile_milestone,
+                "#4B2A11", "#8A6237");
+        updateCategoryTile(actionThoughts, "Suy nghĩ", R.drawable.bg_category_tile_thoughts,
+                "#5A3422", "#B07D62");
+        updateCategoryTile(actionAnalysis, "Phân tích", R.drawable.bg_category_tile_analysis,
+                "#3E260F", "#8A6237");
+        updateCategoryTile(actionShare, "Chia sẻ", R.drawable.bg_category_tile_share,
+                "#5C3920", "#D4A373");
+    }
+
+    private void updateCategoryDesign() {
+        if (panelCategoryMode == null) {
+            return;
+        }
+
+        int panelBg;
+        int iconRes;
+        String kicker;
+        String title;
+        String description;
+        String prompt;
+        String composerHint;
+        String submitText;
+
+        switch (selectedCategoryKey) {
+            case "milestone":
+                panelBg = R.drawable.bg_mode_panel_milestone;
+                iconRes = R.drawable.ic_feed_trophy;
+                kicker = "CELEBRATE A MILESTONE";
+                title = "Grow your story";
+                description = "Biến một chiến thắng tài chính nhỏ thành cột mốc đáng nhớ cho hành trình của bạn.";
+                prompt = "Gợi ý: Bạn vừa đạt được mục tiêu nào, và điều đó khiến bạn tự hào ra sao?";
+                composerHint = "Bạn vừa đạt cột mốc nào?";
+                submitText = "Đăng cột mốc";
+                break;
+            case "analysis":
+                panelBg = R.drawable.bg_mode_panel_analysis;
+                iconRes = R.drawable.ic_cozy_chart;
+                kicker = "FINANCIAL DEEP DIVE";
+                title = "Phân tích tiến độ";
+                description = "Dành cho những quan sát có dữ liệu, bài học chi tiêu hoặc pattern tài chính bạn vừa nhận ra.";
+                prompt = "Gợi ý: Tháng này điều gì tăng/giảm rõ nhất trong thói quen tiền bạc của bạn?";
+                composerHint = "Bạn muốn phân tích điều gì trong tài chính của mình?";
+                submitText = "Đăng phân tích";
+                break;
+            case "share":
+                panelBg = R.drawable.bg_mode_panel_share;
+                iconRes = R.drawable.ic_share;
+                kicker = "SHARE A FINANCIAL TIP";
+                title = "Grow together";
+                description = "Một mẹo nhỏ, một kinh nghiệm thật hoặc một câu chuyện có thể giúp cộng đồng tốt hơn.";
+                prompt = "Gợi ý: Mẹo nào bạn ước mình biết sớm hơn khi quản lý tiền?";
+                composerHint = "Bạn muốn chia sẻ mẹo tài chính nào?";
+                submitText = "Đăng chia sẻ";
+                break;
+            case "thoughts":
+            default:
+                panelBg = R.drawable.bg_mode_panel_thoughts;
+                iconRes = R.drawable.ic_cozy_notebook;
+                kicker = "DIGITAL JOURNAL";
+                title = "Chia sẻ suy nghĩ";
+                description = "Một không gian nhẹ để kể lại điều bạn học được trong hành trình tài chính hôm nay.";
+                prompt = "Gợi ý: Hôm nay bạn nhận ra điều gì về cách mình tiêu tiền?";
+                composerHint = "Hôm nay bạn đang nghĩ gì về tiền bạc?";
+                submitText = "Đăng suy nghĩ";
+                break;
+        }
+
+        panelCategoryMode.setBackgroundResource(panelBg);
+        imgModeIcon.setImageResource(iconRes);
+        txtModeKicker.setText(kicker);
+        txtModeTitle.setText(title);
+        txtModeDescription.setText(description);
+        txtModePrompt.setText(prompt);
+        editPostContent.setHint(composerHint);
+        txtComposerHint.setText(prompt);
+        btnSubmitPost.setText(submitText);
+    }
+
+    private void updateCategoryTile(TextView tile, String category, int normalBg,
+                                    String normalTextColor, String normalIconColor) {
+        boolean selected = category.equals(selectedCategory);
+        tile.setBackgroundResource(selected ? R.drawable.bg_category_tile_selected : normalBg);
+        tile.setText(selected ? "✓ " + category : category);
+        tile.setTextColor(android.graphics.Color.parseColor(selected ? "#FFFFFFFF" : normalTextColor));
+        tile.setCompoundDrawableTintList(ColorStateList.valueOf(
+                android.graphics.Color.parseColor(selected ? "#FFFFFFFF" : normalIconColor)));
     }
 
     private void clearSelectedImage() {
@@ -617,7 +973,8 @@ public class CommunityFeedFragment extends Fragment {
         if (milestoneMode) {
             setMilestoneMode(false);
         }
-        chipGroupTopics.check(R.id.chipBudgeting);
+        selectedTopicHashtags.clear();
+        chipGroupTopics.clearCheck();
         txtComposerHint.setText("Sẵn sàng cho bài chia sẻ tiếp theo.");
     }
 
@@ -628,7 +985,21 @@ public class CommunityFeedFragment extends Fragment {
         actionMilestone.setEnabled(!posting);
         btnAudience.setEnabled(!posting);
         editPostContent.setEnabled(!posting);
-        btnSubmitPost.setText(posting ? "Đang đăng..." : "Đăng");
+        btnSubmitPost.setText(posting ? "Đang đăng..." : publishTextForCategory());
+    }
+
+    private String publishTextForCategory() {
+        switch (selectedCategoryKey) {
+            case "milestone":
+                return "Đăng cột mốc";
+            case "analysis":
+                return "Đăng phân tích";
+            case "share":
+                return "Đăng chia sẻ";
+            case "thoughts":
+            default:
+                return "Đăng suy nghĩ";
+        }
     }
 
     private void updateSubmitState() {
@@ -662,9 +1033,8 @@ public class CommunityFeedFragment extends Fragment {
         txtComposerName.setText(!displayName.equals("Người dùng Cashify") ? displayName : username);
 
         String avatarUrl = doc.getString("avatarUrl");
-        if (avatarUrl != null && !avatarUrl.trim().isEmpty()) {
-            ImageHelper.loadAvatar(avatarUrl, imgComposerAvatar);
-        }
+        ImageHelper.loadAvatar(avatarUrl, imgComposerAvatar,
+                firstNonEmpty(displayName, username, doc.getId()));
     }
 
     private String cleanDisplayName(String value) {
@@ -672,5 +1042,13 @@ public class CommunityFeedFragment extends Fragment {
             return "Người dùng Cashify";
         }
         return value.trim();
+    }
+
+    private String firstNonEmpty(String... values) {
+        if (values == null) return "";
+        for (String value : values) {
+            if (value != null && !value.trim().isEmpty()) return value.trim();
+        }
+        return "";
     }
 }

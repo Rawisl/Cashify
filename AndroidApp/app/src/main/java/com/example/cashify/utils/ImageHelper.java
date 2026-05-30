@@ -1,44 +1,151 @@
 package com.example.cashify.utils;
 
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Rect;
+import android.graphics.RectF;
+import android.graphics.Typeface;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.widget.ImageView;
+
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.bumptech.glide.load.resource.bitmap.CenterCrop;
 import com.example.cashify.R;
 
-/**
- * Utility bọc thư viện Glide để xử lý ảnh tập trung.
- * Tránh việc mỗi màn hình lại dùng một kiểu load ảnh khác nhau.
- */
+import androidx.core.content.res.ResourcesCompat;
+
 public class ImageHelper {
-    //Chứa code bọc thư viện (Glide/Picasso) để load ảnh từ URL Firebase về bo tròn làm Avatar.
 
-    //Placeholder: Nhắc bạn làm UI thiết kế sẵn một cái ảnh ic_default_avatar.png (hình người xám xám) bỏ vào folder drawable. Nếu không có cái này, lúc mạng chậm cái chỗ Avatar nó sẽ trắng xóa, nhìn app rất "phèn".
-    //Firebase URLs: Link ảnh từ Firebase Storage thường rất dài và có token. Glide xử lý cái này rất ngon, nhưng nhắc bạn dev là khi lưu vào Firestore, hãy lưu cái Download URL (link trực tiếp) chứ đừng lưu cái Path trong Storage nhé.
-    //Performance: Glide mặc định sẽ cache ảnh vào bộ nhớ máy. Điều này giúp user lần sau mở app là thấy ảnh ngay, không tốn thêm 1 byte dung lượng 4G nào để load lại.
-
-    // Hàm load Avatar đã được xử lý (Nhận Object để tương thích cả String và Uri)
     public static void loadAvatar(Object url, ImageView target) {
-        // Bọc giáp chống crash nếu lỡ truyền View rỗng vào
+        loadAvatar(url, target, null);
+    }
+
+    public static void loadAvatar(Object url, ImageView target, String identity) {
         if (target == null || target.getContext() == null) return;
+
+        Drawable fallback = createInitialsAvatar(target.getContext(), identity, target.getWidth(), target.getHeight());
+        if (isEmptyAvatarUrl(url)) {
+            Glide.with(target.getContext()).clear(target);
+            target.setImageDrawable(fallback);
+            return;
+        }
 
         Glide.with(target.getContext())
                 .load(url)
-                .placeholder(R.drawable.ic_default_user)
-                .error(R.drawable.ic_default_user)
-                .circleCrop()
+                .placeholder(fallback)
+                .error(fallback)
+                .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC)
+                .override(resolveTargetSize(target, 96), resolveTargetSize(target, 96))
+                .transform(new CenterCrop())
+                .dontAnimate()
                 .into(target);
     }
 
-    // ============================================================
-    // TODO 2: LOAD ẢNH COVER HOẶC ẢNH QUỸ (CENTER CROP)
-    // - Dành cho các ảnh hình chữ nhật/hình vuông cần bo góc nhẹ.
-    // - Sử dụng .centerCrop() và có thể thêm Transform để bo góc (RoundedCorners).
-    // ============================================================
-    public static void loadRectImage(String url, ImageView target) {
-        // Viết code Glide ở đây
+    public static Drawable createInitialsAvatar(Context context, String identity) {
+        return createInitialsAvatar(context, identity, 0, 0);
     }
 
-    // ============================================================
-    // TODO 3: CLEAR CACHE (TÙY CHỌN)
-    // - Viết hàm để clear memory/disk cache của Glide khi cần thiết.
-    // ============================================================
+    public static void loadRectImage(String url, ImageView target) {
+        if (target == null || target.getContext() == null) return;
+        Glide.with(target.getContext())
+                .load(url)
+                .placeholder(R.drawable.bg_feed_image_placeholder)
+                .error(R.drawable.bg_feed_image_placeholder)
+                .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC)
+                .override(resolveTargetSize(target, 720), resolveTargetSize(target, 480))
+                .centerCrop()
+                .dontAnimate()
+                .into(target);
+    }
+
+    private static Drawable createInitialsAvatar(Context context, String identity, int viewWidth, int viewHeight) {
+        int size = Math.max(Math.max(viewWidth, viewHeight), dp(context, 64));
+        Bitmap bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+        AvatarPalette palette = paletteFor(identity);
+        RectF rect = new RectF(0f, 0f, size, size);
+
+        paint.setStyle(Paint.Style.FILL);
+        paint.setColor(palette.background);
+        canvas.drawRect(rect, paint);
+
+        String initials = initials(identity);
+        paint.setStyle(Paint.Style.FILL);
+        paint.setColor(Color.WHITE);
+        Typeface interBold = ResourcesCompat.getFont(context, R.font.inter_bold);
+        paint.setTypeface(interBold != null ? interBold : Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+        paint.setTextAlign(Paint.Align.CENTER);
+        paint.setTextSize(size * (initials.length() > 1 ? 0.34f : 0.40f));
+
+        Rect bounds = new Rect();
+        paint.getTextBounds(initials, 0, initials.length(), bounds);
+        canvas.drawText(initials, size / 2f, size / 2f - bounds.exactCenterY(), paint);
+
+        return new BitmapDrawable(context.getResources(), bitmap);
+    }
+
+    private static boolean isEmptyAvatarUrl(Object url) {
+        if (url == null) return true;
+        if (url instanceof String) return ((String) url).trim().isEmpty();
+        return false;
+    }
+
+    private static String initials(String identity) {
+        if (identity == null || identity.trim().isEmpty()) return "HI";
+        String clean = identity.trim();
+        int at = clean.indexOf('@');
+        if (at > 0) clean = clean.substring(0, at);
+
+        String[] parts = clean.split("\\s+");
+        String first = firstCodePoint(parts[0]);
+        String second = parts.length > 1 ? firstCodePoint(parts[parts.length - 1]) : "";
+        String result = (first + second).toUpperCase(java.util.Locale.getDefault());
+        return result.isEmpty() ? "HI" : result;
+    }
+
+    private static String firstCodePoint(String value) {
+        if (value == null || value.isEmpty()) return "";
+        return new String(Character.toChars(value.codePointAt(0)));
+    }
+
+    private static AvatarPalette paletteFor(String identity) {
+        AvatarPalette[] palettes = {
+                new AvatarPalette(Color.rgb(255, 123, 174)),
+                new AvatarPalette(Color.rgb(255, 178, 132)),
+                new AvatarPalette(Color.rgb(202, 171, 255)),
+                new AvatarPalette(Color.rgb(133, 218, 177)),
+                new AvatarPalette(Color.rgb(124, 190, 255)),
+                new AvatarPalette(Color.rgb(255, 235, 170)),
+                new AvatarPalette(Color.rgb(255, 204, 122)),
+                new AvatarPalette(Color.rgb(255, 143, 134)),
+                new AvatarPalette(Color.rgb(108, 209, 199))
+        };
+        int index = Math.abs((identity == null ? "HI" : identity).hashCode()) % palettes.length;
+        return palettes[index];
+    }
+
+    private static int dp(Context context, int value) {
+        return Math.round(value * context.getResources().getDisplayMetrics().density);
+    }
+
+    private static int resolveTargetSize(ImageView target, int fallbackDp) {
+        int measured = Math.max(target.getWidth(), target.getHeight());
+        if (measured > 0) return measured;
+        return dp(target.getContext(), fallbackDp);
+    }
+
+    private static class AvatarPalette {
+        final int background;
+
+        AvatarPalette(int background) {
+            this.background = background;
+        }
+    }
 }

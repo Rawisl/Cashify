@@ -49,11 +49,7 @@ public class ConversationAdapter extends RecyclerView.Adapter<ConversationAdapte
         holder.tvUnread.setVisibility(conversation.getUnreadCount() > 0 ? View.VISIBLE : View.GONE);
         holder.tvUnread.setText(String.valueOf(conversation.getUnreadCount()));
 
-        if (conversation.getFriendAvatarUrl() != null && !conversation.getFriendAvatarUrl().isEmpty()) {
-            ImageHelper.loadAvatar(conversation.getFriendAvatarUrl(), holder.imgAvatar);
-        } else {
-            holder.imgAvatar.setImageResource(R.drawable.ic_default_user);
-        }
+        ImageHelper.loadAvatar(conversation.getFriendAvatarUrl(), holder.imgAvatar, conversation.getNameToShow());
         holder.itemView.setOnClickListener(v -> listener.onConversationClick(conversation));
     }
 

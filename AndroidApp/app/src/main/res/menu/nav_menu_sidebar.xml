@@ -30,11 +30,6 @@
             android:title="Bạn bè" />
 
         <item
-            android:id="@+id/nav_post_feed"
-            android:icon="@drawable/ic_feed_solid"
-            android:title="Tạo bài viết" />
-
-        <item
             android:id="@+id/nav_invitations"
             android:icon="@android:drawable/ic_dialog_email"
             android:title="Lời mời" />
