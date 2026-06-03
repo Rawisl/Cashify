@@ -37,6 +37,7 @@ import androidx.navigation.fragment.NavHostFragment;
 
 import com.example.cashify.R;
 import com.example.cashify.utils.ImageHelper;
+import com.example.cashify.utils.UploadNotificationHelper;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
@@ -805,18 +806,33 @@ public class CommunityFeedFragment extends Fragment {
                 return;
             }
 
+            UploadNotificationHelper notif = new UploadNotificationHelper(requireContext());
+
             com.example.cashify.utils.CloudinaryHelper.uploadImage(imageFile, new com.example.cashify.utils.CloudinaryHelper.UploadCallback() {
                 @Override
+                public void onProgress(int percent) {
+                    notif.update(percent); // hiện trên status bar, không đụng UI fragment
+                }
+
+                @Override
                 public void onSuccess(String imageUrl) {
-                    // Dùng biến final ở đây
-                    callBackendToCreatePost(finalContentToSubmit, type, imageUrl, milestoneData, finalAudienceToSubmit);
+                    notif.done();
+                    requireActivity().runOnUiThread(() ->
+                            callBackendToCreatePost(finalContentToSubmit, type, imageUrl, milestoneData, finalAudienceToSubmit)
+                    );
                 }
 
                 @Override
                 public void onFailure(String error) {
+                    notif.error();
                     requireActivity().runOnUiThread(() -> {
                         setPosting(false);
-                        Toast.makeText(requireContext(), "Lỗi tải ảnh: " + error, Toast.LENGTH_SHORT).show();
+                        new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                                .setTitle("Không thể tải ảnh")
+                                .setMessage(error)
+                                .setPositiveButton("Thử lại", (d, w) -> submitPost())
+                                .setNegativeButton("Huỷ", null)
+                                .show();
                     });
                 }
             });
