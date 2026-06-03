@@ -320,6 +320,35 @@
                     android:textSize="14sp"
                     android:visibility="gone" />
 
+                <LinearLayout
+                    android:id="@+id/layoutNewsfeedSkeleton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <com.example.cashify.ui.common.FeedSkeletonCardView
+                        android:layout_width="match_parent"
+                        android:layout_height="382dp"
+                        android:layout_marginBottom="10dp" />
+
+                    <com.example.cashify.ui.common.FeedSkeletonCardView
+                        android:layout_width="match_parent"
+                        android:layout_height="382dp"
+                        android:layout_marginBottom="10dp" />
+
+                    <com.example.cashify.ui.common.FeedSkeletonCardView
+                        android:layout_width="match_parent"
+                        android:layout_height="382dp"
+                        android:layout_marginBottom="10dp" />
+
+                    <com.example.cashify.ui.common.FeedSkeletonCardView
+                        android:layout_width="match_parent"
+                        android:layout_height="382dp"
+                        android:layout_marginBottom="10dp" />
+                </LinearLayout>
+
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/rvNewsfeed"
                     android:layout_width="match_parent"
