@@ -15,18 +15,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@drawable/bg_milestone_premium_card"
-        android:clipToPadding="false">
-
-        <View
-            android:id="@+id/viewMilestoneShine"
-            android:layout_width="58dp"
-            android:layout_height="320dp"
-            android:layout_gravity="bottom|start"
-            android:layout_marginStart="-96dp"
-            android:layout_marginBottom="-142dp"
-            android:alpha="0"
-            android:background="@drawable/bg_milestone_gold_shine"
-            android:rotation="38" />
+        android:clipChildren="true"
+        android:clipToOutline="true"
+        android:clipToPadding="true">
 
         <View
             android:layout_width="82dp"
@@ -36,6 +27,20 @@
             android:layout_marginEnd="-22dp"
             android:alpha="0.78"
             android:background="@drawable/bg_milestone_corner_glow_gold" />
+
+        <View
+            android:id="@+id/viewMilestoneShine"
+            android:layout_width="400dp"
+            android:layout_height="560dp"
+            android:layout_gravity="bottom|start"
+            android:layout_marginStart="-64dp"
+            android:layout_marginBottom="-290dp"
+            android:alpha="0"
+            android:background="@drawable/bg_milestone_gold_shine"
+            android:importantForAccessibility="no"
+            android:rotation="34"
+            android:clickable="false"
+            android:focusable="false" />
 
         <TextView
             android:layout_width="24dp"
