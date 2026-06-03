@@ -37,6 +37,7 @@ import androidx.navigation.fragment.NavHostFragment;
 
 import com.example.cashify.R;
 import com.example.cashify.utils.ImageHelper;
+import com.example.cashify.utils.UploadNotificationHelper;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
@@ -53,6 +54,8 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import com.example.cashify.utils.DialogHelper;
+
 
 public class CommunityFeedFragment extends Fragment {
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -97,9 +100,24 @@ public class CommunityFeedFragment extends Fragment {
 
     private final ActivityResultLauncher<String> pickImageLauncher =
             registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
-                if (uri == null) {
+                if (uri == null) return;
+
+                long fileSize = getFileSizeFromUri(uri);
+                if (fileSize > 10 * 1024 * 1024) {
+                    DialogHelper.showCustomDialog(
+                            requireContext(),
+                            "Ảnh quá lớn",
+                            "Ảnh bạn chọn vượt quá 10MB. Vui lòng chọn ảnh nhỏ hơn.",
+                            "Chọn lại",
+                            "Huỷ",
+                            DialogHelper.DialogType.DANGER,
+                            true,
+                            () -> actionPhoto.performClick(), // Dùng performClick thay vì gọi pickImageLauncher
+                            null
+                    );
                     return;
                 }
+
                 selectedImageUri = uri;
                 imgPostPreview.setImageURI(uri);
                 imagePreviewContainer.setVisibility(View.VISIBLE);
@@ -805,18 +823,49 @@ public class CommunityFeedFragment extends Fragment {
                 return;
             }
 
+            UploadNotificationHelper notif = new UploadNotificationHelper(requireContext());
+
             com.example.cashify.utils.CloudinaryHelper.uploadImage(imageFile, new com.example.cashify.utils.CloudinaryHelper.UploadCallback() {
                 @Override
+                public void onProgress(int percent) {
+                    notif.update(percent); // hiện trên status bar, không đụng UI fragment
+                }
+
+                @Override
                 public void onSuccess(String imageUrl) {
-                    // Dùng biến final ở đây
-                    callBackendToCreatePost(finalContentToSubmit, type, imageUrl, milestoneData, finalAudienceToSubmit);
+                    notif.done();
+                    requireActivity().runOnUiThread(() ->
+                            callBackendToCreatePost(finalContentToSubmit, type, imageUrl, milestoneData, finalAudienceToSubmit)
+                    );
                 }
 
                 @Override
                 public void onFailure(String error) {
+                    notif.error();
                     requireActivity().runOnUiThread(() -> {
                         setPosting(false);
-                        Toast.makeText(requireContext(), "Lỗi tải ảnh: " + error, Toast.LENGTH_SHORT).show();
+
+                        boolean isFileTooLarge = error.contains("10MB");
+
+                        DialogHelper.showCustomDialog(
+                                requireContext(),
+                                isFileTooLarge ? "Ảnh quá lớn" : "Không thể tải ảnh",
+                                isFileTooLarge
+                                        ? "Ảnh bạn chọn vượt quá 10MB. Vui lòng chọn ảnh nhỏ hơn và thử lại."
+                                        : error,
+                                isFileTooLarge ? "Chọn ảnh khác" : "Thử lại",
+                                "Huỷ",
+                                DialogHelper.DialogType.DANGER,
+                                true,
+                                () -> {
+                                    if (isFileTooLarge) {
+                                        pickImageLauncher.launch("image/*"); // Mở picker lại
+                                    } else {
+                                        submitPost(); // Thử upload lại
+                                    }
+                                },
+                                null
+                        );
                     });
                 }
             });
@@ -956,6 +1005,21 @@ public class CommunityFeedFragment extends Fragment {
             e.printStackTrace();
             return null;
         }
+    }
+
+    private long getFileSizeFromUri(Uri uri) {
+        try (android.database.Cursor cursor = requireContext().getContentResolver().query(
+                uri, new String[]{android.provider.OpenableColumns.SIZE}, null, null, null)) {
+            if (cursor != null && cursor.moveToFirst()) {
+                int sizeIndex = cursor.getColumnIndex(android.provider.OpenableColumns.SIZE);
+                if (sizeIndex != -1 && !cursor.isNull(sizeIndex)) {
+                    return cursor.getLong(sizeIndex);
+                }
+            }
+        } catch (Exception e) {
+            return 0; // Không đọc được thì cho qua, CloudinaryHelper sẽ chặn sau
+        }
+        return 0;
     }
 
     private String getSelectedTopic() {

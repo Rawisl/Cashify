@@ -59,6 +59,10 @@ public class UpdateUserViewModel extends ViewModel {
             // --- BƯỚC 2: UP ẢNH QUA CỔNG BẢO MẬT ---
             CloudinaryHelper.uploadImage(tempFile, new CloudinaryHelper.UploadCallback() {
                 @Override
+                public void onProgress(int percent) {
+                }
+
+                @Override
                 public void onSuccess(String imageUrl) {
                     Log.d("CLOUDINARY", "Image uploaded successfully: " + imageUrl);
                     tempFile.delete(); // Up xong nhớ xóa file tạm cho sạch rác
