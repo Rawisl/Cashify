@@ -68,6 +68,7 @@ public class SocialNewsfeedFragment extends Fragment {
     private CommunityFeedAdapter feedAdapter;
     private View layoutFeedEmpty;
     private View layoutFeedEnd;
+    private View layoutFeedSkeleton;
     private TextView layoutFeedError;
     private ProgressBar progressFeed;
     private ProgressBar progressFeedMore;
@@ -110,6 +111,7 @@ public class SocialNewsfeedFragment extends Fragment {
         rvFeed = view.findViewById(R.id.rvNewsfeed);
         layoutFeedEmpty = view.findViewById(R.id.layoutNewsfeedEmpty);
         layoutFeedEnd = view.findViewById(R.id.layoutNewsfeedEnd);
+        layoutFeedSkeleton = view.findViewById(R.id.layoutNewsfeedSkeleton);
         layoutFeedError = view.findViewById(R.id.layoutNewsfeedError);
         progressFeed = view.findViewById(R.id.progressNewsfeed);
         progressFeedMore = view.findViewById(R.id.progressNewsfeedMore);
@@ -178,6 +180,7 @@ public class SocialNewsfeedFragment extends Fragment {
         }
         showFeedEmpty(false);
         showFeedError(false);
+        showFeedSkeleton(false);
         loadFeedPage(true);
     }
 
@@ -195,8 +198,10 @@ public class SocialNewsfeedFragment extends Fragment {
         }
 
         isLoadingFeed = true;
+        boolean showInitialSkeleton = firstPage && !isRefreshingFeed && feedItems.isEmpty();
+        showFeedSkeleton(showInitialSkeleton);
         if (progressFeed != null) {
-            progressFeed.setVisibility(firstPage && !isRefreshingFeed ? View.VISIBLE : View.GONE);
+            progressFeed.setVisibility(firstPage && !isRefreshingFeed && !showInitialSkeleton ? View.VISIBLE : View.GONE);
         }
         if (progressFeedMore != null) {
             progressFeedMore.setVisibility(firstPage ? View.GONE : View.VISIBLE);
@@ -260,6 +265,10 @@ public class SocialNewsfeedFragment extends Fragment {
         if (feedAdapter != null) {
             feedAdapter.submitList(new ArrayList<>(feedItems));
         }
+        if (!feedItems.isEmpty()) {
+            showFeedSkeleton(false);
+            if (rvFeed != null) rvFeed.setVisibility(View.VISIBLE);
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -278,6 +287,7 @@ public class SocialNewsfeedFragment extends Fragment {
         if (progressFeed != null) progressFeed.setVisibility(View.GONE);
         if (progressFeedMore != null) progressFeedMore.setVisibility(View.GONE);
         if (swipeRefreshNewsfeed != null) swipeRefreshNewsfeed.setRefreshing(false);
+        showFeedSkeleton(false);
     }
 
     @SuppressWarnings("unchecked")
@@ -366,6 +376,7 @@ public class SocialNewsfeedFragment extends Fragment {
     }
 
     private void showFeedEmpty(boolean show) {
+        if (show) showFeedSkeleton(false);
         if (layoutFeedEmpty != null)
             layoutFeedEmpty.setVisibility(show ? View.VISIBLE : View.GONE);
         if (rvFeed != null)
@@ -378,6 +389,7 @@ public class SocialNewsfeedFragment extends Fragment {
             layoutFeedError.setVisibility(show ? View.VISIBLE : View.GONE);
         }
         if (show) {
+            showFeedSkeleton(false);
             showFeedEmpty(false);
             showFeedEnd(false);
             if (rvFeed != null) rvFeed.setVisibility(View.GONE);
@@ -397,6 +409,18 @@ public class SocialNewsfeedFragment extends Fragment {
     private void showFeedEnd(boolean show) {
         if (layoutFeedEnd != null) {
             layoutFeedEnd.setVisibility(show ? View.VISIBLE : View.GONE);
+        }
+    }
+
+    private void showFeedSkeleton(boolean show) {
+        if (layoutFeedSkeleton != null) {
+            layoutFeedSkeleton.setVisibility(show ? View.VISIBLE : View.GONE);
+        }
+        if (show) {
+            if (rvFeed != null) rvFeed.setVisibility(View.GONE);
+            if (layoutFeedEmpty != null) layoutFeedEmpty.setVisibility(View.GONE);
+            if (layoutFeedError != null) layoutFeedError.setVisibility(View.GONE);
+            showFeedEnd(false);
         }
     }
 
