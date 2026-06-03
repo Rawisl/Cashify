@@ -54,6 +54,8 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import com.example.cashify.utils.DialogHelper;
+
 
 public class CommunityFeedFragment extends Fragment {
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -98,9 +100,24 @@ public class CommunityFeedFragment extends Fragment {
 
     private final ActivityResultLauncher<String> pickImageLauncher =
             registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
-                if (uri == null) {
+                if (uri == null) return;
+
+                long fileSize = getFileSizeFromUri(uri);
+                if (fileSize > 10 * 1024 * 1024) {
+                    DialogHelper.showCustomDialog(
+                            requireContext(),
+                            "Ảnh quá lớn",
+                            "Ảnh bạn chọn vượt quá 10MB. Vui lòng chọn ảnh nhỏ hơn.",
+                            "Chọn lại",
+                            "Huỷ",
+                            DialogHelper.DialogType.DANGER,
+                            true,
+                            () -> actionPhoto.performClick(), // Dùng performClick thay vì gọi pickImageLauncher
+                            null
+                    );
                     return;
                 }
+
                 selectedImageUri = uri;
                 imgPostPreview.setImageURI(uri);
                 imagePreviewContainer.setVisibility(View.VISIBLE);
@@ -827,12 +844,28 @@ public class CommunityFeedFragment extends Fragment {
                     notif.error();
                     requireActivity().runOnUiThread(() -> {
                         setPosting(false);
-                        new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
-                                .setTitle("Không thể tải ảnh")
-                                .setMessage(error)
-                                .setPositiveButton("Thử lại", (d, w) -> submitPost())
-                                .setNegativeButton("Huỷ", null)
-                                .show();
+
+                        boolean isFileTooLarge = error.contains("10MB");
+
+                        DialogHelper.showCustomDialog(
+                                requireContext(),
+                                isFileTooLarge ? "Ảnh quá lớn" : "Không thể tải ảnh",
+                                isFileTooLarge
+                                        ? "Ảnh bạn chọn vượt quá 10MB. Vui lòng chọn ảnh nhỏ hơn và thử lại."
+                                        : error,
+                                isFileTooLarge ? "Chọn ảnh khác" : "Thử lại",
+                                "Huỷ",
+                                DialogHelper.DialogType.DANGER,
+                                true,
+                                () -> {
+                                    if (isFileTooLarge) {
+                                        pickImageLauncher.launch("image/*"); // Mở picker lại
+                                    } else {
+                                        submitPost(); // Thử upload lại
+                                    }
+                                },
+                                null
+                        );
                     });
                 }
             });
@@ -972,6 +1005,21 @@ public class CommunityFeedFragment extends Fragment {
             e.printStackTrace();
             return null;
         }
+    }
+
+    private long getFileSizeFromUri(Uri uri) {
+        try (android.database.Cursor cursor = requireContext().getContentResolver().query(
+                uri, new String[]{android.provider.OpenableColumns.SIZE}, null, null, null)) {
+            if (cursor != null && cursor.moveToFirst()) {
+                int sizeIndex = cursor.getColumnIndex(android.provider.OpenableColumns.SIZE);
+                if (sizeIndex != -1 && !cursor.isNull(sizeIndex)) {
+                    return cursor.getLong(sizeIndex);
+                }
+            }
+        } catch (Exception e) {
+            return 0; // Không đọc được thì cho qua, CloudinaryHelper sẽ chặn sau
+        }
+        return 0;
     }
 
     private String getSelectedTopic() {
