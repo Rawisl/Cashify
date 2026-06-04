@@ -59,13 +59,7 @@ public class MessagesActivity extends AppCompatActivity {
                 ToastHelper.show(this, "T\u1ea3i danh s\u00e1ch tr\u00f2 chuy\u1ec7n th\u1ea5t b\u1ea1i");
             }
         });
-        viewModel.loadConversations();
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        if (viewModel != null) viewModel.loadConversations();
+        viewModel.startListening();
     }
 
     private void openConversation(DirectConversation conversation) {

@@ -9,6 +9,9 @@ public class ChatMessage {
     private String senderName;
     private String senderAvatar;
     private String text;
+
+    private String imageUrl;
+
     private long timestamp;
     @PropertyName("isRecalled")
     private boolean recalled = false;
@@ -36,6 +39,9 @@ public class ChatMessage {
     public void setText(String text) { this.text = text; }
     public long getTimestamp() { return timestamp; }
     public void setTimestamp(long timestamp) { this.timestamp = timestamp; }
+
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
     @PropertyName("isRecalled")
     public boolean isRecalled() {
         return recalled;

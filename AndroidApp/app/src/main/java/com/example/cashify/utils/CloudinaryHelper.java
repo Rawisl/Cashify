@@ -53,7 +53,13 @@ public class CloudinaryHelper {
                     if (response.isSuccessful() && response.body() != null) {
                         new Thread(() -> uploadToCloudinary(fileToUpload, response.body(), callback)).start();
                     } else {
-                        callback.onFailure("Không lấy được chữ ký. Mã lỗi: " + response.code());
+                        // THÊM LOG NÀY
+                        String errorBody = "";
+                        try {
+                            if (response.errorBody() != null) errorBody = response.errorBody().string();
+                        } catch (Exception ignored) {}
+                        Log.e("CLOUDINARY", "Lấy chữ ký thất bại - code: " + response.code() + " body: " + errorBody);
+                        callback.onFailure("Không lấy được chữ ký. Mã lỗi: " + response.code() + " - " + errorBody);
                     }
                 }
                 @Override
