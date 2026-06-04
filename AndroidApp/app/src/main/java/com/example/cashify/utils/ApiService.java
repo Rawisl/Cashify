@@ -87,7 +87,7 @@ public interface ApiService {
     @GET("/api/v1/friend/messages/{friendUid}")
     Call<java.util.List<com.example.cashify.data.model.ChatMessage>> getDirectFriendMessages(@Path("friendUid") String friendUid, @Header("Authorization") String token);
 
-    @POST("/api/v1/friend/message/send")
+    @POST("/api/v1/friend/messages/send")
     Call<Object> sendDirectFriendMessage(@Header("Authorization") String token, @Body DirectFriendMessageRequest request);
 
     //SOCIAL API
@@ -223,9 +223,18 @@ public interface ApiService {
     class DirectFriendMessageRequest {
         public String ReceiverId;
         public String Text;
+
+        public String ImageUrl;
         public DirectFriendMessageRequest(String receiverId, String text) {
             ReceiverId = receiverId;
             Text = text;
+            this.ImageUrl = "";
+        }
+
+        public DirectFriendMessageRequest(String receiverId, String text, String imageUrl) {
+            ReceiverId = receiverId;
+            Text = text;
+            this.ImageUrl = imageUrl != null ? imageUrl : "";
         }
     }
 
@@ -418,9 +427,18 @@ public interface ApiService {
         public String WorkspaceId;
         public String Text;
 
+        public String ImageUrl;
+
         public WorkspaceMessageSendRequest(String workspaceId, String text) {
             this.WorkspaceId = workspaceId;
             this.Text = text;
+            this.ImageUrl = "";
+        }
+
+        public WorkspaceMessageSendRequest(String workspaceId, String text, String imageUrl) {
+            this.WorkspaceId = workspaceId;
+            this.Text = text;
+            this.ImageUrl = imageUrl != null ? imageUrl : "";
         }
     }
     class AutoMilestoneRequest {

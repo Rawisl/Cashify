@@ -211,21 +211,29 @@ public class WorkspaceViewModel extends ViewModel {
                 });
     }
 
-    public void sendChatMessage(String workspaceId, String text) {
-        if (text == null || text.trim().isEmpty()) return;
+    public void sendChatMessage(String workspaceId, String text, String imageUrl) {
+        sendChatMessage(workspaceId, text, imageUrl, null);
+    }
 
-        FirebaseManager.getInstance().sendWorkspaceMessage(workspaceId, text, new FirebaseManager.DataCallback<Void>() {
-            @Override
-            public void onSuccess(Void data) {
-                // Thành công: KHÔNG CẦN LÀM GÌ CẢ.
-                // Hàm listenForChatMessages() có sẵn trong ViewModel sẽ tự động kéo tin nhắn mới về và cập nhật UI.
-            }
-
-            @Override
-            public void onError(String message) {
-                _errorMessage.postValue("Gửi tin nhắn thất bại: " + message);
-            }
-        });
+    // Thêm overload này vào WorkspaceViewModel
+    public void sendChatMessage(String workspaceId, String text, String imageUrl,
+                                Runnable onSuccess) {
+        if ((text == null || text.trim().isEmpty()) && (imageUrl == null || imageUrl.isEmpty())) {
+            if (onSuccess != null) onSuccess.run();
+            return;
+        }
+        FirebaseManager.getInstance().sendWorkspaceMessage(workspaceId, text, imageUrl,
+                new FirebaseManager.DataCallback<Void>() {
+                    @Override
+                    public void onSuccess(Void data) {
+                        if (onSuccess != null) onSuccess.run(); // ← báo xong để gửi tiếp
+                    }
+                    @Override
+                    public void onError(String message) {
+                        _errorMessage.postValue("Gửi tin nhắn thất bại: " + message);
+                        if (onSuccess != null) onSuccess.run(); // vẫn tiếp tục gửi ảnh tiếp theo
+                    }
+                });
     }
 
     public void deleteChatMessage(String workspaceId, String messageId) {
