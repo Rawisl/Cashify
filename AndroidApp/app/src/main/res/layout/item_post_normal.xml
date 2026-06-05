@@ -68,7 +68,7 @@
                 android:fontFamily="@font/inter_bold"
                 android:paddingHorizontal="12dp"
                 android:paddingVertical="7dp"
-                android:text="Cashify story"
+                android:text="Câu chuyện Cashify"
                 android:textColor="#1A237E"
                 android:textSize="11sp" />
         </FrameLayout>
@@ -147,7 +147,7 @@
                         android:fontFamily="@font/inter_bold"
                         android:gravity="center"
                         android:paddingHorizontal="9dp"
-                        android:text="Public"
+                        android:text="Công khai"
                         android:textColor="#1A237E"
                         android:textSize="10sp" />
                 </LinearLayout>
