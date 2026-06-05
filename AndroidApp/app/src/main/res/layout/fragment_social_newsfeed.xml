@@ -26,10 +26,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:fontFamily="@font/inter_bold"
-                android:text="Cashify Community"
-                android:textColor="@color/white"
-                android:textSize="14sp" />
+                android:text="Cộng đồng"
+                android:textAppearance="@style/ToolbarTitleFont"
+                android:textColor="@color/white" />
 
             <ImageView
                 android:layout_width="36dp"
@@ -46,370 +45,369 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
-        <androidx.core.widget.NestedScrollView
-            android:id="@+id/scrollNewsfeed"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:clipToPadding="false"
-            android:paddingBottom="32dp">
-
-            <LinearLayout
+            <androidx.core.widget.NestedScrollView
+                android:id="@+id/scrollNewsfeed"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingStart="20dp"
-                android:paddingTop="18dp"
-                android:paddingEnd="20dp"
-                android:paddingBottom="28dp">
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:paddingBottom="32dp">
 
-                <TextView
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:fontFamily="@font/outfit_bold"
-                    android:text="Góc cộng đồng"
-                    android:textColor="#1A237E"
-                    android:textSize="28sp" />
+                    android:orientation="vertical"
+                    android:paddingStart="20dp"
+                    android:paddingTop="18dp"
+                    android:paddingEnd="20dp"
+                    android:paddingBottom="28dp">
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:fontFamily="@font/inter_regular"
-                    android:lineSpacingExtra="3dp"
-                    android:text="Chia sẻ mục tiêu, thói quen chi tiêu và những cột mốc tài chính nhỏ cùng cộng đồng Cashify."
-                    android:textColor="#607D8B"
-                    android:textSize="13sp" />
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/outfit_bold"
+                        android:text="Góc cộng đồng"
+                        android:textColor="#1A237E"
+                        android:textSize="24sp" />
 
-                <androidx.cardview.widget.CardView
-                    android:id="@+id/cardCreatePostPrompt"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="22dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:foreground="?attr/selectableItemBackground"
-                    app:cardBackgroundColor="@android:color/transparent"
-                    app:cardCornerRadius="0dp"
-                    app:cardElevation="0dp">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:fontFamily="@font/inter_regular"
+                        android:lineSpacingExtra="3dp"
+                        android:text="Chia sẻ mục tiêu, thói quen chi tiêu và những cột mốc tài chính nhỏ cùng cộng đồng Cashify."
+                        android:textColor="#607D8B"
+                        android:textSize="13sp" />
+
+                    <androidx.cardview.widget.CardView
+                        android:id="@+id/cardCreatePostPrompt"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="22dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        app:cardBackgroundColor="@android:color/transparent"
+                        app:cardCornerRadius="0dp"
+                        app:cardElevation="0dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_social_editorial_card"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:padding="14dp">
+
+                            <com.example.cashify.ui.common.AvatarImageView
+                                android:id="@+id/imgCreatePromptAvatar"
+                                android:layout_width="46dp"
+                                android:layout_height="46dp"
+                                android:scaleType="centerCrop"
+                                android:src="@drawable/bg_default_avatar_pastel" />
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="12dp"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:fontFamily="@font/inter_bold"
+                                    android:maxLines="2"
+                                    android:text="Bạn đang nghĩ gì?"
+                                    android:textColor="#1A237E"
+                                    android:textSize="15sp" />
+
+                                <TextView
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="3dp"
+                                    android:fontFamily="@font/inter_regular"
+                                    android:maxLines="2"
+                                    android:text="Ảnh, cột mốc, mẹo tiết kiệm hoặc một chia sẻ nhỏ"
+                                    android:textColor="#607D8B"
+                                    android:textSize="12sp" />
+                            </LinearLayout>
+
+                            <ImageView
+                                android:id="@+id/btnCreatePostPrompt"
+                                android:layout_width="42dp"
+                                android:layout_height="42dp"
+                                android:layout_marginStart="10dp"
+                                android:background="@drawable/bg_social_bottom_cta"
+                                android:contentDescription="Tạo bài viết"
+                                android:padding="10dp"
+                                android:src="@drawable/ic_add_bold"
+                                app:tint="@color/white" />
+                        </LinearLayout>
+                    </androidx.cardview.widget.CardView>
+
+                    <FrameLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="236dp"
+                        android:layout_marginTop="22dp"
+                        android:background="@drawable/bg_social_insight_navy"
+                        android:elevation="3dp"
+                        android:padding="18dp">
+
+                        <View
+                            android:layout_width="126dp"
+                            android:layout_height="126dp"
+                            android:layout_gravity="top|end"
+                            android:layout_marginTop="-34dp"
+                            android:layout_marginEnd="-34dp"
+                            android:background="@drawable/bg_milestone_glow" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:gravity="bottom"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="30dp"
+                                android:background="@drawable/bg_social_peach_chip"
+                                android:fontFamily="@font/inter_bold"
+                                android:gravity="center"
+                                android:paddingStart="13dp"
+                                android:paddingEnd="13dp"
+                                android:text="GỢI Ý HÔM NAY"
+                                android:textColor="#1A237E"
+                                android:textSize="10sp" />
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="12dp"
+                                android:fontFamily="@font/outfit_bold"
+                                android:lineSpacingExtra="1dp"
+                                android:text="Tài chính tốt hơn khi có người đồng hành"
+                                android:textColor="@color/white"
+                                android:textSize="22sp" />
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:fontFamily="@font/inter_regular"
+                                android:lineSpacingExtra="3dp"
+                                android:text="Biến những lựa chọn tiền bạc hằng ngày thành câu chuyện, mục tiêu và cảm hứng chung."
+                                android:textColor="#F5E9D8"
+                                android:textSize="13sp" />
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="16dp"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:layout_width="0dp"
+                                    android:layout_height="36dp"
+                                    android:layout_marginEnd="8dp"
+                                    android:layout_weight="1"
+                                    android:background="@drawable/bg_social_warm_chip"
+                                    android:fontFamily="@font/inter_bold"
+                                    android:gravity="center"
+                                    android:text="Bài mới"
+                                    android:textColor="#1A237E"
+                                    android:textSize="12sp" />
+
+                                <TextView
+                                    android:layout_width="0dp"
+                                    android:layout_height="36dp"
+                                    android:layout_marginStart="8dp"
+                                    android:layout_weight="1"
+                                    android:background="@drawable/bg_social_warm_chip"
+                                    android:fontFamily="@font/inter_bold"
+                                    android:gravity="center"
+                                    android:text="Đang thảo luận"
+                                    android:textColor="#1A237E"
+                                    android:textSize="12sp" />
+                            </LinearLayout>
+                        </LinearLayout>
+                    </FrameLayout>
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:background="@drawable/bg_social_editorial_card"
+                        android:layout_marginTop="24dp"
                         android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:padding="14dp">
-
-                        <com.example.cashify.ui.common.AvatarImageView
-                            android:id="@+id/imgCreatePromptAvatar"
-                            android:layout_width="46dp"
-                            android:layout_height="46dp"
-                            android:scaleType="centerCrop"
-                            android:src="@drawable/bg_default_avatar_pastel" />
+                        android:orientation="horizontal">
 
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginStart="12dp"
                             android:layout_weight="1"
                             android:orientation="vertical">
 
                             <TextView
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:ellipsize="end"
-                                android:fontFamily="@font/inter_bold"
-                                android:maxLines="1"
-                                android:text="Bạn muốn chia sẻ điều gì?"
+                                android:fontFamily="@font/outfit_bold"
+                                android:text="Dành cho bạn"
                                 android:textColor="#1A237E"
-                                android:textSize="15sp" />
+                                android:textSize="21sp" />
 
                             <TextView
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="3dp"
-                                android:ellipsize="end"
+                                android:layout_marginTop="2dp"
                                 android:fontFamily="@font/inter_regular"
-                                android:maxLines="1"
-                                android:text="Ảnh, cột mốc, mẹo tiết kiệm hoặc một insight nhỏ"
+                                android:text="Những câu chuyện tài chính mới nhất"
                                 android:textColor="#607D8B"
                                 android:textSize="12sp" />
                         </LinearLayout>
 
-                        <ImageView
-                            android:layout_width="42dp"
-                            android:layout_height="42dp"
-                            android:layout_marginStart="10dp"
-                            android:background="@drawable/bg_social_bottom_cta"
-                            android:padding="10dp"
-                            android:src="@drawable/ic_add_bold"
-                            app:tint="@color/white" />
-                    </LinearLayout>
-                </androidx.cardview.widget.CardView>
-
-                <FrameLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="236dp"
-                    android:layout_marginTop="22dp"
-                    android:background="@drawable/bg_social_insight_navy"
-                    android:elevation="3dp"
-                    android:padding="18dp">
-
-                    <View
-                        android:layout_width="126dp"
-                        android:layout_height="126dp"
-                        android:layout_gravity="top|end"
-                        android:layout_marginTop="-34dp"
-                        android:layout_marginEnd="-34dp"
-                        android:background="@drawable/bg_milestone_glow" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:gravity="bottom"
-                        android:orientation="vertical">
-
                         <TextView
                             android:layout_width="wrap_content"
-                            android:layout_height="30dp"
-                            android:background="@drawable/bg_social_peach_chip"
+                            android:layout_height="34dp"
+                            android:background="@drawable/bg_social_warm_chip"
                             android:fontFamily="@font/inter_bold"
                             android:gravity="center"
                             android:paddingStart="13dp"
                             android:paddingEnd="13dp"
-                            android:text="INSIGHT HÔM NAY"
+                            android:text="Công khai"
                             android:textColor="#1A237E"
-                            android:textSize="10sp" />
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:fontFamily="@font/outfit_bold"
-                            android:lineSpacingExtra="1dp"
-                            android:text="Tài chính tốt hơn khi có người đồng hành"
-                            android:textColor="@color/white"
-                            android:textSize="24sp" />
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:fontFamily="@font/inter_regular"
-                            android:lineSpacingExtra="3dp"
-                            android:text="Biến những lựa chọn tiền bạc hằng ngày thành câu chuyện, mục tiêu và cảm hứng chung."
-                            android:textColor="#F5E9D8"
-                            android:textSize="13sp" />
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="16dp"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal">
-
-                            <TextView
-                                android:layout_width="0dp"
-                                android:layout_height="36dp"
-                                android:layout_marginEnd="8dp"
-                                android:layout_weight="1"
-                                android:background="@drawable/bg_social_warm_chip"
-                                android:fontFamily="@font/inter_bold"
-                                android:gravity="center"
-                                android:text="Bài mới"
-                                android:textColor="#1A237E"
-                                android:textSize="12sp" />
-
-                            <TextView
-                                android:layout_width="0dp"
-                                android:layout_height="36dp"
-                                android:layout_marginStart="8dp"
-                                android:layout_weight="1"
-                                android:background="@drawable/bg_social_warm_chip"
-                                android:fontFamily="@font/inter_bold"
-                                android:gravity="center"
-                                android:text="Đang thảo luận"
-                                android:textColor="#1A237E"
-                                android:textSize="12sp" />
-                        </LinearLayout>
-                    </LinearLayout>
-                </FrameLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="24dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:fontFamily="@font/outfit_bold"
-                            android:text="Dành cho bạn"
-                            android:textColor="#1A237E"
-                            android:textSize="24sp" />
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:fontFamily="@font/inter_regular"
-                            android:text="Những câu chuyện tài chính mới nhất"
-                            android:textColor="#607D8B"
                             android:textSize="12sp" />
                     </LinearLayout>
 
-                    <TextView
+                    <ProgressBar
+                        android:id="@+id/progressNewsfeed"
                         android:layout_width="wrap_content"
-                        android:layout_height="34dp"
-                        android:background="@drawable/bg_social_warm_chip"
-                        android:fontFamily="@font/inter_bold"
-                        android:gravity="center"
-                        android:paddingStart="13dp"
-                        android:paddingEnd="13dp"
-                        android:text="Public"
-                        android:textColor="#1A237E"
-                        android:textSize="12sp" />
-                </LinearLayout>
-
-                <ProgressBar
-                    android:id="@+id/progressNewsfeed"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
-                    android:layout_marginTop="24dp"
-                    android:indeterminateTint="#1A237E"
-                    android:visibility="gone" />
-
-                <TextView
-                    android:id="@+id/layoutNewsfeedEmpty"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="18dp"
-                    android:background="@drawable/bg_social_editorial_card"
-                    android:fontFamily="@font/inter_regular"
-                    android:gravity="center"
-                    android:lineSpacingExtra="3dp"
-                    android:padding="24dp"
-                    android:text="Chưa có bài viết nào. Hãy là người đầu tiên chia sẻ một câu chuyện tài chính nhỏ."
-                    android:textColor="#607D8B"
-                    android:textSize="14sp"
-                    android:visibility="gone" />
-
-                <TextView
-                    android:id="@+id/layoutNewsfeedError"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="18dp"
-                    android:background="@drawable/bg_social_editorial_card"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:fontFamily="@font/inter_bold"
-                    android:gravity="center"
-                    android:lineSpacingExtra="3dp"
-                    android:padding="22dp"
-                    android:text="Không thể tải bảng tin. Chạm để thử lại."
-                    android:textColor="#1A237E"
-                    android:textSize="14sp"
-                    android:visibility="gone" />
-
-                <LinearLayout
-                    android:id="@+id/layoutNewsfeedSkeleton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:orientation="vertical"
-                    android:visibility="gone">
-
-                    <com.example.cashify.ui.common.FeedSkeletonCardView
-                        android:layout_width="match_parent"
-                        android:layout_height="382dp"
-                        android:layout_marginBottom="10dp" />
-
-                    <com.example.cashify.ui.common.FeedSkeletonCardView
-                        android:layout_width="match_parent"
-                        android:layout_height="382dp"
-                        android:layout_marginBottom="10dp" />
-
-                    <com.example.cashify.ui.common.FeedSkeletonCardView
-                        android:layout_width="match_parent"
-                        android:layout_height="382dp"
-                        android:layout_marginBottom="10dp" />
-
-                    <com.example.cashify.ui.common.FeedSkeletonCardView
-                        android:layout_width="match_parent"
-                        android:layout_height="382dp"
-                        android:layout_marginBottom="10dp" />
-                </LinearLayout>
-
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/rvNewsfeed"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:nestedScrollingEnabled="false" />
-
-                <ProgressBar
-                    android:id="@+id/progressNewsfeedMore"
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:layout_gravity="center_horizontal"
-                    android:layout_marginTop="10dp"
-                    android:indeterminateTint="#1A237E"
-                    android:visibility="gone" />
-
-                <LinearLayout
-                    android:id="@+id/layoutNewsfeedEnd"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="18dp"
-                    android:layout_marginBottom="8dp"
-                    android:background="@drawable/bg_social_editorial_card"
-                    android:gravity="center"
-                    android:orientation="vertical"
-                    android:paddingStart="20dp"
-                    android:paddingTop="18dp"
-                    android:paddingEnd="20dp"
-                    android:paddingBottom="18dp"
-                    android:visibility="gone">
-
-                    <ImageView
-                        android:layout_width="34dp"
-                        android:layout_height="34dp"
-                        android:background="@drawable/bg_social_warm_chip"
-                        android:padding="8dp"
-                        android:src="@drawable/ic_cozy_coin"
-                        app:tint="#1A237E" />
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_horizontal"
+                        android:layout_marginTop="24dp"
+                        android:indeterminateTint="#1A237E"
+                        android:visibility="gone" />
 
                     <TextView
+                        android:id="@+id/layoutNewsfeedEmpty"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:fontFamily="@font/inter_bold"
-                        android:gravity="center"
-                        android:text="Bạn đã khám phá hết bảng tin hôm nay"
-                        android:textColor="#1A237E"
-                        android:textSize="14sp" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
+                        android:layout_marginTop="18dp"
+                        android:background="@drawable/bg_social_editorial_card"
                         android:fontFamily="@font/inter_regular"
                         android:gravity="center"
-                        android:text="Hãy quay lại sau để xem nội dung mới"
+                        android:lineSpacingExtra="3dp"
+                        android:padding="24dp"
+                        android:text="Chưa có bài viết nào. Hãy là người đầu tiên chia sẻ một câu chuyện tài chính nhỏ."
                         android:textColor="#607D8B"
-                        android:textSize="12sp" />
+                        android:textSize="14sp"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/layoutNewsfeedError"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="18dp"
+                        android:background="@drawable/bg_social_editorial_card"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:fontFamily="@font/inter_bold"
+                        android:gravity="center"
+                        android:lineSpacingExtra="3dp"
+                        android:padding="22dp"
+                        android:text="Không thể tải bảng tin. Chạm để thử lại."
+                        android:textColor="#1A237E"
+                        android:textSize="14sp"
+                        android:visibility="gone" />
+
+                    <LinearLayout
+                        android:id="@+id/layoutNewsfeedSkeleton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+
+                        <com.example.cashify.ui.common.FeedSkeletonCardView
+                            android:layout_width="match_parent"
+                            android:layout_height="382dp"
+                            android:layout_marginBottom="10dp" />
+
+                        <com.example.cashify.ui.common.FeedSkeletonCardView
+                            android:layout_width="match_parent"
+                            android:layout_height="382dp"
+                            android:layout_marginBottom="10dp" />
+
+                        <com.example.cashify.ui.common.FeedSkeletonCardView
+                            android:layout_width="match_parent"
+                            android:layout_height="382dp"
+                            android:layout_marginBottom="10dp" />
+
+                        <com.example.cashify.ui.common.FeedSkeletonCardView
+                            android:layout_width="match_parent"
+                            android:layout_height="382dp"
+                            android:layout_marginBottom="10dp" />
+                    </LinearLayout>
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rvNewsfeed"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:nestedScrollingEnabled="false" />
+
+                    <ProgressBar
+                        android:id="@+id/progressNewsfeedMore"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:layout_gravity="center_horizontal"
+                        android:layout_marginTop="10dp"
+                        android:indeterminateTint="#1A237E"
+                        android:visibility="gone" />
+
+                    <LinearLayout
+                        android:id="@+id/layoutNewsfeedEnd"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="18dp"
+                        android:layout_marginBottom="8dp"
+                        android:background="@drawable/bg_social_editorial_card"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:paddingStart="20dp"
+                        android:paddingTop="18dp"
+                        android:paddingEnd="20dp"
+                        android:paddingBottom="18dp"
+                        android:visibility="gone">
+
+                        <ImageView
+                            android:layout_width="34dp"
+                            android:layout_height="34dp"
+                            android:background="@drawable/bg_social_warm_chip"
+                            android:padding="8dp"
+                            android:src="@drawable/ic_cozy_coin"
+                            app:tint="#1A237E" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:fontFamily="@font/inter_bold"
+                            android:gravity="center"
+                            android:text="Bạn đã khám phá hết bảng tin hôm nay"
+                            android:textColor="#1A237E"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:fontFamily="@font/inter_regular"
+                            android:gravity="center"
+                            android:text="Hãy quay lại sau để xem nội dung mới"
+                            android:textColor="#607D8B"
+                            android:textSize="12sp" />
+                    </LinearLayout>
                 </LinearLayout>
-            </LinearLayout>
-        </androidx.core.widget.NestedScrollView>
+            </androidx.core.widget.NestedScrollView>
         </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
     </LinearLayout>
 

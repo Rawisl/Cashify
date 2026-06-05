@@ -37,10 +37,10 @@
             android:layout_marginBottom="-290dp"
             android:alpha="0"
             android:background="@drawable/bg_milestone_gold_shine"
-            android:importantForAccessibility="no"
-            android:rotation="34"
             android:clickable="false"
-            android:focusable="false" />
+            android:focusable="false"
+            android:importantForAccessibility="no"
+            android:rotation="34" />
 
         <TextView
             android:layout_width="24dp"

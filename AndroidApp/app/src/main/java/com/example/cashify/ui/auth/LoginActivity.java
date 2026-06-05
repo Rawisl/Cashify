@@ -1,8 +1,12 @@
 package com.example.cashify.ui.auth;
 
+import android.animation.ObjectAnimator;
+import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
+import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -26,6 +30,8 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.SetOptions;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class LoginActivity extends AppCompatActivity {
@@ -36,6 +42,7 @@ public class LoginActivity extends AppCompatActivity {
     private TextView tvForgotPassword;
     private GoogleSignInClient mGoogleSignInClient;
     private ActivityResultLauncher<Intent> googleSignInLauncher;
+    private final List<ObjectAnimator> welcomeAnimators = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,7 +77,7 @@ public class LoginActivity extends AppCompatActivity {
                                 authViewModel.loginWithGoogle(account.getIdToken());
                             }
                         } catch (ApiException e) {
-                            ToastHelper.show(this, "Google sign in failed: " + e.getMessage());
+                            ToastHelper.show(this, "Đăng nhập Google thất bại: " + e.getMessage());
                         }
                     } else {
                         authViewModel.isLoading.observe(this, isLoading -> { /* Tắt loading ở đây nếu cần */ });
@@ -85,17 +92,18 @@ public class LoginActivity extends AppCompatActivity {
         btnRegister = findViewById(R.id.btnRegister);
         tvForgotPassword = findViewById(R.id.tvForgotPassword);
         btnGoogleLogin = findViewById(R.id.btnGoogleLogin);
+        startWelcomeAnimations();
 
         btnLogin.setOnClickListener(v -> {
             String email = edtEmail.getText().toString().trim();
             String pass = edtPassword.getText().toString().trim();
             if (email.isEmpty() || pass.isEmpty()) {
-                ToastHelper.show(this, "Please fill all fields");
+                ToastHelper.show(this, "Vui lòng nhập email và mật khẩu");
                 return;
             }
 
             if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-                ToastHelper.show(this, "Email is invalid! (VD: abc@gmail.com)");
+                ToastHelper.show(this, "Email chưa đúng định dạng (VD: abc@gmail.com)");
                 return;
             }
 
@@ -120,12 +128,12 @@ public class LoginActivity extends AppCompatActivity {
         authViewModel.isLoading.observe(this, isLoading -> {
             btnLogin.setEnabled(!isLoading);
             btnGoogleLogin.setEnabled(!isLoading);
-            btnLogin.setText(isLoading ? "Processing..." : "Login");
+            btnLogin.setText(isLoading ? "Đang xử lý..." : "Đăng nhập");
         });
 
         authViewModel.errorMessage.observe(this, error -> {
             if (error != null && !error.isEmpty()) {
-                ToastHelper.show(this, "Error: " + error);
+                ToastHelper.show(this, "Lỗi: " + error);
             }
         });
 
@@ -140,11 +148,58 @@ public class LoginActivity extends AppCompatActivity {
                 // GỌI HÀM LƯU LÊN FIRESTORE NGAY KHI ĐĂNG NHẬP THÀNH CÔNG
                 saveUserToFirestore(FirebaseAuth.getInstance().getCurrentUser());
 
-                ToastHelper.show(this, "Login successful!");
+                ToastHelper.show(this, "Đăng nhập thành công!");
                 startActivity(new Intent(this, MainActivity.class));
                 finish();
             }
         });
+    }
+
+    private void startWelcomeAnimations() {
+        addFloatAnimation(findViewById(R.id.imgLoginMascot), -10f, 1900L, 0L);
+        addFloatAnimation(findViewById(R.id.txtLoginStarOne), -6f, 2100L, 260L);
+        addFloatAnimation(findViewById(R.id.txtLoginStarTwo), 7f, 2300L, 420L);
+        addFloatAnimation(findViewById(R.id.txtLoginCoinOne), 8f, 2400L, 160L);
+        addFloatAnimation(findViewById(R.id.txtLoginCoinTwo), -7f, 2200L, 360L);
+        addPulseAnimation(findViewById(R.id.txtLoginHeart), 3000L, 500L);
+    }
+
+    private void addFloatAnimation(View view, float distance, long duration, long delay) {
+        if (view == null) return;
+        ObjectAnimator animator = ObjectAnimator.ofFloat(view, "translationY", 0f, distance, 0f);
+        animator.setDuration(duration);
+        animator.setStartDelay(delay);
+        animator.setRepeatCount(ValueAnimator.INFINITE);
+        animator.setInterpolator(new AccelerateDecelerateInterpolator());
+        animator.start();
+        welcomeAnimators.add(animator);
+    }
+
+    private void addPulseAnimation(View view, long duration, long delay) {
+        if (view == null) return;
+        ObjectAnimator scaleX = ObjectAnimator.ofFloat(view, "scaleX", 1f, 1.08f, 1f);
+        ObjectAnimator scaleY = ObjectAnimator.ofFloat(view, "scaleY", 1f, 1.08f, 1f);
+        scaleX.setDuration(duration);
+        scaleY.setDuration(duration);
+        scaleX.setStartDelay(delay);
+        scaleY.setStartDelay(delay);
+        scaleX.setRepeatCount(ValueAnimator.INFINITE);
+        scaleY.setRepeatCount(ValueAnimator.INFINITE);
+        scaleX.setInterpolator(new AccelerateDecelerateInterpolator());
+        scaleY.setInterpolator(new AccelerateDecelerateInterpolator());
+        scaleX.start();
+        scaleY.start();
+        welcomeAnimators.add(scaleX);
+        welcomeAnimators.add(scaleY);
+    }
+
+    @Override
+    protected void onDestroy() {
+        for (ObjectAnimator animator : welcomeAnimators) {
+            animator.cancel();
+        }
+        welcomeAnimators.clear();
+        super.onDestroy();
     }
 
     // ============================================================

@@ -1,52 +1,81 @@
-    package com.example.cashify.ui.auth;
+package com.example.cashify.ui.auth;
 
-    import android.content.Intent;
-    import android.os.Bundle;
-    import android.os.Handler;
-    import android.os.Looper;
+import android.animation.ObjectAnimator;
+import android.animation.ValueAnimator;
+import android.content.Intent;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 
-    import androidx.appcompat.app.AppCompatActivity;
+import android.app.Activity;
+import android.view.View;
+import android.view.Window;
+import android.view.animation.AccelerateDecelerateInterpolator;
+import android.widget.TextView;
 
-    import com.example.cashify.ui.main.MainActivity;
-    import com.example.cashify.R;
-    import com.example.cashify.data.remote.FirebaseManager;
+import com.example.cashify.R;
+import com.example.cashify.data.remote.FirebaseManager;
+import com.example.cashify.ui.main.MainActivity;
 
-    public class SplashActivity extends AppCompatActivity {
-        @Override
-        protected void onCreate(Bundle savedInstanceState) {
-            super.onCreate(savedInstanceState);
-            // TODO 1: setContentView(R.layout.activity_splash);
-            // (Layout này chỉ cần 1 cái Logo và Tên App như ghệ đã làm)
-            setContentView(R.layout.activity_splash);
+import java.util.Random;
 
-            checkUserStatus();
-        }
+public class SplashActivity extends Activity {
 
-        private void checkUserStatus() {
-            // ============================================================
-            // TODO 2: LOGIC ĐIỀU HƯỚNG THÔNG MINH
-            // - Delay khoảng 1.5s - 2s để user kịp nhìn thấy Logo (Branding).
-            // - Dùng FirebaseAuth.getInstance().getCurrentUser() để check.
-            // - IF (user != null) -> Mở MainActivity.
-            // - ELSE -> Mở LoginActivity.
-            // - QUAN TRỌNG: Gọi finish() sau khi startActivity để user bấm Back không quay lại Splash.
-            // ============================================================
+    private static final long SPLASH_DELAY_MS = 1400L;
+    private ObjectAnimator mascotBounceAnimator;
 
-            new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                // Check Firebase User
-                if (FirebaseManager.getInstance().getAuth().getCurrentUser() != null) {
-                    // Đã đăng nhập -> Vào Main
-                    startActivity(new Intent(SplashActivity.this, MainActivity.class));
-                } else {
-                    // Chưa đăng nhập -> Bắt Login
-                    startActivity(new Intent(SplashActivity.this, LoginActivity.class));
-                }
-                finish(); // Quan trọng: Đóng Splash để user bấm Back không thấy lại logo
-            }, 1500); // 1.5 giây là vừa đẹp cho một sự khởi đầu
-        }
-
-        //TODO 3: Vào file AndroidManifest.xml:
-        //Tìm cái đoạn <intent-filter> có chứa android.intent.action.MAIN và android.intent.category.LAUNCHER.
-        //Cắt nguyên cái cụm đó từ trong thẻ <activity android:name=".MainActivity"> và Dán nó vào trong thẻ <activity android:name=".ui.auth.SplashActivity">.
-        //Dọn dẹp MainActivity: Xóa sạch mấy cái code liên quan đến Timer hay hiện Logo lúc đầu ở đó đi. Giờ MainActivity chỉ lo đúng việc hiển thị Dashboard thôi.
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_splash);
+        setupLoadingMessage();
+        startSplashAnimations();
+        routeAfterLoading();
     }
+
+    private void setupLoadingMessage() {
+        TextView loadingText = findViewById(R.id.txtSplashLoading);
+        if (loadingText == null) return;
+        int[] messages = {
+                R.string.splash_loading_default,
+                R.string.splash_loading_wallet,
+                R.string.splash_loading_transactions,
+                R.string.splash_loading_goals,
+                R.string.splash_loading_done
+        };
+        loadingText.setText(messages[new Random().nextInt(messages.length)]);
+    }
+
+    private void startSplashAnimations() {
+        View mascot = findViewById(R.id.imgSplashMascot);
+        if (mascot != null) {
+            mascotBounceAnimator = ObjectAnimator.ofFloat(mascot, "translationY", 0f, -8f, 0f);
+            mascotBounceAnimator.setDuration(600L);
+            mascotBounceAnimator.setRepeatCount(ValueAnimator.INFINITE);
+            mascotBounceAnimator.setInterpolator(new AccelerateDecelerateInterpolator());
+            mascotBounceAnimator.start();
+        }
+    }
+
+    private void routeAfterLoading() {
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            Intent intent;
+            if (FirebaseManager.getInstance().getAuth().getCurrentUser() != null) {
+                intent = new Intent(SplashActivity.this, MainActivity.class);
+            } else {
+                intent = new Intent(SplashActivity.this, LoginActivity.class);
+            }
+            startActivity(intent);
+            finish();
+        }, SPLASH_DELAY_MS);
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (mascotBounceAnimator != null) {
+            mascotBounceAnimator.cancel();
+        }
+        super.onDestroy();
+    }
+}

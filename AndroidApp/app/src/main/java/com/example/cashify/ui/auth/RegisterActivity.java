@@ -52,25 +52,25 @@ public class RegisterActivity extends AppCompatActivity {
 
             // Kiểm tra rỗng (Thêm confirmPass vào check cho kỹ)
             if (name.isEmpty() || email.isEmpty() || pass.isEmpty() || confirmPass.isEmpty()) {
-                ToastHelper.show(this, "Please fill all fields");
+                ToastHelper.show(this, "Vui lòng nhập đầy đủ thông tin");
                 return;
             }
 
             // THIẾU Ở ĐÂY: Kiểm tra định dạng Email hợp lệ (có @ và domain)
             if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-                ToastHelper.show(this, "Email is invalid! (Ex: abc@gmail.com)");
+                ToastHelper.show(this, "Email chưa đúng định dạng (VD: abc@gmail.com)");
                 return;
             }
 
             // Kiểm tra độ dài mật khẩu
             if (pass.length() < 6) {
-                ToastHelper.show(this, "Password must be at least 6 characters");
+                ToastHelper.show(this, "Mật khẩu cần ít nhất 6 ký tự");
                 return;
             }
 
             // Kiểm tra khớp mật khẩu
             if (!pass.equals(confirmPass)) {
-                ToastHelper.show(this, "Confirm password does not match");
+                ToastHelper.show(this, "Mật khẩu xác nhận chưa khớp");
                 return;
             }
 
@@ -97,12 +97,12 @@ public class RegisterActivity extends AppCompatActivity {
 
         authViewModel.isLoading.observe(this, isLoading -> {
             btnRegister.setEnabled(!isLoading);
-            btnRegister.setText(isLoading ? "Processing..." : "Register");
+            btnRegister.setText(isLoading ? "Đang xử lý..." : "Đăng ký");
         });
 
         authViewModel.errorMessage.observe(this, error -> {
             if (error != null && !error.isEmpty()) {
-                ToastHelper.show(this, "Error: " + error);
+                ToastHelper.show(this, "Lỗi: " + error);
             }
         });
 

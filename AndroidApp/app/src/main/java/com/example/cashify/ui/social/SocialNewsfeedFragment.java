@@ -106,6 +106,7 @@ public class SocialNewsfeedFragment extends Fragment {
     private void initViews(View view) {
         MaterialToolbar toolbar = view.findViewById(R.id.toolbarSocialNewsfeed);
         View createPostPrompt = view.findViewById(R.id.cardCreatePostPrompt);
+        View createPostPromptButton = view.findViewById(R.id.btnCreatePostPrompt);
 
         // Bind RecyclerView mới (thêm vào layout XML)
         rvFeed = view.findViewById(R.id.rvNewsfeed);
@@ -157,7 +158,13 @@ public class SocialNewsfeedFragment extends Fragment {
             }
         });
 
-        createPostPrompt.setOnClickListener(v -> runPressAnimation(v, this::openCreatePost));
+        createPostPrompt.setOnClickListener(v -> runPressAnimation(
+                createPostPromptButton != null ? createPostPromptButton : v,
+                this::openCreatePost
+        ));
+        if (createPostPromptButton != null) {
+            createPostPromptButton.setOnClickListener(v -> runPressAnimation(v, this::openCreatePost));
+        }
         setupProfileSurfaces(view);
     }
 

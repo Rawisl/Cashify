@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.App.Starting" parent="Theme.SplashScreen">
-
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_logo_splash</item>
-        <!--Phải dùng tới phiên bản v31 mới được dùng brandingImage -->
-        <item name="android:windowSplashScreenBrandingImage">@drawable/img_cashify_title</item>
-
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="windowActionBar">false</item>
+        <item name="windowSplashScreenBackground">@color/bg_main</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_transparent</item>
+        <item name="windowSplashScreenAnimationDuration">0</item>
         <item name="postSplashScreenTheme">@style/Theme.Cashify</item>
     </style>
 </resources>
