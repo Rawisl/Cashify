@@ -20,6 +20,8 @@ import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.content.ContextCompat;
 import androidx.core.splashscreen.SplashScreen;
 import androidx.core.view.GravityCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
 import androidx.navigation.NavDestination;
@@ -59,6 +61,7 @@ public class MainActivity extends BaseActivity {
         SplashScreen splashScreen = SplashScreen.installSplashScreen(this);
         transactionViewModel = new ViewModelProvider(this).get(TransactionViewModel.class);
         super.onCreate(savedInstanceState);
+        setupPersonalWorkspaceSystemBars();
 
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser == null) {
@@ -95,6 +98,20 @@ public class MainActivity extends BaseActivity {
                 }
             }
         });
+    }
+
+    private void setupPersonalWorkspaceSystemBars() {
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
+        getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.bg_main));
+        getWindow().setNavigationBarColor(ContextCompat.getColor(this, R.color.bg_main));
+        WindowInsetsControllerCompat controller =
+                WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        controller.setAppearanceLightStatusBars(true);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            int flags = getWindow().getDecorView().getSystemUiVisibility();
+            flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+            getWindow().getDecorView().setSystemUiVisibility(flags);
+        }
     }
 
     @Override
@@ -230,13 +247,11 @@ public class MainActivity extends BaseActivity {
         androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(fabAddTransaction, (v, windowInsets) -> {
             androidx.core.graphics.Insets insets = windowInsets.getInsets(
                     androidx.core.view.WindowInsetsCompat.Type.systemBars());
-            int bottomMargin = (int) (96 * getResources().getDisplayMetrics().density);
-            int endMargin = (int) (22 * getResources().getDisplayMetrics().density);
+            int bottomMargin = (int) (44 * getResources().getDisplayMetrics().density);
 
             android.view.ViewGroup.MarginLayoutParams mlp =
                     (android.view.ViewGroup.MarginLayoutParams) v.getLayoutParams();
             mlp.bottomMargin = insets.bottom + bottomMargin;
-            mlp.setMarginEnd(endMargin);
             v.setLayoutParams(mlp);
 
             return windowInsets;
@@ -263,11 +278,13 @@ public class MainActivity extends BaseActivity {
 
         NavController navController = navHostFragment.getNavController();
         NavigationUI.setupWithNavController(bottomNav, navController);
+        bottomNav.getMenu().findItem(R.id.nav_center_cta_space).setEnabled(false);
 
         View navHostView = findViewById(R.id.nav_host_fragment);
         navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
             int id = destination.getId();
             syncSidebarSelection(id);
+            animateBottomNavigationSelection(bottomNav, id);
 
             if (id == R.id.nav_workspace_container
                     || id == R.id.nav_social_container
@@ -279,11 +296,29 @@ public class MainActivity extends BaseActivity {
                 bottomNav.setVisibility(View.VISIBLE);
                 navHostView.setPadding(0, 0, 0, 0);
 
-                if (id == R.id.nav_settings) {
-                    fabAddTransaction.hide();
-                } else {
-                    fabAddTransaction.show();
+                fabAddTransaction.show();
+            }
+        });
+    }
+
+    private void animateBottomNavigationSelection(BottomNavigationView bottomNav, int destinationId) {
+        bottomNav.post(() -> {
+            float activeLift = -6f * getResources().getDisplayMetrics().density;
+            for (int i = 0; i < bottomNav.getMenu().size(); i++) {
+                int itemId = bottomNav.getMenu().getItem(i).getItemId();
+                View itemView = bottomNav.findViewById(itemId);
+                if (itemView == null || itemId == R.id.nav_center_cta_space) {
+                    continue;
                 }
+
+                boolean isActive = itemId == destinationId;
+                itemView.animate()
+                        .translationY(isActive ? activeLift : 0f)
+                        .scaleX(isActive ? 1.05f : 1f)
+                        .scaleY(isActive ? 1.05f : 1f)
+                        .setDuration(180L)
+                        .setInterpolator(new android.view.animation.DecelerateInterpolator())
+                        .start();
             }
         });
     }

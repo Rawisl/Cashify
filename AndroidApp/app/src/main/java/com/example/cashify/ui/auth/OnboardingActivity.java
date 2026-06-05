@@ -32,11 +32,11 @@ public class OnboardingActivity extends AppCompatActivity {
     }
 
     private void styleLoginText(TextView textView) {
-        String text = "Đã có tài khoản? Đăng nhập";
+        String text = "Already have an account? Sign In";
         SpannableString spannable = new SpannableString(text);
-        int start = text.indexOf("Đăng nhập");
+        int start = text.indexOf("Sign In");
         if (start >= 0) {
-            int end = start + "Đăng nhập".length();
+            int end = start + "Sign In".length();
             spannable.setSpan(
                     new ForegroundColorSpan(ContextCompat.getColor(this, R.color.brand_primary)),
                     start,

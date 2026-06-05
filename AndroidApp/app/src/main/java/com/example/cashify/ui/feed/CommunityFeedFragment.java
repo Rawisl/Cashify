@@ -353,9 +353,9 @@ public class CommunityFeedFragment extends Fragment {
         menu.setPadding(padding, padding, padding, padding);
         menu.setBackgroundResource(R.drawable.bg_privacy_menu);
 
-        addAudienceMenuItem(menu, "Công khai", R.drawable.ic_privacy_public);
-        addAudienceMenuItem(menu, "Bạn bè", R.drawable.ic_friends);
-        addAudienceMenuItem(menu, "Chỉ mình tôi", R.drawable.ic_privacy_lock);
+        addAudienceMenuItem(menu, "Public", R.drawable.ic_privacy_public);
+        addAudienceMenuItem(menu, "Friends", R.drawable.ic_friends);
+        addAudienceMenuItem(menu, "Only Me", R.drawable.ic_privacy_lock);
 
         audiencePopup = new PopupWindow(
                 menu,
@@ -410,14 +410,14 @@ public class CommunityFeedFragment extends Fragment {
         );
         btnAudience.setCompoundDrawableTintList(ColorStateList.valueOf(
                 ContextCompat.getColor(requireContext(), R.color.brand_primary)));
-        btnAudience.setContentDescription("Quyền riêng tư: " + selectedAudience);
+        btnAudience.setContentDescription("Privacy: " + selectedAudience);
     }
 
     private int iconForAudience(String audience) {
-        if ("Công khai".equals(audience)) {
+        if ("Public".equals(audience)) {
             return R.drawable.ic_privacy_public;
         }
-        if ("Chỉ mình tôi".equals(audience)) {
+        if ("Only Me".equals(audience)) {
             return R.drawable.ic_privacy_lock;
         }
         return R.drawable.ic_friends;
@@ -434,9 +434,9 @@ public class CommunityFeedFragment extends Fragment {
     }
 
     private void updateAudienceDock() {
-        updateAudienceOption(btnAudience, "Công khai", R.drawable.ic_privacy_public);
-        updateAudienceOption(btnAudienceFriends, "Bạn bè", R.drawable.ic_friends);
-        updateAudienceOption(btnAudiencePrivate, "Chỉ mình tôi", R.drawable.ic_privacy_lock);
+        updateAudienceOption(btnAudience, "Public", R.drawable.ic_privacy_public);
+        updateAudienceOption(btnAudienceFriends, "Friends", R.drawable.ic_friends);
+        updateAudienceOption(btnAudiencePrivate, "Only Me", R.drawable.ic_privacy_lock);
     }
 
     private void updateAudienceOption(TextView view, String label, int iconRes) {
@@ -444,7 +444,7 @@ public class CommunityFeedFragment extends Fragment {
         int textColor = ContextCompat.getColor(requireContext(), selected ? R.color.white : R.color.item_title);
         int iconColor = ContextCompat.getColor(requireContext(), selected ? R.color.white : R.color.item_title);
 
-        view.setText("Chỉ mình tôi".equals(label) ? "Riêng tư" : label);
+        view.setText("Only Me".equals(label) ? "Private" : label);
         view.setTextColor(textColor);
         view.setBackgroundResource(selected
                 ? R.drawable.bg_publish_editorial
@@ -500,13 +500,13 @@ public class CommunityFeedFragment extends Fragment {
         if (category == null) {
             return "thoughts";
         }
-        if (category.contains("Cột")) {
+        if (category.contains("Milestone")) {
             return "milestone";
         }
-        if (category.contains("Phân")) {
+        if (category.contains("Analysis")) {
             return "analysis";
         }
-        if (category.contains("Chia")) {
+        if (category.contains("Share")) {
             return "share";
         }
         return "thoughts";
@@ -648,13 +648,13 @@ public class CommunityFeedFragment extends Fragment {
     }
 
     private void updateCategoryTiles() {
-        updateCategoryTile(actionMilestone, "Cột mốc", R.drawable.bg_category_tile_milestone,
+        updateCategoryTile(actionMilestone, "Milestone", R.drawable.bg_category_tile_milestone,
                 "#4B2A11", "#8A6237");
-        updateCategoryTile(actionThoughts, "Suy nghĩ", R.drawable.bg_category_tile_thoughts,
+        updateCategoryTile(actionThoughts, "Thoughts", R.drawable.bg_category_tile_thoughts,
                 "#5A3422", "#B07D62");
-        updateCategoryTile(actionAnalysis, "Phân tích", R.drawable.bg_category_tile_analysis,
+        updateCategoryTile(actionAnalysis, "Analysis", R.drawable.bg_category_tile_analysis,
                 "#3E260F", "#8A6237");
-        updateCategoryTile(actionShare, "Chia sẻ", R.drawable.bg_category_tile_share,
+        updateCategoryTile(actionShare, "Share", R.drawable.bg_category_tile_share,
                 "#5C3920", "#D4A373");
     }
 
@@ -678,41 +678,41 @@ public class CommunityFeedFragment extends Fragment {
                 iconRes = R.drawable.ic_feed_trophy;
                 kicker = "CELEBRATE A MILESTONE";
                 title = "Grow your story";
-                description = "Biến một chiến thắng tài chính nhỏ thành cột mốc đáng nhớ cho hành trình của bạn.";
-                prompt = "Gợi ý: Bạn vừa đạt được mục tiêu nào, và điều đó khiến bạn tự hào ra sao?";
-                composerHint = "Bạn vừa đạt cột mốc nào?";
-                submitText = "Đăng cột mốc";
+                description = "Turn a small financial win into a memorable milestone for your journey.";
+                prompt = "Prompt: What goal did you just reach, and why are you proud of it?";
+                composerHint = "Which milestone did you reach?";
+                submitText = "Post Milestone";
                 break;
             case "analysis":
                 panelBg = R.drawable.bg_mode_panel_analysis;
                 iconRes = R.drawable.ic_cozy_chart;
                 kicker = "FINANCIAL DEEP DIVE";
-                title = "Phân tích tiến độ";
-                description = "Dành cho những quan sát có dữ liệu, bài học chi tiêu hoặc pattern tài chính bạn vừa nhận ra.";
-                prompt = "Gợi ý: Tháng này điều gì tăng/giảm rõ nhất trong thói quen tiền bạc của bạn?";
-                composerHint = "Bạn muốn phân tích điều gì trong tài chính của mình?";
-                submitText = "Đăng phân tích";
+                title = "Analyze Progress";
+                description = "For data-backed observations, spending lessons, or financial patterns you just noticed.";
+                prompt = "Prompt: What changed most in your money habits this month?";
+                composerHint = "What would you like to analyze in your finances?";
+                submitText = "Post Analysis";
                 break;
             case "share":
                 panelBg = R.drawable.bg_mode_panel_share;
                 iconRes = R.drawable.ic_share;
                 kicker = "SHARE A FINANCIAL TIP";
                 title = "Grow together";
-                description = "Một mẹo nhỏ, một kinh nghiệm thật hoặc một câu chuyện có thể giúp cộng đồng tốt hơn.";
-                prompt = "Gợi ý: Mẹo nào bạn ước mình biết sớm hơn khi quản lý tiền?";
-                composerHint = "Bạn muốn chia sẻ mẹo tài chính nào?";
-                submitText = "Đăng chia sẻ";
+                description = "A small tip, real experience, or story that can help the community.";
+                prompt = "Prompt: What money tip do you wish you had learned earlier?";
+                composerHint = "Which financial tip would you like to share?";
+                submitText = "Post Share";
                 break;
             case "thoughts":
             default:
                 panelBg = R.drawable.bg_mode_panel_thoughts;
                 iconRes = R.drawable.ic_cozy_notebook;
                 kicker = "DIGITAL JOURNAL";
-                title = "Chia sẻ suy nghĩ";
-                description = "Một không gian nhẹ để kể lại điều bạn học được trong hành trình tài chính hôm nay.";
-                prompt = "Gợi ý: Hôm nay bạn nhận ra điều gì về cách mình tiêu tiền?";
-                composerHint = "Hôm nay bạn đang nghĩ gì về tiền bạc?";
-                submitText = "Đăng suy nghĩ";
+                title = "Share a Thought";
+                description = "A gentle space to share what you learned on your financial journey today.";
+                prompt = "Prompt: What did you realize today about how you spend money?";
+                composerHint = "What are you thinking about money today?";
+                submitText = "Post Thought";
                 break;
         }
 
@@ -756,7 +756,7 @@ public class CommunityFeedFragment extends Fragment {
 
         // 1. VALIDATE LÊN ĐẦU: Chặn ngay nếu không có chữ/ảnh/cột mốc (Dù là tạo mới hay sửa bài)
         if (content.isEmpty() && selectedImageUri == null && milestoneData == null) {
-            Toast.makeText(requireContext(), "Hãy viết nội dung, thêm ảnh hoặc cột mốc trước nhé.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), "Please write something, add an image, or add a milestone first.", Toast.LENGTH_SHORT).show();
             editPostContent.requestFocus();
             InputMethodManager imm = (InputMethodManager) requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);
             if (imm != null) {
@@ -766,9 +766,9 @@ public class CommunityFeedFragment extends Fragment {
         }
 
         String audienceParam = "FRIENDS"; // Mặc định
-        if ("Công khai".equals(selectedAudience)) {
+        if ("Public".equals(selectedAudience)) {
             audienceParam = "PUBLIC";
-        } else if ("Chỉ mình tôi".equals(selectedAudience)) {
+        } else if ("Only Me".equals(selectedAudience)) {
             audienceParam = "PRIVATE";
         }
 
@@ -798,9 +798,9 @@ public class CommunityFeedFragment extends Fragment {
                             @Override public void onResponse(@NonNull retrofit2.Call<Object> call, @NonNull retrofit2.Response<Object> response) {
                                 setPosting(false);
                                 if (response.isSuccessful()) {
-                                    Toast.makeText(requireContext(), "Sửa bài thành công!", Toast.LENGTH_SHORT).show();
+                                    Toast.makeText(requireContext(), "Post updated successfully!", Toast.LENGTH_SHORT).show();
                                     navigateBack();
-                                } else Toast.makeText(requireContext(), "Lỗi server!", Toast.LENGTH_SHORT).show();
+                                } else Toast.makeText(requireContext(), "Server error!", Toast.LENGTH_SHORT).show();
                             }
                             @Override public void onFailure(@NonNull retrofit2.Call<Object> call, @NonNull Throwable t) {
                                 setPosting(false);
@@ -814,12 +814,12 @@ public class CommunityFeedFragment extends Fragment {
         // LUỒNG 2: NẾU LÀ TẠO BÀI ĐĂNG MỚI
         // ==========================================
         if (selectedImageUri != null) {
-            txtComposerHint.setText("Đang tải ảnh lên máy chủ...");
+            txtComposerHint.setText("Uploading image...");
             File imageFile = getFileFromUri(selectedImageUri);
 
             if (imageFile == null) {
                 setPosting(false);
-                Toast.makeText(requireContext(), "Lỗi đọc file ảnh!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(), "Could not read the image file!", Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -849,12 +849,12 @@ public class CommunityFeedFragment extends Fragment {
 
                         DialogHelper.showCustomDialog(
                                 requireContext(),
-                                isFileTooLarge ? "Ảnh quá lớn" : "Không thể tải ảnh",
+                                isFileTooLarge ? "Image too large" : "Upload failed",
                                 isFileTooLarge
-                                        ? "Ảnh bạn chọn vượt quá 10MB. Vui lòng chọn ảnh nhỏ hơn và thử lại."
+                                        ? "The selected image exceeds 10MB. Please choose a smaller one and try again."
                                         : error,
-                                isFileTooLarge ? "Chọn ảnh khác" : "Thử lại",
-                                "Huỷ",
+                                isFileTooLarge ? "Choose another image" : "Retry",
+                                "Cancel",
                                 DialogHelper.DialogType.DANGER,
                                 true,
                                 () -> {
@@ -877,13 +877,13 @@ public class CommunityFeedFragment extends Fragment {
 
     // Nhớ update lại hàm callBackendToCreatePost để nó nhận tham số Audience nha sếp
     private void callBackendToCreatePost(String content, String type, String imageUrl, String milestoneData, String audienceParam) {
-        requireActivity().runOnUiThread(() -> txtComposerHint.setText("Đang lưu bài viết..."));
+        requireActivity().runOnUiThread(() -> txtComposerHint.setText("Saving post..."));
 
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user == null) {
             requireActivity().runOnUiThread(() -> {
                 setPosting(false);
-                Toast.makeText(requireContext(), "Chưa đăng nhập!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(), "Not signed in!", Toast.LENGTH_SHORT).show();
             });
             return;
         }
@@ -901,11 +901,11 @@ public class CommunityFeedFragment extends Fragment {
                     requireActivity().runOnUiThread(() -> {
                         setPosting(false);
                         if (response.isSuccessful()) {
-                            Toast.makeText(requireContext(), "Đăng bài thành công!", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(requireContext(), "Post created successfully!", Toast.LENGTH_SHORT).show();
                             resetComposer();
                             navigateBack();
                         } else {
-                            Toast.makeText(requireContext(), "Lỗi tạo bài: " + response.code(), Toast.LENGTH_SHORT).show();
+                            Toast.makeText(requireContext(), "Failed to create post: " + response.code(), Toast.LENGTH_SHORT).show();
                         }
                     });
                 }
@@ -914,27 +914,27 @@ public class CommunityFeedFragment extends Fragment {
                 public void onFailure(@NonNull retrofit2.Call<Object> call, @NonNull Throwable t) {
                     requireActivity().runOnUiThread(() -> {
                         setPosting(false);
-                        Toast.makeText(requireContext(), "Lỗi mạng: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(requireContext(), "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                     });
                 }
             });
         }).addOnFailureListener(e -> {
             requireActivity().runOnUiThread(() -> {
                 setPosting(false);
-                Toast.makeText(requireContext(), "Lỗi xác thực Firebase", Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(), "Firebase authentication failed", Toast.LENGTH_SHORT).show();
             });
         });
     }
 
     // Hàm gọi C# API để lưu Post vào Firestore
     private void callBackendToCreatePost(String content, String type, String imageUrl, String milestoneData) {
-        requireActivity().runOnUiThread(() -> txtComposerHint.setText("Đang lưu bài viết..."));
+        requireActivity().runOnUiThread(() -> txtComposerHint.setText("Saving post..."));
 
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user == null) {
             requireActivity().runOnUiThread(() -> {
                 setPosting(false);
-                Toast.makeText(requireContext(), "Chưa đăng nhập!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(), "Not signed in!", Toast.LENGTH_SHORT).show();
             });
             return;
         }
@@ -944,9 +944,9 @@ public class CommunityFeedFragment extends Fragment {
             com.example.cashify.utils.ApiService apiService = com.example.cashify.utils.ApiClient.getClient().create(com.example.cashify.utils.ApiService.class);
 
             String audienceParam = "FRIENDS"; // Mặc định là Bạn bè
-            if ("Công khai".equals(selectedAudience)) {
+            if ("Public".equals(selectedAudience)) {
                 audienceParam = "PUBLIC";
-            } else if ("Chỉ mình tôi".equals(selectedAudience)) {
+            } else if ("Only Me".equals(selectedAudience)) {
                 audienceParam = "PRIVATE";
             }
 
@@ -960,11 +960,11 @@ public class CommunityFeedFragment extends Fragment {
                     requireActivity().runOnUiThread(() -> {
                         setPosting(false);
                         if (response.isSuccessful()) {
-                            Toast.makeText(requireContext(), "Đăng bài thành công!", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(requireContext(), "Post created successfully!", Toast.LENGTH_SHORT).show();
                             resetComposer();
                             navigateBack(); // Quay lại trang Feed
                         } else {
-                            Toast.makeText(requireContext(), "Lỗi tạo bài: " + response.code(), Toast.LENGTH_SHORT).show();
+                            Toast.makeText(requireContext(), "Failed to create post: " + response.code(), Toast.LENGTH_SHORT).show();
                         }
                     });
                 }
@@ -973,14 +973,14 @@ public class CommunityFeedFragment extends Fragment {
                 public void onFailure(@NonNull retrofit2.Call<Object> call, @NonNull Throwable t) {
                     requireActivity().runOnUiThread(() -> {
                         setPosting(false);
-                        Toast.makeText(requireContext(), "Lỗi mạng: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(requireContext(), "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                     });
                 }
             });
         }).addOnFailureListener(e -> {
             requireActivity().runOnUiThread(() -> {
                 setPosting(false);
-                Toast.makeText(requireContext(), "Lỗi xác thực Firebase", Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(), "Firebase authentication failed", Toast.LENGTH_SHORT).show();
             });
         });
     }
@@ -1025,10 +1025,10 @@ public class CommunityFeedFragment extends Fragment {
     private String getSelectedTopic() {
         int checkedId = chipGroupTopics.getCheckedChipId();
         if (checkedId == View.NO_ID) {
-            return "Ngân sách";
+            return "Budget";
         }
         Chip chip = chipGroupTopics.findViewById(checkedId);
-        return chip == null ? "Ngân sách" : chip.getText().toString();
+        return chip == null ? "Budget" : chip.getText().toString();
     }
 
     private void resetComposer() {
@@ -1039,7 +1039,7 @@ public class CommunityFeedFragment extends Fragment {
         }
         selectedTopicHashtags.clear();
         chipGroupTopics.clearCheck();
-        txtComposerHint.setText("Sẵn sàng cho bài chia sẻ tiếp theo.");
+        txtComposerHint.setText("Ready for your next post.");
     }
 
     private void setPosting(boolean posting) {
@@ -1049,20 +1049,20 @@ public class CommunityFeedFragment extends Fragment {
         actionMilestone.setEnabled(!posting);
         btnAudience.setEnabled(!posting);
         editPostContent.setEnabled(!posting);
-        btnSubmitPost.setText(posting ? "Đang đăng..." : publishTextForCategory());
+        btnSubmitPost.setText(posting ? "Posting..." : publishTextForCategory());
     }
 
     private String publishTextForCategory() {
         switch (selectedCategoryKey) {
             case "milestone":
-                return "Đăng cột mốc";
+                return "Post Milestone";
             case "analysis":
-                return "Đăng phân tích";
+                return "Post Analysis";
             case "share":
-                return "Đăng chia sẻ";
+                return "Post Share";
             case "thoughts":
             default:
-                return "Đăng suy nghĩ";
+                return "Post Thought";
         }
     }
 

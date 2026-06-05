@@ -52,7 +52,7 @@
     <string name="nav_budget">Budget</string>
     <string name="nav_settings">Settings</string>
 
-    <string name="settings_title">Setting</string>
+    <string name="settings_title">Settings</string>
     <string name="settings_subtitle">Manage your preferences</string>
 
     <string name="budget_title">Budget</string>
@@ -88,7 +88,7 @@
     <string name="settings_item_language_desc">English</string>
 
     <string name="settings_item_category">Category</string>
-    <string name="settings_item_category_desc">Organize cagtegories</string>
+    <string name="settings_item_category_desc">Organize categories</string>
 
     <string name="settings_item_notifications">Notifications</string>
     <string name="settings_item_notifications_desc">Manage notification settings</string>
@@ -101,7 +101,7 @@
 
     <string name="settings_item_darkmode">Dark mode</string>
 
-    <string name="dashboard_title">DashBoard</string>
+    <string name="dashboard_title">Dashboard</string>
     <string name="dashboard_subtitle">Keep your spending on track</string>
     <string name="dashboard_recent_transactions">Recent Transactions</string>
     <string name="dashboard_spending_by_category">Spending by Category</string>
@@ -140,34 +140,34 @@
     <string name="chart_other_detail">Other detail</string>
 
     <string name="app_slogan">Smart Finance Manager</string>
-    <string name="auth_reset_password_title">Lấy lại mật khẩu</string>
-    <string name="auth_reset_password_desc">Nhập email tài khoản của bạn, Cashy sẽ gửi hướng dẫn đặt lại mật khẩu.</string>
-    <string name="auth_email_hint">Địa chỉ email</string>
-    <string name="auth_send_instructions">Gửi hướng dẫn</string>
-    <string name="auth_reset_password_hint">Hãy kiểm tra hộp thư đến hoặc mục spam sau khi gửi yêu cầu.</string>
-    <string name="auth_welcome_back">Chào mừng trở lại</string>
+    <string name="auth_reset_password_title">Reset Password</string>
+    <string name="auth_reset_password_desc">Enter your account email and Cashy will send reset instructions.</string>
+    <string name="auth_email_hint">Email address</string>
+    <string name="auth_send_instructions">Send Instructions</string>
+    <string name="auth_reset_password_hint">Check your inbox or spam folder after sending the request.</string>
+    <string name="auth_welcome_back">Welcome Back</string>
     <string name="auth_email">Email</string>
-    <string name="auth_password">Mật khẩu</string>
-    <string name="auth_forgot_password">Quên mật khẩu?</string>
-    <string name="auth_login">Đăng nhập</string>
-    <string name="auth_or">hoặc</string>
-    <string name="auth_sign_in_google">Tiếp tục với Google</string>
-    <string name="auth_dont_have_account">Chưa có tài khoản? Đăng ký</string>
-    <string name="login_soft_subtitle">Cashy nhớ bạn lắm đó</string>
-    <string name="login_mascot_desc">Cashy chào mừng bạn quay lại</string>
-    <string name="splash_mascot_desc">Cashy đang chạy chuẩn bị ứng dụng</string>
-    <string name="splash_loading_default">Cashy đang chuẩn bị mọi thứ cho bạn...</string>
-    <string name="splash_loading_wallet">Đang kiểm tra ví tiền...</string>
-    <string name="splash_loading_transactions">Đang sắp xếp giao dịch...</string>
-    <string name="splash_loading_goals">Đang chuẩn bị mục tiêu tiết kiệm...</string>
-    <string name="splash_loading_done">Sắp xong rồi...</string>
+    <string name="auth_password">Password</string>
+    <string name="auth_forgot_password">Forgot Password?</string>
+    <string name="auth_login">Sign In</string>
+    <string name="auth_or">or</string>
+    <string name="auth_sign_in_google">Continue with Google</string>
+    <string name="auth_dont_have_account">Don\'t have an account? Sign Up</string>
+    <string name="login_soft_subtitle">Cashy missed you</string>
+    <string name="login_mascot_desc">Cashy welcomes you back</string>
+    <string name="splash_mascot_desc">Cashy is getting the app ready</string>
+    <string name="splash_loading_default">Cashy is preparing everything for you...</string>
+    <string name="splash_loading_wallet">Checking your wallet...</string>
+    <string name="splash_loading_transactions">Organizing transactions...</string>
+    <string name="splash_loading_goals">Preparing savings goals...</string>
+    <string name="splash_loading_done">Almost done...</string>
     <string name="decor_star">✦</string>
-    <string name="auth_create_account">Tạo tài khoản mới</string>
-    <string name="auth_sign_up_desc">Cashy sẽ đồng hành cùng bạn từ hôm nay.</string>
-    <string name="auth_full_name">Họ và tên</string>
-    <string name="auth_confirm_password">Xác nhận mật khẩu</string>
-    <string name="auth_register">Đăng ký</string>
-    <string name="auth_already_have_account">Đã có tài khoản? Đăng nhập</string>
+    <string name="auth_create_account">Create Account</string>
+    <string name="auth_sign_up_desc">Cashy will be with you starting today.</string>
+    <string name="auth_full_name">Full Name</string>
+    <string name="auth_confirm_password">Confirm Password</string>
+    <string name="auth_register">Sign Up</string>
+    <string name="auth_already_have_account">Already have an account? Sign In</string>
 
     <!-- Change Password Screen -->
     <string name="change_password_title">Security</string>

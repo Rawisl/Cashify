@@ -36,6 +36,7 @@
                 android:layout_gravity="end|center_vertical"
                 android:background="@drawable/bg_mini_pill"
                 android:padding="9dp"
+                android:scaleType="center"
                 android:src="@drawable/ic_notification_regular"
                 app:tint="@color/white" />
         </com.google.android.material.appbar.MaterialToolbar>
@@ -65,7 +66,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:fontFamily="@font/outfit_bold"
-                        android:text="Góc cộng đồng"
+                        android:text="Community Corner"
                         android:textColor="#1A237E"
                         android:textSize="24sp" />
 
@@ -75,7 +76,7 @@
                         android:layout_marginTop="6dp"
                         android:fontFamily="@font/inter_regular"
                         android:lineSpacingExtra="3dp"
-                        android:text="Chia sẻ mục tiêu, thói quen chi tiêu và những cột mốc tài chính nhỏ cùng cộng đồng Cashify."
+                        android:text="Share goals, spending habits, and small financial milestones with the Cashify community."
                         android:textColor="#607D8B"
                         android:textSize="13sp" />
 
@@ -195,7 +196,7 @@
                                 android:layout_marginTop="8dp"
                                 android:fontFamily="@font/inter_regular"
                                 android:lineSpacingExtra="3dp"
-                                android:text="Biến những lựa chọn tiền bạc hằng ngày thành câu chuyện, mục tiêu và cảm hứng chung."
+                                android:text="Turn everyday money choices into shared stories, goals, and inspiration."
                                 android:textColor="#F5E9D8"
                                 android:textSize="13sp" />
 

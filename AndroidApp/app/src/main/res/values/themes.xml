@@ -25,6 +25,11 @@
         <item name="cornerSize">50%</item>
     </style>
 
+    <style name="CircleFabShape">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+
     <!--Chỉ dùng đơn vị sp cho định dạng style text với mục đích ng dùng có thể phóng to, thu nhỏ cỡ chữ-->
     <style name="square_rounded">
         <item name="cornerFamily">rounded</item>
@@ -454,6 +459,22 @@
         <item name="android:fontFamily">@font/inter_bold</item>
         <item name="fontFamily">@font/inter_bold</item>
         <item name="android:textSize">22sp</item>
+    </style>
+
+    <style name="BottomNavWorkspaceLabelActive" parent="TextAppearance.MaterialComponents.Caption">
+        <item name="android:fontFamily">@font/inter_bold</item>
+        <item name="fontFamily">@font/inter_bold</item>
+        <item name="android:textSize">10.5sp</item>
+        <item name="android:singleLine">true</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <style name="BottomNavWorkspaceLabelInactive" parent="TextAppearance.MaterialComponents.Caption">
+        <item name="android:fontFamily">@font/inter_medium</item>
+        <item name="fontFamily">@font/inter_medium</item>
+        <item name="android:textSize">10.5sp</item>
+        <item name="android:singleLine">true</item>
+        <item name="android:includeFontPadding">false</item>
     </style>
 
     <style name="TabTextAppearance" parent="TextAppearance.Design.Tab">

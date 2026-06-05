@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 
+import androidx.core.app.NotificationManagerCompat;
 import androidx.core.app.NotificationCompat;
 
 import com.example.cashify.R;
@@ -17,6 +18,8 @@ public class NotificationHelper {
     public static final String CHANNEL_ID_REMINDER = "expense_reminder_channel";
     public static final String CHANNEL_ID_PUSH = "push_notification_channel";
     public static final int NOTIFICATION_ID_REMINDER = 1001;
+    private static final String SETTINGS_PREFS = "SettingsPrefs";
+    private static final String KEY_NOTIFICATIONS_ENABLED = "notifications_enabled";
 
     private final Context context;
     private final NotificationManager notificationManager;
@@ -51,6 +54,13 @@ public class NotificationHelper {
     }
 
     public void showNotification(String title, String message, String channelId, int notificationId) {
+        boolean appNotificationsEnabled = context
+                .getSharedPreferences(SETTINGS_PREFS, Context.MODE_PRIVATE)
+                .getBoolean(KEY_NOTIFICATIONS_ENABLED, true);
+        if (!appNotificationsEnabled || !NotificationManagerCompat.from(context).areNotificationsEnabled()) {
+            return;
+        }
+
         Intent intent = new Intent(context, MainActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
 

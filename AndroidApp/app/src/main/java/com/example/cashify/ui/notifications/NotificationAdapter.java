@@ -76,7 +76,7 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                 holder.imgIcon.setColorFilter(Color.parseColor("#4CAF50"));
                 break;
             default:
-                holder.imgIcon.setImageResource(android.R.drawable.ic_popup_reminder);
+                holder.imgIcon.setImageResource(R.drawable.ic_notification_regular);
                 holder.imgIcon.setColorFilter(Color.parseColor("#757575"));
                 break;
         }

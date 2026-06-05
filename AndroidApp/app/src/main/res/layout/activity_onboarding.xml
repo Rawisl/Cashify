@@ -112,7 +112,7 @@
                 android:fontFamily="@font/outfit_bold"
                 android:gravity="center"
                 android:lineSpacingExtra="2dp"
-                android:text="Quản lý tiền dễ thương hơn"
+                android:text="Money feels friendlier"
                 android:textColor="#1A237E"
                 android:textSize="22sp" />
 
@@ -123,7 +123,7 @@
                 android:fontFamily="@font/inter_regular"
                 android:gravity="center"
                 android:lineSpacingExtra="4dp"
-                android:text="Theo dõi chi tiêu, tiết kiệm và mục tiêu mỗi ngày."
+                android:text="Track spending, savings, and daily goals."
                 android:textColor="#607D8B"
                 android:textSize="14sp" />
 
@@ -134,7 +134,7 @@
                 android:layout_marginTop="24dp"
                 android:elevation="4dp"
                 android:fontFamily="@font/inter_bold"
-                android:text="Bắt đầu"
+                android:text="Get Started"
                 android:textAllCaps="false"
                 android:textColor="#FFFFFF"
                 android:textSize="15sp"
@@ -150,7 +150,7 @@
                 android:gravity="center"
                 android:paddingStart="8dp"
                 android:paddingEnd="8dp"
-                android:text="Đã có tài khoản? Đăng nhập"
+                android:text="Already have an account? Sign In"
                 android:textColor="#607D8B"
                 android:textSize="14sp" />
         </LinearLayout>

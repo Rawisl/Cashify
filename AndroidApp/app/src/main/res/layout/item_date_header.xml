@@ -2,8 +2,9 @@
     android:id="@+id/tvDateHeader"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:paddingTop="16dp"
-    android:paddingBottom="8dp"
-    android:textColor="@color/item_description"
-    android:textSize="14sp"
-    android:fontFamily="@font/inter_semibold" />
+    android:fontFamily="@font/inter_semibold"
+    android:letterSpacing="0.04"
+    android:paddingTop="18dp"
+    android:paddingBottom="10dp"
+    android:textColor="@color/section_header"
+    android:textSize="12.5sp" />
