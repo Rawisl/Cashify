@@ -24,6 +24,7 @@ import com.example.cashify.data.local.AppDatabase;
 import com.example.cashify.data.model.Category;
 import com.example.cashify.data.model.Transaction;
 import com.example.cashify.ui.main.MainViewModel;
+import com.example.cashify.ui.main.PersonalWorkspaceHeader;
 import com.example.cashify.utils.DialogHelper;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.datepicker.MaterialDatePicker;
@@ -60,6 +61,7 @@ public class TransactionFragment extends Fragment {
         setupObservers();
         setupListeners(view);
         setupSwipeToDelete();
+        PersonalWorkspaceHeader.bind(this, view);
     }
 
     private void initViews(View view) {

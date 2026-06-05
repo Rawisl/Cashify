@@ -52,7 +52,7 @@ public class UpdateUserViewModel extends ViewModel {
                 }
             } catch (Exception e) {
                 isLoading.setValue(false);
-                message.setValue("Lỗi đọc file ảnh: " + e.getMessage());
+                message.setValue("Could not read the image file: " + e.getMessage());
                 return;
             }
 

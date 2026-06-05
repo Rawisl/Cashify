@@ -46,7 +46,9 @@
                         android:layout_width="48dp"
                         android:layout_height="48dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
-                        android:src="@android:drawable/ic_popup_reminder"
+                        android:padding="11dp"
+                        android:scaleType="center"
+                        android:src="@drawable/ic_notification_regular"
                         app:tint="@color/white" />
 
                     <TextView

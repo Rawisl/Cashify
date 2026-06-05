@@ -21,13 +21,14 @@ import androidx.cardview.widget.CardView;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
 import com.example.cashify.data.model.Budget;
 import com.example.cashify.data.local.BudgetWithSpent;
 import com.example.cashify.ui.main.MainViewModel;
+import com.example.cashify.ui.main.PersonalWorkspaceHeader;
 import com.example.cashify.utils.DialogHelper;
 import com.example.cashify.utils.NumpadBottomSheet;
 import com.example.cashify.utils.CurrencyFormatter;
@@ -73,6 +74,8 @@ public class BudgetFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        PersonalWorkspaceHeader.bind(this, view);
 
         budgetViewModel = new ViewModelProvider(this).get(BudgetViewModel.class);
 
@@ -170,7 +173,14 @@ public class BudgetFragment extends Fragment {
 
         // Danh sách RecyclerView
         RecyclerView rvBudgets = view.findViewById(R.id.rvCategoryBudgets);
-        rvBudgets.setLayoutManager(new LinearLayoutManager(getContext()));
+        GridLayoutManager budgetLayoutManager = new GridLayoutManager(getContext(), 2);
+        budgetLayoutManager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
+            @Override
+            public int getSpanSize(int position) {
+                return position == 0 ? 2 : 1;
+            }
+        });
+        rvBudgets.setLayoutManager(budgetLayoutManager);
         adapter = new BudgetAdapter(item -> {
             if (isReadOnly) {showDialogOnUI("Read-only", "Past months are read-only!", true);return; }
             if (android.os.SystemClock.elapsedRealtime() - mLastClickTime < 1000) return;

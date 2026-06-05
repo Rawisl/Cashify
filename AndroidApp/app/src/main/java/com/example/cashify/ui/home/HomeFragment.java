@@ -69,7 +69,7 @@ public class HomeFragment extends Fragment {
 
         //ánh xạ dùng cho chart
         RecyclerView rvLegend = view.findViewById(R.id.rvLegend);
-        rvLegend.setLayoutManager(new LinearLayoutManager(getContext()));
+        rvLegend.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.VERTICAL, false));
         LegendAdapter legendAdapter = new LegendAdapter();
         rvLegend.setAdapter(legendAdapter);
 
@@ -182,7 +182,7 @@ public class HomeFragment extends Fragment {
                 SimpleDateFormat sdf = new SimpleDateFormat("MMMM", Locale.ENGLISH);
                 String currentMonth = sdf.format(currentCalendar.getTime());
                 pieChart.setCenterText(getString(R.string.chart_center_text, currentMonth));
-                pieChart.setCenterTextSize(20f);
+                pieChart.setCenterTextSize(12f);
             }
             pieChart.invalidate();
         });
@@ -314,7 +314,7 @@ public class HomeFragment extends Fragment {
 
         // Text ở giữa cái lỗ
         pieChart.setCenterText(getString(R.string.chart_center_text, monthName));
-        pieChart.setCenterTextSize(20f);
+        pieChart.setCenterTextSize(12f);
         // Khởi tạo Typeface từ font chữ và màu, không dùng mã font và mã màu thường mà phải dùng resources/context compat
         Typeface tf = ResourcesCompat.getFont(getContext(), R.font.inter_bold);
         pieChart.setCenterTextColor(ContextCompat.getColor(getContext(), R.color.brand_primary));
@@ -342,7 +342,7 @@ public class HomeFragment extends Fragment {
                             String.format(Locale.getDefault(), "%.1f%%", percentage);
 
                     pieChart.setCenterText(centerText);
-                    pieChart.setCenterTextSize(18f); // Chữ ngắn rồi thì buff size lên xíu cho đẹp
+                    pieChart.setCenterTextSize(12f);
                 }
             }
 
@@ -354,7 +354,7 @@ public class HomeFragment extends Fragment {
 
                 // Trả lại nguyên trạng
                 pieChart.setCenterText(getString(R.string.chart_center_text, currentMonth));
-                pieChart.setCenterTextSize(20f);
+                pieChart.setCenterTextSize(12f);
             }
         });
     }

@@ -51,6 +51,8 @@ public class FilterChipAdapter extends RecyclerView.Adapter<FilterChipAdapter.Ch
 
         // Set nội dung hiển thị
         chipView.setText(chipData.isActive() ? chipData.getActiveLabel() : chipData.getFilLabel());
+        chipView.setChipIconVisible(false);
+        chipView.setCheckedIconVisible(false);
 
         // Thay đổi Giao diện (Màu sắc & Icon) trực tiếp bằng code
         if (chipData.isActive()) {

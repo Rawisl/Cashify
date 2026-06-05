@@ -1,60 +1,71 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg_main"
-    android:fillViewport="true"
-    android:fitsSystemWindows="true">
-    <!-- 2 dòng fading edge để hỗ trợ việc scroll mượt hơn (content bị fade dần) -->
+    android:fitsSystemWindows="true"
+    android:orientation="vertical">
 
-    <LinearLayout
-        android:id="@+id/settings_layout"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingLeft="20dp"
-        android:paddingTop="20dp"
-        android:paddingRight="20dp"
-        android:paddingBottom="120dp">
+    <include layout="@layout/include_personal_workspace_header" />
 
-        <!-- Header -->
-        <TextView
-            android:id="@+id/tvSettings"
-            style="@style/screen_title"
-            android:text="@string/settings_title" />
-        <!-- Subtitle -->
-        <TextView
-            android:id="@+id/tv_Settings_SubTitle"
-            style="@style/screen_subtitle"
-            android:text="@string/settings_subtitle" />
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="@color/bg_main"
+        android:clipToPadding="false"
+        android:fillViewport="true">
 
-        <!-- Section ACCOUNT -->
-        <TextView
-            android:id="@+id/tv_Account"
-            style="@style/section_header"
-            android:text="@string/settings_section_account" />
+        <LinearLayout
+            android:id="@+id/settings_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingStart="22dp"
+            android:paddingTop="24dp"
+            android:paddingEnd="22dp"
+            android:paddingBottom="132dp">
 
-        <androidx.cardview.widget.CardView
-            android:id="@+id/cv_account"
-            style="@style/cardview_buttons">
+            <TextView
+                android:id="@+id/tvSettings"
+                style="@style/screen_title"
+                android:fontFamily="@font/outfit_bold"
+                android:text="@string/settings_title"
+                android:textSize="30sp" />
 
-            <LinearLayout style="@style/buttons_layout">
+            <TextView
+                android:id="@+id/tv_Settings_SubTitle"
+                style="@style/screen_subtitle"
+                android:layout_marginBottom="28dp"
+                android:text="@string/settings_subtitle" />
 
-                <!-- Nút security -->
+            <TextView
+                android:id="@+id/tv_Account"
+                style="@style/section_header"
+                android:text="@string/settings_section_account" />
+
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cv_account"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="1dp">
+
                 <LinearLayout
                     android:id="@+id/btn_security"
-                    style="@style/btn_component_layout">
+                    style="@style/btn_component_layout"
+                    android:minHeight="78dp">
 
-                    <!-- Icon -->
                     <com.google.android.material.imageview.ShapeableImageView
                         android:id="@+id/iv_ic_security"
                         style="@style/btn_main_icon"
                         android:background="@color/icon_setting_background"
-                        app:srcCompat="@drawable/ic_security_regular"
+                        app:srcCompat="@drawable/ic_settings_password_key"
                         app:tint="@color/brand_primary" />
 
-                    <!-- 2 dòng title + mô tả -->
                     <LinearLayout style="@style/btn_text_layout">
 
                         <TextView
@@ -65,173 +76,190 @@
                         <TextView
                             android:id="@+id/tv_secur_subtitle"
                             style="@style/btn_item_description"
+                            android:layout_marginTop="3dp"
                             android:text="@string/settings_item_security_desc" />
                     </LinearLayout>
 
-                    <!-- Icon next -->
                     <ImageView
                         android:id="@+id/iv_ic_next"
                         style="@style/btn_next_icon"
                         android:contentDescription="@string/action_next" />
-
                 </LinearLayout>
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
+            </androidx.cardview.widget.CardView>
 
-        <!-- Section PREFERENCES -->
-        <TextView
-            android:id="@+id/tv_Preferences"
-            style="@style/section_header"
-            android:layout_marginTop="16dp"
-            android:text="@string/settings_section_preferences" />
+            <TextView
+                android:id="@+id/tv_Preferences"
+                style="@style/section_header"
+                android:layout_marginTop="24dp"
+                android:text="@string/settings_section_preferences" />
 
-        <androidx.cardview.widget.CardView
-            android:id="@+id/cv_preferences"
-            style="@style/cardview_buttons">
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cv_preferences"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="1dp">
 
-            <LinearLayout style="@style/buttons_layout">
-
-                <!-- Nút categories -->
                 <LinearLayout
-                    android:id="@+id/btn_categories"
-                    style="@style/btn_component_layout">
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
 
-                    <com.google.android.material.imageview.ShapeableImageView
-                        android:id="@+id/iv_ic_category"
-                        style="@style/btn_main_icon"
-                        android:background="@color/icon_setting_background"
-                        app:srcCompat="@drawable/ic_category_regular"
-                        app:tint="@color/brand_primary" />
+                    <LinearLayout
+                        android:id="@+id/btn_categories"
+                        style="@style/btn_component_layout"
+                        android:minHeight="78dp">
 
-                    <!-- 2 dòng title + mô tả -->
-                    <LinearLayout style="@style/btn_text_layout">
+                        <com.google.android.material.imageview.ShapeableImageView
+                            android:id="@+id/iv_ic_category"
+                            style="@style/btn_main_icon"
+                            android:background="@color/icon_setting_background"
+                            app:srcCompat="@drawable/ic_settings_category"
+                            app:tint="@color/brand_primary" />
 
-                        <TextView
-                            android:id="@+id/tv_categories"
-                            style="@style/btn_item_title"
-                            android:text="@string/settings_item_category" />
+                        <LinearLayout style="@style/btn_text_layout">
 
-                        <TextView
-                            android:id="@+id/tv_category"
-                            style="@style/btn_item_description"
-                            android:text="@string/settings_item_category_desc" />
+                            <TextView
+                                android:id="@+id/tv_categories"
+                                style="@style/btn_item_title"
+                                android:text="@string/settings_item_category" />
+
+                            <TextView
+                                android:id="@+id/tv_category"
+                                style="@style/btn_item_description"
+                                android:layout_marginTop="3dp"
+                                android:text="@string/settings_item_category_desc" />
+                        </LinearLayout>
+
+                        <ImageView
+                            style="@style/btn_next_icon"
+                            android:contentDescription="@string/action_next" />
                     </LinearLayout>
 
-                    <!-- Nút next -->
-                    <ImageView
-                        style="@style/btn_next_icon"
-                        android:contentDescription="@string/action_next" />
-                </LinearLayout>
+                    <View style="@style/buttons_divider" />
 
-                <!-- Devider giữa 2 nút -->
-                <View style="@style/buttons_divider" />
+                    <LinearLayout
+                        android:id="@+id/btn_notification"
+                        style="@style/btn_component_layout"
+                        android:minHeight="78dp">
 
-                <!-- Nút noti -->
-                <LinearLayout
-                    android:id="@+id/btn_notification"
-                    style="@style/btn_component_layout">
+                        <com.google.android.material.imageview.ShapeableImageView
+                            android:id="@+id/iv_ic_notification"
+                            style="@style/btn_main_icon"
+                            android:background="@color/icon_setting_background"
+                            app:srcCompat="@drawable/ic_notification_regular"
+                            app:tint="@color/brand_primary" />
 
-                    <com.google.android.material.imageview.ShapeableImageView
-                        android:id="@+id/iv_ic_notification"
-                        style="@style/btn_main_icon"
-                        android:background="@color/icon_setting_background"
-                        app:srcCompat="@drawable/ic_notification_regular"
-                        app:tint="@color/brand_primary" />
+                        <LinearLayout style="@style/btn_text_layout">
 
-                    <LinearLayout style="@style/btn_text_layout">
+                            <TextView
+                                android:id="@+id/tv_notification"
+                                style="@style/btn_item_title"
+                                android:text="@string/settings_item_notifications" />
 
-                        <TextView
-                            android:id="@+id/tv_notification"
-                            style="@style/btn_item_title"
-                            android:text="@string/settings_item_notifications" />
+                            <TextView
+                                android:id="@+id/tv_noti"
+                                style="@style/btn_item_description"
+                                android:layout_marginTop="3dp"
+                                android:text="@string/settings_item_notifications_desc" />
+                        </LinearLayout>
 
-                        <TextView
-                            android:id="@+id/tv_noti"
-                            style="@style/btn_item_description"
-                            android:text="@string/settings_item_notifications_desc" />
+                        <com.google.android.material.switchmaterial.SwitchMaterial
+                            android:id="@+id/toggle_notification"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center_vertical" />
                     </LinearLayout>
 
-                    <!-- Xóa ImageView next, thêm Toggle vào đây -->
-                    <com.google.android.material.switchmaterial.SwitchMaterial
-                        android:id="@+id/toggle_notification"
-                        android:layout_width="wrap_content"
+                    <View style="@style/buttons_divider" />
+
+                    <LinearLayout
+                        android:id="@+id/btn_language"
+                        style="@style/btn_component_layout"
+                        android:minHeight="78dp">
+
+                        <com.google.android.material.imageview.ShapeableImageView
+                            android:id="@+id/iv_ic_language"
+                            style="@style/btn_main_icon"
+                            android:background="@color/icon_setting_background"
+                            app:srcCompat="@drawable/ic_language_exchange_regular"
+                            app:tint="@color/brand_primary" />
+
+                        <LinearLayout style="@style/btn_text_layout">
+
+                            <TextView
+                                android:id="@+id/tv_language"
+                                style="@style/btn_item_title"
+                                android:text="@string/settings_item_language" />
+
+                            <TextView
+                                android:id="@+id/tv_lang"
+                                style="@style/btn_item_description"
+                                android:layout_marginTop="3dp"
+                                android:text="@string/settings_item_language_desc" />
+                        </LinearLayout>
+
+                        <ImageView
+                            android:id="@+id/iv_language_arrow"
+                            style="@style/btn_next_icon"
+                            android:contentDescription="@string/action_next" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/layout_language_options"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_gravity="center_vertical"
-                        android:clickable="false"
-                        android:focusable="false" />
-                    <!-- clickable=false để LinearLayout cha bắt click, tránh toggle ăn mất event -->
-
-                </LinearLayout>
-
-
-                <!-- Devider giữa 2 nút -->
-                <View style="@style/buttons_divider" />
-
-                <!-- Nút language -->
-                <LinearLayout
-                    android:id="@+id/btn_language"
-                    style="@style/btn_component_layout">
-
-                    <!-- icon -->
-                    <com.google.android.material.imageview.ShapeableImageView
-                        android:id="@+id/iv_ic_language"
-                        style="@style/btn_main_icon"
-                        android:background="@color/icon_setting_background"
-                        app:srcCompat="@drawable/ic_language_exchange_regular"
-                        app:tint="@color/brand_primary" />
-
-                    <!-- 2 dòng title + mô tả-->
-                    <LinearLayout style="@style/btn_text_layout">
+                        android:orientation="vertical"
+                        android:paddingStart="80dp"
+                        android:paddingEnd="16dp"
+                        android:paddingBottom="14dp"
+                        android:visibility="gone">
 
                         <TextView
-                            android:id="@+id/tv_language"
-                            style="@style/btn_item_title"
-                            android:text="@string/settings_item_language" />
-
-                        <TextView
-                            android:id="@+id/tv_lang"
-                            style="@style/btn_item_description"
-                            android:text="@string/settings_item_language_desc" />
+                            android:id="@+id/option_language_english"
+                            android:layout_width="match_parent"
+                            android:layout_height="44dp"
+                            android:background="@drawable/bg_input_fields"
+                            android:fontFamily="@font/inter_semibold"
+                            android:gravity="center_vertical"
+                            android:paddingStart="16dp"
+                            android:paddingEnd="16dp"
+                            android:text="@string/settings_item_language_desc"
+                            android:textColor="@color/brand_primary"
+                            android:textSize="14sp" />
                     </LinearLayout>
-
-                    <!-- nút next -->
-                    <ImageView
-                        style="@style/btn_next_icon"
-                        android:contentDescription="@string/action_next" />
                 </LinearLayout>
+            </androidx.cardview.widget.CardView>
 
+            <TextView
+                android:id="@+id/tv_Reset"
+                style="@style/section_header"
+                android:layout_marginTop="24dp"
+                android:text="@string/settings_section_reset" />
 
-            </LinearLayout>
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cv_reset_transaction"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="1dp">
 
-        </androidx.cardview.widget.CardView>
-
-        <!-- Section RESET -->
-        <TextView
-            android:id="@+id/tv_Reset"
-            style="@style/section_header"
-            android:layout_marginTop="16dp"
-            android:text="@string/settings_section_reset" />
-
-        <androidx.cardview.widget.CardView
-            android:id="@+id/cv_reset_transaction"
-            style="@style/cardview_buttons">
-
-            <LinearLayout style="@style/buttons_layout">
-
-                <!-- Nút logout -->
                 <LinearLayout
                     android:id="@+id/btn_reset_transaction"
-                    style="@style/btn_component_layout">
+                    style="@style/btn_component_layout"
+                    android:minHeight="78dp">
 
-                    <!-- Icon -->
                     <com.google.android.material.imageview.ShapeableImageView
                         android:id="@+id/iv_ic_reset_transaction"
                         style="@style/btn_main_icon"
                         android:background="@color/status_background_red"
-                        app:srcCompat="@drawable/ic_reset_transaction"
+                        app:srcCompat="@drawable/ic_settings_reset"
                         app:tint="@color/status_red" />
 
-                    <!-- 2 dòng title + mô tả -->
                     <LinearLayout style="@style/btn_text_layout">
 
                         <TextView
@@ -242,47 +270,43 @@
                         <TextView
                             android:id="@+id/tv_reset_transaction_desc"
                             style="@style/btn_item_description"
+                            android:layout_marginTop="3dp"
                             android:text="@string/settings_item_reset_transaction_desc" />
                     </LinearLayout>
 
-                    <!-- Icon next -->
                     <ImageView
                         style="@style/btn_next_icon"
                         android:contentDescription="@string/action_next" />
-
                 </LinearLayout>
+            </androidx.cardview.widget.CardView>
 
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
+            <TextView
+                android:id="@+id/tv_Other"
+                style="@style/section_header"
+                android:layout_marginTop="24dp"
+                android:text="@string/settings_section_other" />
 
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cv_other"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="1dp">
 
-        <!-- Section OTHER -->
-        <TextView
-            android:id="@+id/tv_Other"
-            style="@style/section_header"
-            android:layout_marginTop="16dp"
-            android:text="@string/settings_section_other" />
-
-        <androidx.cardview.widget.CardView
-            android:id="@+id/cv_other"
-            style="@style/cardview_buttons">
-
-            <LinearLayout style="@style/buttons_layout">
-
-                <!-- Nút logout -->
                 <LinearLayout
                     android:id="@+id/btn_logout"
-                    style="@style/btn_component_layout">
+                    style="@style/btn_component_layout"
+                    android:minHeight="78dp">
 
-                    <!-- Icon -->
                     <com.google.android.material.imageview.ShapeableImageView
                         android:id="@+id/iv_ic_logout"
                         style="@style/btn_main_icon"
                         android:background="@color/status_background_red"
-                        app:srcCompat="@drawable/ic_logout_regular"
+                        app:srcCompat="@drawable/ic_settings_logout"
                         app:tint="@color/status_red" />
 
-                    <!-- 2 dòng title + mô tả -->
                     <LinearLayout style="@style/btn_text_layout">
 
                         <TextView
@@ -293,17 +317,15 @@
                         <TextView
                             android:id="@+id/tv_logout_subtitle"
                             style="@style/btn_item_description"
+                            android:layout_marginTop="3dp"
                             android:text="@string/settings_item_logout_desc" />
                     </LinearLayout>
 
-                    <!-- Icon next -->
                     <ImageView
                         style="@style/btn_next_icon"
                         android:contentDescription="@string/action_next" />
-
                 </LinearLayout>
-
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
-    </LinearLayout>
-</androidx.core.widget.NestedScrollView>
+            </androidx.cardview.widget.CardView>
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+</LinearLayout>

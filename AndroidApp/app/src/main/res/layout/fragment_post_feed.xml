@@ -409,7 +409,7 @@
                         android:fontFamily="@font/inter_semibold"
                         android:gravity="center"
                         android:lineSpacingExtra="2dp"
-                        android:text="Xem trước\nbài đăng"
+                        android:text="Post\nPreview"
                         android:textAllCaps="true"
                         android:textColor="#8F6842"
                         android:textSize="10sp" />

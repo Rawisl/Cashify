@@ -77,7 +77,7 @@ public class LoginActivity extends AppCompatActivity {
                                 authViewModel.loginWithGoogle(account.getIdToken());
                             }
                         } catch (ApiException e) {
-                            ToastHelper.show(this, "Đăng nhập Google thất bại: " + e.getMessage());
+                            ToastHelper.show(this, "Google Sign-In failed: " + e.getMessage());
                         }
                     } else {
                         authViewModel.isLoading.observe(this, isLoading -> { /* Tắt loading ở đây nếu cần */ });
@@ -98,12 +98,12 @@ public class LoginActivity extends AppCompatActivity {
             String email = edtEmail.getText().toString().trim();
             String pass = edtPassword.getText().toString().trim();
             if (email.isEmpty() || pass.isEmpty()) {
-                ToastHelper.show(this, "Vui lòng nhập email và mật khẩu");
+                ToastHelper.show(this, "Please enter your email and password");
                 return;
             }
 
             if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-                ToastHelper.show(this, "Email chưa đúng định dạng (VD: abc@gmail.com)");
+                ToastHelper.show(this, "Invalid email address (example: abc@gmail.com)");
                 return;
             }
 
@@ -128,12 +128,12 @@ public class LoginActivity extends AppCompatActivity {
         authViewModel.isLoading.observe(this, isLoading -> {
             btnLogin.setEnabled(!isLoading);
             btnGoogleLogin.setEnabled(!isLoading);
-            btnLogin.setText(isLoading ? "Đang xử lý..." : "Đăng nhập");
+            btnLogin.setText(isLoading ? "Processing..." : "Sign In");
         });
 
         authViewModel.errorMessage.observe(this, error -> {
             if (error != null && !error.isEmpty()) {
-                ToastHelper.show(this, "Lỗi: " + error);
+                ToastHelper.show(this, "Error: " + error);
             }
         });
 
@@ -148,7 +148,7 @@ public class LoginActivity extends AppCompatActivity {
                 // GỌI HÀM LƯU LÊN FIRESTORE NGAY KHI ĐĂNG NHẬP THÀNH CÔNG
                 saveUserToFirestore(FirebaseAuth.getInstance().getCurrentUser());
 
-                ToastHelper.show(this, "Đăng nhập thành công!");
+                ToastHelper.show(this, "Sign in successful!");
                 startActivity(new Intent(this, MainActivity.class));
                 finish();
             }
