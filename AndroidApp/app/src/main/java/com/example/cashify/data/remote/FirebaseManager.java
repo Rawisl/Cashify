@@ -13,6 +13,7 @@ import com.google.firebase.auth.GoogleAuthProvider;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.WriteBatch;
 
 import java.util.ArrayList;
@@ -599,14 +600,14 @@ public class FirebaseManager {
     // LOGIC WORKSPACE & CÁC THAO TÁC CẦN CALL C# BACKEND (ĐÃ REFACTOR)
     // ============================================================
 
-    public void sendWorkspaceMessage(String workspaceId, String text, DataCallback<Void> callback) {
+    public void sendWorkspaceMessage(String workspaceId, String text, String imageUrl, DataCallback<Void> callback) {
         FirebaseUser user = auth.getCurrentUser();
         if (user == null) { callback.onError("Chưa đăng nhập!"); return; }
 
         user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
             String token = "Bearer " + getTokenResult.getToken();
             ApiService apiService = ApiClient.getClient().create(ApiService.class);
-            ApiService.WorkspaceMessageSendRequest request = new ApiService.WorkspaceMessageSendRequest(workspaceId, text);
+            ApiService.WorkspaceMessageSendRequest request = new ApiService.WorkspaceMessageSendRequest(workspaceId, text, imageUrl);
 
             apiService.sendWorkspaceMessage(token, request).enqueue(new retrofit2.Callback<Object>() {
                 @Override
@@ -842,7 +843,7 @@ public class FirebaseManager {
         }).addOnFailureListener(e -> callback.onError("Lỗi Auth: " + e.getMessage()));
     }
 
-    public void sendDirectFriendMessage(String receiverId, String text, DataCallback<Void> callback) {
+    public void sendDirectFriendMessage(String receiverId, String text, String imageUrl, DataCallback<Void> callback) {
         FirebaseUser user = auth.getCurrentUser();
         if (user == null) {
             callback.onError("Chưa đăng nhập!");
@@ -852,7 +853,8 @@ public class FirebaseManager {
         user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
             String token = "Bearer " + getTokenResult.getToken();
             ApiService apiService = ApiClient.getClient().create(ApiService.class);
-            ApiService.DirectFriendMessageRequest request = new ApiService.DirectFriendMessageRequest(receiverId, text);
+            ApiService.DirectFriendMessageRequest request =
+                    new ApiService.DirectFriendMessageRequest(receiverId, text, imageUrl);
 
             apiService.sendDirectFriendMessage(token, request).enqueue(new retrofit2.Callback<Object>() {
                 @Override
@@ -1004,6 +1006,22 @@ public class FirebaseManager {
         } catch (Exception ignored) {
         }
         return fallback;
+    }
+
+    public ListenerRegistration listenToDirectConversations(DataCallback<List<DirectConversation>> callback) {
+        String uid = getCurrentUserId();
+        if (uid == null) { callback.onError("Chưa đăng nhập"); return null; }
+
+        return db.collection("users").document(uid).collection("friends")
+                .addSnapshotListener((friendSnap, e) -> {
+                    if (e != null) { callback.onError(e.getMessage()); return; }
+                    if (friendSnap == null || friendSnap.isEmpty()) {
+                        callback.onSuccess(new ArrayList<>());
+                        return;
+                    }
+                    // Dùng lại logic của getDirectFriendConversations nhưng wrap trong listener
+                    getDirectFriendConversations(callback);
+                });
     }
 
     // ============================================================

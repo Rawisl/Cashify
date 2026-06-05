@@ -633,7 +633,8 @@
                     android:indeterminate="true"
                     android:indeterminateTint="@color/brand_primary"
                     android:visibility="gone"
-                    tools:visibility="visible" />
+                    tools:visibility="visible"
+                    android:max="100"/>
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnSubmitPost"

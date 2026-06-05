@@ -54,6 +54,35 @@
         app:layout_constraintTop_toBottomOf="@id/layoutChatHeader" />
 
     <LinearLayout
+        android:id="@+id/layoutImagePreview"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="20dp"
+        android:layout_marginBottom="4dp"
+        android:background="@drawable/bg_bottom_nav"
+        android:orientation="vertical"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="8dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/layoutInput">
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:id="@+id/layoutPreviewImages"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical" />
+
+        </HorizontalScrollView>
+
+    </LinearLayout>
+
+    <LinearLayout
         android:id="@+id/layoutInput"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -65,6 +94,15 @@
         android:layout_marginBottom="110dp"
         android:layout_marginHorizontal="20dp"
         app:layout_constraintBottom_toBottomOf="parent">
+
+        <ImageButton
+            android:id="@+id/btnAttachImage"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_camera"
+            android:layout_marginEnd="4dp"
+            app:tint="@color/brand_primary" />
 
     <EditText
         android:id="@+id/edtMessageInput"

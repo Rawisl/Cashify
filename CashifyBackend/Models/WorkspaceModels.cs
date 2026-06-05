@@ -12,4 +12,4 @@ public record EditCategoryRequest(string WorkspaceId, string CategoryId, string 
 public record RestoreCategoryRequest(string WorkspaceId, string CategoryId);
 public record WorkspaceInviteSendRequest(string? WorkspaceId, string? WorkspaceName, List<string>? TargetUids);
 public record WorkspaceInviteHandleRequest(string? WorkspaceId, string? InvitationId);
-public record WorkspaceMessageSendRequest(string? WorkspaceId, string? Text);
+public record WorkspaceMessageSendRequest(string? WorkspaceId, string? Text, string? ImageUrl);

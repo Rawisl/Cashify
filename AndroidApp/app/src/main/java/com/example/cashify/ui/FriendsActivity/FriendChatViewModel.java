@@ -53,24 +53,43 @@ public class FriendChatViewModel extends ViewModel {
         });
     }
 
-    public void sendMessage(String friendUid, String text) {
+    public void sendMessage(String friendUid, String text, String imageUrl) {
         String trimmed = text != null ? text.trim() : "";
-        if (trimmed.isEmpty() || sending) return;
-
+        if (trimmed.isEmpty() && (imageUrl == null || imageUrl.isEmpty())) return;
+        if (sending) return;
         sending = true;
-        // VẪN GỌI QUA C# ĐỂ GHI DỮ LIỆU
-        FirebaseManager.getInstance().sendDirectFriendMessage(friendUid, trimmed, new FirebaseManager.DataCallback<Void>() {
-            @Override
-            public void onSuccess(Void data) {
-                sending = false;
-            }
 
-            @Override
-            public void onError(String message) {
-                sending = false;
-                sendErrorMessage.postValue(message);
-            }
-        });
+        FirebaseManager.getInstance().sendDirectFriendMessage(
+                friendUid, trimmed, imageUrl,
+                new FirebaseManager.DataCallback<Void>() {
+                    @Override public void onSuccess(Void data) { sending = false; }
+                    @Override public void onError(String message) {
+                        sending = false;
+                        sendErrorMessage.postValue(message);
+                    }
+                });
+    }
+
+    public void sendMessage(String friendUid, String text, String imageUrl, Runnable onSuccess) {
+        String trimmed = text != null ? text.trim() : "";
+        if (trimmed.isEmpty() && (imageUrl == null || imageUrl.isEmpty())) {
+            if (onSuccess != null) onSuccess.run();
+            return;
+        }
+
+        FirebaseManager.getInstance().sendDirectFriendMessage(
+                friendUid, trimmed, imageUrl,
+                new FirebaseManager.DataCallback<Void>() {
+                    @Override public void onSuccess(Void data) {
+                        sending = false;
+                        if (onSuccess != null) onSuccess.run();
+                    }
+                    @Override public void onError(String message) {
+                        sending = false;
+                        sendErrorMessage.postValue(message);
+                        if (onSuccess != null) onSuccess.run(); // vẫn tiếp tục gửi ảnh tiếp
+                    }
+                });
     }
 
     @Override
