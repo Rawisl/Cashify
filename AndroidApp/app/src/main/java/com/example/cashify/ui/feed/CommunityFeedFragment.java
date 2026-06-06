@@ -254,7 +254,7 @@ public class CommunityFeedFragment extends Fragment {
             actionMilestone.setVisibility(View.GONE);
 
             // Gợi ý cho người dùng viết caption
-            txtComposerHint.setText("Cột mốc của bạn đã sẵn sàng! Gõ thêm cảm nghĩ phía trên.");
+            txtComposerHint.setText("Your milestone is ready! Post your thought above.");
 
             // Đóng gói JSON sẵn, đợi bấm Đăng là phi lên C#
             try {

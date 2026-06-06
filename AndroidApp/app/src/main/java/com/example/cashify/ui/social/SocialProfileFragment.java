@@ -209,7 +209,7 @@ public class SocialProfileFragment extends Fragment {
             String displayName = firstNonEmpty(doc.getString("displayName"),
                     doc.getString("username"), "Người dùng Cashify");
             String bio = firstNonEmpty(doc.getString("bio"), doc.getString("status"),
-                    doc.getString("about"), "Sẵn sàng chia sẻ hành trình tài chính.");
+                    doc.getString("about"), "Ready to share your finance journey.");
             String avatarUrl = doc.getString("avatarUrl");
             tvDisplayName.setText(displayName);
             tvBio.setText(bio);
