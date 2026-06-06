@@ -13,7 +13,7 @@
         android:background="#F0F2F8"
         app:navigationIcon="@drawable/ic_arrow_left_back"
         app:navigationIconTint="#1A237E"
-        app:title="Tin nhắn"
+        app:title="@string/chat"
         app:titleCentered="true"
         app:titleTextColor="#1A237E" />
 

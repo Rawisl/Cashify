@@ -215,6 +215,7 @@
     <string name="social_newsfeed_subtitle">Friends\' activities</string>
     <string name="social_profile_title">Profile</string>
     <string name="social_profile_friends">Friends</string>
+    <string name="social_profile_Friends">FRIENDS</string>
     <string name="social_profile_achievements">Achievements</string>
     <string name="social_profile_my_posts">My posts</string>
     <string name="social_profile_my_posts_subtitle">Activity &amp; Milestone</string>
@@ -292,6 +293,7 @@
     <string name="first_comment">Write a comment...</string>
 
     <string name="edit_comment">Edit comment</string>
+    <string name="delete_comment">Delete comment</string>
     <string name="edit_post">Edit post</string>
     <string name="hide_post">Hide post</string>
     <string name="delete_post">Delete post</string>
@@ -313,6 +315,7 @@
     <string name="new_thought">Plant your first thought</string>
     <string name="your_journey">Your Journey</string>
     <string name="pin_milestone">Pin a milestone to brighten your financial garden.</string>
+    <string name="update_profile">Update profile</string>
 
     <!-- ======================== -->
     <!-- Social — Friends        -->
@@ -334,9 +337,12 @@
     <string name="no_requests_yet">No requests yet</string>
     <string name="cancel_request">Cancel Request</string>
     <string name="friend_suggestion">Friend suggestion</string>
+    <string name="friend_request">Friend request</string>
     <string name="no_friend_suggestion">No new friend suggestions yet.</string>
     <string name="connect">Connect</string>
     <string name="no_connect">You have no connections yet.</string>
+    <string name="cannot_load_chat">Cannot load conversation list.</string>
+    <string name="no_chat_list">Have no conversations yet. Start chatting to your friends.</string>
     <string name="accept">Accept</string>
     <string name="decline">Decline</string>
 

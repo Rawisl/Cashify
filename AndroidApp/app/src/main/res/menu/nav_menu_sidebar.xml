@@ -27,7 +27,7 @@
         <item
             android:id="@+id/nav_friends"
             android:icon="@drawable/ic_friends_solid"
-            android:title="@string/friends" />
+            android:title="@string/social_profile_friends" />
 
         <item
             android:id="@+id/nav_invitations"

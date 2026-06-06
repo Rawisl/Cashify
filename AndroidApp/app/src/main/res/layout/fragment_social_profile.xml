@@ -201,7 +201,7 @@
                             android:layout_marginTop="18dp"
                             android:fontFamily="@font/inter_medium"
                             android:letterSpacing="0.08"
-                            android:text="@string/Friends"
+                            android:text="@string/social_profile_Friends"
                             android:textColor="#1A237E"
                             android:textSize="11sp" />
 

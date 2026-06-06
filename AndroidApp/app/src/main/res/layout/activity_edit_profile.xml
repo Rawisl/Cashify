@@ -11,7 +11,7 @@
         android:id="@+id/toolbarEditProfile"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        app:title="Cập nhật hồ sơ"
+        app:title="@string/update_profile"
         app:titleCentered="true"
         app:navigationIcon="?attr/homeAsUpIndicator" />
 
