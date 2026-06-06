@@ -24,7 +24,7 @@
         android:maxLines="1"
         android:text="Shopping"
         android:textColor="@color/item_title"
-        android:textSize="13sp" />
+        android:textSize="14sp" />
 
     <TextView
         android:id="@+id/tv_legend_money_amount"
@@ -33,6 +33,6 @@
         android:layout_marginStart="8dp"
         android:fontFamily="@font/outfit_bold"
         android:text="0 VND"
-        android:textColor="@color/brand_primary"
+        android:textColor="#111111"
         android:textSize="13sp" />
 </LinearLayout>

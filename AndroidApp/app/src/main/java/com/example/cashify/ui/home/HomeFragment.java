@@ -172,8 +172,8 @@ public class HomeFragment extends Fragment {
 
                 // Lấy thẳng mảng màu từ ViewModel ném vào
                 dataSet.setColors(state.pieColors);
-                dataSet.setSliceSpace(3f);
-                dataSet.setSelectionShift(5f);
+                dataSet.setSliceSpace(0f);
+                dataSet.setSelectionShift(2f);
 
                 PieData data = new PieData(dataSet);
                 data.setDrawValues(false); // Vẫn tắt value mặc định
@@ -182,7 +182,7 @@ public class HomeFragment extends Fragment {
                 SimpleDateFormat sdf = new SimpleDateFormat("MMMM", Locale.ENGLISH);
                 String currentMonth = sdf.format(currentCalendar.getTime());
                 pieChart.setCenterText(getString(R.string.chart_center_text, currentMonth));
-                pieChart.setCenterTextSize(12f);
+                pieChart.setCenterTextSize(15f);
             }
             pieChart.invalidate();
         });
@@ -297,14 +297,14 @@ public class HomeFragment extends Fragment {
         pieChart.setDrawHoleEnabled(true); //bật cái lỗ tròn ở giữa mới vẽ được center text
         pieChart.setHoleColor(Color.TRANSPARENT);
         pieChart.setTransparentCircleRadius(0f);
-        pieChart.setHoleRadius(65f); // Kích thước lỗ tròn ở giữa
+        pieChart.setHoleRadius(70f); // Kích thước lỗ tròn ở giữa
         pieChart.animateY(700);
 
         pieChart.setDrawEntryLabels(false); // Tắt tên dán đè lên miếng bánh cho đỡ rối
         pieChart.getDescription().setEnabled(false); // Tắt dòng chữ Description góc dưới
 
         //Ép mọi miếng bánh phải rộng ít nhất 15 độ (tầm này là ngón tay người bấm vừa)
-        pieChart.setMinAngleForSlices(15f);
+        pieChart.setMinAngleForSlices(17f);
 
         pieChart.setUsePercentValues(true);
 
@@ -314,7 +314,7 @@ public class HomeFragment extends Fragment {
 
         // Text ở giữa cái lỗ
         pieChart.setCenterText(getString(R.string.chart_center_text, monthName));
-        pieChart.setCenterTextSize(12f);
+        pieChart.setCenterTextSize(15f);
         // Khởi tạo Typeface từ font chữ và màu, không dùng mã font và mã màu thường mà phải dùng resources/context compat
         Typeface tf = ResourcesCompat.getFont(getContext(), R.font.inter_bold);
         pieChart.setCenterTextColor(ContextCompat.getColor(getContext(), R.color.brand_primary));
@@ -342,7 +342,7 @@ public class HomeFragment extends Fragment {
                             String.format(Locale.getDefault(), "%.1f%%", percentage);
 
                     pieChart.setCenterText(centerText);
-                    pieChart.setCenterTextSize(12f);
+                    pieChart.setCenterTextSize(15f);
                 }
             }
 
@@ -354,7 +354,7 @@ public class HomeFragment extends Fragment {
 
                 // Trả lại nguyên trạng
                 pieChart.setCenterText(getString(R.string.chart_center_text, currentMonth));
-                pieChart.setCenterTextSize(12f);
+                pieChart.setCenterTextSize(15f);
             }
         });
     }

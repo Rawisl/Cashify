@@ -5,9 +5,9 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="14dp"
-    app:cardBackgroundColor="@color/white"
-    app:cardElevation="2dp"
-    app:cardCornerRadius="20dp"
+    app:cardBackgroundColor="#F1F3F9"
+    app:cardElevation="1dp"
+    app:cardCornerRadius="24dp"
     app:strokeWidth="0dp"
     android:clickable="true"
     android:focusable="true"
@@ -26,16 +26,16 @@
         android:gravity="center_vertical"
         android:clickable="false"
         android:focusable="false"
-        android:background="@null">
+        android:background="#ffffff">
 
         <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/ivCategoryIcon"
-            android:layout_width="52dp"
-            android:layout_height="52dp"
+            android:layout_width="65dp"
+            android:layout_height="65dp"
             android:layout_gravity="center_vertical"
             android:padding="12dp"
-            android:scaleType="centerInside"
-            app:shapeAppearanceOverlay="@style/circle" />
+            android:scaleType="centerInside" />
+
 
         <LinearLayout
             style="@style/btn_text_layout"
@@ -49,18 +49,17 @@
                 android:id="@+id/tvMainTitle"
                 style="@style/btn_item_title"
                 android:ellipsize="end"
-                android:fontFamily="@font/inter_semibold"
+                android:fontFamily="@font/inter_bold"
                 android:maxLines="1"
-                android:textColor="@color/item_title"
-                android:textSize="16sp" />
+                android:textColor="#111111"
+                android:textSize="20dp" />
 
             <TextView
                 android:id="@+id/tvSubtitle"
                 style="@style/btn_item_description"
-                android:layout_marginTop="4dp"
                 android:fontFamily="@font/inter_regular"
                 android:textColor="@color/item_description"
-                android:textSize="12.5sp" />
+                android:textSize="13dp" />
         </LinearLayout>
 
         <TextView
@@ -70,8 +69,8 @@
             android:layout_height="wrap_content"
             android:fontFamily="@font/outfit_bold"
             android:gravity="end|center_vertical"
-            android:paddingStart="10dp"
-            android:textSize="17sp"
+            android:paddingStart="8dp"
+            android:textSize="18dp"
             android:textStyle="bold" />
 
     </LinearLayout>

@@ -4,23 +4,23 @@
     <color name="white">#FFFFFFFF</color>
 
     <!--Màu chủ đạo và bg của nó, hầu như icon nào không phải income/expense/categories thì đều dùng màu này-->
-    <color name="brand_primary">#313B60</color>
-    <color name="icon_setting_background">#1A313B60</color>
+    <color name="brand_primary">#1A237E</color>
+    <color name="icon_setting_background">#1A1A237E</color>
 
     <!--Chủ yếu cho title trên đầu màn hình của fragment/screen-->
-    <color name="screen_title">#313B60</color>
+    <color name="screen_title">#1A237E</color>
     <color name="screen_subtitle">#6B7280</color>
-
     <color name="section_header">#6B7280</color>
 
     <!--Liên quan đến button dưới dạng cardview-->
-    <color name="item_title">#1F2937</color>
+    <color name="item_title">#5B5F64</color>
     <color name="item_description">#6B7280</color>
     <color name="cardview_divider">#E5E7EB</color>
     <color name="tab_active_bg">#E5E7EB</color>
 
     <!--Màu nền và màu thẻ hiện trên nền-->
-    <color name="bg_main">#EDE7DE</color>
+    <color name="bg_title">#BFD0FF</color>
+    <color name="bg_main">#ffffff</color>
     <color name="bg_card">#30F0E7D5</color>
 
     <!--Màu của nút bị disable/tắt-->

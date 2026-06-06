@@ -4,11 +4,13 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 
 import androidx.activity.OnBackPressedCallback;
@@ -36,7 +38,6 @@ import com.example.cashify.ui.transactions.TransactionViewModel;
 import com.example.cashify.utils.ToastHelper;
 import com.example.cashify.utils.WorkScheduler;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
@@ -102,8 +103,8 @@ public class MainActivity extends BaseActivity {
 
     private void setupPersonalWorkspaceSystemBars() {
         WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
-        getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.bg_main));
-        getWindow().setNavigationBarColor(ContextCompat.getColor(this, R.color.bg_main));
+        getWindow().setStatusBarColor(Color.parseColor("#FBFCFF"));
+        getWindow().setNavigationBarColor(Color.parseColor("#F7F9FF"));
         WindowInsetsControllerCompat controller =
                 WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
         controller.setAppearanceLightStatusBars(true);
@@ -235,8 +236,9 @@ public class MainActivity extends BaseActivity {
     }
 
     private void setupNavigationAndFab() {
-        FloatingActionButton fabAddTransaction = findViewById(R.id.fab_add_transaction);
-        fabAddTransaction.setOnClickListener(v -> {
+        View addTransactionButton = findViewById(R.id.fab_add_transaction);
+        setupAddTransactionPressEffect(addTransactionButton);
+        addTransactionButton.setOnClickListener(v -> {
             Intent intent = new Intent(this, AddTransactionActivity.class);
             intent.putExtra("WORKSPACE_ID", currentWorkspaceId);
             startActivity(intent);
@@ -244,20 +246,8 @@ public class MainActivity extends BaseActivity {
         });
 
         BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
-        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(fabAddTransaction, (v, windowInsets) -> {
-            androidx.core.graphics.Insets insets = windowInsets.getInsets(
-                    androidx.core.view.WindowInsetsCompat.Type.systemBars());
-            int bottomMargin = (int) (44 * getResources().getDisplayMetrics().density);
-
-            android.view.ViewGroup.MarginLayoutParams mlp =
-                    (android.view.ViewGroup.MarginLayoutParams) v.getLayoutParams();
-            mlp.bottomMargin = insets.bottom + bottomMargin;
-            v.setLayoutParams(mlp);
-
-            return windowInsets;
-        });
-
-        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(bottomNav, (v, windowInsets) -> {
+        View bottomNavContainer = findViewById(R.id.bottom_nav_container);
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(bottomNavContainer, (v, windowInsets) -> {
             androidx.core.graphics.Insets insets = windowInsets.getInsets(
                     androidx.core.view.WindowInsetsCompat.Type.systemBars());
             int margin20dp = (int) (20 * getResources().getDisplayMetrics().density);
@@ -289,15 +279,47 @@ public class MainActivity extends BaseActivity {
             if (id == R.id.nav_workspace_container
                     || id == R.id.nav_social_container
                     || id == R.id.nav_post_feed) {
-                bottomNav.setVisibility(View.GONE);
-                fabAddTransaction.hide();
+                bottomNavContainer.setVisibility(View.GONE);
                 navHostView.setPadding(0, 0, 0, 0);
             } else {
-                bottomNav.setVisibility(View.VISIBLE);
+                bottomNavContainer.setVisibility(View.VISIBLE);
                 navHostView.setPadding(0, 0, 0, 0);
-
-                fabAddTransaction.show();
             }
+        });
+    }
+
+    private void setupAddTransactionPressEffect(View button) {
+        float pressedDown = 3f * getResources().getDisplayMetrics().density;
+        float normalElevation = 6f * getResources().getDisplayMetrics().density;
+        float pressedElevation = 1f * getResources().getDisplayMetrics().density;
+
+        button.setOnTouchListener((v, event) -> {
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    v.setElevation(pressedElevation);
+                    v.animate()
+                            .scaleX(0.94f)
+                            .scaleY(0.94f)
+                            .translationY(pressedDown)
+                            .setDuration(120L)
+                            .setInterpolator(new android.view.animation.DecelerateInterpolator())
+                            .start();
+                    break;
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    v.setElevation(normalElevation);
+                    v.animate()
+                            .scaleX(1f)
+                            .scaleY(1f)
+                            .translationY(0f)
+                            .setDuration(140L)
+                            .setInterpolator(new android.view.animation.DecelerateInterpolator())
+                            .start();
+                    break;
+                default:
+                    break;
+            }
+            return false;
         });
     }
 

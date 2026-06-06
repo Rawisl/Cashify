@@ -62,11 +62,13 @@
     <string name="budget_week_format">Week %1$d (%2$d/%3$d - %4$d/%5$d)</string>
     <string name="budget_date_picker_month">Select Month</string>
     <string name="budget_date_picker_week">Select Week</string>
-    <string name="budget_main_card_title_monthly">Monthly Master Budget</string>
-    <string name="budget_main_card_title_weekly">Weekly Master Budget</string>
-    <string name="budget_tips">💡 Budget Tips</string>
-    <string name="budget_label_spent">Spent</string>
-    <string name="budget_label_remaining">Remaining</string>
+    <string name="budget_main_card_title_monthly">MONTHLY&#8194;MASTER&#8194;BUDGET</string>
+    <string name="budget_main_card_title_weekly">WEEKLY&#8194;MASTER&#8194;BUDGET</string>
+    <string name="budget_tips">Budget Tip</string>
+    <string name="budget_label_income">INCOME</string>
+    <string name="budget_label_expense">EXPENSE</string>
+    <string name="budget_label_spent">SPENT</string>
+    <string name="budget_label_remaining">REMAINING</string>
     <string name="budget_type_spent">Remaining</string>
     <string name="budget_category_warning">Master Budget sets the total amount you want to spend across all categories. Make sure your category budgets don\'t exceed this amount.</string>
 

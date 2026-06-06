@@ -78,9 +78,9 @@ public class RecentTransactionAdapter extends RecyclerView.Adapter<RecentTransac
 
         // 2. Gán Subtitle (Category • Time) - Học y chang HistoryAdapter
         if (holder.tvSubtitle != null) {
-            SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, h:mm a", Locale.ENGLISH);
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM • hh:mm a", Locale.ENGLISH);
             String time = sdf.format(new Date(trans.timestamp));
-            holder.tvSubtitle.setText(item.getCategoryName() + " • " + time);
+            holder.tvSubtitle.setText(time);
         }
 
         // 3. Gán Số tiền và Màu sắc - Mix giữa màu của History và Formatter của Cashify

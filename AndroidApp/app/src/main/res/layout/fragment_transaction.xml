@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bg_main"
+    android:background="@drawable/bg_budget_screen"
     android:fitsSystemWindows="true"
     android:orientation="vertical">
 
@@ -12,7 +12,7 @@
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:background="@color/bg_main"
+        android:background="@drawable/bg_budget_screen"
         android:layout_weight="1"
         android:fillViewport="true">
 
@@ -21,32 +21,15 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:paddingStart="22dp"
-            android:paddingTop="24dp"
+            android:paddingTop="16dp"
             android:paddingEnd="22dp"
             android:paddingBottom="128dp">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:fontFamily="@font/outfit_bold"
-                android:text="@string/trans_title"
-                android:textColor="@color/screen_title"
-                android:textSize="32sp" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:fontFamily="@font/inter_regular"
-                android:text="@string/trans_subtitle"
-                android:textColor="@color/screen_subtitle"
-                android:textSize="14sp" />
 
             <EditText
                 android:id="@+id/etSearch"
                 android:layout_width="match_parent"
                 android:layout_height="58dp"
-                android:layout_marginTop="24dp"
+                android:layout_marginTop="0dp"
                 android:background="@drawable/bg_search_transaction"
                 android:drawableStart="@android:drawable/ic_menu_search"
                 android:drawablePadding="14dp"
