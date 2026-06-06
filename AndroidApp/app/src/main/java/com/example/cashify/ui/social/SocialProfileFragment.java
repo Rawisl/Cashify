@@ -293,8 +293,8 @@ public class SocialProfileFragment extends Fragment {
         }
 
         myPostsAdapter.submitList(posts);
-        tvPostCount.setText(posts.size() + " bài viết");
-        tvTrophyCount.setText(achievementCount + " thành tựu");
+        tvPostCount.setText(posts.size() + " posts");
+        tvTrophyCount.setText(achievementCount + " achivements");
         bindPinnedAchievement(firstAchievement, posts.size());
         showEmptyState(posts.isEmpty());
     }
@@ -372,12 +372,12 @@ public class SocialProfileFragment extends Fragment {
     private String joinedLabel(DocumentSnapshot doc) {
         long createdAt = numberField(doc, "createdAt", 0);
         if (createdAt <= 0) createdAt = numberField(doc, "joinedAt", 0);
-        if (createdAt <= 0) return "Thành viên Cashify";
-        return "Tham gia " + new SimpleDateFormat("MM/yyyy", Locale.getDefault()).format(new Date(createdAt));
+        if (createdAt <= 0) return "Cashify's member";
+        return "Participate " + new SimpleDateFormat("MM/yyyy", Locale.getDefault()).format(new Date(createdAt));
     }
 
     private String achievementTitle(String content) {
-        if (content == null || content.trim().isEmpty()) return "Cột mốc tài chính mới";
+        if (content == null || content.trim().isEmpty()) return "New finance milestone";
         return content.length() > 54 ? content.substring(0, 54).trim() + "..." : content.trim();
     }
 

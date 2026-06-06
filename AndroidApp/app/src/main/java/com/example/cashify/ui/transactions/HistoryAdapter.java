@@ -95,7 +95,7 @@ public class HistoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 } else {
                     switch (trans.paymentMethod) {
                         case "Card": paymentIcon = holder.itemView.getContext().getString(R.string.card); break;
-                        case "Bank": paymentIcon = holder.itemView.getContext().getString(R.string.Bank); break;
+                        case "Bank": paymentIcon = holder.itemView.getContext().getString(R.string.bank); break;
                         default:     paymentIcon = holder.itemView.getContext().getString(R.string.cash); break;
                     }
                 }
