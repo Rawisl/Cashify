@@ -413,7 +413,7 @@ public class CommunityFeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vie
             });
             btnComment.setOnClickListener(v -> notifyPostClick(milestone));
             btnShare.setOnClickListener(v ->
-                    Toast.makeText(itemView.getContext(), "Đã sao chép liên kết bài viết", Toast.LENGTH_SHORT).show());
+                    Toast.makeText(itemView.getContext(), "Post link copied", Toast.LENGTH_SHORT).show());
         }
 
         void startShineAnimation() {

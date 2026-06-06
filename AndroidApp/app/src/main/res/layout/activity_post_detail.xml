@@ -179,7 +179,7 @@
                                     android:gravity="center"
                                     android:textColor="@color/brand_primary"
                                     android:textSize="16sp"
-                                    tools:text="85%" />
+                                    tools:text="@string/percentage" />
 
                                 <LinearLayout
                                     android:layout_width="0dp"
@@ -195,7 +195,7 @@
                                         android:fontFamily="@font/inter_bold"
                                         android:textColor="@color/item_title"
                                         android:textSize="16sp"
-                                        tools:text="Budget" />
+                                        tools:text="@string/budget" />
 
                                     <TextView
                                         android:id="@+id/tvMilestoneMonth"
@@ -205,7 +205,7 @@
                                         android:fontFamily="@font/inter_medium"
                                         android:textColor="@color/item_description"
                                         android:textSize="13sp"
-                                        tools:text="Tháng 05/2026" />
+                                        tools:text="@string/month" />
                                 </LinearLayout>
                             </LinearLayout>
 
@@ -227,7 +227,7 @@
                                 android:fontFamily="@font/inter_bold"
                                 android:textColor="@color/brand_primary"
                                 android:textSize="15sp"
-                                tools:text="Còn dư: 2.500.000 đ" />
+                                tools:text="@string/left_over" />
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
                     <ImageView

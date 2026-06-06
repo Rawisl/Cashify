@@ -130,7 +130,7 @@ public class FriendsActivity extends BaseActivity {
             if (users != null) suggestionList.addAll(users.subList(0, Math.min(5, users.size())));
             suggestionAdapter.setShowSeeAllCard(fullCount > 5);
             suggestionAdapter.updateList(suggestionList);
-            tvSuggestionCount.setText(fullCount + " người");
+            tvSuggestionCount.setText(fullCount + " people");
             tvSuggestionsEmpty.setVisibility(fullCount == 0 ? View.VISIBLE : View.GONE);
             rvSuggestions.setVisibility(fullCount == 0 ? View.GONE : View.VISIBLE);
         });
@@ -138,8 +138,8 @@ public class FriendsActivity extends BaseActivity {
         socialViewModel.incomingList.observe(this, users -> {
             int count = users == null ? 0 : users.size();
             tvRequestsSummary.setText(count > 0
-                    ? count + " lời mời đang chờ bạn phản hồi"
-                    : "Xem lời mời kết bạn đang chờ");
+                    ? count + " requests waiting for your response"
+                    : "View pending friend requests");
         });
 
         socialViewModel.error.observe(this, msg -> {

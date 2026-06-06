@@ -93,7 +93,7 @@
                     android:textColor="@color/white"
                     android:textSize="15sp"
                     tools:background="@drawable/bg_feed_avatar"
-                    tools:text="MA" />
+                    tools:text="@string/avatar_username" />
 
                 <com.example.cashify.ui.common.AvatarImageView
                     android:id="@+id/imgAvatar"
@@ -121,7 +121,7 @@
                     android:maxLines="1"
                     android:textColor="#1A237E"
                     android:textSize="16sp"
-                    tools:text="Minh Anh" />
+                    tools:text="@string/username" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -137,7 +137,7 @@
                         android:fontFamily="@font/inter_regular"
                         android:textColor="#607D8B"
                         android:textSize="12sp"
-                        tools:text="5 phút trước" />
+                        tools:text="@string/time_ago" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -173,7 +173,7 @@
             android:lineSpacingExtra="4dp"
             android:textColor="#1F2937"
             android:textSize="14sp"
-            tools:text="Vừa hoàn thành mục tiêu tiết kiệm tuần này. Cảm giác rất đã!" />
+            tools:text="@string/subquote" />
 
         <TextView
             android:id="@+id/txtSeeMore"
@@ -185,7 +185,7 @@
             android:textColor="#1A237E"
             android:textSize="13sp"
             android:visibility="gone"
-            tools:text="Xem thêm..."
+            tools:text="@string/see_more"
             tools:visibility="visible" />
 
         <LinearLayout

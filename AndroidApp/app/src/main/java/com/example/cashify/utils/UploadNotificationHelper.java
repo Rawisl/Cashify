@@ -20,7 +20,7 @@ public class UploadNotificationHelper {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
-                    CHANNEL_ID, "Tải ảnh lên", NotificationManager.IMPORTANCE_LOW
+                    CHANNEL_ID, "Upload Image", NotificationManager.IMPORTANCE_LOW
             );
             channel.setSound(null, null);
             manager.createNotificationChannel(channel);
@@ -28,7 +28,7 @@ public class UploadNotificationHelper {
 
         builder = new NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_camera) // dùng icon có sẵn trong app
-                .setContentTitle("Đang tải ảnh lên")
+                .setContentTitle("Uploading image")
                 .setOngoing(true)      // Không swipe được khi đang upload
                 .setOnlyAlertOnce(true) // Không rung/kêu mỗi lần update
                 .setProgress(100, 0, false);

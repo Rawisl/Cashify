@@ -267,7 +267,7 @@ public class WorkspaceChatFragment extends Fragment {
                         if (getActivity() != null)
                             getActivity().runOnUiThread(() -> {
                                 btnSendMessage.setEnabled(true);
-                                ToastHelper.show(requireContext(), "Tải ảnh thất bại: " + error);
+                                ToastHelper.show(requireContext(), "Load image failed " + error);
                             });
                     }
                 });

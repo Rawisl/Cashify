@@ -295,7 +295,7 @@ public class SocialNewsfeedFragment extends Fragment {
                     if (feedItems.isEmpty()) {
                         showFeedError(true);
                     } else {
-                        Toast.makeText(requireContext(), "Không tải được thêm bài viết", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(requireContext(), "Cannot load more posts", Toast.LENGTH_SHORT).show();
                     }
                 });
     }
@@ -621,7 +621,7 @@ public class SocialNewsfeedFragment extends Fragment {
         card.setOnClickListener(v -> runPressAnimation(v, () -> openPostDetail(postId)));
         commentButton.setOnClickListener(v -> runPressAnimation(v, () -> openPostDetail(postId)));
         shareButton.setOnClickListener(v -> runPressAnimation(v,
-                () -> Toast.makeText(requireContext(), "Đã sao chép liên kết bài viết", Toast.LENGTH_SHORT).show()));
+                () -> Toast.makeText(requireContext(), "Post link copied", Toast.LENGTH_SHORT).show()));
         likeButton.setOnClickListener(v -> {
             likedPosts[index] = !likedPosts[index];
             int count = likedPosts[index] ? baseLikes + 1 : baseLikes;

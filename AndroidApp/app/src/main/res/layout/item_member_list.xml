@@ -29,7 +29,7 @@
         android:fontFamily="@font/inter_semibold"
         android:textColor="@color/brand_primary"
         android:textSize="16sp"
-        tools:text="Trần Hài" />
+        tools:text="@string/username" />
 
     <ImageView
         android:id="@+id/btnTransfer"

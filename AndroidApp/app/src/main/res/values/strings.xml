@@ -490,6 +490,22 @@
     <string name="nine">9</string>
 
     <!-- ======================== -->
+    <!-- TODO / Temp             -->
+    <!-- ======================== -->
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="friend_number">8 người</string>
+    <string name="edit_budget_limits">Edit budget limits</string>
+    <string name="percentage">85%</string>
+    <string name="left_over">Còn dư: 2.500.000 đ</string>
+    <string name="budget_summary">Budget summary</string>
+    <string name="see_more">See more...\n</string>
+    <string name="subquote">Just completed my savings target for this week. Feels good.</string>
+    <string name="avatar_username">MA</string>
+    <string name="milestone_title">Bố share milestone cùng mọi người trong cộng đồng Cashify</string>
+    <string name="milestone_description">Một cột mốc tài chính đáng chúc mừng.</string>
+
+    <!-- ======================== -->
     <!-- Symbols / Decorative    -->
     <!-- ======================== -->
     <string name="decor_star">✦</string>
@@ -502,11 +518,19 @@
     <string name="zero_vnd">0 VND</string>
     <string name="week">Week 1</string>
     <string name="month">Month 4/2026</string>
+    <string name="time_chip">🗓️ Time</string>
+    <string name="type_chip">📈 Type</string>
+    <string name="payment_chip">🪙 Payment</string>
+    <string name="category_chip">🏷️ Category</string>
+    <string name="income_chip">💰 Income</string>
+    <string name="expense_chip">💸 Expense</string>
+    <string name="cash_chip">💵 Cash</string>
+    <string name="card_chip">💳 Card</string>
+    <string name="bank_chip">🏦 Bank</string>
+    <string name="cash">💵</string>
+    <string name="card">💳</string>
+    <string name="bank">🏦</string>
+    <string name="cup">🏆</string>
 
-    <!-- ======================== -->
-    <!-- TODO / Temp             -->
-    <!-- ======================== -->
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
 
 </resources>

@@ -91,12 +91,12 @@ public class HistoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 // Lấy icon tương ứng với phương thức thanh toán
                 String paymentIcon;
                 if (trans.paymentMethod == null) {
-                    paymentIcon = "💵";
+                    paymentIcon = holder.itemView.getContext().getString(R.string.cash);
                 } else {
                     switch (trans.paymentMethod) {
-                        case "Card": paymentIcon = "💳"; break;
-                        case "Bank": paymentIcon = "🏦"; break;
-                        default:     paymentIcon = "💵"; break;
+                        case "Card": paymentIcon = holder.itemView.getContext().getString(R.string.card); break;
+                        case "Bank": paymentIcon = holder.itemView.getContext().getString(R.string.Bank); break;
+                        default:     paymentIcon = holder.itemView.getContext().getString(R.string.cash); break;
                     }
                 }
                 tHolder.tvCategory.setText(

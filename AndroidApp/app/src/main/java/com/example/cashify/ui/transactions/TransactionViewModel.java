@@ -6,6 +6,7 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import com.example.cashify.R;
 import com.example.cashify.data.local.AppDatabase;
 import com.example.cashify.data.model.Category;
 import com.example.cashify.data.local.CategoryDao;
@@ -52,10 +53,10 @@ public class TransactionViewModel extends AndroidViewModel {
 
     public void initDefaultChips() {
         List<FilterChip> list = new ArrayList<>();
-        list.add(new FilterChip("🗓️ Time", FilterChip.FilterType.DATE));
-        list.add(new FilterChip("📈 Type", FilterChip.FilterType.TYPE));
-        list.add(new FilterChip("🪙 Payment", FilterChip.FilterType.METHOD));
-        list.add(new FilterChip("🏷️ Category", FilterChip.FilterType.CATEGORY));
+        list.add(new FilterChip(getApplication().getString(R.string.time_chip), FilterChip.FilterType.DATE));
+        list.add(new FilterChip(getApplication().getString(R.string.type_chip), FilterChip.FilterType.TYPE));
+        list.add(new FilterChip(getApplication().getString(R.string.payment_chip), FilterChip.FilterType.METHOD));
+        list.add(new FilterChip(getApplication().getString(R.string.category_chip), FilterChip.FilterType.CATEGORY));
         filterChips.setValue(list);
     }
 

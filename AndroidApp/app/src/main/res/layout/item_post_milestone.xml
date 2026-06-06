@@ -113,7 +113,7 @@
                         android:textColor="@color/white"
                         android:textSize="14sp"
                         tools:background="@drawable/bg_feed_avatar"
-                        tools:text="MA" />
+                        tools:text="@string/avatar_username" />
 
                     <com.example.cashify.ui.common.AvatarImageView
                         android:id="@+id/imgMilestoneAvatar"
@@ -141,7 +141,7 @@
                         android:maxLines="1"
                         android:textColor="#313B60"
                         android:textSize="15sp"
-                        tools:text="Minh Anh" />
+                        tools:text="@string/username" />
 
                     <TextView
                         android:id="@+id/txtMilestoneMonth"
@@ -151,7 +151,7 @@
                         android:fontFamily="@font/inter_regular"
                         android:textColor="#607D8B"
                         android:textSize="12sp"
-                        tools:text="5 phút trước" />
+                        tools:text="@string/time_ago" />
                 </LinearLayout>
 
                 <TextView
@@ -226,7 +226,7 @@
                     android:maxLines="3"
                     android:textColor="#313B60"
                     android:textSize="18sp"
-                    tools:text="Bố share milestone cùng mọi người trong cộng đồng Cashify" />
+                    tools:text="@string/milestone_title" />
             </LinearLayout>
 
             <TextView
@@ -238,7 +238,7 @@
                 android:lineSpacingExtra="4dp"
                 android:textColor="#1F2937"
                 android:textSize="14sp"
-                tools:text="Một cột mốc tài chính đáng chúc mừng." />
+                tools:text="@string/milestone_description" />
 
             <TextView
                 android:id="@+id/txtMilestoneSeeMore"
@@ -250,7 +250,7 @@
                 android:textColor="#B8892B"
                 android:textSize="13sp"
                 android:visibility="gone"
-                tools:text="Xem thêm..."
+                tools:text="@string/see_more"
                 tools:visibility="visible" />
 
             <LinearLayout
