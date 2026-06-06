@@ -54,7 +54,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="48dp"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                android:hint="Tên hiển thị">
+                android:hint="@string/ten_hien_thi">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edtEditName"
@@ -68,7 +68,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                android:hint="Email (Không thể thay đổi)">
+                android:hint="@string/email">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edtEditEmail"
@@ -83,7 +83,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
                 android:layout_marginTop="48dp"
-                android:text="LƯU THAY ĐỔI"
+                android:text="@string/luu_thay_doi"
                 android:textSize="16sp"
                 android:textStyle="bold" />
 

@@ -115,7 +115,7 @@
                         android:id="@+id/total_money_amount"
                         style="@style/main_money_amount"
                         android:layout_marginTop="8dp"
-                        android:text="0 VND" />
+                        android:text="@string/zero_vnd" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -136,7 +136,7 @@
 
                             <TextView
                                 style="@style/main_card_right_label"
-                                android:text="Income" />
+                                android:text="@string/income" />
 
                             <TextView
                                 android:id="@+id/income_money_amount"
@@ -144,7 +144,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="4dp"
-                                android:text="0 VND" />
+                                android:text="@string/zero_vnd"/>
                         </LinearLayout>
 
                         <LinearLayout
@@ -158,13 +158,13 @@
 
                             <TextView
                                 style="@style/main_card_left_label"
-                                android:text="Expenses" />
+                                android:text="@string/expenses" />
 
                             <TextView
                                 android:id="@+id/expenses_money_amount"
                                 style="@style/main_card_left_money_amount"
                                 android:layout_marginTop="4dp"
-                                android:text="0 VND" />
+                                android:text="@string/zero_vnd" />
                         </LinearLayout>
                     </LinearLayout>
                 </LinearLayout>
@@ -235,7 +235,7 @@
                     android:gravity="center"
                     android:paddingStart="12dp"
                     android:paddingEnd="12dp"
-                    android:text="See All →"
+                    android:text="@string/see_all"
                     android:textColor="@color/brand_primary"
                     android:textSize="14sp" />
             </LinearLayout>

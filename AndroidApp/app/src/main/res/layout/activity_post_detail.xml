@@ -26,7 +26,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:text="Chi tiết bài viết"
+                android:text="@string/post_detail"
                 android:textAppearance="@style/ToolbarTitleFont"
                 android:textColor="@color/white" />
 
@@ -109,7 +109,7 @@
                                 android:id="@+id/tvPostUsername"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Người dùng"
+                                android:text="@string/username"
                                 android:textColor="@color/item_title"
                                 android:textSize="16sp"
                                 android:textStyle="bold" />
@@ -119,7 +119,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="2dp"
-                                android:text="2 giờ trước"
+                                android:text="@string/time_ago"
                                 android:textColor="@color/item_description"
                                 android:textSize="13sp" />
                         </LinearLayout>
@@ -142,7 +142,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="18dp"
                         android:lineSpacingExtra="5dp"
-                        android:text="Tháng này tiết kiệm được 2 triệu. Mình đặt lịch chuyển tiền tự động ngay sau khi nhận lương nên đỡ phải tự đấu tranh với bản thân."
+                        android:text="@string/quote"
                         android:textColor="@color/item_title"
                         android:textSize="16sp" />
                     <com.google.android.material.card.MaterialCardView
@@ -262,7 +262,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginStart="10dp"
                             android:layout_weight="1"
-                            android:text="Góc thói quen tiền bạc"
+                            android:text="@string/money_habit"
                             android:textColor="@color/item_title"
                             android:textSize="13sp"
                             android:textStyle="bold" />
@@ -270,7 +270,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Cashify"
+                            android:text="@string/cashify"
                             android:textColor="@color/brand_primary"
                             android:textSize="12sp"
                             android:textStyle="bold" />
@@ -309,7 +309,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginStart="8dp"
-                                android:text="0"
+                                android:text="@string/zero"
                                 android:textColor="@color/item_description"
                                 android:textSize="14sp"
                                 android:textStyle="bold" />
@@ -341,7 +341,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginStart="8dp"
-                                android:text="0"
+                                android:text="@string/zero"
                                 android:textColor="@color/item_description"
                                 android:textSize="14sp"
                                 android:textStyle="bold" />
@@ -372,7 +372,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginStart="8dp"
-                                android:text="Chia sẻ"
+                                android:text="@string/share"
                                 android:textColor="@color/item_description"
                                 android:textSize="14sp"
                                 android:textStyle="bold" />
@@ -392,7 +392,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Bình luận"
+                    android:text="@string/comment"
                     android:textColor="@color/item_title"
                     android:textSize="18sp"
                     android:textStyle="bold" />
@@ -404,7 +404,7 @@
                     android:gravity="center"
                     android:paddingStart="14dp"
                     android:paddingEnd="14dp"
-                    android:text="Đang thảo luận"
+                    android:text="@string/discussing"
                     android:textColor="@color/brand_primary"
                     android:textSize="12sp"
                     android:textStyle="bold" />
@@ -426,7 +426,7 @@
                 android:background="@drawable/bg_social_soft_panel"
                 android:gravity="center"
                 android:padding="16dp"
-                android:text="Chưa có bình luận nào."
+                android:text="@string/no_comment"
                 android:textColor="@color/item_description"
                 android:textSize="14sp"
                 android:visibility="gone" />
@@ -462,7 +462,7 @@
             android:layout_marginEnd="8dp"
             android:layout_weight="1"
             android:background="@drawable/bg_social_input_lifted"
-            android:hint="Viết bình luận..."
+            android:hint="@string/first_comment"
             android:inputType="textMultiLine"
             android:maxLines="3"
             android:padding="13dp"

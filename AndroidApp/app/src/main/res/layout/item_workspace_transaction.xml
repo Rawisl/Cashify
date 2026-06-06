@@ -62,7 +62,7 @@
                 android:textSize="11sp"
                 android:textStyle="italic"
                 android:textColor="@color/brand_primary"
-                android:text="Loading user..."/>
+                android:text="@string/loading_user"/>
         </LinearLayout>
 
         <!-- Cột Số tiền -->

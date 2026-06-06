@@ -49,7 +49,7 @@
                     android:layout_marginEnd="8dp"
                     android:background="@drawable/bg_badge_red"
                     android:gravity="center"
-                    android:text="1"
+                    android:text="@string/one"
                     android:textColor="@color/white"
                     android:textSize="10sp"
                     android:textStyle="bold"
@@ -115,12 +115,12 @@
                         style="@style/main_card_title"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Fund Balance" />
+                        android:text="@string/fund_balance" />
 
                     <TextView
                         android:id="@+id/tvWorkspaceBalance"
                         style="@style/main_money_amount"
-                        android:text="0 VND" />
+                        android:text="@string/zero_vnd"/>
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -138,12 +138,12 @@
 
                             <TextView
                                 style="@style/main_card_left_label"
-                                android:text="↗ Expenses" />
+                                android:text="@string/up_expenses" />
 
                             <TextView
                                 android:id="@+id/tvWorkspaceExpense"
                                 style="@style/main_card_left_money_amount"
-                                android:text="0 VND" />
+                                android:text="@string/zero_vnd" />
                         </LinearLayout>
 
                         <LinearLayout
@@ -155,14 +155,14 @@
 
                             <TextView
                                 style="@style/main_card_right_label"
-                                android:text="↘ Income" />
+                                android:text="@string/down_income" />
 
                             <TextView
                                 android:id="@+id/tvWorkspaceIncome"
                                 style="@style/main_card_right_money_amount"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="0 VND" />
+                                android:text="@string/zero_vnd"/>
                         </LinearLayout>
                     </LinearLayout>
                 </LinearLayout>
@@ -172,7 +172,7 @@
                 android:id="@+id/tvMembersTitle"
                 style="@style/screen_title"
                 android:layout_marginTop="24dp"
-                android:text="Members"
+                android:text="@string/members"
                 android:textSize="18sp"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/cardWorkspaceBalance" />
@@ -185,7 +185,7 @@
                 android:focusable="true"
                 android:fontFamily="@font/inter_semibold"
                 android:padding="8dp"
-                android:text="+ Add"
+                android:text="@string/plus_add"
                 android:textColor="@color/brand_primary"
                 android:textSize="15sp"
                 app:layout_constraintBottom_toBottomOf="@id/tvMembersTitle"
@@ -206,7 +206,7 @@
                 android:id="@+id/tvRecentTransactionsTitle"
                 style="@style/screen_title"
                 android:layout_marginTop="24dp"
-                android:text="Transactions"
+                android:text="@string/transactions"
                 android:textSize="18sp"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/rvWorkspaceMembers" />

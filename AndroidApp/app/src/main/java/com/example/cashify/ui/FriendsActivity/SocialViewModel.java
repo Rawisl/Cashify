@@ -254,6 +254,12 @@ public class SocialViewModel extends ViewModel {
     }
 
     public void acceptFriendRequest(User user) {
+        // Kiểm tra giới hạn 30 bạn bè (Firebase whereIn limit)
+        if (myFriendIds.size() >= 30) {
+            error.postValue("Bạn đã đạt giới hạn 30 bạn bè. Firebase chỉ cho phép tối đa 30 bạn trong danh sách!");
+            return;
+        }
+
         // GỌI CÁP 2: ĐỒNG Ý KẾT BẠN (accept)
         FirebaseManager.getInstance().processFriendAction(user.getUid(), "accept", new FirebaseManager.DataCallback<Void>() {
             @Override

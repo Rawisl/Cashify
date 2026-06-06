@@ -31,7 +31,7 @@
         android:layout_centerInParent="true"
         android:gravity="center"
         android:paddingHorizontal="24dp"
-        android:text="Chưa có cuộc trò chuyện nào. Hãy nhắn tin với bạn bè để bắt đầu."
+        android:text="@string/no_chat_list"
         android:textColor="#607D8B"
         android:textSize="16sp"
         android:visibility="gone" />
@@ -42,7 +42,7 @@
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="72dp"
-        android:text="Không thể tải danh sách trò chuyện."
+        android:text="@string/cannot_load_chat"
         android:textColor="#D32F2F"
         android:textSize="14sp"
         android:visibility="gone" />

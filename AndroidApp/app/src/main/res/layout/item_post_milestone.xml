@@ -51,7 +51,7 @@
             android:alpha="0.55"
             android:fontFamily="@font/inter_bold"
             android:gravity="center"
-            android:text="✦"
+            android:text="@string/diamond_sign"
             android:textColor="#D4A857"
             android:textSize="17sp" />
 
@@ -64,7 +64,7 @@
             android:alpha="0.58"
             android:fontFamily="@font/inter_bold"
             android:gravity="center"
-            android:text="✦"
+            android:text="@string/diamond_sign"
             android:textColor="#E8C675"
             android:textSize="16sp" />
 
@@ -172,7 +172,7 @@
                     android:layout_width="40dp"
                     android:layout_height="40dp"
                     android:background="@drawable/bg_social_action_soft"
-                    android:contentDescription="Menu"
+                    android:contentDescription="@string/menu"
                     android:padding="9dp"
                     app:srcCompat="@drawable/ic_more_horizontal"
                     app:tint="#607D8B" />
@@ -198,7 +198,7 @@
                         android:gravity="center"
                         android:paddingStart="12dp"
                         android:paddingEnd="12dp"
-                        android:text="Thành tựu"
+                        android:text="@string/achievement"
                         android:textColor="#313B60"
                         android:textSize="11sp" />
 
@@ -211,7 +211,7 @@
                         android:gravity="center"
                         android:paddingStart="10dp"
                         android:paddingEnd="10dp"
-                        android:text="Cột mốc"
+                        android:text="@string/milestone"
                         android:textColor="#8A6620"
                         android:textSize="10sp" />
                 </LinearLayout>
@@ -297,7 +297,7 @@
                     style="@style/feed_action_text"
                     android:background="@drawable/bg_social_action_soft"
                     android:drawableStart="@drawable/ic_feed_like"
-                    android:text="Thích" />
+                    android:text="@string/like" />
 
                 <TextView
                     android:id="@+id/btnMilestoneComment"
@@ -305,7 +305,7 @@
                     android:layout_marginStart="8dp"
                     android:background="@drawable/bg_social_action_soft"
                     android:drawableStart="@drawable/ic_feed_comment"
-                    android:text="Bình luận" />
+                    android:text="@string/comment" />
 
                 <TextView
                     android:id="@+id/btnMilestoneShare"
@@ -313,7 +313,7 @@
                     android:layout_marginStart="8dp"
                     android:background="@drawable/bg_social_action_soft"
                     android:drawableStart="@drawable/ic_feed_share"
-                    android:text="Chia sẻ" />
+                    android:text="@string/share" />
             </LinearLayout>
         </LinearLayout>
     </FrameLayout>

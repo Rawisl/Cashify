@@ -68,7 +68,7 @@
                 android:fontFamily="@font/inter_bold"
                 android:paddingHorizontal="12dp"
                 android:paddingVertical="7dp"
-                android:text="Câu chuyện Cashify"
+                android:text="@string/cashify_story"
                 android:textColor="#1A237E"
                 android:textSize="11sp" />
         </FrameLayout>
@@ -147,7 +147,7 @@
                         android:fontFamily="@font/inter_bold"
                         android:gravity="center"
                         android:paddingHorizontal="9dp"
-                        android:text="Công khai"
+                        android:text="@string/public_state"
                         android:textColor="#1A237E"
                         android:textSize="10sp" />
                 </LinearLayout>
@@ -158,7 +158,7 @@
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:background="@drawable/bg_social_action_soft"
-                android:contentDescription="Menu"
+                android:contentDescription="@string/menu"
                 android:padding="9dp"
                 app:srcCompat="@drawable/ic_more_horizontal"
                 app:tint="#607D8B" />
@@ -200,7 +200,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:fontFamily="@font/inter_regular"
-                android:text="0 lượt thích · 0 bình luận"
+                android:text="@string/like_comment"
                 android:textColor="#607D8B"
                 android:textSize="12sp" />
 
@@ -208,7 +208,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFamily="@font/inter_regular"
-                android:text="0 chia sẻ"
+                android:text="@string/share_state"
                 android:textColor="#607D8B"
                 android:textSize="12sp" />
         </LinearLayout>
@@ -225,7 +225,7 @@
                 style="@style/feed_action_text"
                 android:background="@drawable/bg_social_action_soft"
                 android:drawableStart="@drawable/ic_feed_like"
-                android:text="Thích" />
+                android:text="@string/like" />
 
             <TextView
                 android:id="@+id/btnComment"
@@ -233,7 +233,7 @@
                 android:layout_marginStart="8dp"
                 android:background="@drawable/bg_social_action_soft"
                 android:drawableStart="@drawable/ic_feed_comment"
-                android:text="Bình luận" />
+                android:text="@string/comment" />
 
             <TextView
                 android:id="@+id/btnShare"
@@ -241,7 +241,7 @@
                 android:layout_marginStart="8dp"
                 android:background="@drawable/bg_social_action_soft"
                 android:drawableStart="@drawable/ic_feed_share"
-                android:text="Chia sẻ" />
+                android:text="@string/share" />
         </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

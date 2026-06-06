@@ -20,7 +20,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:fontFamily="@font/inter_bold"
-        android:text="Invite Friends"
+        android:text="@string/invite_friends"
         android:textColor="#1A237E"
         android:textSize="20sp" />
 
@@ -29,7 +29,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
         android:layout_marginBottom="16dp"
-        android:text="Select friends to invite to this workspace."
+        android:text="@string/select_friends_to_invite_to_this_workspace"
         android:textColor="#757575"
         android:textSize="14sp" />
 
@@ -48,7 +48,7 @@
             android:background="@null"
             android:drawableStart="@android:drawable/ic_menu_search"
             android:drawablePadding="8dp"
-            android:hint="Search name..."
+            android:hint="@string/search_name"
             android:paddingHorizontal="16dp"
             android:singleLine="true"
             android:textColor="#1A237E"
@@ -69,7 +69,7 @@
         android:layout_height="54dp"
         android:layout_marginTop="12dp"
         android:backgroundTint="#1A237E"
-        android:text="Invite (0)"
+        android:text="@string/invite_0"
         android:textAllCaps="false"
         android:textSize="16sp"
         app:cornerRadius="12dp" />

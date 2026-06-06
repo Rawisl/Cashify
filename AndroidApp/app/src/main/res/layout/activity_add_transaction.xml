@@ -103,7 +103,7 @@
                 android:layout_height="50dp"
                 android:layout_centerInParent="true"
                 android:background="@drawable/bg_input_fields"
-                android:hint="0"
+                android:hint="@string/zero"
                 android:inputType="numberDecimal"
                 android:paddingStart="16dp"
                 android:paddingEnd="60dp"

@@ -38,7 +38,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Edit comment"
+            android:text="@string/edit_comment"
             android:textSize="15sp"
             android:textColor="@color/item_title" />
 
@@ -66,7 +66,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Chỉnh sửa bài viết"
+            android:text="@string/edit_post"
             android:textSize="15sp"
             android:textColor="@color/item_title" />
 
@@ -95,7 +95,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Delete"
+            android:text="@string/delete"
             android:textSize="15sp"
             android:textColor="@color/status_red" />
 
@@ -124,7 +124,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Hide"
+            android:text="@string/hide"
             android:textSize="15sp"
             android:textColor="@color/item_title" />
 
@@ -153,7 +153,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Report"
+            android:text="@string/report"
             android:textSize="15sp"
             android:textColor="@color/status_red" />
 
@@ -172,7 +172,7 @@
         android:layout_width="match_parent"
         android:layout_height="52dp"
         android:gravity="center"
-        android:text="Cancel"
+        android:text="@string/cancel"
         android:textSize="15sp"
         android:textColor="@color/item_description"
         android:background="?attr/selectableItemBackground"

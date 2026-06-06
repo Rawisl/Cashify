@@ -7,11 +7,11 @@
         <item
             android:id="@+id/nav_workspace_personal"
             android:icon="@drawable/ic_user_solid"
-            android:title="Cá nhân" />
+            android:title="@string/personal" />
         <item
             android:id="@+id/nav_add_workspace"
             android:icon="@drawable/ic_plus"
-            android:title="Thêm nhóm" />
+            android:title="@string/add_group" />
 
     </group>
 
@@ -22,17 +22,17 @@
         <item
             android:id="@+id/nav_social"
             android:icon="@drawable/ic_home_regular"
-            android:title="Cộng đồng" />
+            android:title="@string/community" />
 
         <item
             android:id="@+id/nav_friends"
             android:icon="@drawable/ic_friends_solid"
-            android:title="Bạn bè" />
+            android:title="@string/friends" />
 
         <item
             android:id="@+id/nav_invitations"
             android:icon="@android:drawable/ic_dialog_email"
-            android:title="Lời mời" />
+            android:title="@string/invite" />
 
     </group>
 

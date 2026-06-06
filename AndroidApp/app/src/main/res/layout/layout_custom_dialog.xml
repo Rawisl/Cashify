@@ -20,7 +20,7 @@
             android:layout_height="wrap_content"
             android:fontFamily="sans-serif-medium"
             android:gravity="start"
-            android:text="Title"
+            android:text="@string/title"
             android:textColor="@color/screen_title"
             android:textSize="24sp"
             android:textStyle="bold" />
@@ -32,7 +32,7 @@
             android:layout_marginTop="12dp"
             android:layout_marginBottom="24dp"
             android:gravity="start"
-            android:text="This is a message"
+            android:text="@string/this_is_a_message"
             android:textColor="@color/item_description"
             android:lineSpacingExtra="4dp"
             android:textSize="18sp" />

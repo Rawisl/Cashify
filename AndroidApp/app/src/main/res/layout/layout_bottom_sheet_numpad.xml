@@ -14,7 +14,7 @@
         android:layout_marginBottom="25dp"
         android:fontFamily="@font/outfit_bold"
         android:gravity="center"
-        android:text="0 VND"
+        android:text="@string/zero_vnd"
         android:textColor="@color/brand_primary"
         android:textSize="28sp" />
 
@@ -26,49 +26,49 @@
 
         <TextView
             android:id="@+id/btn_num_1"
-            android:text="1"
+            android:text="@string/one"
             style="@style/numpad_key"
              />
         <TextView
             android:id="@+id/btn_num_2"
-            android:text="2"
+            android:text="@string/two"
             style="@style/numpad_key"
             />
         <TextView
             android:id="@+id/btn_num_3"
-            android:text="3"
+            android:text="@string/three"
             style="@style/numpad_key"
             />
 
         <TextView
             android:id="@+id/btn_num_4"
-            android:text="4"
+            android:text="@string/four"
             style="@style/numpad_key"
             />
         <TextView
             android:id="@+id/btn_num_5"
-            android:text="5"
+            android:text="@string/five"
             style="@style/numpad_key"
             />
         <TextView
             android:id="@+id/btn_num_6"
-            android:text="6"
+            android:text="@string/six"
             style="@style/numpad_key"
             />
 
         <TextView
             android:id="@+id/btn_num_7"
-            android:text="7"
+            android:text="@string/seven"
             style="@style/numpad_key"
             />
         <TextView
             android:id="@+id/btn_num_8"
-            android:text="8"
+            android:text="@string/eight"
             style="@style/numpad_key"
             />
         <TextView
             android:id="@+id/btn_num_9"
-            android:text="9"
+            android:text="@string/nine"
             style="@style/numpad_key"
             />
 
@@ -80,7 +80,7 @@
             />
         <TextView
             android:id="@+id/btn_num_0"
-            android:text="0"
+            android:text="@string/zero"
             style="@style/numpad_key"
             />
 

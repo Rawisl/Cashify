@@ -31,7 +31,7 @@
             android:layout_marginTop="12dp"
             android:fontFamily="@font/inter_bold"
             android:gravity="center"
-            android:text="Xem tất cả"
+            android:text="@string/see_all"
             android:textColor="#1A237E"
             android:textSize="15sp" />
 
@@ -41,7 +41,7 @@
             android:layout_marginTop="4dp"
             android:fontFamily="@font/inter_regular"
             android:gravity="center"
-            android:text="Tìm thêm bạn bè"
+            android:text="@string/add_more_friend"
             android:textColor="#607D8B"
             android:textSize="12sp" />
 
@@ -52,7 +52,7 @@
             android:background="@drawable/bg_tag_blue"
             android:fontFamily="@font/inter_bold"
             android:gravity="center"
-            android:text="Mở"
+            android:text="@string/open"
             android:textColor="#1A237E"
             android:textSize="13sp" />
     </LinearLayout>

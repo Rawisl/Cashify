@@ -10,7 +10,7 @@
         style="@style/btn_bottom"
         android:layout_marginHorizontal="24dp"
         android:layout_marginBottom="16dp"
-        android:text="Create"
+        android:text="@string/create"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
@@ -44,7 +44,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFamily="@font/inter_bold"
-                android:text="Create New Group"
+                android:text="@string/create_new_group"
                 android:textSize="20sp" />
 
             <TextView
@@ -52,7 +52,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="Create a shared fund to manage expenses with members."
+                android:text="@string/create_a_shared_fund_to_manage_expenses_with_members"
                 android:textSize="14sp" />
 
             <TextView
@@ -60,7 +60,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
                 android:fontFamily="@font/inter_bold"
-                android:text="Group's Icon"
+                android:text="@string/group_s_icon"
                 android:textSize="17sp" />
 
             <androidx.recyclerview.widget.RecyclerView
@@ -87,7 +87,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:fontFamily="@font/inter_bold"
-                    android:hint="Group Name (Ex: Tiền trọ tháng 5...)"
+                    android:hint="@string/group_name_ex_tien_tro_thang_5"
                     android:inputType="textCapSentences"
                     android:maxLines="1" />
             </com.google.android.material.textfield.TextInputLayout>

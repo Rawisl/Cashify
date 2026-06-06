@@ -51,7 +51,7 @@
             android:layout_width="match_parent"
             android:layout_height="40dp"
             android:layout_marginTop="14dp"
-            android:text="Kết bạn"
+            android:text="@string/add_friend"
             android:textAllCaps="false"
             android:textSize="13sp"
             app:backgroundTint="#1A237E"
@@ -68,7 +68,7 @@
             android:background="@drawable/bg_tag_grey"
             android:fontFamily="@font/inter_bold"
             android:gravity="center"
-            android:text="Đang chờ"
+            android:text="@string/waiting"
             android:textColor="#607D8B"
             android:textSize="13sp"
             android:visibility="gone" />

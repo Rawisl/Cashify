@@ -188,20 +188,68 @@ public class SocialNewsfeedFragment extends Fragment {
         showFeedEmpty(false);
         showFeedError(false);
         showFeedSkeleton(false);
-        loadFeedPage(true);
+        loadFriendListAndFeed();
     }
 
     private void loadNextFeedPage() {
-        if (isLoadingFeed || isRefreshingFeed || isLastFeedPage || feedItems.isEmpty()) return;
-        loadFeedPage(false);
+        // Pagination not implemented for Firebase query yet
+        // if (isLoadingFeed || isRefreshingFeed || isLastFeedPage || feedItems.isEmpty()) return;
+        // loadFeedPageFromFirebase(friendIds, false);
     }
 
-    private void loadFeedPage(boolean firstPage) {
+    private void loadFriendListAndFeed() {
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user == null) {
             finishFeedLoading();
             showFeedError(true);
             return;
+        }
+
+        isLoadingFeed = true;
+        showFeedSkeleton(true);
+
+        // Load friend list from Firebase
+        FirebaseFirestore.getInstance().collection("users").document(user.getUid()).collection("friends")
+                .get()
+                .addOnSuccessListener(snapshots -> {
+                    List<String> friendIds = new ArrayList<>();
+                    for (DocumentSnapshot doc : snapshots.getDocuments()) {
+                        friendIds.add(doc.getId());
+                    }
+
+                    if (friendIds.isEmpty()) {
+                        // No friends - show empty state
+                        finishFeedLoading();
+                        showFeedEmpty(true);
+                        showNoFriendsEmptyState(true);
+                    } else {
+                        // Has friends - load posts filtered by friends
+                        loadFeedPageFromFirebase(friendIds, true);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    finishFeedLoading();
+                    Log.e("FEED", "Lỗi tải danh sách bạn: " + e.getMessage());
+                    showFeedError(true);
+                });
+    }
+
+    private void loadFeedPageFromFirebase(List<String> friendIds, boolean firstPage) {
+        // Also include own posts
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) {
+            finishFeedLoading();
+            showFeedError(true);
+            return;
+        }
+
+        List<String> allUserIds = new ArrayList<>(friendIds);
+        allUserIds.add(user.getUid()); // Include own posts
+
+        // Firebase whereIn limit is 30
+        if (allUserIds.size() > 30) {
+            allUserIds = allUserIds.subList(0, 30);
+            Log.w("FEED", "Giới hạn 30 bạn bè cho Firebase whereIn");
         }
 
         isLoadingFeed = true;
@@ -215,51 +263,99 @@ public class SocialNewsfeedFragment extends Fragment {
         }
         showFeedEnd(false);
 
-        user.getIdToken(true).addOnSuccessListener(result -> {
-            String token = "Bearer " + result.getToken();
-            ApiService apiService = ApiClient.getClient().create(ApiService.class);
-            ApiService.FeedRequest req = new ApiService.FeedRequest(FEED_PAGE_SIZE, firstPage ? 0L : nextFeedCursor, "PUBLIC");
-
-            apiService.getFeed(token, req).enqueue(new Callback<List<Object>>() {
-                @Override
-                public void onResponse(@NonNull Call<List<Object>> call,
-                                       @NonNull Response<List<Object>> response) {
+        // Query Firebase posts collection with whereIn
+        FirebaseFirestore.getInstance().collection("posts")
+                .whereIn("userId", allUserIds)
+                .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                .limit(FEED_PAGE_SIZE)
+                .get()
+                .addOnSuccessListener(snapshots -> {
                     if (!isAdded()) return;
                     finishFeedLoading();
 
-                    if (!response.isSuccessful() || response.body() == null) {
-                        Log.e("FEED", "API lỗi: " + response.code());
-                        if (feedItems.isEmpty()) showFeedError(true);
-                        return;
+                    List<FeedItem> newItems = new ArrayList<>();
+                    for (DocumentSnapshot doc : snapshots.getDocuments()) {
+                        FeedItem item = mapFirebaseDocToFeedItem(doc);
+                        if (item != null) {
+                            newItems.add(item);
+                        }
                     }
 
-                    List<Object> rawPosts = response.body();
-                    List<FeedItem> newItems = mapResponseToFeedItems(rawPosts);
                     appendFeedItems(newItems);
-                    updateNextCursor(rawPosts);
-                    isLastFeedPage = rawPosts.size() < FEED_PAGE_SIZE;
+                    isLastFeedPage = newItems.size() < FEED_PAGE_SIZE;
                     showFeedEmpty(feedItems.isEmpty());
                     showFeedError(false);
+                    showNoFriendsEmptyState(false);
                     updateFeedEndState();
-                }
-
-                @Override
-                public void onFailure(@NonNull Call<List<Object>> call, @NonNull Throwable t) {
+                })
+                .addOnFailureListener(e -> {
                     if (!isAdded()) return;
                     finishFeedLoading();
-                    Log.e("FEED", "Mạng lỗi: " + t.getMessage());
+                    Log.e("FEED", "Firebase lỗi: " + e.getMessage());
                     if (feedItems.isEmpty()) {
                         showFeedError(true);
                     } else {
                         Toast.makeText(requireContext(), "Không tải được thêm bài viết", Toast.LENGTH_SHORT).show();
                     }
-                }
-            });
-        }).addOnFailureListener(e -> {
-            finishFeedLoading();
-            Log.e("FEED", "Token lỗi: " + e.getMessage());
-            if (feedItems.isEmpty()) showFeedError(true);
-        });
+                });
+    }
+
+    private FeedItem mapFirebaseDocToFeedItem(DocumentSnapshot doc) {
+        String id = doc.getId();
+        String content = doc.getString("content");
+        String imageUrl = doc.getString("imageUrl") != null ? doc.getString("imageUrl") : "";
+        String type = doc.getString("type") != null ? doc.getString("type") : "normal";
+        Long timestamp = doc.getLong("timestamp");
+        String userId = doc.getString("userId");
+        String authorName = doc.getString("authorName");
+        String authorAvatarUrl = doc.getString("authorAvatarUrl") != null ? doc.getString("authorAvatarUrl") : "";
+
+        if (timestamp == null) timestamp = 0L;
+        if (authorName == null) authorName = "Người dùng Cashify";
+
+        boolean hasImage = !imageUrl.isEmpty();
+        boolean expandable = content != null && content.length() > 120;
+
+        if (type != null && type.toLowerCase().contains("milestone")) {
+            String milestoneData = doc.getString("milestoneData") != null ? doc.getString("milestoneData") : "";
+            String milestoneTitle = doc.getString("title") != null ? doc.getString("title") : content;
+            String milestoneDescription = doc.getString("description") != null ? doc.getString("description") : "";
+            String amountText = doc.getString("amountText") != null ? doc.getString("amountText") : "";
+
+            Long progress = doc.getLong("progress");
+            int progressValue = progress != null ? progress.intValue() : 0;
+
+            return new FeedItem.MilestonePost(
+                    id,
+                    userId,
+                    authorName,
+                    com.example.cashify.utils.TimeFormatter.format(timestamp),
+                    milestoneTitle,
+                    milestoneDescription,
+                    "Cột mốc",
+                    amountText,
+                    progressValue > 0 ? progressValue + "%" : "",
+                    progressValue,
+                    milestoneDescription.length() > 120,
+                    milestoneData,
+                    authorAvatarUrl,
+                    initials(authorName)
+            );
+        } else {
+            return new FeedItem.NormalPost(
+                    id,
+                    userId,
+                    authorName,
+                    com.example.cashify.utils.TimeFormatter.format(timestamp),
+                    content != null ? content : "",
+                    hasImage,
+                    imageUrl,
+                    ContextCompat.getColor(requireContext(), R.color.brand_primary),
+                    initials(authorName),
+                    expandable,
+                    authorAvatarUrl
+            );
+        }
     }
 
     private void appendFeedItems(List<FeedItem> newItems) {
@@ -280,6 +376,7 @@ public class SocialNewsfeedFragment extends Fragment {
 
     @SuppressWarnings("unchecked")
     private void updateNextCursor(List<Object> rawPosts) {
+        // Not used for Firebase query
         if (rawPosts == null || rawPosts.isEmpty()) return;
         Object last = rawPosts.get(rawPosts.size() - 1);
         if (last instanceof Map) {
@@ -297,6 +394,7 @@ public class SocialNewsfeedFragment extends Fragment {
         showFeedSkeleton(false);
     }
 
+    // Old API-based method - kept for reference but not used
     @SuppressWarnings("unchecked")
     private List<FeedItem> mapResponseToFeedItems(List<Object> raw) {
         List<FeedItem> result = new ArrayList<>();
@@ -398,6 +496,7 @@ public class SocialNewsfeedFragment extends Fragment {
         if (show) {
             showFeedSkeleton(false);
             showFeedEmpty(false);
+            showNoFriendsEmptyState(false);
             showFeedEnd(false);
             if (rvFeed != null) rvFeed.setVisibility(View.GONE);
         }
@@ -427,7 +526,30 @@ public class SocialNewsfeedFragment extends Fragment {
             if (rvFeed != null) rvFeed.setVisibility(View.GONE);
             if (layoutFeedEmpty != null) layoutFeedEmpty.setVisibility(View.GONE);
             if (layoutFeedError != null) layoutFeedError.setVisibility(View.GONE);
+            showNoFriendsEmptyState(false);
             showFeedEnd(false);
+        }
+    }
+
+    private void showNoFriendsEmptyState(boolean show) {
+        View layoutNoFriends = getView() != null ? getView().findViewById(R.id.layoutNoFriendsEmpty) : null;
+        if (layoutNoFriends != null) {
+            layoutNoFriends.setVisibility(show ? View.VISIBLE : View.GONE);
+        }
+        if (show) {
+            if (rvFeed != null) rvFeed.setVisibility(View.GONE);
+            if (layoutFeedEmpty != null) layoutFeedEmpty.setVisibility(View.GONE);
+            if (layoutFeedError != null) layoutFeedError.setVisibility(View.GONE);
+            showFeedEnd(false);
+
+            // Setup button to navigate to FriendsActivity
+            View btnFindFriends = layoutNoFriends != null ? layoutNoFriends.findViewById(R.id.btnFindFriends) : null;
+            if (btnFindFriends != null) {
+                btnFindFriends.setOnClickListener(v -> {
+                    Intent intent = new Intent(requireContext(), com.example.cashify.ui.FriendsActivity.FriendsActivity.class);
+                    startActivity(intent);
+                });
+            }
         }
     }
 
