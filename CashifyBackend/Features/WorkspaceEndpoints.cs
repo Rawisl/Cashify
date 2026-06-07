@@ -94,7 +94,7 @@ public static class WorkspaceEndpoints
                 if (string.IsNullOrEmpty(body.WorkspaceId))
                     return Results.BadRequest("Thiếu WorkspaceId");
 
-                
+
                 var wsRef = db.Collection("workspaces").Document(body.WorkspaceId);
                 var wsSnap = await wsRef.GetSnapshotAsync();
 
@@ -157,7 +157,7 @@ public static class WorkspaceEndpoints
                 if (string.IsNullOrEmpty(body.WorkspaceId) || string.IsNullOrEmpty(body.NewOwnerId))
                     return Results.BadRequest("Thiếu Data");
 
-                
+
                 var wsRef = db.Collection("workspaces").Document(body.WorkspaceId);
                 var wsSnap = await wsRef.GetSnapshotAsync();
                 if (!wsSnap.Exists)
@@ -182,7 +182,7 @@ public static class WorkspaceEndpoints
             }
             catch (Exception ex) { return Results.Problem($"Lỗi hệ thống: {ex.Message}"); }
         });
-     
+
         //TẠO/SỬA GIAO DỊCH QUỸ CHUNG
         group.MapPost("/transaction/add", async (HttpRequest request, TransactionRequest body, FirestoreDb db) =>
         {
@@ -202,7 +202,7 @@ public static class WorkspaceEndpoints
                 if (string.IsNullOrEmpty(body.WorkspaceId) || body.WorkspaceId == "PERSONAL")
                     return Results.BadRequest(new { error = "This API is for Group fund" });
 
-                
+
                 var wsRef = db.Collection("workspaces").Document(body.WorkspaceId);
                 var wsSnap = await wsRef.GetSnapshotAsync();
                 if (!wsSnap.Exists)
@@ -280,7 +280,7 @@ public static class WorkspaceEndpoints
                 if (string.IsNullOrEmpty(body.WorkspaceId) || string.IsNullOrEmpty(body.TransactionId))
                     return Results.BadRequest("Data lacking");
 
-                
+
                 var wsRef = db.Collection("workspaces").Document(body.WorkspaceId);
                 var wsSnap = await wsRef.GetSnapshotAsync();
                 if (!wsSnap.Exists)
@@ -347,7 +347,7 @@ public static class WorkspaceEndpoints
                 if (string.IsNullOrEmpty(body.WorkspaceId) || body.TargetUids == null || body.TargetUids.Count == 0)
                     return Results.BadRequest("Data lacking");
 
-                
+
                 var batch = db.StartBatch();
                 var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
@@ -407,7 +407,7 @@ public static class WorkspaceEndpoints
                 if (string.IsNullOrEmpty(body.WorkspaceId) || string.IsNullOrEmpty(body.InvitationId))
                     return Results.BadRequest("Data lacking");
 
-                
+
 
                 var inviteRef = db.Collection("users").Document(uid).Collection("workspace_invitations").Document(body.InvitationId);
 
@@ -445,7 +445,7 @@ public static class WorkspaceEndpoints
                 if (string.IsNullOrEmpty(body.InvitationId))
                     return Results.BadRequest("Data lacking");
 
-                
+
 
                 // Chỉ việc xé giấy mời vứt đi
                 var inviteRef = db.Collection("users").Document(uid).Collection("workspace_invitations").Document(body.InvitationId);
@@ -472,7 +472,7 @@ public static class WorkspaceEndpoints
                 if (string.IsNullOrEmpty(body.WorkspaceId) || string.IsNullOrEmpty(body.TargetUid))
                     return Results.BadRequest("Thiếu thông tin ID");
 
-                
+
                 var wsRef = db.Collection("workspaces").Document(body.WorkspaceId);
                 var wsSnap = await wsRef.GetSnapshotAsync();
 
@@ -528,7 +528,7 @@ public static class WorkspaceEndpoints
                 if (string.IsNullOrEmpty(body.WorkspaceId) || string.IsNullOrEmpty(body.CategoryId))
                     return Results.BadRequest("Thiếu Data");
 
-                
+
                 var wsRef = db.Collection("workspaces").Document(body.WorkspaceId);
                 var wsSnap = await wsRef.GetSnapshotAsync();
 
@@ -569,7 +569,7 @@ public static class WorkspaceEndpoints
                 if (string.IsNullOrEmpty(body.WorkspaceId) || string.IsNullOrEmpty(body.CategoryId) || string.IsNullOrEmpty(body.Name))
                     return Results.BadRequest("Thiếu thông tin chỉnh sửa");
 
-                
+
                 var wsRef = db.Collection("workspaces").Document(body.WorkspaceId);
                 var wsSnap = await wsRef.GetSnapshotAsync();
 
@@ -610,7 +610,7 @@ public static class WorkspaceEndpoints
                 if (string.IsNullOrEmpty(body.WorkspaceId) || string.IsNullOrEmpty(body.CategoryId))
                     return Results.BadRequest("Thiếu Data");
 
-                
+
                 var wsRef = db.Collection("workspaces").Document(body.WorkspaceId);
                 var wsSnap = await wsRef.GetSnapshotAsync();
 
@@ -712,42 +712,46 @@ public static class WorkspaceEndpoints
                 if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
                     return Results.Unauthorized();
 
-                var token = authHeader.Substring("Bearer ".Length);
-                var decodedToken = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token);
-                var uid = decodedToken.Uid;
+                var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(authHeader.Substring("Bearer ".Length))).Uid;
 
-                if (string.IsNullOrEmpty(body.WorkspaceId) || string.IsNullOrEmpty(body.MessageId))
-                    return Results.BadRequest(new { error = "Thiếu Data" });
+                if (string.IsNullOrWhiteSpace(body.WorkspaceId) || string.IsNullOrWhiteSpace(body.MessageId))
+                    return Results.BadRequest(new { message = "Thông tin không hợp lệ" });
 
-                var wsRef = db.Collection("workspaces").Document(body.WorkspaceId);
-                var wsSnap = await wsRef.GetSnapshotAsync();
+                // 1. Trỏ thẳng vào document tin nhắn nằm trong sub-collection của Workspace
+                var messageRef = db.Collection("workspaces")
+                                   .Document(body.WorkspaceId)
+                                   .Collection("messages")
+                                   .Document(body.MessageId);
 
-                if (!wsSnap.Exists)
-                    return Results.NotFound(new { error = "Không tìm thấy Quỹ" });
+                var messageSnap = await messageRef.GetSnapshotAsync();
+                if (!messageSnap.Exists)
+                    return Results.NotFound(new { message = "Không tìm thấy tin nhắn" });
 
-                var ownerId = wsSnap.GetValue<string>("ownerId");
-                var msgRef = wsRef.Collection("messages").Document(body.MessageId);
-                var msgSnap = await msgRef.GetSnapshotAsync();
+                // 2. Kiểm tra bảo mật (Quyền sở hữu)
+                var senderId = messageSnap.ContainsField("senderId") ? messageSnap.GetValue<string>("senderId") : "";
+                var workspaceSnap = await db.Collection("workspaces").Document(body.WorkspaceId).GetSnapshotAsync();
+                var ownerId = workspaceSnap.ContainsField("ownerId") ? workspaceSnap.GetValue<string>("ownerId") : "";
 
-                if (!msgSnap.Exists)
-                    return Results.NotFound(new { error = "Tin nhắn không tồn tại" });
+                // Cho phép người gửi HOẶC chủ nhóm (Owner) thực hiện thu hồi
+                if (senderId != uid && ownerId != uid)
+                    return Results.Json(new { message = "Bạn không có quyền thu hồi tin nhắn này" }, statusCode: 403);
 
-                var senderId = msgSnap.GetValue<string>("senderId");
+                // 3. Tiến hành dọn rác DB: Ghi đè chuỗi rỗng và lật cờ True
+                var updates = new Dictionary<string, object>
+        {
+            { "text", "" },
+            { "imageUrl", "" },
+            { "isRecalled", true }
+        };
 
-                // Tác giả HOẶC Trưởng nhóm mới được thu hồi
-                if (uid != senderId && uid != ownerId)
-                    return Results.StatusCode(403);
-
-                // Cập nhật text thành rỗng và ghim cờ isRecalled
-                await msgRef.UpdateAsync(new Dictionary<string, object>
-                {
-                    { "text", "" },
-                    { "isRecalled", true }
-                });
-
-                return Results.Ok(new { message = "Thu hồi tin nhắn thành công" });
+                await messageRef.UpdateAsync(updates);
+                return Results.Ok(new { message = "Thu hồi tin nhắn nhóm thành công" });
             }
-            catch (Exception ex) { return Results.Problem($"Lỗi hệ thống: {ex.Message}"); }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Recall workspace message failed: {ex}");
+                return Results.Problem(title: "Lỗi thu hồi tin nhắn", detail: ex.Message, statusCode: 500);
+            }
         });
     }
 }

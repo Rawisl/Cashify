@@ -92,6 +92,19 @@ public class FriendChatViewModel extends ViewModel {
                 });
     }
 
+    public void recallMessage(String friendUid, String messageId) {
+        FirebaseManager.getInstance().recallDirectFriendMessage(friendUid, messageId, new FirebaseManager.DataCallback<Void>() {
+            @Override
+            public void onSuccess(Void data) {
+            }
+
+            @Override
+            public void onError(String message) {
+                sendErrorMessage.postValue("Lỗi thu hồi tin nhắn: " + message);
+            }
+        });
+    }
+
     @Override
     protected void onCleared() {
         super.onCleared();

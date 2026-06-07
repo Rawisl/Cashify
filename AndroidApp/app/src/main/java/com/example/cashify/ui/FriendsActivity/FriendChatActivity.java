@@ -49,6 +49,7 @@ public class FriendChatActivity extends AppCompatActivity {
 
     private LinearLayout layoutImagePreview;
     private LinearLayout layoutPreviewImages;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -92,7 +93,19 @@ public class FriendChatActivity extends AppCompatActivity {
         layoutManager.setStackFromEnd(true);
         rvChatMessages.setLayoutManager(layoutManager);
 //        rvChatMessages.setItemAnimator(null);
-        chatAdapter = new ChatAdapter(new ArrayList<>(), null);
+        chatAdapter = new ChatAdapter(new ArrayList<>(), message -> {
+            // Khi nhấn giữ tin nhắn, hiện hộp thoại xác nhận
+            DialogHelper.showCustomDialog(
+                    this, "Recall Message",
+                    "Are you sure you want to recall this message?",
+                    "Recall", "Cancel",
+                    DialogHelper.DialogType.DANGER, true,
+                    () -> {
+                        // Xác nhận -> Gọi ViewModel -> Gọi API
+                        viewModel.recallMessage(friendUid, message.getMessageId());
+                    }, null
+            );
+        });
         rvChatMessages.setAdapter(chatAdapter);
 
         viewModel = new ViewModelProvider(this).get(FriendChatViewModel.class);
@@ -148,10 +161,15 @@ public class FriendChatActivity extends AppCompatActivity {
     private void uploadAndPreview(Uri uri) {
         btnSendMessage.setEnabled(false);
         File file = getFileFromUri(uri);
-        if (file == null) { btnSendMessage.setEnabled(true); return; }
+        if (file == null) {
+            btnSendMessage.setEnabled(true);
+            return;
+        }
 
         CloudinaryHelper.uploadImage(file, new CloudinaryHelper.UploadCallback() {
-            @Override public void onProgress(int percent) {}
+            @Override
+            public void onProgress(int percent) {
+            }
 
             @Override
             public void onSuccess(String imageUrl) {
@@ -180,7 +198,8 @@ public class FriendChatActivity extends AppCompatActivity {
                 int idx = cursor.getColumnIndex(android.provider.OpenableColumns.SIZE);
                 if (idx != -1 && !cursor.isNull(idx)) return cursor.getLong(idx);
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
         return 0;
     }
 

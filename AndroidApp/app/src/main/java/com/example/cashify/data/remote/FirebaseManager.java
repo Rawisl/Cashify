@@ -875,6 +875,36 @@ public class FirebaseManager {
         }).addOnFailureListener(e -> callback.onError("Lỗi Auth: " + e.getMessage()));
     }
 
+    public void recallDirectFriendMessage(String friendUid, String messageId, DataCallback<Void> callback) {
+        FirebaseUser user = auth.getCurrentUser();
+        if (user == null) {
+            callback.onError("Chưa đăng nhập!");
+            return;
+        }
+
+        user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
+            String token = "Bearer " + getTokenResult.getToken();
+            ApiService apiService = ApiClient.getClient().create(ApiService.class);
+
+            apiService.recallFriendMessage(token, friendUid, messageId).enqueue(new retrofit2.Callback<Object>() {
+                @Override
+                public void onResponse(retrofit2.Call<Object> call, retrofit2.Response<Object> response) {
+                    if (response.isSuccessful()) {
+                        callback.onSuccess(null);
+                        return;
+                    }
+                    // Dùng lại hàm extractApiError có sẵn để báo lỗi chính xác từ Server
+                    callback.onError(extractApiError(response, "Lỗi server: " + response.code()));
+                }
+
+                @Override
+                public void onFailure(retrofit2.Call<Object> call, Throwable t) {
+                    callback.onError("Lỗi mạng: " + t.getMessage());
+                }
+            });
+        }).addOnFailureListener(e -> callback.onError("Lỗi Auth: " + e.getMessage()));
+    }
+
     public void getFriendSuggestions(DataCallback<List<User>> callback) {
         FirebaseUser user = auth.getCurrentUser();
         if (user == null) {
