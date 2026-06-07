@@ -52,7 +52,7 @@
                         android:id="@+id/tvCommentUsername"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Username"
+                        android:text="@string/username"
                         android:textColor="@color/item_title"
                         android:textSize="15sp"
                         android:textStyle="bold" />
@@ -62,7 +62,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
-                        android:text="2 hours ago"
+                        android:text="@string/time_ago"
                         android:textColor="@color/item_description"
                         android:textSize="12sp" />
 
@@ -92,7 +92,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:text="This is a comment text"
+                    android:text="@string/comment_content"
                     android:textColor="@color/item_title"
                     android:textSize="14sp"
                     android:lineSpacingExtra="2dp" />
@@ -131,7 +131,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="4dp"
-            android:text="0"
+            android:text="@string/zero"
             android:textColor="@color/item_description"
             android:textSize="12sp" />
 

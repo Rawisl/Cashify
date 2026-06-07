@@ -29,7 +29,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
-                    android:text="Bạn bè"
+                    android:text="@string/social_profile_friends"
                     android:textAppearance="@style/ToolbarTitleFont"
                     android:textColor="@color/white" />
 
@@ -47,7 +47,7 @@
                         android:layout_width="44dp"
                         android:layout_height="44dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="Tin nhắn"
+                        android:contentDescription="@string/message"
                         android:padding="10dp"
                         app:srcCompat="@drawable/ic_messages_regular"
                         app:tint="@color/white" />
@@ -62,7 +62,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:background="?attr/selectableItemBackgroundBorderless"
-                            android:contentDescription="Thông báo"
+                            android:contentDescription="@string/notification"
                             android:padding="10dp"
                             android:scaleType="center"
                             android:src="@drawable/ic_notification_regular"
@@ -77,7 +77,7 @@
                             android:layout_marginEnd="3dp"
                             android:background="@drawable/bg_badge_red"
                             android:gravity="center"
-                            android:text="1"
+                            android:text="@string/one"
                             android:textColor="@color/white"
                             android:textSize="10sp"
                             android:textStyle="bold"
@@ -118,7 +118,7 @@
                             android:background="@null"
                             android:drawableStart="@android:drawable/ic_menu_search"
                             android:drawablePadding="10dp"
-                            android:hint="Tìm kiếm bạn bè..."
+                            android:hint="@string/searching_friend"
                             android:imeOptions="actionSearch"
                             android:inputType="text"
                             android:paddingStart="20dp"
@@ -161,7 +161,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:fontFamily="@font/inter_bold"
-                                android:text="Lời mời"
+                                android:text="@string/request"
                                 android:textColor="#1A237E"
                                 android:textSize="16sp" />
 
@@ -171,7 +171,7 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="2dp"
                                 android:fontFamily="@font/inter_regular"
-                                android:text="Xem lời mời kết bạn đang chờ"
+                                android:text="@string/waiting_request"
                                 android:textColor="#607D8B"
                                 android:textSize="13sp" />
                         </LinearLayout>
@@ -185,7 +185,7 @@
                             android:minWidth="76dp"
                             android:paddingStart="12dp"
                             android:paddingEnd="12dp"
-                            android:text="Mở"
+                            android:text="@string/open"
                             android:textColor="#1A237E"
                             android:textSize="13sp" />
                     </LinearLayout>
@@ -202,7 +202,7 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:fontFamily="@font/inter_bold"
-                            android:text="Gợi ý kết bạn"
+                            android:text="@string/friend_suggestion"
                             android:textColor="#1A237E"
                             android:textSize="20sp" />
 
@@ -214,7 +214,7 @@
                             android:fontFamily="@font/inter_medium"
                             android:textColor="#607D8B"
                             android:textSize="13sp"
-                            tools:text="8 người" />
+                            tools:text="@string/friend_number" />
                     </LinearLayout>
 
                     <androidx.recyclerview.widget.RecyclerView
@@ -238,7 +238,7 @@
                         android:fontFamily="@font/inter_regular"
                         android:gravity="center"
                         android:padding="18dp"
-                        android:text="Chưa có gợi ý kết bạn mới."
+                        android:text="@string/no_friend_suggestion"
                         android:textColor="#607D8B"
                         android:textSize="13sp"
                         android:visibility="gone" />
@@ -248,7 +248,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="26dp"
                         android:fontFamily="@font/inter_bold"
-                        android:text="Kết nối"
+                        android:text="@string/connect"
                         android:textColor="#1A237E"
                         android:textSize="20sp" />
 
@@ -271,7 +271,7 @@
                         android:fontFamily="@font/inter_regular"
                         android:gravity="center"
                         android:padding="18dp"
-                        android:text="Bạn chưa có kết nối nào."
+                        android:text="@string/no_connect"
                         android:textColor="#607D8B"
                         android:textSize="13sp"
                         android:visibility="gone" />
@@ -286,7 +286,7 @@
             android:layout_gravity="bottom|end"
             android:layout_marginEnd="22dp"
             android:layout_marginBottom="24dp"
-            android:contentDescription="Kết bạn"
+            android:contentDescription="@string/add_friend"
             android:tint="@color/white"
             app:backgroundTint="#1A237E"
             app:elevation="6dp"

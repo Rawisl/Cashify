@@ -34,14 +34,14 @@ public class CloudinaryHelper {
     public static void uploadImage(File imageFile, UploadCallback callback) {
         // CHECK 10MB TRƯỚC KHI LÀM GÌ CẢ
         if (imageFile.length() > MAX_FILE_SIZE) {
-            callback.onFailure("Ảnh quá lớn! Vui lòng chọn ảnh dưới 10MB.");
+            callback.onFailure("Image too large! Please select an image under 10MB.");
             return;
         }
 
         File fileToUpload = compressIfNeeded(imageFile);
 
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user == null) { callback.onFailure("Chưa đăng nhập!"); return; }
+        if (user == null) { callback.onFailure("Not logged in!"); return; }
 
         user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
             String token = "Bearer " + getTokenResult.getToken();
@@ -97,19 +97,19 @@ public class CloudinaryHelper {
             try (okhttp3.Response uploadResponse = UPLOAD_CLIENT.newCall(uploadRequest).execute()) {
                 if (!uploadResponse.isSuccessful()) {
                     String detail = uploadResponse.body() != null ? uploadResponse.body().string() : "";
-                    callback.onFailure("Upload thất bại (lỗi " + uploadResponse.code() + "): " + detail);
+                    callback.onFailure("Upload failed (error " + uploadResponse.code() + "): " + detail);
                     return;
                 }
                 JSONObject result = new JSONObject(uploadResponse.body().string());
                 callback.onSuccess(result.getString("secure_url"));
             }
         } catch (java.net.SocketTimeoutException e) {
-            callback.onFailure("Hết thời gian kết nối. Kiểm tra mạng và thử lại.");
+            callback.onFailure("Connection timeout. Check network and try again.");
         } catch (java.io.IOException e) {
             // ĐỨT MẠNG TRONG KHI ĐANG UPLOAD
-            callback.onFailure("Mất kết nối trong lúc tải ảnh. Vui lòng thử lại.");
+            callback.onFailure("Lost connection while uploading image. Please try again.");
         } catch (Exception e) {
-            callback.onFailure("Lỗi không xác định: " + e.getMessage());
+            callback.onFailure("Unknown error: " + e.getMessage());
         }
     }
 

@@ -2,8 +2,8 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/action_hide_post"
-        android:title="Ẩn bài viết" />
+        android:title="@string/hide_post" />
     <item
         android:id="@+id/action_delete_post"
-        android:title="Xóa bài viết" />
+        android:title="@string/delete_post" />
 </menu>

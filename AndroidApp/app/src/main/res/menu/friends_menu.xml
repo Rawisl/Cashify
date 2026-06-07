@@ -3,13 +3,13 @@
     <item
         android:id="@+id/nav_messages"
         android:icon="@drawable/ic_other"
-        android:title="Tin nhắn" />
+        android:title="@string/chat" />
     <item
         android:id="@+id/nav_friends"
         android:icon="@drawable/ic_friends"
-        android:title="Bạn bè" />
+        android:title="@string/social_profile_friends" />
     <item
         android:id="@+id/nav_requests"
         android:icon="@drawable/ic_request"
-        android:title="Lời mời" />
+        android:title="@string/invite" />
 </menu>

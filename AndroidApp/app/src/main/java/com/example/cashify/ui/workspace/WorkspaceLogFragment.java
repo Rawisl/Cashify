@@ -93,7 +93,7 @@ public class WorkspaceLogFragment extends Fragment {
         String finalWorkspaceId = workspaceId;
         view.findViewById(R.id.fabSeedLog).setOnClickListener(v -> {
             seedMockLogs(finalWorkspaceId);
-            Toast.makeText(requireContext(), "Đã tạo mock log!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), "Mock log created!", Toast.LENGTH_SHORT).show();
         });
     }
 

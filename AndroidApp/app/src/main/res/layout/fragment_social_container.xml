@@ -60,7 +60,7 @@
                 android:layout_marginTop="3dp"
                 android:fontFamily="@font/inter_bold"
                 android:includeFontPadding="false"
-                android:text="Bảng tin"
+                android:text="@string/feed"
                 android:textColor="#1A237E"
                 android:textSize="12sp" />
         </LinearLayout>
@@ -94,7 +94,7 @@
                 android:layout_marginTop="3dp"
                 android:fontFamily="@font/inter_bold"
                 android:includeFontPadding="false"
-                android:text="Hồ sơ"
+                android:text="@string/profile"
                 android:textColor="#1A237E"
                 android:textSize="12sp" />
         </LinearLayout>

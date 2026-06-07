@@ -54,19 +54,19 @@ public class FriendAdapter extends RecyclerView.Adapter<FriendAdapter.ViewHolder
             case 1:
                 holder.btnMessage.setVisibility(View.VISIBLE);
                 holder.btnUnfriend.setVisibility(View.VISIBLE);
-                holder.tvStatus.setText("Bạn bè");
+                holder.tvStatus.setText("Friends");
                 holder.btnMessage.setOnClickListener(v -> listener.onMessage(user));
                 holder.btnUnfriend.setOnClickListener(v -> listener.onUnfriend(user));
                 break;
             case 2:
                 holder.tvSentRequest.setVisibility(View.VISIBLE);
-                holder.tvStatus.setText("Đang chờ phản hồi");
+                holder.tvStatus.setText("Waiting for response");
                 holder.tvSentRequest.setOnClickListener(v -> listener.onCancelRequest(user));
                 break;
             case 3:
                 holder.btnAccept.setVisibility(View.VISIBLE);
                 holder.btnDecline.setVisibility(View.VISIBLE);
-                holder.tvStatus.setText("Đã gửi lời mời kết bạn");
+                holder.tvStatus.setText("Friend request sent");
                 holder.btnAccept.setOnClickListener(v -> listener.onAccept(user));
                 holder.btnDecline.setOnClickListener(v -> listener.onDecline(user));
                 break;

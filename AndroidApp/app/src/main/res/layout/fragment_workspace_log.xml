@@ -47,7 +47,7 @@
         android:layout_gravity="bottom|end"
         android:layout_marginEnd="24dp"
         android:layout_marginBottom="150dp"
-        android:contentDescription="Seed mock log"
+        android:contentDescription="@string/seed_mock_log"
         app:srcCompat="@drawable/ic_add_bold" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

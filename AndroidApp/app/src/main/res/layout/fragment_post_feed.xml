@@ -59,7 +59,7 @@
                         android:ellipsize="end"
                         android:fontFamily="@font/inter_bold"
                         android:maxLines="1"
-                        android:text="Chào bạn, nhà sáng tạo"
+                        android:text="@string/hello_creator"
                         android:textColor="@color/brand_primary"
                         android:textSize="22sp" />
 
@@ -98,7 +98,7 @@
                         android:gravity="center"
                         android:paddingStart="6dp"
                         android:paddingEnd="6dp"
-                        android:text="Công khai"
+                        android:text="@string/public_state"
                         android:textColor="@color/white"
                         android:textSize="13sp" />
 
@@ -117,7 +117,7 @@
                         android:gravity="center"
                         android:paddingStart="6dp"
                         android:paddingEnd="6dp"
-                        android:text="Bạn bè"
+                        android:text="@string/social_profile_friends"
                         android:textColor="@color/item_title"
                         android:textSize="13sp" />
 
@@ -136,7 +136,7 @@
                         android:gravity="center"
                         android:paddingStart="6dp"
                         android:paddingEnd="6dp"
-                        android:text="Riêng tư"
+                        android:text="@string/private_state"
                         android:textColor="@color/item_title"
                         android:textSize="13sp" />
                 </LinearLayout>
@@ -179,7 +179,7 @@
                                 android:layout_height="wrap_content"
                                 android:fontFamily="@font/inter_bold"
                                 android:letterSpacing="0.08"
-                                android:text="DIGITAL JOURNAL"
+                                android:text="@string/digital_journal"
                                 android:textColor="#8F6842"
                                 android:textSize="10sp" />
 
@@ -189,7 +189,7 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="5dp"
                                 android:fontFamily="@font/outfit_bold"
-                                android:text="Chia sẻ suy nghĩ"
+                                android:text="@string/share_thought"
                                 android:textColor="@color/brand_primary"
                                 android:textSize="22sp" />
                         </LinearLayout>
@@ -202,7 +202,7 @@
                         android:layout_marginTop="14dp"
                         android:fontFamily="@font/inter_regular"
                         android:lineSpacingExtra="3dp"
-                        android:text="Một không gian nhẹ để kể lại điều bạn học được trong hành trình tài chính hôm nay."
+                        android:text="@string/mode_description"
                         android:textColor="@color/item_description"
                         android:textSize="13sp" />
 
@@ -215,7 +215,7 @@
                         android:fontFamily="@font/inter_regular"
                         android:lineSpacingExtra="3dp"
                         android:padding="13dp"
-                        android:text="Gợi ý: Hôm nay bạn nhận ra điều gì về cách mình tiêu tiền?"
+                        android:text="@string/mode_prompt"
                         android:textColor="@color/item_title"
                         android:textSize="13sp" />
                 </LinearLayout>
@@ -240,7 +240,7 @@
                         android:background="@android:color/transparent"
                         android:fontFamily="@font/inter_bold"
                         android:gravity="top|start"
-                        android:hint="Hôm nay bạn muốn chia sẻ điều gì về tiền bạc?"
+                        android:hint="@string/post_content"
                         android:inputType="textMultiLine|textCapSentences"
                         android:lineSpacingExtra="5dp"
                         android:maxLength="280"
@@ -262,7 +262,7 @@
                         android:layout_height="40dp"
                         android:fontFamily="@font/outfit_regular"
                         android:gravity="center_vertical|end"
-                        android:text="0/280"
+                        android:text="@string/composer_count"
                         android:textColor="#B6B0AA"
                         android:textSize="13sp" />
                 </LinearLayout>
@@ -284,7 +284,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:fontFamily="@font/inter_bold"
-                        android:text="Ngân sách"
+                        android:text="@string/budget"
                         android:textColor="@color/brand_primary"
                         app:checkedIconVisible="false"
                         app:chipBackgroundColor="@color/bg_main"
@@ -297,7 +297,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:fontFamily="@font/inter_bold"
-                        android:text="Tiết kiệm"
+                        android:text="@string/saving"
                         android:textColor="@color/brand_primary"
                         app:checkedIconVisible="false"
                         app:chipBackgroundColor="@color/bg_main"
@@ -310,7 +310,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:fontFamily="@font/inter_bold"
-                        android:text="Nợ"
+                        android:text="@string/debt"
                         android:textColor="@color/brand_primary"
                         app:checkedIconVisible="false"
                         app:chipBackgroundColor="@color/bg_main"
@@ -323,7 +323,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:fontFamily="@font/inter_bold"
-                        android:text="Đầu tư"
+                        android:text="@string/invest"
                         android:textColor="@color/brand_primary"
                         app:checkedIconVisible="false"
                         app:chipBackgroundColor="@color/bg_main"
@@ -336,7 +336,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="34dp"
                     android:fontFamily="@font/inter_bold"
-                    android:text="Tư liệu hình ảnh"
+                    android:text="@string/attachment"
                     android:textColor="@color/brand_primary"
                     android:textSize="24sp" />
 
@@ -364,7 +364,7 @@
                         android:includeFontPadding="false"
                         android:paddingTop="32dp"
                         android:paddingBottom="8dp"
-                        android:text="Thêm ảnh"
+                        android:text="@string/add_attachment"
                         android:textColor="@color/item_title"
                         android:textSize="12sp" />
 
@@ -383,7 +383,7 @@
                             android:id="@+id/imgPostPreview"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
-                            android:contentDescription="Ảnh bài viết đã chọn"
+                            android:contentDescription="@string/attachment_chosen"
                             android:scaleType="centerCrop"
                             tools:src="@drawable/ic_post_image" />
 
@@ -394,7 +394,7 @@
                             android:layout_gravity="top|end"
                             android:layout_margin="8dp"
                             android:background="@drawable/bg_social_primary_pill"
-                            android:contentDescription="Gỡ ảnh"
+                            android:contentDescription="@string/remove_attachment"
                             android:padding="9dp"
                             app:srcCompat="@drawable/ic_delete"
                             app:tint="@color/white" />
@@ -409,7 +409,7 @@
                         android:fontFamily="@font/inter_semibold"
                         android:gravity="center"
                         android:lineSpacingExtra="2dp"
-                        android:text="Post\nPreview"
+                        android:text="@string/post_npreview"
                         android:textAllCaps="true"
                         android:textColor="#8F6842"
                         android:textSize="10sp" />
@@ -420,7 +420,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="36dp"
                     android:fontFamily="@font/inter_bold"
-                    android:text="Phân loại nội dung"
+                    android:text="@string/content_divider"
                     android:textColor="@color/brand_primary"
                     android:textSize="24sp" />
 
@@ -452,7 +452,7 @@
                             android:includeFontPadding="false"
                             android:paddingTop="32dp"
                             android:paddingBottom="10dp"
-                            android:text="Cột mốc"
+                            android:text="@string/milestone"
                             android:textColor="#4B2A11"
                             android:textSize="15sp" />
 
@@ -471,7 +471,7 @@
                             android:includeFontPadding="false"
                             android:paddingTop="32dp"
                             android:paddingBottom="10dp"
-                            android:text="Suy nghĩ"
+                            android:text="@string/thought"
                             android:textColor="#5A3422"
                             android:textSize="15sp" />
                     </LinearLayout>
@@ -497,7 +497,7 @@
                             android:includeFontPadding="false"
                             android:paddingTop="32dp"
                             android:paddingBottom="10dp"
-                            android:text="Phân tích"
+                            android:text="@string/analyze"
                             android:textColor="#3E260F"
                             android:textSize="15sp" />
 
@@ -516,7 +516,7 @@
                             android:includeFontPadding="false"
                             android:paddingTop="32dp"
                             android:paddingBottom="10dp"
-                            android:text="Chia sẻ"
+                            android:text="@string/share"
                             android:textColor="#5C3920"
                             android:textSize="15sp" />
                     </LinearLayout>
@@ -556,7 +556,7 @@
                                 android:gravity="center"
                                 android:textColor="@color/brand_primary"
                                 android:textSize="16sp"
-                                tools:text="85%" />
+                                tools:text="@string/percentage" />
 
                             <LinearLayout
                                 android:layout_width="0dp"
@@ -572,7 +572,7 @@
                                     android:fontFamily="@font/inter_bold"
                                     android:textColor="@color/item_title"
                                     android:textSize="16sp"
-                                    tools:text="Tá»•ng káº¿t NgÃ¢n sÃ¡ch" />
+                                    tools:text="@string/budget_summary" />
 
                                 <TextView
                                     android:id="@+id/tvPreviewMonth"
@@ -582,7 +582,7 @@
                                     android:fontFamily="@font/inter_medium"
                                     android:textColor="@color/item_description"
                                     android:textSize="13sp"
-                                    tools:text="ThÃ¡ng 05/2026" />
+                                    tools:text="@string/month" />
                             </LinearLayout>
                         </LinearLayout>
 
@@ -604,7 +604,7 @@
                             android:fontFamily="@font/inter_bold"
                             android:textColor="@color/brand_primary"
                             android:textSize="15sp"
-                            tools:text="CÃ²n dÆ°: 2.500.000 Ä‘" />
+                            tools:text="@string/left_over" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
@@ -620,7 +620,7 @@
                     android:fontFamily="@font/inter_regular"
                     android:lineSpacingExtra="3dp"
                     android:padding="14dp"
-                    android:text="Bắt đầu một câu chuyện tài chính nhỏ."
+                    android:text="@string/composer_hint"
                     android:textColor="@color/item_description"
                     android:textSize="13sp" />
 
@@ -642,7 +642,7 @@
                     android:layout_height="70dp"
                     android:layout_marginTop="14dp"
                     android:fontFamily="@font/inter_bold"
-                    android:text="Đăng bài"
+                    android:text="@string/upload_post"
                     android:textAllCaps="false"
                     android:textColor="@color/white"
                     android:textSize="24sp"

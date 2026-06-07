@@ -26,7 +26,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:text="Cộng đồng"
+                android:text="@string/community"
                 android:textAppearance="@style/ToolbarTitleFont"
                 android:textColor="@color/white" />
 
@@ -66,7 +66,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:fontFamily="@font/outfit_bold"
-                        android:text="Community Corner"
+                        android:text="@string/community_corner"
                         android:textColor="#1A237E"
                         android:textSize="24sp" />
 
@@ -76,7 +76,7 @@
                         android:layout_marginTop="6dp"
                         android:fontFamily="@font/inter_regular"
                         android:lineSpacingExtra="3dp"
-                        android:text="Share goals, spending habits, and small financial milestones with the Cashify community."
+                        android:text="@string/wtfisthat"
                         android:textColor="#607D8B"
                         android:textSize="13sp" />
 
@@ -118,7 +118,7 @@
                                     android:layout_height="wrap_content"
                                     android:fontFamily="@font/inter_bold"
                                     android:maxLines="2"
-                                    android:text="Bạn đang nghĩ gì?"
+                                    android:text="@string/what_is_your_thought"
                                     android:textColor="#1A237E"
                                     android:textSize="15sp" />
 
@@ -128,7 +128,7 @@
                                     android:layout_marginTop="3dp"
                                     android:fontFamily="@font/inter_regular"
                                     android:maxLines="2"
-                                    android:text="Ảnh, cột mốc, mẹo tiết kiệm hoặc một chia sẻ nhỏ"
+                                    android:text="@string/new_attachment"
                                     android:textColor="#607D8B"
                                     android:textSize="12sp" />
                             </LinearLayout>
@@ -139,7 +139,7 @@
                                 android:layout_height="42dp"
                                 android:layout_marginStart="10dp"
                                 android:background="@drawable/bg_social_bottom_cta"
-                                android:contentDescription="Tạo bài viết"
+                                android:contentDescription="@string/create_post"
                                 android:padding="10dp"
                                 android:src="@drawable/ic_add_bold"
                                 app:tint="@color/white" />
@@ -176,7 +176,7 @@
                                 android:gravity="center"
                                 android:paddingStart="13dp"
                                 android:paddingEnd="13dp"
-                                android:text="GỢI Ý HÔM NAY"
+                                android:text="@string/today_suggestion"
                                 android:textColor="#1A237E"
                                 android:textSize="10sp" />
 
@@ -186,7 +186,7 @@
                                 android:layout_marginTop="12dp"
                                 android:fontFamily="@font/outfit_bold"
                                 android:lineSpacingExtra="1dp"
-                                android:text="Tài chính tốt hơn khi có người đồng hành"
+                                android:text="@string/a_partner"
                                 android:textColor="@color/white"
                                 android:textSize="22sp" />
 
@@ -196,7 +196,7 @@
                                 android:layout_marginTop="8dp"
                                 android:fontFamily="@font/inter_regular"
                                 android:lineSpacingExtra="3dp"
-                                android:text="Turn everyday money choices into shared stories, goals, and inspiration."
+                                android:text="@string/wtfisthisshit"
                                 android:textColor="#F5E9D8"
                                 android:textSize="13sp" />
 
@@ -215,7 +215,7 @@
                                     android:background="@drawable/bg_social_warm_chip"
                                     android:fontFamily="@font/inter_bold"
                                     android:gravity="center"
-                                    android:text="Bài mới"
+                                    android:text="@string/new_post"
                                     android:textColor="#1A237E"
                                     android:textSize="12sp" />
 
@@ -227,7 +227,7 @@
                                     android:background="@drawable/bg_social_warm_chip"
                                     android:fontFamily="@font/inter_bold"
                                     android:gravity="center"
-                                    android:text="Đang thảo luận"
+                                    android:text="@string/discussing"
                                     android:textColor="#1A237E"
                                     android:textSize="12sp" />
                             </LinearLayout>
@@ -251,7 +251,7 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:fontFamily="@font/outfit_bold"
-                                android:text="Dành cho bạn"
+                                android:text="@string/for_you"
                                 android:textColor="#1A237E"
                                 android:textSize="21sp" />
 
@@ -260,7 +260,7 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="2dp"
                                 android:fontFamily="@font/inter_regular"
-                                android:text="Những câu chuyện tài chính mới nhất"
+                                android:text="@string/newest_finance_post"
                                 android:textColor="#607D8B"
                                 android:textSize="12sp" />
                         </LinearLayout>
@@ -273,7 +273,7 @@
                             android:gravity="center"
                             android:paddingStart="13dp"
                             android:paddingEnd="13dp"
-                            android:text="Công khai"
+                            android:text="@string/public_state"
                             android:textColor="#1A237E"
                             android:textSize="12sp" />
                     </LinearLayout>
@@ -297,10 +297,64 @@
                         android:gravity="center"
                         android:lineSpacingExtra="3dp"
                         android:padding="24dp"
-                        android:text="Chưa có bài viết nào. Hãy là người đầu tiên chia sẻ một câu chuyện tài chính nhỏ."
+                        android:text="@string/no_post_post_one"
                         android:textColor="#607D8B"
                         android:textSize="14sp"
                         android:visibility="gone" />
+
+                    <LinearLayout
+                        android:id="@+id/layoutNoFriendsEmpty"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="18dp"
+                        android:background="@drawable/bg_social_editorial_card"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:padding="32dp"
+                        android:visibility="gone">
+
+                        <ImageView
+                            android:layout_width="120dp"
+                            android:layout_height="120dp"
+                            android:src="@drawable/cashy_mascot"
+                            android:alpha="0.6" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="24dp"
+                            android:fontFamily="@font/outfit_bold"
+                            android:gravity="center"
+                            android:text="@string/you_have_no_friend"
+                            android:textColor="#1A237E"
+                            android:textSize="20sp" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:fontFamily="@font/inter_regular"
+                            android:gravity="center"
+                            android:lineSpacingExtra="3dp"
+                            android:text="@string/to_sidebar_to_connect"
+                            android:textColor="#607D8B"
+                            android:textSize="14sp" />
+
+                        <Button
+                            android:id="@+id/btnFindFriends"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="20dp"
+                            android:background="@drawable/bg_btn_primary"
+                            android:fontFamily="@font/inter_bold"
+                            android:paddingStart="24dp"
+                            android:paddingTop="12dp"
+                            android:paddingEnd="24dp"
+                            android:paddingBottom="12dp"
+                            android:text="@string/find_friend_rn"
+                            android:textColor="@color/white"
+                            android:textSize="14sp" />
+                    </LinearLayout>
 
                     <TextView
                         android:id="@+id/layoutNewsfeedError"
@@ -314,7 +368,7 @@
                         android:gravity="center"
                         android:lineSpacingExtra="3dp"
                         android:padding="22dp"
-                        android:text="Không thể tải bảng tin. Chạm để thử lại."
+                        android:text="@string/cannot_load_feed_plz_try_again"
                         android:textColor="#1A237E"
                         android:textSize="14sp"
                         android:visibility="gone" />
@@ -393,7 +447,7 @@
                             android:layout_marginTop="10dp"
                             android:fontFamily="@font/inter_bold"
                             android:gravity="center"
-                            android:text="Bạn đã khám phá hết bảng tin hôm nay"
+                            android:text="@string/no_more_feed"
                             android:textColor="#1A237E"
                             android:textSize="14sp" />
 
@@ -403,7 +457,7 @@
                             android:layout_marginTop="4dp"
                             android:fontFamily="@font/inter_regular"
                             android:gravity="center"
-                            android:text="Hãy quay lại sau để xem nội dung mới"
+                            android:text="@string/plz_comeback_later"
                             android:textColor="#607D8B"
                             android:textSize="12sp" />
                     </LinearLayout>
@@ -418,7 +472,7 @@
         android:layout_height="48dp"
         android:layout_gravity="bottom|center_horizontal"
         android:layout_marginBottom="64dp"
-        android:contentDescription="Tạo bài viết"
+        android:contentDescription="@string/create_post"
         android:src="@drawable/ic_add_bold"
         android:visibility="gone"
         app:backgroundTint="#1A237E"

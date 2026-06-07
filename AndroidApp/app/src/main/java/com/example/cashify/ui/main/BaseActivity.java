@@ -201,11 +201,11 @@ public abstract class BaseActivity extends AppCompatActivity {
         android.view.Menu menu = navigationView.getMenu();
         android.view.MenuItem inviteItem = menu.findItem(R.id.nav_invitations);
         if (count <= 0) {
-            inviteItem.setTitle("Lời mời");
+            inviteItem.setTitle("Invitation");
             return;
         }
 
-        String title = "Lời mời";
+        String title = getString(R.string.invite);
         String badgeText = count > 9 ? "9+" : String.valueOf(count);
 
         TextView tv = new TextView(this);

@@ -24,7 +24,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
-        android:text="testname"
+        android:text="@string/testname"
         android:textColor="@android:color/white"
         android:textSize="18sp"
         android:textStyle="bold" />
@@ -33,7 +33,7 @@
         android:id="@+id/tvEmailHeader"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="testmail@gmail.com"
+        android:text="@string/testmail_gmail_com"
         android:textColor="#CCCCCC"
         android:textSize="14sp" />
 </LinearLayout>

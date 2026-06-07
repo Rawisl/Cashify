@@ -25,9 +25,9 @@ public final class TimeFormatter {
     public static String format(long timestamp) {
         long diff = System.currentTimeMillis() - timestamp;
 
-        if (diff < MINUTE)       return "Vừa xong";
-        if (diff < HOUR)         return (diff / MINUTE) + " phút trước";
-        if (diff < DAY)          return (diff / HOUR)   + " giờ trước";
+        if (diff < MINUTE)       return "Just now";
+        if (diff < HOUR)         return (diff / MINUTE) + " minutes ago";
+        if (diff < DAY)          return (diff / HOUR)   + " hours ago";
         return SDF.format(new Date(timestamp));
     }
 

@@ -56,7 +56,7 @@ public class MessagesActivity extends AppCompatActivity {
         viewModel.getError().observe(this, message -> {
             if (message != null && !message.isEmpty()) {
                 tvErrorState.setVisibility(View.VISIBLE);
-                ToastHelper.show(this, "T\u1ea3i danh s\u00e1ch tr\u00f2 chuy\u1ec7n th\u1ea5t b\u1ea1i");
+                ToastHelper.show(this, "Load message list failed");
             }
         });
         viewModel.startListening();

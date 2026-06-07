@@ -9,7 +9,7 @@
     <TextView
         android:id="@+id/tvPopupTitle"
         style="@style/popup_category_title"
-        android:text="Select Category"
+        android:text="@string/select_category"
         android:textSize="24sp" />
 
     <androidx.recyclerview.widget.RecyclerView
