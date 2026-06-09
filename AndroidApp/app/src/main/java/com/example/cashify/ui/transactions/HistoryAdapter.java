@@ -34,10 +34,8 @@ public class HistoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     }
 
     public void setHistoryData(List<TransactionViewModel.HistoryItem> newData) {
-        if (newData != null) {
-            this.items = newData;
-            notifyDataSetChanged();
-        }
+        this.items = newData != null ? newData : new ArrayList<>();
+        notifyDataSetChanged();
     }
 
     public TransactionViewModel.HistoryItem getItemAt(int position) {

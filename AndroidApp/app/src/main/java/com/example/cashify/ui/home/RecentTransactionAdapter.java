@@ -40,17 +40,17 @@ public class RecentTransactionAdapter extends RecyclerView.Adapter<RecentTransac
 
     // Hàm update data tự động lọc bỏ header ngày tháng
     public void updateData(List<TransactionViewModel.HistoryItem> newData) {
+        List<TransactionViewModel.HistoryItem> onlyTransactions = new ArrayList<>();
         if (newData != null) {
-            List<TransactionViewModel.HistoryItem> onlyTransactions = new ArrayList<>();
             for (TransactionViewModel.HistoryItem item : newData) {
                 // Chỉ nhặt những item là giao dịch để hiển thị trên Home
-                if (item.getType() == TransactionViewModel.HistoryItem.TYPE_TRANSACTION) {
+                if (item != null && item.getType() == TransactionViewModel.HistoryItem.TYPE_TRANSACTION) {
                     onlyTransactions.add(item);
                 }
             }
-            this.items = onlyTransactions;
-            notifyDataSetChanged();
         }
+        this.items = onlyTransactions;
+        notifyDataSetChanged();
     }
 
     @NonNull
@@ -97,8 +97,9 @@ public class RecentTransactionAdapter extends RecyclerView.Adapter<RecentTransac
 
         // 4. Gán Icon và Màu nền Icon - Học chuẩn từ HistoryAdapter
         if (holder.ivCategoryIcon != null) {
+            String iconName = item.getCategoryIcon();
             int iconResId = holder.itemView.getContext().getResources().getIdentifier(
-                    item.getCategoryIcon(), "drawable", holder.itemView.getContext().getPackageName());
+                    iconName != null ? iconName : "", "drawable", holder.itemView.getContext().getPackageName());
             holder.ivCategoryIcon.setImageResource(iconResId != 0 ? iconResId : R.drawable.ic_food);
 
             try {

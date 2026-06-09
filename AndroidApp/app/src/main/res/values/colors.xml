@@ -55,6 +55,7 @@
     <!--Numpad button's bg color-->
     <color name="numpad_key_bg">#73DED7B8</color>
 
+    <color name="notification_blue">#4C6FFF</color>
     <color name="tips_text_color">@color/notification_blue</color>
 
     <!-- Line dọc nối các avatar trong timeline -->

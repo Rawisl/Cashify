@@ -28,13 +28,13 @@ public class SelectFriendAdapter extends RecyclerView.Adapter<SelectFriendAdapte
     private final OnSelectionChangeListener listener;
 
     public SelectFriendAdapter(List<User> list, Set<String> selectedUids, OnSelectionChangeListener listener) {
-        this.list = list;
-        this.selectedUids = selectedUids;
+        this.list = list != null ? list : java.util.Collections.emptyList();
+        this.selectedUids = selectedUids != null ? selectedUids : new java.util.HashSet<>();
         this.listener = listener;
     }
 
     public void updateList(List<User> newList) {
-        this.list = newList;
+        this.list = newList != null ? newList : java.util.Collections.emptyList();
         notifyDataSetChanged();
     }
 
@@ -59,7 +59,7 @@ public class SelectFriendAdapter extends RecyclerView.Adapter<SelectFriendAdapte
         holder.cbSelect.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isChecked) selectedUids.add(user.getUid());
             else selectedUids.remove(user.getUid());
-            listener.onSelectionChanged(selectedUids.size()); // Báo về Activity/Fragment cha
+            if (listener != null) listener.onSelectionChanged(selectedUids.size()); // Báo về Activity/Fragment cha
         });
 
         holder.itemView.setOnClickListener(v -> holder.cbSelect.setChecked(!holder.cbSelect.isChecked()));

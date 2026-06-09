@@ -29,7 +29,7 @@ public class LegendAdapter extends RecyclerView.Adapter<LegendAdapter.ViewHolder
     }
 
     public void updateData(List<LegendItem> newList) {
-        this.list = newList;
+        this.list = newList != null ? newList : new ArrayList<>();
         notifyDataSetChanged();
     }
 

@@ -31,7 +31,7 @@ public class FilterChipAdapter extends RecyclerView.Adapter<FilterChipAdapter.Ch
     }
 
     public void setChips(List<FilterChip> newChips) {
-        this.chips = newChips;
+        this.chips = newChips != null ? newChips : new ArrayList<>();
         notifyDataSetChanged();
     }
 
@@ -67,7 +67,12 @@ public class FilterChipAdapter extends RecyclerView.Adapter<FilterChipAdapter.Ch
             chipView.setCloseIconTint(ColorStateList.valueOf(ContextCompat.getColor(context, R.color.brand_primary)));
 
             // Bấm vào dấu X để xóa lọc
-            chipView.setOnCloseIconClickListener(v -> listener.onChipClearClick(chipData, position));
+            chipView.setOnCloseIconClickListener(v -> {
+                int adapterPosition = holder.getAdapterPosition();
+                if (listener != null && adapterPosition != RecyclerView.NO_POSITION) {
+                    listener.onChipClearClick(chipData, adapterPosition);
+                }
+            });
 
         } else {
             // --- INACTIVE STATE ---
@@ -81,11 +86,21 @@ public class FilterChipAdapter extends RecyclerView.Adapter<FilterChipAdapter.Ch
             chipView.setCloseIconTint(ColorStateList.valueOf(ContextCompat.getColor(context, R.color.item_title)));
 
             // Bấm vào icon mũi tên để mở menu
-            chipView.setOnCloseIconClickListener(v -> listener.onChipClick(chipData, position, chipView));
+            chipView.setOnCloseIconClickListener(v -> {
+                int adapterPosition = holder.getAdapterPosition();
+                if (listener != null && adapterPosition != RecyclerView.NO_POSITION) {
+                    listener.onChipClick(chipData, adapterPosition, chipView);
+                }
+            });
         }
 
         // Bấm vào phần chữ của Chip để mở menu
-        chipView.setOnClickListener(v -> listener.onChipClick(chipData, position, chipView));
+        chipView.setOnClickListener(v -> {
+            int adapterPosition = holder.getAdapterPosition();
+            if (listener != null && adapterPosition != RecyclerView.NO_POSITION) {
+                listener.onChipClick(chipData, adapterPosition, chipView);
+            }
+        });
     }
 
     @Override

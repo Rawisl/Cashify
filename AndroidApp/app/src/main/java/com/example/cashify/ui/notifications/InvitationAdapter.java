@@ -28,7 +28,7 @@ public class InvitationAdapter extends RecyclerView.Adapter<InvitationAdapter.Vi
     }
 
     public void setData(List<WorkspaceInvitation> newList) {
-        this.list = newList;
+        this.list = newList != null ? newList : new ArrayList<>();
         notifyDataSetChanged();
     }
 
@@ -49,8 +49,12 @@ public class InvitationAdapter extends RecyclerView.Adapter<InvitationAdapter.Vi
         com.example.cashify.utils.ImageHelper.loadAvatar(
                 invite.getInviterAvatar(), holder.imgAvatar, invite.getInviterName());
 
-        holder.btnAccept.setOnClickListener(v -> listener.onAccept(invite));
-        holder.btnDecline.setOnClickListener(v -> listener.onDecline(invite));
+        holder.btnAccept.setOnClickListener(v -> {
+            if (listener != null) listener.onAccept(invite);
+        });
+        holder.btnDecline.setOnClickListener(v -> {
+            if (listener != null) listener.onDecline(invite);
+        });
     }
 
     @Override

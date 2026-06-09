@@ -194,14 +194,14 @@ public class WorkspaceHomeFragment extends Fragment { // Vẫn giữ nguyên ext
         });
 
         workspaceViewModel.getTransactionsLiveData().observe(getViewLifecycleOwner(), historyItems -> {
+            historyAdapter.setHistoryData(historyItems);
+
+            long totalIncome = 0;
+            long totalExpense = 0;
+
             if (historyItems != null) {
-                historyAdapter.setHistoryData(historyItems);
-
-                long totalIncome = 0;
-                long totalExpense = 0;
-
                 for (TransactionViewModel.HistoryItem item : historyItems) {
-                    if (item.getType() == TransactionViewModel.HistoryItem.TYPE_TRANSACTION) {
+                    if (item != null && item.getType() == TransactionViewModel.HistoryItem.TYPE_TRANSACTION) {
                         Transaction t = item.getTransaction();
                         if (t != null) {
                             if (t.type == 1) totalIncome += t.amount;
@@ -209,12 +209,12 @@ public class WorkspaceHomeFragment extends Fragment { // Vẫn giữ nguyên ext
                         }
                     }
                 }
-
-                long actualBalance = totalIncome - totalExpense;
-                tvBalance.setText(CurrencyFormatter.formatFullVND(actualBalance));
-                tvIncome.setText(CurrencyFormatter.formatFullVND(totalIncome));
-                tvExpense.setText(CurrencyFormatter.formatFullVND(totalExpense));
             }
+
+            long actualBalance = totalIncome - totalExpense;
+            tvBalance.setText(CurrencyFormatter.formatFullVND(actualBalance));
+            tvIncome.setText(CurrencyFormatter.formatFullVND(totalIncome));
+            tvExpense.setText(CurrencyFormatter.formatFullVND(totalExpense));
         });
 
         // ============================================================

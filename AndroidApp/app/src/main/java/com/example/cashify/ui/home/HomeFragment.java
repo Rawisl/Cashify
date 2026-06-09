@@ -123,10 +123,12 @@ public class HomeFragment extends Fragment {
 
         // Dùng câu query lấy sẵn 5 giao dịch + Category từ Room (KHÔNG CẦN VÒNG LẶP NẶNG MÁY)
         viewModel.getRecentTransactionsWithCategory(currentWorkspaceId).observe(getViewLifecycleOwner(), transWithCatList -> {
-            if (transWithCatList != null && !transWithCatList.isEmpty()) {
-                List<TransactionViewModel.HistoryItem> recentItems = new ArrayList<>();
+            List<TransactionViewModel.HistoryItem> recentItems = new ArrayList<>();
 
+            if (transWithCatList != null) {
                 for (TransactionWithCategory item : transWithCatList) {
+                    if (item == null || item.transaction == null) continue;
+
                     // Check kỹ cả bên trong xem nó có null không, nếu null thì gán mặc định
                     String catName = (item.category != null && item.category.name != null) ? item.category.name : "Đang đồng bộ...";
                     String catIcon = (item.category != null && item.category.iconName != null) ? item.category.iconName : "ic_other";
@@ -134,10 +136,10 @@ public class HomeFragment extends Fragment {
 
                     recentItems.add(new TransactionViewModel.HistoryItem(item.transaction, catName, catIcon, catColor));
                 }
-
-                adapter.updateData(recentItems);
-                rvRecentTransactions.setVisibility(View.VISIBLE);
             }
+
+            adapter.updateData(recentItems);
+            rvRecentTransactions.setVisibility(recentItems.isEmpty() ? View.GONE : View.VISIBLE);
         });
 
         viewModel.getDashboardData().observe(getViewLifecycleOwner(), state -> {
@@ -147,9 +149,7 @@ public class HomeFragment extends Fragment {
             tvExpense.setText(CurrencyFormatter.formatFullVND(state.totalExpense));
 
             //Bơm data cho Legend Adapter (MỚI THÊM)
-            if (state.legendItems != null) {
-                legendAdapter.updateData(state.legendItems);
-            }
+            legendAdapter.updateData(state.legendItems);
 
             //Vẽ biểu đồ gọn
             ArrayList<PieEntry> entries = new ArrayList<>();
@@ -251,6 +251,7 @@ public class HomeFragment extends Fragment {
                 .listenToUnreadNotifications(new com.example.cashify.data.remote.FirebaseManager.DataCallback<Integer>() {
                     @Override
                     public void onSuccess(Integer count) {
+                        if (!isAdded() || getView() == null) return;
                         if (count != null && count > 0) {
                             tvNotificationBadge.setVisibility(View.VISIBLE);
                             tvNotificationBadge.setText(count > 9 ? "9+" : String.valueOf(count));
@@ -261,6 +262,7 @@ public class HomeFragment extends Fragment {
 
                     @Override
                     public void onError(String message) {
+                        if (!isAdded() || getView() == null) return;
                         tvNotificationBadge.setVisibility(View.GONE);
                     }
                 });

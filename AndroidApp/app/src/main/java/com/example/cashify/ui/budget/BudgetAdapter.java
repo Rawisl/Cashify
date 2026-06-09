@@ -36,7 +36,7 @@ public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.BudgetView
     public List<BudgetWithSpent> getBudgets() { return budgetList; }
 
     public void setBudgets(List<BudgetWithSpent> budgets) {
-        this.budgetList = budgets;
+        this.budgetList = budgets != null ? budgets : new ArrayList<>();
         notifyDataSetChanged();
     }
 
@@ -83,6 +83,7 @@ public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.BudgetView
         } catch (Exception e) {
             holder.ivCategoryIcon.setBackgroundTintList(ColorStateList.valueOf(
                     ContextCompat.getColor(context, R.color.status_background_red)));
+            holder.ivCategoryIcon.setImageTintList(ColorStateList.valueOf(Color.GRAY));
         }
 
 
@@ -95,6 +96,7 @@ public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.BudgetView
         if (isUnplanned) {
             holder.tvSpentAndLimit.setText(shortSpent + " (Unplanned)");
             holder.tvPercent.setText(""); // Không hiện % khi chưa có hạn mức
+            holder.tvPercent.setTextColor(ContextCompat.getColor(context, R.color.black));
             holder.pbBudget.setMax(100);
             ObjectAnimator.ofInt(holder.pbBudget, "progress", 0, 100)
                     .setDuration(1000)
@@ -157,7 +159,9 @@ public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.BudgetView
         }
 
         //bắt sự kiện click để mở numpad
-        holder.itemView.setOnClickListener(v -> listener.onBudgetClick(item));
+        holder.itemView.setOnClickListener(v -> {
+            if (listener != null) listener.onBudgetClick(item);
+        });
     }
 
     @Override

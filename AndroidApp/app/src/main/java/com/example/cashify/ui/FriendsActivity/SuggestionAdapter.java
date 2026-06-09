@@ -31,12 +31,12 @@ public class SuggestionAdapter extends RecyclerView.Adapter<SuggestionAdapter.Vi
     private boolean showSeeAllCard;
 
     public SuggestionAdapter(List<User> users, ActionListener listener) {
-        this.users = users;
+        this.users = users != null ? users : java.util.Collections.emptyList();
         this.listener = listener;
     }
 
     public SuggestionAdapter(List<User> users, boolean showSeeAllCard, ActionListener listener) {
-        this.users = users;
+        this.users = users != null ? users : java.util.Collections.emptyList();
         this.showSeeAllCard = showSeeAllCard;
         this.listener = listener;
     }
@@ -59,7 +59,9 @@ public class SuggestionAdapter extends RecyclerView.Adapter<SuggestionAdapter.Vi
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         if (holder instanceof SeeAllViewHolder) {
-            holder.itemView.setOnClickListener(v -> listener.onSeeAll());
+            holder.itemView.setOnClickListener(v -> {
+                if (listener != null) listener.onSeeAll();
+            });
             return;
         }
 
@@ -72,8 +74,12 @@ public class SuggestionAdapter extends RecyclerView.Adapter<SuggestionAdapter.Vi
         boolean pending = user.getFriendStatus() == 2;
         userHolder.btnAddFriend.setVisibility(pending ? View.GONE : View.VISIBLE);
         userHolder.tvSentRequest.setVisibility(pending ? View.VISIBLE : View.GONE);
-        userHolder.btnAddFriend.setOnClickListener(v -> listener.onAddFriend(user));
-        userHolder.tvSentRequest.setOnClickListener(v -> listener.onCancelRequest(user));
+        userHolder.btnAddFriend.setOnClickListener(v -> {
+            if (listener != null) listener.onAddFriend(user);
+        });
+        userHolder.tvSentRequest.setOnClickListener(v -> {
+            if (listener != null) listener.onCancelRequest(user);
+        });
     }
 
     @Override
@@ -82,7 +88,7 @@ public class SuggestionAdapter extends RecyclerView.Adapter<SuggestionAdapter.Vi
     }
 
     public void updateList(List<User> newList) {
-        users = newList;
+        users = newList != null ? newList : java.util.Collections.emptyList();
         notifyDataSetChanged();
     }
 
