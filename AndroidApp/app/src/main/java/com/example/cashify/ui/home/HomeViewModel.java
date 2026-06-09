@@ -32,11 +32,11 @@ public class HomeViewModel extends AndroidViewModel {
 
     // Bộ màu chuẩn cho Rule of 5 (5 màu nổi + 1 màu xám)
     private final int[] CHART_COLORS = {
-            Color.parseColor("#00BCD4"), // Cyan (Màu 1)
-            Color.parseColor("#FF9800"), // Orange (Màu 2)
-            Color.parseColor("#AB47BC"), // Purple (Màu 3)
-            Color.parseColor("#FF4081"), // Pink (Màu 4)
-            Color.parseColor("#4CAF50")  // Green (Màu 5)
+            Color.parseColor("#6B759E"), // xanh đậm (Màu 1)
+            Color.parseColor("#000767"), // Orange (Màu 2)
+            Color.parseColor("#BBC5F2"), // Purple (Màu 3)
+            Color.parseColor("#666FCA"), // Pink (Màu 4)
+            Color.parseColor("#5B5F64")  // Green (Màu 5)
     };
     private final int COLOR_OTHERS = Color.parseColor("#BDBDBD"); // Grey (Mục Khác)
     public static class DashboardState {

@@ -31,7 +31,7 @@ public class FriendAdapter extends RecyclerView.Adapter<FriendAdapter.ViewHolder
     private final ActionListener listener;
 
     public FriendAdapter(List<User> users, ActionListener listener) {
-        this.users = users;
+        this.users = users != null ? users : java.util.Collections.emptyList();
         this.listener = listener;
     }
 
@@ -55,25 +55,37 @@ public class FriendAdapter extends RecyclerView.Adapter<FriendAdapter.ViewHolder
                 holder.btnMessage.setVisibility(View.VISIBLE);
                 holder.btnUnfriend.setVisibility(View.VISIBLE);
                 holder.tvStatus.setText("Friends");
-                holder.btnMessage.setOnClickListener(v -> listener.onMessage(user));
-                holder.btnUnfriend.setOnClickListener(v -> listener.onUnfriend(user));
+                holder.btnMessage.setOnClickListener(v -> {
+                    if (listener != null) listener.onMessage(user);
+                });
+                holder.btnUnfriend.setOnClickListener(v -> {
+                    if (listener != null) listener.onUnfriend(user);
+                });
                 break;
             case 2:
                 holder.tvSentRequest.setVisibility(View.VISIBLE);
                 holder.tvStatus.setText("Waiting for response");
-                holder.tvSentRequest.setOnClickListener(v -> listener.onCancelRequest(user));
+                holder.tvSentRequest.setOnClickListener(v -> {
+                    if (listener != null) listener.onCancelRequest(user);
+                });
                 break;
             case 3:
                 holder.btnAccept.setVisibility(View.VISIBLE);
                 holder.btnDecline.setVisibility(View.VISIBLE);
                 holder.tvStatus.setText("Friend request sent");
-                holder.btnAccept.setOnClickListener(v -> listener.onAccept(user));
-                holder.btnDecline.setOnClickListener(v -> listener.onDecline(user));
+                holder.btnAccept.setOnClickListener(v -> {
+                    if (listener != null) listener.onAccept(user);
+                });
+                holder.btnDecline.setOnClickListener(v -> {
+                    if (listener != null) listener.onDecline(user);
+                });
                 break;
             default:
                 holder.btnAddFriend.setVisibility(View.VISIBLE);
                 holder.tvStatus.setText(user.getEmail() != null ? user.getEmail() : "");
-                holder.btnAddFriend.setOnClickListener(v -> listener.onAddFriend(user));
+                holder.btnAddFriend.setOnClickListener(v -> {
+                    if (listener != null) listener.onAddFriend(user);
+                });
                 break;
         }
     }
@@ -84,7 +96,7 @@ public class FriendAdapter extends RecyclerView.Adapter<FriendAdapter.ViewHolder
     }
 
     public void updateList(List<User> newList) {
-        users = newList;
+        users = newList != null ? newList : java.util.Collections.emptyList();
         notifyDataSetChanged();
     }
 

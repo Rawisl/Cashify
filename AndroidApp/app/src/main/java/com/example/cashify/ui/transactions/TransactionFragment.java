@@ -1,6 +1,7 @@
 package com.example.cashify.ui.transactions;
 
 import android.content.Intent;
+import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -42,6 +43,7 @@ public class TransactionFragment extends Fragment {
     private FilterChipAdapter chipAdapter;
     private RecyclerView rvHistory, rvFilterChips;
     private LinearLayout layoutEmpty;
+    private EditText etSearch;
 
     private String currentWorkspaceId = "PERSONAL";
 
@@ -67,6 +69,7 @@ public class TransactionFragment extends Fragment {
     private void initViews(View view) {
         rvHistory = view.findViewById(R.id.rvHistory);
         layoutEmpty = view.findViewById(R.id.layoutEmpty);
+        etSearch = view.findViewById(R.id.etSearch);
 
         // CHÚ Ý: Bạn nhớ thêm RecyclerView này vào fragment_transaction.xml nhé
         rvFilterChips = view.findViewById(R.id.rvFilterChips);
@@ -118,7 +121,6 @@ public class TransactionFragment extends Fragment {
                 chipAdapter.notifyItemChanged(position);
 
                 // Lấy lại danh sách với query (nếu đang search dở)
-                EditText etSearch = getView().findViewById(R.id.etSearch);
                 String query = (etSearch != null) ? etSearch.getText().toString().trim() : "";
                 viewModel.fetchHistoryData(currentWorkspaceId, query);
             }
@@ -138,6 +140,7 @@ public class TransactionFragment extends Fragment {
                 rvHistory.setVisibility(View.VISIBLE);
                 layoutEmpty.setVisibility(View.GONE);
             } else {
+                historyAdapter.setHistoryData(null);
                 rvHistory.setVisibility(View.GONE);
                 layoutEmpty.setVisibility(View.VISIBLE);
             }
@@ -151,7 +154,6 @@ public class TransactionFragment extends Fragment {
         MainViewModel mainViewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
         mainViewModel.syncCompleted.observe(getViewLifecycleOwner(), isDone -> {
             if (isDone != null && isDone) {
-                EditText etSearch = getView().findViewById(R.id.etSearch);
                 String query = (etSearch != null) ? etSearch.getText().toString().trim() : "";
 
                 viewModel.fetchHistoryData(currentWorkspaceId, query);
@@ -161,7 +163,7 @@ public class TransactionFragment extends Fragment {
 
     private void setupListeners(View view) {
         // Cập nhật lại Search logic: Chỉ cần truyền query, ViewModel tự kết hợp với các Filter state
-        EditText etSearch = view.findViewById(R.id.etSearch);
+        if (etSearch == null) return;
         etSearch.addTextChangedListener(new android.text.TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -258,6 +260,7 @@ public class TransactionFragment extends Fragment {
     }
     private void showCategoryBottomSheet(FilterChip chip, int position) {
         BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(requireContext());
+        Context appContext = requireContext().getApplicationContext();
 
         // 1. Gọi giao diện XML
         View bottomSheetView = getLayoutInflater().inflate(R.layout.bottom_sheet_filter, null);
@@ -269,11 +272,12 @@ public class TransactionFragment extends Fragment {
         rvCategories.setLayoutManager(new GridLayoutManager(requireContext(), 4));
 
         new Thread(() -> {
-            AppDatabase db = AppDatabase.getInstance(requireContext());
+            AppDatabase db = AppDatabase.getInstance(appContext);
             List<Category> categories = db.categoryDao().getAll();
 
+            if (!isAdded()) return;
             requireActivity().runOnUiThread(() -> {
-                if (categories == null || categories.isEmpty()) return;
+                if (!isAdded() || getContext() == null || categories == null || categories.isEmpty()) return;
 
                 // 2. TÁI SỬ DỤNG CategoryPickerAdapter đã có sẵn màu và hiệu ứng siêu đẹp
                 CategoryPickerAdapter adapter = new CategoryPickerAdapter(requireContext(), categories, selectedCat -> {
@@ -281,7 +285,8 @@ public class TransactionFragment extends Fragment {
                     chip.setActive(true);
                     chip.setActiveLabel(selectedCat.name);
 
-                    int resId = getContext().getResources().getIdentifier(selectedCat.iconName, "drawable", getContext().getPackageName());
+                    String iconName = selectedCat.iconName != null ? selectedCat.iconName : "";
+                    int resId = requireContext().getResources().getIdentifier(iconName, "drawable", requireContext().getPackageName());
                     if (resId != 0) chip.setIconRes(resId);
 
                     chipAdapter.notifyItemChanged(position);
@@ -306,6 +311,9 @@ public class TransactionFragment extends Fragment {
             @Override
             public int getMovementFlags(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
                 int position = viewHolder.getAdapterPosition();
+                if (position == RecyclerView.NO_POSITION) {
+                    return makeMovementFlags(0, 0);
+                }
                 TransactionViewModel.HistoryItem item = historyAdapter.getItemAt(position);
 
                 if (item.getType() == TransactionViewModel.HistoryItem.TYPE_DATE_HEADER) {
@@ -322,6 +330,7 @@ public class TransactionFragment extends Fragment {
             @Override
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
                 int position = viewHolder.getAdapterPosition();
+                if (position == RecyclerView.NO_POSITION) return;
                 TransactionViewModel.HistoryItem item = historyAdapter.getItemAt(position);
 
                 if (item.getType() == TransactionViewModel.HistoryItem.TYPE_TRANSACTION) {
@@ -373,7 +382,6 @@ public class TransactionFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        EditText etSearch = getView().findViewById(R.id.etSearch);
         String query = (etSearch != null) ? etSearch.getText().toString().trim() : "";
         viewModel.fetchHistoryData(currentWorkspaceId, query);
     }

@@ -24,7 +24,7 @@
         android:gravity="center_vertical"
         android:clickable="false"
         android:focusable="false"
-        android:background="@null">
+        android:background="#000000">
 
         <!-- Icon Danh mục -->
         <com.google.android.material.imageview.ShapeableImageView

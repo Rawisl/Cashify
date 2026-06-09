@@ -342,9 +342,8 @@ public class BudgetFragment extends Fragment {
 
     private void updateToggleColors() {
         if (getContext() == null) return;
-        int colorGreen = ContextCompat.getColor(requireContext(), R.color.status_green);
         int colorWhite = ContextCompat.getColor(requireContext(), R.color.white);
-        int colorBrand = ContextCompat.getColor(requireContext(), R.color.brand_primary);
+        int colorBrand = Color.parseColor("#1A237E");
         int colorTransparent = Color.TRANSPARENT;
 
         if (btnAddBudget != null) {

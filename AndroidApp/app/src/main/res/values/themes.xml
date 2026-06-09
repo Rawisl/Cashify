@@ -21,7 +21,7 @@
 
 
     <style name="circle">
-        <item name="cornerFamily">rounded</item>
+        <item name="android:radius">24dp</item>
         <item name="cornerSize">50%</item>
     </style>
 
@@ -233,7 +233,7 @@
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_gravity">left</item>
-        <item name="android:textColor">@color/screen_title</item>
+        <item name="android:textColor">@color/brand_primary</item>
         <item name="android:fontFamily">@font/inter_bold</item>
         <item name="android:layout_marginLeft">10dp</item>
         <item name="android:textSize">25sp</item>
@@ -248,9 +248,11 @@
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:fontFamily">@font/inter_regular</item>
-        <item name="android:textColor">@color/bg_main</item>
+        <item name="android:textColor">@color/bg_title</item>
         <item name="android:textSize">15sp</item>
+        <item name="android:textStyle">bold</item>
     </style>
+
 
     <style name="main_card_left_label">
         <item name="android:layout_width">wrap_content</item>
@@ -291,7 +293,7 @@
         <item name="android:includeFontPadding">false</item>
         <item name="android:maxLines">1</item>
         <item name="android:ellipsize">end</item>
-        <item name="android:textAlignment">viewEnd</item>
+
     </style>
 
     <style name="main_money_amount">
@@ -466,7 +468,7 @@
         <item name="fontFamily">@font/inter_bold</item>
         <item name="android:textSize">10.5sp</item>
         <item name="android:singleLine">true</item>
-        <item name="android:includeFontPadding">false</item>
+
     </style>
 
     <style name="BottomNavWorkspaceLabelInactive" parent="TextAppearance.MaterialComponents.Caption">
