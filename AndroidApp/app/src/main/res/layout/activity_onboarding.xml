@@ -23,7 +23,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:fontFamily="@font/outfit_bold"
-            android:text="cashify"
+            android:text="@string/cashify"
             android:textColor="#1A237E"
             android:textSize="38sp" />
 
@@ -45,7 +45,7 @@
                 android:layout_marginStart="28dp"
                 android:layout_marginTop="36dp"
                 android:fontFamily="@font/outfit_bold"
-                android:text="✦"
+                android:text="@string/diamond_sign"
                 android:textColor="#FFB36B"
                 android:textSize="26sp" />
 
@@ -56,7 +56,7 @@
                 android:layout_marginTop="52dp"
                 android:layout_marginEnd="34dp"
                 android:fontFamily="@font/outfit_bold"
-                android:text="✦"
+                android:text="@string/diamond_sign"
                 android:textColor="#D4A857"
                 android:textSize="20sp" />
 
@@ -69,7 +69,7 @@
                 android:background="@drawable/bg_social_warm_chip"
                 android:fontFamily="@font/inter_bold"
                 android:gravity="center"
-                android:text="$"
+                android:text="@string/dollar_sign"
                 android:textColor="#D4A857"
                 android:textSize="16sp" />
 
@@ -82,7 +82,7 @@
                 android:background="@drawable/bg_social_warm_chip"
                 android:fontFamily="@font/inter_bold"
                 android:gravity="center"
-                android:text="$"
+                android:text="@string/dollar_sign"
                 android:textColor="#D4A857"
                 android:textSize="13sp" />
 
@@ -91,7 +91,7 @@
                 android:layout_width="268dp"
                 android:layout_height="268dp"
                 android:layout_gravity="center"
-                android:contentDescription="Cashy"
+                android:contentDescription="@string/cashy"
                 android:scaleType="fitCenter"
                 android:src="@drawable/cashy_mascot" />
         </FrameLayout>
@@ -112,7 +112,7 @@
                 android:fontFamily="@font/outfit_bold"
                 android:gravity="center"
                 android:lineSpacingExtra="2dp"
-                android:text="Money feels friendlier"
+                android:text="@string/money_feels_friendlier"
                 android:textColor="#1A237E"
                 android:textSize="22sp" />
 
@@ -123,7 +123,7 @@
                 android:fontFamily="@font/inter_regular"
                 android:gravity="center"
                 android:lineSpacingExtra="4dp"
-                android:text="Track spending, savings, and daily goals."
+                android:text="@string/track_spending_savings_and_daily_goals"
                 android:textColor="#607D8B"
                 android:textSize="14sp" />
 
@@ -134,7 +134,7 @@
                 android:layout_marginTop="24dp"
                 android:elevation="4dp"
                 android:fontFamily="@font/inter_bold"
-                android:text="Get Started"
+                android:text="@string/get_started"
                 android:textAllCaps="false"
                 android:textColor="#FFFFFF"
                 android:textSize="15sp"
@@ -150,7 +150,7 @@
                 android:gravity="center"
                 android:paddingStart="8dp"
                 android:paddingEnd="8dp"
-                android:text="Already have an account? Sign In"
+                android:text="@string/already_have_an_account_sign_in"
                 android:textColor="#607D8B"
                 android:textSize="14sp" />
         </LinearLayout>

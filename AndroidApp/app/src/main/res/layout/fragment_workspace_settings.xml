@@ -21,18 +21,18 @@
         <TextView
             android:id="@+id/tvSettings"
             style="@style/screen_title"
-            android:text="Workspace Settings" />
+            android:text="@string/workspace_settings" />
 
         <TextView
             android:id="@+id/tv_Settings_SubTitle"
             style="@style/screen_subtitle"
-            android:text="Manage your shared fund" />
+            android:text="@string/setting_subtitle" />
 
         <!-- Section PREFERENCES (Categories & Members) -->
         <TextView
             style="@style/section_header"
             android:layout_marginTop="16dp"
-            android:text="Management" />
+            android:text="@string/section_header" />
 
         <androidx.cardview.widget.CardView style="@style/cardview_buttons">
 
@@ -53,11 +53,11 @@
 
                         <TextView
                             style="@style/btn_item_title"
-                            android:text="Members" />
+                            android:text="@string/members" />
 
                         <TextView
                             style="@style/btn_item_description"
-                            android:text="View and manage participants" />
+                            android:text="@string/member_description" />
                     </LinearLayout>
 
                     <ImageView style="@style/btn_next_icon" />
@@ -80,11 +80,11 @@
 
                         <TextView
                             style="@style/btn_item_title"
-                            android:text="Categories" />
+                            android:text="@string/categories" />
 
                         <TextView
                             style="@style/btn_item_description"
-                            android:text="Add or edit fund categories" />
+                            android:text="@string/add_or_edit_fund_categories" />
                     </LinearLayout>
 
                     <ImageView style="@style/btn_next_icon" />
@@ -97,7 +97,7 @@
         <TextView
             style="@style/section_header"
             android:layout_marginTop="24dp"
-            android:text="Danger Zone"
+            android:text="@string/danger_zone"
             android:textColor="@color/status_red" />
 
         <androidx.cardview.widget.CardView style="@style/cardview_buttons">
@@ -120,13 +120,13 @@
                         <TextView
                             android:id="@+id/tv_leave_delete_title"
                             style="@style/btn_item_title"
-                            android:text="Leave Workspace"
+                            android:text="@string/leave_workspace"
                             android:textColor="@color/status_red" />
 
                         <TextView
                             android:id="@+id/tv_leave_delete_desc"
                             style="@style/btn_item_description"
-                            android:text="Remove yourself from this fund" />
+                            android:text="@string/remove_yourself_from_this_fund" />
                     </LinearLayout>
 
                     <ImageView style="@style/btn_next_icon" />

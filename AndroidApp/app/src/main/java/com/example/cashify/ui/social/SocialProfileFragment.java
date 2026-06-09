@@ -150,24 +150,24 @@ public class SocialProfileFragment extends Fragment {
         view.findViewById(R.id.actionSetMilestone).setOnClickListener(v -> openCreatePost("milestone"));
         view.findViewById(R.id.actionFirstEntry).setOnClickListener(v -> openCreatePost("thoughts"));
         view.findViewById(R.id.actionAchievementEarly).setOnClickListener(v ->
-                Toast.makeText(requireContext(), "Khởi đầu sớm: đăng bài đầu tiên để mở khóa.", Toast.LENGTH_SHORT).show());
+                Toast.makeText(requireContext(), "Early Start: post your first post to unlock.", Toast.LENGTH_SHORT).show());
         view.findViewById(R.id.actionAchievementTop).setOnClickListener(v ->
-                Toast.makeText(requireContext(), "Top 1%: duy trì tương tác đều đặn.", Toast.LENGTH_SHORT).show());
+                Toast.makeText(requireContext(), "Top 1%: maintain consistent engagement.", Toast.LENGTH_SHORT).show());
         view.findViewById(R.id.actionAchievementVault).setOnClickListener(v ->
-                Toast.makeText(requireContext(), "Két an toàn: hoàn thành một cột mốc tiết kiệm.", Toast.LENGTH_SHORT).show());
+                Toast.makeText(requireContext(), "Safe Vault: complete a savings milestone.", Toast.LENGTH_SHORT).show());
         view.findViewById(R.id.actionAchievementGiver).setOnClickListener(v ->
-                Toast.makeText(requireContext(), "Người chia sẻ: lan tỏa một mẹo tài chính hữu ích.", Toast.LENGTH_SHORT).show());
+                Toast.makeText(requireContext(), "The Giver: share a useful financial tip.", Toast.LENGTH_SHORT).show());
     }
 
     private void shareProfile() {
         String name = tvDisplayName.getText().toString().trim();
-        String text = (name.isEmpty() ? "Hồ sơ Cashify" : name)
+        String text = (name.isEmpty() ? "Cashify Profile" : name)
                 + "\n" + profileLink()
-                + "\nCùng xem hành trình tài chính của mình trên Cashify.";
+                + "\nCheck out my financial journey on Cashify.";
         Intent intent = new Intent(Intent.ACTION_SEND);
         intent.setType("text/plain");
         intent.putExtra(Intent.EXTRA_TEXT, text);
-        startActivity(Intent.createChooser(intent, "Chia sẻ hồ sơ"));
+        startActivity(Intent.createChooser(intent, "Share profile"));
     }
 
     private void copyProfileLink() {
@@ -175,7 +175,7 @@ public class SocialProfileFragment extends Fragment {
                 .getSystemService(Context.CLIPBOARD_SERVICE);
         if (clipboard != null) {
             clipboard.setPrimaryClip(ClipData.newPlainText("Cashify profile", profileLink()));
-            Toast.makeText(requireContext(), "Đã sao chép liên kết hồ sơ.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), "Profile link copied", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -207,19 +207,19 @@ public class SocialProfileFragment extends Fragment {
         socialViewModel.getProfile().observe(getViewLifecycleOwner(), doc -> {
             if (doc == null) return;
             String displayName = firstNonEmpty(doc.getString("displayName"),
-                    doc.getString("username"), "Người dùng Cashify");
+                    doc.getString("username"), "Cashify User");
             String bio = firstNonEmpty(doc.getString("bio"), doc.getString("status"),
-                    doc.getString("about"), "Sẵn sàng chia sẻ hành trình tài chính.");
+                    doc.getString("about"), "Ready to share your finance journey.");
             String avatarUrl = doc.getString("avatarUrl");
             tvDisplayName.setText(displayName);
             tvBio.setText(bio);
             tvJoinedDate.setText(joinedLabel(doc));
-            tvStreakCount.setText(Math.max(0, numberField(doc, "streakDays", 0)) + " ngày");
+            tvStreakCount.setText(Math.max(0, numberField(doc, "streakDays", 0)) + " days");
             ImageHelper.loadAvatar(avatarUrl, imgAvatar, firstNonEmpty(displayName, currentUserId));
         });
 
         socialViewModel.getFriendCount().observe(getViewLifecycleOwner(), count ->
-                tvFriendCount.setText(Math.max(0, count) + " bạn bè"));
+                tvFriendCount.setText(Math.max(0, count) + " friends"));
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -293,8 +293,8 @@ public class SocialProfileFragment extends Fragment {
         }
 
         myPostsAdapter.submitList(posts);
-        tvPostCount.setText(posts.size() + " bài viết");
-        tvTrophyCount.setText(achievementCount + " thành tựu");
+        tvPostCount.setText(posts.size() + " posts");
+        tvTrophyCount.setText(achievementCount + " achivements");
         bindPinnedAchievement(firstAchievement, posts.size());
         showEmptyState(posts.isEmpty());
     }
@@ -360,8 +360,8 @@ public class SocialProfileFragment extends Fragment {
             return;
         }
         tvPinnedAchievement.setText(postCount > 0
-                ? "Đã bắt đầu xây dựng ngôi nhà tài chính cá nhân."
-                : "Chia sẻ cột mốc đầu tiên để ghim thành tựu nổi bật tại đây.");
+                ? "Started building your personal financial house."
+                : "Share your first milestone to pin a highlighted achievement here.");
     }
 
     private void showEmptyState(boolean show) {
@@ -372,12 +372,12 @@ public class SocialProfileFragment extends Fragment {
     private String joinedLabel(DocumentSnapshot doc) {
         long createdAt = numberField(doc, "createdAt", 0);
         if (createdAt <= 0) createdAt = numberField(doc, "joinedAt", 0);
-        if (createdAt <= 0) return "Thành viên Cashify";
-        return "Tham gia " + new SimpleDateFormat("MM/yyyy", Locale.getDefault()).format(new Date(createdAt));
+        if (createdAt <= 0) return "Cashify's member";
+        return "Participate " + new SimpleDateFormat("MM/yyyy", Locale.getDefault()).format(new Date(createdAt));
     }
 
     private String achievementTitle(String content) {
-        if (content == null || content.trim().isEmpty()) return "Cột mốc tài chính mới";
+        if (content == null || content.trim().isEmpty()) return "New finance milestone";
         return content.length() > 54 ? content.substring(0, 54).trim() + "..." : content.trim();
     }
 

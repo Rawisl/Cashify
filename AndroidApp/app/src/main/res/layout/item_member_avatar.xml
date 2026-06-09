@@ -27,6 +27,6 @@
         android:maxLines="1"
         android:textColor="@color/brand_primary"
         android:textSize="12sp"
-        tools:text="Hài" />
+        tools:text="@string/username" />
 
 </LinearLayout>

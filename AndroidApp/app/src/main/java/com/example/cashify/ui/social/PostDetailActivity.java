@@ -139,11 +139,11 @@ public class PostDetailActivity extends AppCompatActivity {
                 commentList,
                 new CommentAdapter.OnCommentActionListener() {
                     @Override public void onEditComment(int position) {
-                        Toast.makeText(PostDetailActivity.this, "Chỉnh sửa bình luận chưa được hỗ trợ", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(PostDetailActivity.this, "Edit comment unsupported", Toast.LENGTH_SHORT).show();
                     }
 
                     @Override public void onDeleteComment(int position) {
-                        Toast.makeText(PostDetailActivity.this, "Xóa bình luận chưa được hỗ trợ", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(PostDetailActivity.this, "Delete comment unsupported", Toast.LENGTH_SHORT).show();
                     }
 
                     @Override public void onHideComment(int position) {
@@ -374,11 +374,11 @@ public class PostDetailActivity extends AppCompatActivity {
     private void sendComment() {
         String text = etCommentInput.getText().toString().trim();
         if (text.isEmpty()) {
-            etCommentInput.setError("Nhập bình luận trước nhé");
+            etCommentInput.setError("Comment first");
             return;
         }
         if (authHeader == null) {
-            Toast.makeText(this, "Chưa đăng nhập", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Login first", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -437,7 +437,7 @@ public class PostDetailActivity extends AppCompatActivity {
         if (clipboard != null) {
             clipboard.setPrimaryClip(ClipData.newPlainText("Cashify post", "cashify://posts/" + postId));
         }
-        Toast.makeText(this, "Đã sao chép liên kết bài viết", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Post link copied", Toast.LENGTH_SHORT).show();
     }
 
     private Comment mapComment(ApiService.SocialCommentResponse item) {
@@ -445,7 +445,7 @@ public class PostDetailActivity extends AppCompatActivity {
                 item.id,
                 item.authorId,
                 item.authorAvatarUrl,
-                nonEmpty(item.authorName, "Người dùng Cashify"),
+                nonEmpty(item.authorName, "Cashify User"),
                 nonEmpty(item.content, ""),
                 item.timestamp > 0 ? TimeFormatter.format(item.timestamp) : "",
                 Math.max(0, item.likeCount)

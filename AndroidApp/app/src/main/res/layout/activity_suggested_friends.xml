@@ -20,7 +20,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:text="Gợi ý kết bạn"
+            android:text="@string/friend_suggestion"
             android:textAppearance="@style/ToolbarTitleFont"
             android:textColor="@color/white" />
     </com.google.android.material.appbar.MaterialToolbar>
@@ -42,7 +42,7 @@
             android:background="@null"
             android:drawableStart="@android:drawable/ic_menu_search"
             android:drawablePadding="10dp"
-            android:hint="Tìm kiếm bạn bè..."
+            android:hint="@string/searching_friend"
             android:imeOptions="actionSearch"
             android:inputType="text"
             android:paddingStart="20dp"
@@ -75,7 +75,7 @@
         android:fontFamily="@font/inter_regular"
         android:gravity="center"
         android:padding="18dp"
-        android:text="Chưa có gợi ý kết bạn mới."
+        android:text="@string/no_friend_suggestion"
         android:textColor="#607D8B"
         android:textSize="13sp"
         android:visibility="gone" />

@@ -83,7 +83,7 @@
                 <TextView
                     style="@style/section_header"
                     android:layout_marginTop="16dp"
-                    android:text="Icon &amp; Colors"
+                    android:text="@string/icon_amp_colors"
                     android:textColor="@color/section_header"
                     android:textSize="12sp" />
 

@@ -178,7 +178,7 @@
                             android:fontFamily="@font/inter_bold"
                             android:textColor="#1A237E"
                             android:textSize="13sp"
-                            tools:text="Week 1" />
+                            tools:text="@string/week" />
 
                         <ImageView
                             android:layout_width="15dp"
@@ -214,7 +214,7 @@
                             android:fontFamily="@font/inter_bold"
                             android:textColor="#1A237E"
                             android:textSize="13sp"
-                            tools:text="Month 4/2026" />
+                            tools:text="@string/month" />
 
                         <ImageView
                             android:layout_width="15dp"

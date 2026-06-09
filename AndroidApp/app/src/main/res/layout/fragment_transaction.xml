@@ -34,7 +34,7 @@
                 android:drawableStart="@android:drawable/ic_menu_search"
                 android:drawablePadding="14dp"
                 android:fontFamily="@font/inter_medium"
-                android:hint="Search transactions..."
+                android:hint="@string/search_transactions"
                 android:imeOptions="actionSearch"
                 android:paddingStart="18dp"
                 android:paddingEnd="18dp"

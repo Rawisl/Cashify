@@ -22,7 +22,7 @@
         android:ellipsize="end"
         android:fontFamily="@font/inter_medium"
         android:maxLines="1"
-        android:text="Shopping"
+        android:text="@string/category_legend_name"
         android:textColor="@color/item_title"
         android:textSize="14sp" />
 

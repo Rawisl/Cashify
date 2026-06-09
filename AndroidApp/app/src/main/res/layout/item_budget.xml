@@ -42,7 +42,7 @@
             app:layout_constraintEnd_toStartOf="@id/ivEdit"
             app:layout_constraintTop_toTopOf="@id/ivEdit"
             app:layout_constraintBottom_toBottomOf="@id/ivEdit"
-            tools:text="75%" />
+            tools:text="@string/percentage" />
 
         <ImageView
             android:id="@+id/ivEdit"
@@ -69,7 +69,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/ivCategoryIcon"
-            tools:text="Food" />
+            tools:text="@string/category_label" />
 
         <TextView
             android:id="@+id/tvSpentAndLimit"

@@ -25,7 +25,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:text="Chào buổi sáng,"
+                android:text="@string/good_day"
                 android:textAppearance="@style/ToolbarTitleFont"
                 android:textColor="@color/white" />
 
@@ -88,7 +88,7 @@
                     android:gravity="center"
                     android:paddingStart="12dp"
                     android:paddingEnd="12dp"
-                    android:text="Hồ sơ của bạn"
+                    android:text="@string/your_profile"
                     android:textColor="@color/white"
                     android:textSize="12sp" />
 
@@ -134,7 +134,7 @@
                     android:fontFamily="@font/inter_regular"
                     android:lineSpacingExtra="4dp"
                     android:maxLines="4"
-                    android:text="Nuôi dưỡng thói quen tài chính lành mạnh, chia sẻ góc nhìn về quản lý tiền bạc, tiết kiệm và sống có chủ đích."
+                    android:text="@string/bio"
                     android:textColor="#607D8B"
                     android:textSize="14sp" />
 
@@ -153,7 +153,7 @@
                         android:drawablePadding="5dp"
                         android:drawableTint="#1A237E"
                         android:fontFamily="@font/inter_medium"
-                        android:text="Thành viên Cashify"
+                        android:text="@string/cashify_member"
                         android:textColor="#1A237E"
                         android:textSize="12sp" />
 
@@ -168,7 +168,7 @@
                         android:drawableTint="#1A237E"
                         android:focusable="true"
                         android:fontFamily="@font/inter_medium"
-                        android:text="cashify.vn/ho-so"
+                        android:text="@string/profile_link"
                         android:textColor="#1A237E"
                         android:textSize="12sp" />
                 </LinearLayout>
@@ -201,7 +201,7 @@
                             android:layout_marginTop="18dp"
                             android:fontFamily="@font/inter_medium"
                             android:letterSpacing="0.08"
-                            android:text="BẠN BÈ"
+                            android:text="@string/social_profile_Friends"
                             android:textColor="#1A237E"
                             android:textSize="11sp" />
 
@@ -210,7 +210,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:fontFamily="@font/outfit_bold"
-                            android:text="0 bạn bè"
+                            android:text="@string/no_friend"
                             android:textColor="#607D8B"
                             android:textSize="23sp" />
                     </LinearLayout>
@@ -237,7 +237,7 @@
                             android:layout_marginTop="18dp"
                             android:fontFamily="@font/inter_medium"
                             android:letterSpacing="0.08"
-                            android:text="DẤU ẤN"
+                            android:text="@string/stamp"
                             android:textColor="@color/white"
                             android:textSize="11sp" />
 
@@ -246,7 +246,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:fontFamily="@font/outfit_bold"
-                            android:text="0 thành tựu"
+                            android:text="@string/no_achievement"
                             android:textColor="#DCE2F0"
                             android:textSize="23sp" />
                     </LinearLayout>
@@ -273,7 +273,7 @@
                             android:layout_height="wrap_content"
                             android:fontFamily="@font/inter_medium"
                             android:letterSpacing="0.08"
-                            android:text="MẦM TÀI CHÍNH"
+                            android:text="@string/finance_sprout"
                             android:textColor="#607D8B"
                             android:textSize="11sp" />
 
@@ -282,7 +282,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:fontFamily="@font/outfit_bold"
-                            android:text="0 bài viết"
+                            android:text="@string/no_post"
                             android:textColor="#1A237E"
                             android:textSize="24sp" />
                     </LinearLayout>
@@ -299,7 +299,7 @@
                         android:includeFontPadding="false"
                         android:paddingTop="7dp"
                         android:paddingBottom="6dp"
-                        android:text="0d"
+                        android:text="@string/zero_d"
                         android:textColor="#EF5350"
                         android:textSize="11sp" />
                 </LinearLayout>
@@ -310,7 +310,7 @@
                     android:layout_marginTop="30dp"
                     android:fontFamily="@font/inter_medium"
                     android:letterSpacing="0.08"
-                    android:text="THÀNH TỰU"
+                    android:text="@string/Achievement"
                     android:textColor="#1A237E"
                     android:textSize="12sp" />
 
@@ -343,7 +343,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="7dp"
                             android:fontFamily="@font/inter_regular"
-                            android:text="Khởi đầu sớm"
+                            android:text="@string/a_head_start"
                             android:textColor="#607D8B"
                             android:textSize="10sp" />
                     </LinearLayout>
@@ -371,7 +371,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="7dp"
                             android:fontFamily="@font/inter_regular"
-                            android:text="Top 1%"
+                            android:text="@string/mount_everest_aint_got_shit_on_me"
                             android:textColor="#607D8B"
                             android:textSize="10sp" />
                     </LinearLayout>
@@ -399,7 +399,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="7dp"
                             android:fontFamily="@font/inter_regular"
-                            android:text="Két an toàn"
+                            android:text="@string/safely_safe"
                             android:textColor="#607D8B"
                             android:textSize="10sp" />
                     </LinearLayout>
@@ -427,7 +427,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="7dp"
                             android:fontFamily="@font/inter_regular"
-                            android:text="Người chia sẻ"
+                            android:text="@string/share_n_care"
                             android:textColor="#607D8B"
                             android:textSize="10sp" />
                     </LinearLayout>
@@ -445,7 +445,7 @@
                     android:fontFamily="@font/inter_medium"
                     android:lineSpacingExtra="3dp"
                     android:padding="13dp"
-                    android:text="Ghim một cột mốc để khu vườn tài chính của bạn sáng hơn."
+                    android:text="@string/pin_milestone"
                     android:textColor="#607D8B"
                     android:textSize="12sp" />
 
@@ -454,7 +454,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="28dp"
                     android:fontFamily="@font/outfit_bold"
-                    android:text="Hành trình của bạn"
+                    android:text="@string/your_journey"
                     android:textColor="#1A237E"
                     android:textSize="21sp" />
 
@@ -493,7 +493,7 @@
                         android:layout_marginTop="18dp"
                         android:fontFamily="@font/outfit_bold"
                         android:gravity="center"
-                        android:text="Gieo suy nghĩ đầu tiên"
+                        android:text="@string/new_thought"
                         android:textColor="#1A237E"
                         android:textSize="21sp" />
 
@@ -504,7 +504,7 @@
                         android:fontFamily="@font/inter_regular"
                         android:gravity="center"
                         android:lineSpacingExtra="3dp"
-                        android:text="Không gian của bạn đang chờ một câu chuyện đầu tiên. Chia sẻ một cột mốc tài chính hoặc một mục tiêu nhỏ."
+                        android:text="@string/firstly_post_prompt"
                         android:textColor="#607D8B"
                         android:textSize="13sp" />
 
@@ -519,7 +519,7 @@
                         android:focusable="true"
                         android:fontFamily="@font/inter_bold"
                         android:gravity="center"
-                        android:text="Bắt đầu viết"
+                        android:text="@string/start_write"
                         android:textColor="@color/white"
                         android:textSize="13sp" />
                 </LinearLayout>
@@ -554,7 +554,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="22dp"
                             android:fontFamily="@font/inter_bold"
-                            android:text="Tạo cột mốc"
+                            android:text="@string/create_milestone"
                             android:textColor="#1A237E"
                             android:textSize="12sp" />
 
@@ -564,7 +564,7 @@
                             android:layout_marginTop="5dp"
                             android:fontFamily="@font/inter_regular"
                             android:lineSpacingExtra="2dp"
-                            android:text="Định hình hành trình tài chính"
+                            android:text="@string/dinh_hinh_hanh_trinh_tai_chinh"
                             android:textColor="#607D8B"
                             android:textSize="10sp" />
                     </LinearLayout>
@@ -592,7 +592,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="22dp"
                             android:fontFamily="@font/inter_bold"
-                            android:text="Bài đầu tiên"
+                            android:text="@string/first_post"
                             android:textColor="#1A237E"
                             android:textSize="12sp" />
 
@@ -602,7 +602,7 @@
                             android:layout_marginTop="5dp"
                             android:fontFamily="@font/inter_regular"
                             android:lineSpacingExtra="2dp"
-                            android:text="Bắt đầu dòng chia sẻ"
+                            android:text="@string/start_sharing"
                             android:textColor="#607D8B"
                             android:textSize="10sp" />
                     </LinearLayout>
@@ -618,7 +618,7 @@
         android:layout_gravity="bottom|end"
         android:layout_marginEnd="20dp"
         android:layout_marginBottom="24dp"
-        android:contentDescription="Tạo bài viết"
+        android:contentDescription="@string/create_post"
         android:src="@drawable/ic_add_bold"
         app:backgroundTint="#1A237E"
         app:borderWidth="0dp"

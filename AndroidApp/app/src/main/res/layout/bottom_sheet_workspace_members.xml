@@ -20,7 +20,7 @@
         android:layout_height="wrap_content"
         android:fontFamily="@font/inter_bold"
         android:gravity="center"
-        android:text="Workspace Members"
+        android:text="@string/workspace_members"
         android:textColor="@color/brand_primary"
         android:textSize="18sp"
         android:layout_marginBottom="16dp"/>

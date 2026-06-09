@@ -66,7 +66,7 @@ public class SuggestionAdapter extends RecyclerView.Adapter<SuggestionAdapter.Vi
         User user = users.get(position);
         UserViewHolder userHolder = (UserViewHolder) holder;
         userHolder.tvFriendName.setText(user.getNameToShow());
-        userHolder.tvStatus.setText(user.getEmail() != null ? user.getEmail() : "Cashify");
+        userHolder.tvStatus.setText(user.getEmail() != null ? user.getEmail() : "Cashify User");
         ImageHelper.loadAvatar(user.getAvatarUrl(), userHolder.imgAvatar, user.getNameToShow());
 
         boolean pending = user.getFriendStatus() == 2;

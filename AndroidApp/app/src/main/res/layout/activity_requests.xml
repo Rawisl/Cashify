@@ -13,7 +13,7 @@
         android:background="#F0F2F8"
         app:navigationIcon="@drawable/ic_arrow_left_back"
         app:navigationIconTint="#1A237E"
-        app:title="Lời mời kết bạn"
+        app:title="@string/friend_request"
         app:titleCentered="true"
         app:titleTextColor="#1A237E" />
 
@@ -57,14 +57,14 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="🤝"
+            android:text="@string/hold_hands"
             android:textSize="48sp" />
 
         <TextView
             android:id="@+id/tvEmptyMessage"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="No requests yet"
+            android:text="@string/no_requests_yet"
             android:textSize="16sp"
             android:textColor="#9E9E9E"
             android:layout_marginTop="8dp" />

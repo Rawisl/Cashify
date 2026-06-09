@@ -86,8 +86,8 @@ public class CommunityFeedFragment extends Fragment {
 
     private Uri selectedImageUri;
     private boolean milestoneMode;
-    private String selectedAudience = "Công khai";
-    private String selectedCategory = "Suy nghĩ";
+    private String selectedAudience = "Public";
+    private String selectedCategory = "Thoughts";
     private String selectedCategoryKey = "thoughts";
     private final Set<String> selectedTopicHashtags = new LinkedHashSet<>();
     private boolean applyingHashtagStyle = false;
@@ -106,10 +106,10 @@ public class CommunityFeedFragment extends Fragment {
                 if (fileSize > 10 * 1024 * 1024) {
                     DialogHelper.showCustomDialog(
                             requireContext(),
-                            "Ảnh quá lớn",
-                            "Ảnh bạn chọn vượt quá 10MB. Vui lòng chọn ảnh nhỏ hơn.",
-                            "Chọn lại",
-                            "Huỷ",
+                            "Image too large",
+                            "The image you selected exceeds 10MB. Please select a smaller image.",
+                            "Choose again",
+                            "Cancel",
                             DialogHelper.DialogType.DANGER,
                             true,
                             () -> actionPhoto.performClick(), // Dùng performClick thay vì gọi pickImageLauncher
@@ -121,7 +121,7 @@ public class CommunityFeedFragment extends Fragment {
                 selectedImageUri = uri;
                 imgPostPreview.setImageURI(uri);
                 imagePreviewContainer.setVisibility(View.VISIBLE);
-                txtComposerHint.setText("Đã thêm ảnh. Bạn có thể viết thêm mô tả hoặc đăng ngay.");
+                txtComposerHint.setText("Image added. You can add a description or post now.");
                 updateSubmitState();
             });
 
@@ -237,8 +237,8 @@ public class CommunityFeedFragment extends Fragment {
             String iconText = progress + "%";
             String title = "Tổng kết " + ("MONTH".equals(periodType) ? "Ngân sách tháng" : "Ngân sách tuần");
             String defaultDescription = remaining >= 0
-                    ? "Mình đã quản lý chi tiêu rất tốt trong kỳ này. Rất đáng tự hào! 🚀"
-                    : "Kỳ này đã chi tiêu vượt ngân sách, cần kỷ luật hơn vào kỳ sau. 🥲";
+                    ? "You've managed your spending very well this period. Great job! 🚀"
+                    : "You've gone over budget this period. Try to stay on track next time. 🥲";
 
             // Hiển thị lên giao diện thẻ Bo góc
             milestoneMode = true;
@@ -254,7 +254,7 @@ public class CommunityFeedFragment extends Fragment {
             actionMilestone.setVisibility(View.GONE);
 
             // Gợi ý cho người dùng viết caption
-            txtComposerHint.setText("Cột mốc của bạn đã sẵn sàng! Gõ thêm cảm nghĩ phía trên.");
+            txtComposerHint.setText("Your milestone is ready! Post your thought above.");
 
             // Đóng gói JSON sẵn, đợi bấm Đăng là phi lên C#
             try {
@@ -287,7 +287,7 @@ public class CommunityFeedFragment extends Fragment {
                 try {
                     org.json.JSONObject json = new org.json.JSONObject(oldMilestone);
                     milestonePreviewContainer.setVisibility(View.VISIBLE);
-                    tvPreviewIcon.setText(json.optString("iconText", "🏆"));
+                    tvPreviewIcon.setText(json.optString("iconText", getString(R.string.cup)));
                     tvPreviewTitle.setText(json.optString("title", "Cột mốc"));
                     tvPreviewMonth.setText(json.optString("month", ""));
                     tvPreviewAmount.setText(json.optString("amount", ""));
@@ -301,14 +301,14 @@ public class CommunityFeedFragment extends Fragment {
 
         updateAudienceButton();
         updateAudienceDock();
-        btnAudience.setOnClickListener(v -> selectAudience("Công khai"));
-        btnAudienceFriends.setOnClickListener(v -> selectAudience("Bạn bè"));
-        btnAudiencePrivate.setOnClickListener(v -> selectAudience("Chỉ mình tôi"));
+        btnAudience.setOnClickListener(v -> selectAudience("Public"));
+        btnAudienceFriends.setOnClickListener(v -> selectAudience("Friends"));
+        btnAudiencePrivate.setOnClickListener(v -> selectAudience("Private"));
         actionPhoto.setOnClickListener(v -> pickImageLauncher.launch("image/*"));
-        actionMilestone.setOnClickListener(v -> selectCategory("Cột mốc", "milestone", true, R.id.chipSaving));
-        actionThoughts.setOnClickListener(v -> selectCategory("Suy nghĩ", "thoughts", false, R.id.chipBudgeting));
-        actionAnalysis.setOnClickListener(v -> selectCategory("Phân tích", "analysis", false, R.id.chipInvesting));
-        actionShare.setOnClickListener(v -> selectCategory("Chia sẻ", "share", false, R.id.chipDebt));
+        actionMilestone.setOnClickListener(v -> selectCategory("Milestone", "milestone", true, R.id.chipSaving));
+        actionThoughts.setOnClickListener(v -> selectCategory("Thoughts", "thoughts", false, R.id.chipBudgeting));
+        actionAnalysis.setOnClickListener(v -> selectCategory("Analysis", "analysis", false, R.id.chipInvesting));
+        actionShare.setOnClickListener(v -> selectCategory("Share", "share", false, R.id.chipDebt));
         setupTopicHashtags();
         view.findViewById(R.id.btnRemoveImage).setOnClickListener(v -> clearSelectedImage());
         btnSubmitPost.setOnClickListener(v -> submitPost());
@@ -741,7 +741,7 @@ public class CommunityFeedFragment extends Fragment {
         selectedImageUri = null;
         imgPostPreview.setImageDrawable(null);
         imagePreviewContainer.setVisibility(View.GONE);
-        txtComposerHint.setText("Đã xoá ảnh.");
+        txtComposerHint.setText("Image removed.");
         updateSubmitState();
     }
 

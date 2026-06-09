@@ -322,10 +322,10 @@ public class BudgetFragment extends Fragment {
 
             tvMasterAlert.setVisibility(View.VISIBLE);
             if (totalCatLimits < limit && !(isLinkedMode && currentPeriodType.equals("MONTH"))) {
-                tvMasterAlert.setText("Ngân sách tổng còn trống " + CurrencyFormatter.formatCompactVND(limit - totalCatLimits));
+                tvMasterAlert.setText("Master budget is empty" + CurrencyFormatter.formatCompactVND(limit - totalCatLimits));
                 tvMasterAlert.setTextColor(Color.WHITE);
             } else if (totalCatLimits > limit && !(isLinkedMode && currentPeriodType.equals("MONTH"))) {
-                tvMasterAlert.setText("Ngân sách danh mục vượt mức tổng " + CurrencyFormatter.formatCompactVND(totalCatLimits - limit));
+                tvMasterAlert.setText("Category budgets exceed the Master budget by " + CurrencyFormatter.formatCompactVND(totalCatLimits - limit));
                 tvMasterAlert.setTextColor(Color.YELLOW);
             } else {
                 tvMasterAlert.setText(CurrencyFormatter.formatCompactVND(Math.abs(remaining)) + (remaining >= 0 ? " left" : " over"));

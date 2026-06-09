@@ -206,8 +206,8 @@ public class TransactionFragment extends Fragment {
     }
     private void showTypeFilterPopup(View anchorView, FilterChip chip, int position) {
         PopupMenu popup = new PopupMenu(requireContext(), anchorView);
-        popup.getMenu().add(0, 1, 0, "💰 Income");
-        popup.getMenu().add(0, 0, 0, "💸 Expense");
+        popup.getMenu().add(0, 1, 0, R.string.income_chip);
+        popup.getMenu().add(0, 0, 0, R.string.expense_chip);
 
         popup.setOnMenuItemClickListener(item -> {
             int typeId = item.getItemId(); // 1 là Thu, 0 là Chi
@@ -228,9 +228,9 @@ public class TransactionFragment extends Fragment {
     private void showMethodFilterPopup(View anchorView, FilterChip chip, int position) {
         PopupMenu popup = new PopupMenu(requireContext(), anchorView);
         // Tham số thứ 2 chính là itemId (0, 1, 2)
-        popup.getMenu().add(0, 0, 0, "💵 Cash");
-        popup.getMenu().add(0, 1, 0, "💳 Card");
-        popup.getMenu().add(0, 2, 0, "🏦 Bank");
+        popup.getMenu().add(0, 0, 0, R.string.cash_chip);
+        popup.getMenu().add(0, 1, 0, R.string.card_chip);
+        popup.getMenu().add(0, 2, 0, R.string.bank_chip);
 
         popup.setOnMenuItemClickListener(item -> {
             // Chuỗi này có chứa Emoji, dùng để hiển thị cho đẹp trên UI

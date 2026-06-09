@@ -60,8 +60,8 @@ public class FriendChatActivity extends AppCompatActivity {
                     for (Uri uri : uris) {
                         long size = getFileSizeFromUri(uri);
                         if (size > 10 * 1024 * 1024) {
-                            DialogHelper.showCustomDialog(this, "Ảnh quá lớn",
-                                    "Vui lòng chọn ảnh dưới 10MB.", "Chọn lại", "Huỷ",
+                            DialogHelper.showCustomDialog(this, "Image too large",
+                                    "Please select an image under 10MB.", "Choose again", "Cancel",
                                     DialogHelper.DialogType.DANGER, true,
                                     () -> pickImageLauncher.launch("image/*"), null);
                             return;
@@ -105,13 +105,13 @@ public class FriendChatActivity extends AppCompatActivity {
         });
         viewModel.getLoadErrorMessage().observe(this, message -> {
             if (message != null && !message.isEmpty()) {
-                ToastHelper.show(this, "T\u1ea3i tin nh\u1eafn th\u1ea5t b\u1ea1i");
+                ToastHelper.show(this, "Load message failed");
                 ToastHelper.show(this, message);
             }
         });
         viewModel.getSendErrorMessage().observe(this, message -> {
             if (message != null && !message.isEmpty()) {
-                ToastHelper.show(this, "G\u1eedi tin nh\u1eafn th\u1ea5t b\u1ea1i");
+                ToastHelper.show(this, "Send message failed");
                 ToastHelper.show(this, message);
             }
         });

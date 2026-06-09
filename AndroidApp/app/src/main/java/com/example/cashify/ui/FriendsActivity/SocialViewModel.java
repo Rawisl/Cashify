@@ -198,15 +198,15 @@ public class SocialViewModel extends ViewModel {
     // ============================================================
     public void searchAndSendRequestByEmail(String email) {
         String myUid = FirebaseManager.getInstance().getCurrentUserId();
-        if (email.trim().isEmpty()) { error.postValue("Vui lòng nhập Email!"); return; }
+        if (email.trim().isEmpty()) { error.postValue("Please enter Email!"); return; }
 
         FirebaseManager.getInstance().searchUserByEmail(email.trim(), new FirebaseManager.DataCallback<String>() {
             @Override
             public void onSuccess(String targetUid) {
-                if (targetUid.equals(myUid)) { error.postValue("Bạn không thể tự kết bạn với chính mình!"); return; }
-                if (myFriendIds.contains(targetUid)) { error.postValue("Người này đã là bạn bè của bạn rồi!"); return; }
-                if (mySentRequestIds.contains(targetUid)) { error.postValue("Đang chờ người này phản hồi rồi!"); return; }
-                if (myIncomingRequestIds.contains(targetUid)) { error.postValue("Họ đã gửi lời mời cho bạn, hãy kiểm tra tab Requests!"); return; }
+                if (targetUid.equals(myUid)) { error.postValue("You cannot add yourself as a friend!"); return; }
+                if (myFriendIds.contains(targetUid)) { error.postValue("This person is already your friend!"); return; }
+                if (mySentRequestIds.contains(targetUid)) { error.postValue("Already waiting for this person's response!"); return; }
+                if (myIncomingRequestIds.contains(targetUid)) { error.postValue("They have already sent you a request, check the Requests tab!"); return; }
 
                 // GỌI CÁP 1: GỬI LỜI MỜI (request)
                 FirebaseManager.getInstance().processFriendAction(targetUid, "request", new FirebaseManager.DataCallback<Void>() {
@@ -214,22 +214,22 @@ public class SocialViewModel extends ViewModel {
                     public void onSuccess(Void data) {
                         refreshSentRequests();
                         refreshSuggestions();
-                        toast.postValue("Gửi lời mời thành công");
+                        toast.postValue("Request sent successfully");
                     }
 
                     @Override
                     public void onError(String message) {
-                        toast.postValue("Gửi lời mời thất bại");
+                        toast.postValue("Failed to send request");
                         error.postValue(message);
                     }
                 });
             }
             @Override
             public void onError(String message) {
-                toast.postValue("Gửi lời mời thất bại");
+                toast.postValue("Failed to send request");
                 error.postValue(message != null && !message.trim().isEmpty()
                         ? message
-                        : "Không tìm thấy Email này!");
+                        : "Email not found!");
             }
         });
     }
@@ -242,24 +242,30 @@ public class SocialViewModel extends ViewModel {
             public void onSuccess(Void data) {
                 refreshSentRequests();
                 refreshSuggestions();
-                toast.postValue("Gửi lời mời thành công");
+                toast.postValue("Request sent successfully");
             }
 
             @Override
             public void onError(String message) {
-                toast.postValue("Gửi lời mời thất bại");
+                toast.postValue("Failed to send request");
                 error.postValue(message);
             }
         });
     }
 
     public void acceptFriendRequest(User user) {
+        // Check 30 friend limit (Firebase whereIn limit)
+        if (myFriendIds.size() >= 30) {
+            error.postValue("You have reached the 30 friend limit. Firebase only allows up to 30 friends in the list!");
+            return;
+        }
+
         // GỌI CÁP 2: ĐỒNG Ý KẾT BẠN (accept)
         FirebaseManager.getInstance().processFriendAction(user.getUid(), "accept", new FirebaseManager.DataCallback<Void>() {
             @Override
             public void onSuccess(Void data) {
                 refreshSuggestions();
-                toast.postValue("Đã kết bạn với " + user.getNameToShow() + "!");
+                toast.postValue("You are now friends with " + user.getNameToShow() + "!");
             }
             @Override public void onError(String message) { error.postValue(message); }
         });
@@ -279,7 +285,7 @@ public class SocialViewModel extends ViewModel {
             @Override
             public void onSuccess(Void data) {
                 refreshSuggestions();
-                toast.postValue("Đã thu hồi lời mời");
+                toast.postValue("Request cancelled");
             }
             @Override public void onError(String message) { error.postValue(message); }
         });
@@ -291,7 +297,7 @@ public class SocialViewModel extends ViewModel {
             @Override
             public void onSuccess(Void data) {
                 refreshSuggestions();
-                toast.postValue("Đã huỷ kết bạn");
+                toast.postValue("Unfriended");
             }
             @Override public void onError(String message) { error.postValue(message); }
         });
