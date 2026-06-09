@@ -1,6 +1,6 @@
 ﻿namespace CashifyBackend.Models;
 // --- NHÓM MODEL CỦA CHAT TRỰC TIẾP ---
-public record DirectFriendMessageRequest(string? ReceiverId, string? Text);
+public record DirectFriendMessageRequest(string? ReceiverId, string? Text, string? ImageUrl);
 
 public record DirectConversationSummary(
     string FriendUid,

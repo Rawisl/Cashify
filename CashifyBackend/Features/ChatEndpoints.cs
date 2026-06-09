@@ -176,10 +176,10 @@ public static class ChatEndpoints
                 var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(authHeader.Substring("Bearer ".Length))).Uid;
                 if (string.IsNullOrWhiteSpace(body.ReceiverId) || uid == body.ReceiverId)
                     return Results.BadRequest(new { message = "Người nhận không hợp lệ" });
-                if (string.IsNullOrWhiteSpace(body.Text))
+                if (string.IsNullOrWhiteSpace(body.Text) && string.IsNullOrWhiteSpace(body.ImageUrl))
                     return Results.BadRequest(new { message = "Tin nhắn không được để trống" });
 
-                
+
                 var senderRef = db.Collection("users").Document(uid);
                 var receiverRef = db.Collection("users").Document(body.ReceiverId);
                 var senderSnap = await senderRef.GetSnapshotAsync();
@@ -208,9 +208,10 @@ public static class ChatEndpoints
             { "receiverId", body.ReceiverId },
             { "senderName", senderName ?? "User" },
             { "senderAvatar", senderAvatar ?? "" },
-            { "text", body.Text.Trim() },
+            { "text", body.Text?.Trim() ?? "" },
             { "timestamp", timestamp },
             { "isRead", false },
+            { "imageUrl", body.ImageUrl ?? "" },
             { "isRecalled", false }
         };
 

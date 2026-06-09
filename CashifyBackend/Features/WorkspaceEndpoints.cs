@@ -642,7 +642,8 @@ public static class WorkspaceEndpoints
                 var decodedToken = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token);
                 var uid = decodedToken.Uid;
 
-                if (string.IsNullOrEmpty(body.WorkspaceId) || string.IsNullOrWhiteSpace(body.Text))
+                if (string.IsNullOrEmpty(body.WorkspaceId) ||
+    (string.IsNullOrWhiteSpace(body.Text) && string.IsNullOrWhiteSpace(body.ImageUrl)))
                     return Results.BadRequest(new { error = "Data lacking" });
 
                 var wsRef = db.Collection("workspaces").Document(body.WorkspaceId);
@@ -671,8 +672,9 @@ public static class WorkspaceEndpoints
                     { "senderId", uid },
                     { "senderName", senderName },
                     { "senderAvatar", senderAvatar },
-                    { "text", body.Text.Trim() },
+                    { "text", body.Text?.Trim() ?? "" },
                     { "timestamp", timestamp },
+                    { "imageUrl", body.ImageUrl ?? "" },
                     { "isRecalled", false }
                 };
                 batch.Set(msgRef, messageData);
