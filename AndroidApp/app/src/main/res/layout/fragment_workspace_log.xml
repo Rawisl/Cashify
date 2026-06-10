@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bg_main"
+    android:background="@drawable/bg_budget_screen"
     android:fitsSystemWindows="true"
     tools:context=".ui.workspace.WorkspaceLogFragment">
 
@@ -48,6 +48,9 @@
         android:layout_marginEnd="24dp"
         android:layout_marginBottom="150dp"
         android:contentDescription="@string/seed_mock_log"
-        app:srcCompat="@drawable/ic_add_bold" />
+        app:backgroundTint="@color/brand_primary"
+        app:elevation="1dp"
+        app:srcCompat="@drawable/ic_add_bold"
+        app:tint="@color/white" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

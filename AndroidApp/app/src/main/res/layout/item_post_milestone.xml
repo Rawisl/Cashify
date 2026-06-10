@@ -5,11 +5,11 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="10dp"
-    app:cardBackgroundColor="#FFFDF7"
-    app:cardCornerRadius="22dp"
-    app:cardElevation="4dp"
-    app:strokeColor="#D4A857"
-    app:strokeWidth="1.5dp">
+    app:cardBackgroundColor="@color/white"
+    app:cardCornerRadius="24dp"
+    app:cardElevation="1dp"
+    app:strokeColor="@color/cardview_divider"
+    app:strokeWidth="1dp">
 
     <FrameLayout
         android:layout_width="match_parent"
@@ -139,7 +139,7 @@
                         android:ellipsize="end"
                         android:fontFamily="@font/inter_bold"
                         android:maxLines="1"
-                        android:textColor="#313B60"
+                        android:textColor="@color/brand_primary"
                         android:textSize="15sp"
                         tools:text="@string/username" />
 
@@ -149,7 +149,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
                         android:fontFamily="@font/inter_regular"
-                        android:textColor="#607D8B"
+                        android:textColor="@color/item_description"
                         android:textSize="12sp"
                         tools:text="@string/time_ago" />
                 </LinearLayout>
@@ -175,7 +175,7 @@
                     android:contentDescription="@string/menu"
                     android:padding="9dp"
                     app:srcCompat="@drawable/ic_more_horizontal"
-                    app:tint="#607D8B" />
+                    app:tint="@color/item_description" />
             </LinearLayout>
 
             <LinearLayout
@@ -199,7 +199,7 @@
                         android:paddingStart="12dp"
                         android:paddingEnd="12dp"
                         android:text="@string/achievement"
-                        android:textColor="#313B60"
+                        android:textColor="@color/brand_primary"
                         android:textSize="11sp" />
 
                     <TextView
@@ -224,7 +224,7 @@
                     android:fontFamily="@font/inter_bold"
                     android:lineSpacingExtra="2dp"
                     android:maxLines="3"
-                    android:textColor="#313B60"
+                    android:textColor="@color/brand_primary"
                     android:textSize="18sp"
                     tools:text="@string/milestone_title" />
             </LinearLayout>
@@ -236,7 +236,7 @@
                 android:layout_marginTop="10dp"
                 android:fontFamily="@font/inter_regular"
                 android:lineSpacingExtra="4dp"
-                android:textColor="#1F2937"
+                android:textColor="@color/item_title"
                 android:textSize="14sp"
                 tools:text="@string/milestone_description" />
 
@@ -280,7 +280,7 @@
                     android:ellipsize="end"
                     android:fontFamily="@font/inter_bold"
                     android:maxLines="1"
-                    android:textColor="#313B60"
+                    android:textColor="@color/brand_primary"
                     android:textSize="12sp"
                     tools:text="6.800.000đ / 10.000.000đ" />
             </LinearLayout>

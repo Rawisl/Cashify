@@ -6,8 +6,8 @@
     android:layout_height="wrap_content"
     android:layout_marginBottom="10dp"
     app:cardBackgroundColor="#FFFFFF"
-    app:cardCornerRadius="22dp"
-    app:cardElevation="3dp"
+    app:cardCornerRadius="24dp"
+    app:cardElevation="1dp"
     app:strokeWidth="0dp">
 
     <LinearLayout
@@ -119,7 +119,7 @@
                     android:ellipsize="end"
                     android:fontFamily="@font/inter_bold"
                     android:maxLines="1"
-                    android:textColor="#1A237E"
+                    android:textColor="@color/brand_primary"
                     android:textSize="16sp"
                     tools:text="@string/username" />
 
@@ -135,7 +135,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:fontFamily="@font/inter_regular"
-                        android:textColor="#607D8B"
+                    android:textColor="@color/item_description"
                         android:textSize="12sp"
                         tools:text="@string/time_ago" />
 
@@ -161,7 +161,7 @@
                 android:contentDescription="@string/menu"
                 android:padding="9dp"
                 app:srcCompat="@drawable/ic_more_horizontal"
-                app:tint="#607D8B" />
+                app:tint="@color/item_description" />
         </LinearLayout>
 
         <TextView
@@ -171,7 +171,7 @@
             android:layout_marginTop="14dp"
             android:fontFamily="@font/inter_regular"
             android:lineSpacingExtra="4dp"
-            android:textColor="#1F2937"
+            android:textColor="@color/item_title"
             android:textSize="14sp"
             tools:text="@string/subquote" />
 
@@ -201,7 +201,7 @@
                 android:layout_weight="1"
                 android:fontFamily="@font/inter_regular"
                 android:text="@string/like_comment"
-                android:textColor="#607D8B"
+                android:textColor="@color/item_description"
                 android:textSize="12sp" />
 
             <TextView
@@ -209,7 +209,7 @@
                 android:layout_height="wrap_content"
                 android:fontFamily="@font/inter_regular"
                 android:text="@string/share_state"
-                android:textColor="#607D8B"
+                android:textColor="@color/item_description"
                 android:textSize="12sp" />
         </LinearLayout>
 

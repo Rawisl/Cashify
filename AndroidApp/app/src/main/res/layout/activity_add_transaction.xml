@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     xmlns:tools="http://schemas.android.com/tools"
-    android:background="@color/bg_main"
+    android:background="@drawable/bg_budget_screen"
     android:fillViewport="true">
 
     <LinearLayout
@@ -16,8 +16,9 @@
 
         <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp">
+            android:layout_height="40dp"
+            android:layout_marginBottom="24dp"
+            android:background="@drawable/bg_workspace_header_light">
 
             <ImageView
                 android:id="@+id/btnBack"
@@ -28,16 +29,17 @@
                 android:contentDescription="@string/action_back"
                 android:padding="8dp"
                 android:src="@drawable/ic_arrow_left_back"
-                app:tint="@color/screen_title" />
+                app:tint="@color/brand_primary" />
 
             <TextView
                 android:id="@+id/tvTitle"
-                style="@style/screen_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerInParent="true"
                 android:text="@string/action_add_transaction"
-                android:textSize="24sp"/>
+                android:textAppearance="@style/ToolbarTitleFont"
+                android:textColor="@color/brand_primary"
+                android:paddingBottom="5dp"/>
             <ImageView
                 android:id="@+id/btnDelete"
                 android:layout_width="35dp"
@@ -306,8 +308,8 @@
             android:text="@string/action_confirm"
             android:textColor="@color/white"
             android:textSize="16sp"
-            app:cornerRadius="18dp"
-            app:elevation="4dp" />
+            app:cornerRadius="24dp"
+            app:elevation="1dp" />
 
     </LinearLayout>
 
