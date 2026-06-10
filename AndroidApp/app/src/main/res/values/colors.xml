@@ -38,6 +38,14 @@
     <color name="status_background_green">#331DB424</color>
     <color name="status_green">#1DB424</color>
 
+    <!--Budget master card state colors-->
+    <color name="budget_master_bg_normal">@color/brand_primary</color>
+    <color name="budget_master_bg_danger">#B42318</color>
+    <color name="budget_master_progress_normal">#FFE7DD</color>
+    <color name="budget_master_progress_track_normal">#E5E7EB</color>
+    <color name="budget_master_progress_danger">#FFD6D6</color>
+    <color name="budget_master_progress_track_danger">#7F1D1D</color>
+
     <!--Category's color-->
     <color name="cat_pastel_coral">#E96565</color>
     <color name="cat_pastel_orange">#FDA664</color>

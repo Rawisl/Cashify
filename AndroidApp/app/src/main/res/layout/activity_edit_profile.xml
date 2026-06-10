@@ -4,16 +4,20 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@android:color/white"
+    android:background="@drawable/bg_budget_screen"
     android:fitsSystemWindows="true">
 
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbarEditProfile"
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
+        android:layout_height="40dp"
+        android:background="@drawable/bg_workspace_header_light"
         app:title="@string/update_profile"
         app:titleCentered="true"
-        app:navigationIcon="?attr/homeAsUpIndicator" />
+        app:titleTextAppearance="@style/ToolbarTitleFont"
+        app:titleTextColor="@color/brand_primary"
+        app:navigationIcon="?attr/homeAsUpIndicator"
+        app:navigationIconTint="@color/brand_primary" />
 
     <ScrollView
         android:layout_width="match_parent"

@@ -236,6 +236,7 @@
                 app:cardElevation="6dp">
 
                 <LinearLayout
+                    android:id="@+id/layoutMasterCardSurface"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="@drawable/bg_budget_master_card"
@@ -250,14 +251,11 @@
 
                         <TextView
                             android:id="@+id/tvMasterTitle"
+                            style="@style/main_card_title"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:fontFamily="@font/inter_semibold"
-                            android:text="@string/budget_main_card_title_monthly"
-                            android:textColor="#BFD0FF"
-                            android:letterSpacing="0.1"
-                            android:textSize="13sp" />
+                            android:text="@string/budget_main_card_title_monthly" />
 
                         <ImageView
                             android:layout_width="38dp"
@@ -272,21 +270,22 @@
 
                     <TextView
                         android:id="@+id/tvMasterLimit"
+                        style="@style/main_money_amount"
+                        android:layout_marginTop="8dp"
+                        android:text="0 VND" />
+
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="0dp"
-                        android:fontFamily="@font/outfit_extrabold"
-                        android:includeFontPadding="false"
-                        android:text="0 VND"
-                        android:textColor="@color/white"
-                        android:textSize="45sp" />
-
+                        android:layout_marginTop="8dp"
+                        android:text="0 VND"/>
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="20dp"
                         android:baselineAligned="false"
-                        android:orientation="horizontal">
+                        android:orientation="horizontal"
+                        android:weightSum="2">
 
                         <LinearLayout
                             android:layout_width="0dp"
@@ -307,15 +306,11 @@
 
                             <TextView
                                 android:id="@+id/tvMasterSpent"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="5dp"
-                                android:ellipsize="end"
-                                android:fontFamily="@font/outfit_bold"
-                                android:maxLines="1"
-                                android:text="0 VND"
                                 style="@style/main_card_left_money_amount"
-                                android:textSize="18sp" />
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="0 VND" />
                         </LinearLayout>
 
                         <LinearLayout
@@ -337,15 +332,11 @@
 
                             <TextView
                                 android:id="@+id/tvMasterRemaining"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="5dp"
-                                android:ellipsize="end"
-                                android:fontFamily="@font/outfit_bold"
-                                android:maxLines="1"
-                                android:text="0 VND"
                                 style="@style/main_card_right_money_amount"
-                                android:textSize="18sp" />
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="0 VND"/>
                         </LinearLayout>
                     </LinearLayout>
 
@@ -363,7 +354,7 @@
                         style="@style/item_budget_progress_bar"
                         android:layout_marginTop="8dp"
                         android:progress="0"
-                        android:progressTint="#FFE7DD" />
+                        android:progressTint="@color/budget_master_progress_normal" />
 
                     <TextView
                         android:id="@+id/tvMasterAlert"

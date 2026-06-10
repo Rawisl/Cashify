@@ -57,7 +57,7 @@
                 android:padding="12dp"
                 android:scaleType="centerInside"
                 app:srcCompat="@drawable/ic_add_transaction"
-                app:tint="@color/white" />
+                app:tint="@color/brand_primary" />
         </FrameLayout>
 
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
