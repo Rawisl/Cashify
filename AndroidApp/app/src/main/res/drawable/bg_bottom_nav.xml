@@ -11,7 +11,7 @@
     <!-- Trạng thái mặc định -->
     <item>
         <shape>
-            <solid android:color="@color/white" />
+            <solid android:color="#e4ebff" />
             <corners android:radius="24dp" />
         </shape>
     </item>
