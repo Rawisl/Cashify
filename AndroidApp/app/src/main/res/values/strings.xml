@@ -520,10 +520,10 @@
     <string name="zero_vnd">0 VND</string>
     <string name="week">Week 1</string>
     <string name="month">Month 4/2026</string>
-    <string name="time_chip">🗓️ Time</string>
-    <string name="type_chip">📈 Type</string>
-    <string name="payment_chip">🪙 Payment</string>
-    <string name="category_chip">🏷️ Category</string>
+    <string name="time_chip">Time</string>
+    <string name="type_chip">Type</string>
+    <string name="payment_chip">Payment</string>
+    <string name="category_chip">Category</string>
     <string name="income_chip">💰 Income</string>
     <string name="expense_chip">💸 Expense</string>
     <string name="cash_chip">💵 Cash</string>

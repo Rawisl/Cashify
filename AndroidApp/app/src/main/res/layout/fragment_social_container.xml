@@ -18,18 +18,18 @@
     <LinearLayout
         android:id="@+id/bottom_navigation_social"
         android:layout_width="match_parent"
-        android:layout_height="64dp"
+        android:layout_height="@dimen/bottom_nav_social_height"
         android:layout_gravity="bottom"
-        android:layout_marginHorizontal="20dp"
-        android:layout_marginBottom="20dp"
+        android:layout_marginHorizontal="@dimen/bottom_nav_social_horizontal_margin"
+        android:layout_marginBottom="@dimen/bottom_nav_system_margin"
         android:background="@drawable/bg_bottom_nav"
         android:clipToOutline="true"
-        android:elevation="8dp"
+        android:elevation="@dimen/bottom_nav_social_elevation"
         android:gravity="center"
         android:orientation="horizontal"
-        android:paddingHorizontal="8dp"
-        android:paddingVertical="6dp"
-        app:elevation="8dp">
+        android:paddingHorizontal="@dimen/bottom_nav_social_horizontal_padding"
+        android:paddingVertical="@dimen/bottom_nav_social_vertical_padding"
+        app:elevation="@dimen/bottom_nav_social_elevation">
 
         <LinearLayout
             android:id="@+id/navSocialNewsfeed"
@@ -40,15 +40,15 @@
             android:clickable="true"
             android:focusable="true"
             android:gravity="center"
-            android:minHeight="52dp"
+            android:minHeight="@dimen/bottom_nav_social_item_min_height"
             android:orientation="vertical"
-            android:paddingTop="3dp"
-            android:paddingBottom="2dp">
+            android:paddingTop="@dimen/bottom_nav_social_item_padding_top"
+            android:paddingBottom="@dimen/bottom_nav_social_item_padding_bottom">
 
             <ImageView
                 android:id="@+id/imgSocialNewsfeed"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="@dimen/bottom_nav_social_icon_size"
+                android:layout_height="@dimen/bottom_nav_social_icon_size"
                 android:contentDescription="@null"
                 android:src="@drawable/ic_home_regular"
                 app:tint="#1A237E" />
@@ -57,7 +57,7 @@
                 android:id="@+id/txtSocialNewsfeed"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="3dp"
+                android:layout_marginTop="@dimen/bottom_nav_social_label_top_margin"
                 android:fontFamily="@font/inter_bold"
                 android:includeFontPadding="false"
                 android:text="@string/feed"
@@ -74,15 +74,15 @@
             android:clickable="true"
             android:focusable="true"
             android:gravity="center"
-            android:minHeight="52dp"
+            android:minHeight="@dimen/bottom_nav_social_item_min_height"
             android:orientation="vertical"
-            android:paddingTop="3dp"
-            android:paddingBottom="2dp">
+            android:paddingTop="@dimen/bottom_nav_social_item_padding_top"
+            android:paddingBottom="@dimen/bottom_nav_social_item_padding_bottom">
 
             <ImageView
                 android:id="@+id/imgSocialProfile"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="@dimen/bottom_nav_social_icon_size"
+                android:layout_height="@dimen/bottom_nav_social_icon_size"
                 android:contentDescription="@null"
                 android:src="@drawable/ic_profile_regular"
                 app:tint="#1A237E" />
@@ -91,7 +91,7 @@
                 android:id="@+id/txtSocialProfile"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="3dp"
+                android:layout_marginTop="@dimen/bottom_nav_social_label_top_margin"
                 android:fontFamily="@font/inter_bold"
                 android:includeFontPadding="false"
                 android:text="@string/profile"

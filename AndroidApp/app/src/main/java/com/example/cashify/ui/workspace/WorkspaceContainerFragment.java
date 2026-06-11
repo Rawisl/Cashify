@@ -49,12 +49,12 @@ public class WorkspaceContainerFragment extends Fragment {
             // Lấy độ cao của thanh 3 nút / vạch vuốt của hệ thống
             Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
 
-            // Đổi 20dp margin bồ muốn sang dạng Pixel để tính toán
-            int margin20dp = (int) (20 * getResources().getDisplayMetrics().density);
+            // Keep the runtime inset margin tied to the bottom-nav dimension used by XML.
+            int systemMargin = Math.round(getResources().getDimension(R.dimen.bottom_nav_system_margin));
 
-            // Set lại Margin Bottom = Chiều cao thanh hệ thống + 20dp lơ lửng
+            // Set lại Margin Bottom = Chiều cao thanh hệ thống + khoảng cách trong dimens.xml
             ViewGroup.MarginLayoutParams mlp = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
-            mlp.bottomMargin = insets.bottom + margin20dp;
+            mlp.bottomMargin = insets.bottom + systemMargin;
             v.setLayoutParams(mlp);
 
             // Báo cho Android: "Tao tính toán xong rồi, đừng tự động nhét padding vào nữa!"

@@ -18,17 +18,15 @@
     <!-- Thanh Nav Quỹ chung -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottom_navigation_workspace"
+        style="@style/CashifyBottomNavigation"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"  android:layout_gravity="bottom"
-        android:layout_marginHorizontal="20dp"
-        android:layout_marginBottom="35dp"
+        android:layout_marginHorizontal="@dimen/bottom_nav_workspace_horizontal_margin"
+        android:layout_marginBottom="@dimen/bottom_nav_system_margin"
         app:menu="@menu/bottom_nav_workspace_menu"
         app:itemIconTint="@color/nav_color_selector"
         app:itemTextColor="@color/nav_color_selector"
         app:labelVisibilityMode="auto"
-        app:itemActiveIndicatorStyle="@null"
-        app:itemRippleColor="@null"
-        app:itemIconSize="26dp"
         android:background="@drawable/bg_bottom_nav" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton

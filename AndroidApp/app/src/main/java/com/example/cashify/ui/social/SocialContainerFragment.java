@@ -82,8 +82,9 @@ public class SocialContainerFragment extends Fragment {
     private void bindNavItem(View item, ImageView icon, TextView label, boolean selected) {
         if (item == null || icon == null || label == null) return;
         int color = selected ? ACTIVE_COLOR : INACTIVE_COLOR;
+        float inactiveAlpha = getResources().getFraction(R.fraction.bottom_nav_social_inactive_alpha, 1, 1);
         item.setSelected(selected);
-        item.setAlpha(selected ? 1f : 0.78f);
+        item.setAlpha(selected ? 1f : inactiveAlpha);
         icon.setColorFilter(color);
         label.setTextColor(color);
         label.setTypeface(label.getTypeface(), selected ? Typeface.BOLD : Typeface.NORMAL);

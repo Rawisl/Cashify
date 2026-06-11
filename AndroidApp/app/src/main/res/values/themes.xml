@@ -465,19 +465,24 @@
     </style>
 
     <style name="BottomNavWorkspaceLabelActive" parent="TextAppearance.MaterialComponents.Caption">
-        <item name="android:fontFamily">@font/inter_bold</item>
-        <item name="fontFamily">@font/inter_bold</item>
-        <item name="android:textSize">10.5sp</item>
+        <item name="android:textSize">12sp</item>
         <item name="android:singleLine">true</item>
 
     </style>
 
     <style name="BottomNavWorkspaceLabelInactive" parent="TextAppearance.MaterialComponents.Caption">
-        <item name="android:fontFamily">@font/inter_medium</item>
-        <item name="fontFamily">@font/inter_medium</item>
         <item name="android:textSize">10.5sp</item>
         <item name="android:singleLine">true</item>
         <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <style name="CashifyBottomNavigation" parent="Widget.MaterialComponents.BottomNavigationView">
+        <item name="itemActiveIndicatorStyle">@null</item>
+        <item name="itemHorizontalTranslationEnabled">false</item>
+        <item name="itemIconSize">@dimen/bottom_nav_icon_size</item>
+        <item name="itemPaddingTop">@dimen/bottom_nav_item_padding_top</item>
+        <item name="itemPaddingBottom">@dimen/bottom_nav_item_padding_bottom</item>
+        <item name="itemRippleColor">@null</item>
     </style>
 
     <style name="TabTextAppearance" parent="TextAppearance.Design.Tab">
