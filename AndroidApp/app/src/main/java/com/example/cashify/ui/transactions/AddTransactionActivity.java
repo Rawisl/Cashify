@@ -224,7 +224,7 @@ public class AddTransactionActivity extends AppCompatActivity {
     private void setupObservers() {
         viewModel.existingTransaction.observe(this, t -> {
             if (t != null) {
-                edtAmount.setText(CurrencyFormatter.formatDoubleToVND((double) t.amount));
+                edtAmount.setText(CurrencyFormatter.formatFullVND((double) t.amount));
                 edtNote.setText(t.note);
                 if (t.paymentMethod != null) {
                     viewModel.setPayment(t.paymentMethod);
@@ -591,7 +591,7 @@ public class AddTransactionActivity extends AppCompatActivity {
 
     private void fillFormAndConfirm(InvoiceParser.ParsedInvoice result) {
         if (result.amount > 0)
-            edtAmount.setText(CurrencyFormatter.formatDoubleToVND((double) result.amount));
+            edtAmount.setText(CurrencyFormatter.formatFullVND((double) result.amount));
         if (result.description != null) edtNote.setText(result.description);
         if (result.paymentMethod != null) viewModel.setPayment(result.paymentMethod);
 

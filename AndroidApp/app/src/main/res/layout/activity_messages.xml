@@ -3,19 +3,20 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F0F2F8"
+    android:background="@drawable/bg_budget_screen"
     android:fitsSystemWindows="true">
 
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbarMessages"
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        android:background="#F0F2F8"
+        android:layout_height="40dp"
+        android:background="@drawable/bg_workspace_header_light"
         app:navigationIcon="@drawable/ic_arrow_left_back"
-        app:navigationIconTint="#1A237E"
+        app:navigationIconTint="@color/brand_primary"
         app:title="@string/chat"
         app:titleCentered="true"
-        app:titleTextColor="#1A237E" />
+        app:titleTextAppearance="@style/ToolbarTitleFont"
+        app:titleTextColor="@color/brand_primary" />
 
     <ProgressBar
         android:id="@+id/progressLoading"

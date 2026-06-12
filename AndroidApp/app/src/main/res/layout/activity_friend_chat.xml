@@ -3,18 +3,17 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bg_main"
+    android:background="@drawable/bg_budget_screen"
     android:fitsSystemWindows="true">
 
     <LinearLayout
         android:id="@+id/layoutChatHeader"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_height="40dp"
+        android:background="@drawable/bg_workspace_header_light"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingHorizontal="16dp"
-        android:paddingVertical="12dp"
         app:layout_constraintTop_toTopOf="parent">
 
         <ImageButton
@@ -23,7 +22,7 @@
             android:layout_height="40dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_arrow_left_back"
-            app:tint="@color/black" />
+            app:tint="@color/brand_primary" />
 
         <com.example.cashify.ui.common.AvatarImageView
             android:id="@+id/imgFriendAvatar"
@@ -39,8 +38,8 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
             android:fontFamily="@font/inter_bold"
-            android:textColor="@color/black"
-            android:textSize="18sp" />
+            android:textColor="@color/brand_primary"
+            android:textSize="22sp" />
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView

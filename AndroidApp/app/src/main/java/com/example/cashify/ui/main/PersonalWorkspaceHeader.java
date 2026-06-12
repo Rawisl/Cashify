@@ -28,6 +28,11 @@ public final class PersonalWorkspaceHeader {
             });
         }
 
+        TextView title = root.findViewById(R.id.tvToolbarTitle);
+        if (title != null) {
+            title.setText(resolveTitle(fragment));
+        }
+
         TextView badge = root.findViewById(R.id.tvNotificationBadge);
         if (badge != null) {
             FirebaseManager.getInstance()
@@ -54,6 +59,22 @@ public final class PersonalWorkspaceHeader {
             notificationButton.setOnClickListener(v ->
                     new NotificationBottomSheet()
                             .show(fragment.getChildFragmentManager(), "NotificationBottomSheet"));
+        }
+    }
+
+    private static String resolveTitle(Fragment fragment) {
+        String className = fragment.getClass().getSimpleName();
+        switch (className) {
+            case "HomeFragment":
+                return "Dashboard";
+            case "TransactionFragment":
+                return "Transactions";
+            case "BudgetFragment":
+                return "Budget";
+            case "SettingsFragment":
+                return "Settings";
+            default:
+                return "Personal Workspace";
         }
     }
 }

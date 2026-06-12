@@ -24,13 +24,18 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentV
     private final OnCommentActionListener listener;
     private final String currentUserId;
     private String postOwnerId;
+    private boolean isAdmin = false;
+
 
     public interface OnCommentActionListener {
         void onEditComment(int position);
         void onDeleteComment(int position);
         void onHideComment(int position);
     }
-
+    public void setAdmin(boolean admin) {
+        this.isAdmin = admin;
+        notifyDataSetChanged();
+    }
     public void updatePostOwnerId(String postOwnerId) {
         this.postOwnerId = postOwnerId;
     }
@@ -130,17 +135,26 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentV
 
             boolean isCommentOwner = currentUserId != null && currentUserId.equals(comment.getAuthorId());
             boolean isPostOwner = currentUserId != null && currentUserId.equals(postOwnerId);
+            boolean canEditOrDelete = isCommentOwner || isAdmin; // Người viết comment hoặc Admin
 
             View btnEdit   = sheetView.findViewById(R.id.btnEditComment);
             View btnDelete = sheetView.findViewById(R.id.btnDeleteComment);
             View btnHide   = sheetView.findViewById(R.id.btnHideComment);
 
-            if (isCommentOwner) {
+            if (canEditOrDelete) {
+                // Admin hoặc Chủ comment -> Full quyền
                 btnEdit.setVisibility(View.VISIBLE);
                 btnDelete.setVisibility(View.VISIBLE);
+                btnHide.setVisibility(View.GONE);
             } else if (isPostOwner) {
-                btnHide.setVisibility(View.VISIBLE);
+                // Chủ bài viết -> Có quyền xóa comment dạo trong nhà mình, nhưng KHÔNG được sửa chữ của người ta
+                btnEdit.setVisibility(View.GONE);
+                btnDelete.setVisibility(View.VISIBLE);
+                btnHide.setVisibility(View.GONE);
             } else {
+                // Người qua đường -> Chỉ được Ẩn
+                btnEdit.setVisibility(View.GONE);
+                btnDelete.setVisibility(View.GONE);
                 btnHide.setVisibility(View.VISIBLE);
             }
 

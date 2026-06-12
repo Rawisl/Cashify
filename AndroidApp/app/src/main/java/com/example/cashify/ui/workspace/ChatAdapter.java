@@ -80,16 +80,28 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         // HIỂN THỊ GIAO DIỆN
         // ==========================================================
         if (isMine) {
+            // TIN NHẮN CỦA MÌNH
             holder.layoutLeft.setVisibility(View.GONE);
             holder.layoutRight.setVisibility(View.VISIBLE);
 
+            // ĐÃ FIX: Gộp logic giao diện và sự kiện vào chung 1 chỗ
             if (currentMessage.isRecalled()) {
                 holder.tvTextRight.setText("You unsent a message");
                 holder.tvTextRight.setVisibility(View.VISIBLE);
-                holder.imgMessageRight.setVisibility(View.GONE);
+                String imageUrlRight = currentMessage.getImageUrl();
+                if (imageUrlRight != null && !imageUrlRight.isEmpty()) {
+                    holder.imgMessageRight.setVisibility(View.VISIBLE);
+                    com.bumptech.glide.Glide.with(holder.itemView.getContext())
+                            .load(imageUrlRight)
+                            .placeholder(R.drawable.ic_camera)
+                            .into(holder.imgMessageRight);
+                } else {
+                    com.bumptech.glide.Glide.with(holder.itemView.getContext()).clear(holder.imgMessageRight);
+                    holder.imgMessageRight.setVisibility(View.GONE);
+                }
                 holder.tvTextRight.setTypeface(null, android.graphics.Typeface.ITALIC);
                 holder.tvTextRight.setAlpha(0.6f);
-                holder.layoutRight.setOnLongClickListener(null);
+                holder.layoutRight.setOnLongClickListener(null); // Bị thu hồi rồi thì khóa mõm
             } else {
                 holder.tvTextRight.setText(currentMessage.getText());
                 holder.tvTextRight.setVisibility(
@@ -103,6 +115,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                             .placeholder(R.drawable.ic_camera)
                             .into(holder.imgMessageRight);
                 } else {
+                    com.bumptech.glide.Glide.with(holder.itemView.getContext()).clear(holder.imgMessageRight);
                     holder.imgMessageRight.setVisibility(View.GONE);
                 }
                 holder.tvTextRight.setTypeface(null, android.graphics.Typeface.NORMAL);
@@ -125,7 +138,17 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                 String senderName = currentMessage.getSenderName() != null ? currentMessage.getSenderName() : "Unknown";
                 holder.tvTextLeft.setText(senderName + " unsent a message");
                 holder.tvTextLeft.setVisibility(View.VISIBLE);
-                holder.imgMessageLeft.setVisibility(View.GONE);
+                String imageUrlLeft = currentMessage.getImageUrl();
+                if (imageUrlLeft != null && !imageUrlLeft.isEmpty()) {
+                    holder.imgMessageLeft.setVisibility(View.VISIBLE);
+                    com.bumptech.glide.Glide.with(holder.itemView.getContext())
+                            .load(imageUrlLeft)
+                            .placeholder(R.drawable.ic_camera)
+                            .into(holder.imgMessageLeft);
+                } else {
+                    com.bumptech.glide.Glide.with(holder.itemView.getContext()).clear(holder.imgMessageLeft);
+                    holder.imgMessageLeft.setVisibility(View.GONE);
+                }
                 holder.tvTextLeft.setTypeface(null, android.graphics.Typeface.ITALIC);
                 holder.tvTextLeft.setAlpha(0.6f);
             } else {
@@ -141,13 +164,14 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                             .placeholder(R.drawable.ic_camera)
                             .into(holder.imgMessageLeft);
                 } else {
+                    com.bumptech.glide.Glide.with(holder.itemView.getContext()).clear(holder.imgMessageLeft);
                     holder.imgMessageLeft.setVisibility(View.GONE);
                 }
                 holder.tvTextLeft.setTypeface(null, android.graphics.Typeface.NORMAL);
                 holder.tvTextLeft.setAlpha(1.0f);
             }
 
-            //xử lý nút long-click
+            // ĐÃ FIX GOD MODE: Xử lý Long Click gộp chung luôn
             if (!currentMessage.isRecalled() && canRecall) {
                 holder.layoutLeft.setOnLongClickListener(v -> {
                     if (listener != null) listener.onLongClick(currentMessage);
@@ -180,7 +204,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
     }
 
     public void setMessages(List<ChatMessage> messages) {
-        this.messageList = messages;
+        this.messageList = messages != null ? messages : java.util.Collections.emptyList();
         notifyDataSetChanged();
     }
 

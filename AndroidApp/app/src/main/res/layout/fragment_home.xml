@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bg_main"
+    android:background="@drawable/bg_budget_screen"
     android:fitsSystemWindows="true"
     android:orientation="vertical">
 
@@ -13,7 +13,7 @@
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@color/bg_main"
+        android:background="@drawable/bg_budget_screen"
         android:clipToPadding="false"
         android:paddingBottom="104dp">
 
@@ -22,94 +22,72 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:paddingStart="20dp"
-            android:paddingTop="20dp"
+            android:paddingTop="16dp"
             android:paddingEnd="20dp"
             android:paddingBottom="24dp">
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:baselineAligned="false"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:id="@+id/tvDashboard"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="@font/outfit_bold"
-                        android:text="@string/dashboard_title"
-                        android:textColor="@color/screen_title"
-                        android:textSize="32sp" />
-
-                    <TextView
-                        android:id="@+id/tvDashboard_subtitle"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:fontFamily="@font/inter_regular"
-                        android:text="@string/dashboard_subtitle"
-                        android:textColor="@color/screen_subtitle"
-                        android:textSize="14sp" />
-                </LinearLayout>
-
-                <androidx.cardview.widget.CardView
-                    android:id="@+id/cardDateSelector"
-                    style="@style/pickdate_cardview"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp">
-
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="40dp"
-                        android:gravity="center"
-                        android:orientation="horizontal"
-                        android:paddingStart="14dp"
-                        android:paddingEnd="12dp">
-
-                        <TextView
-                            android:id="@+id/tvDate"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:fontFamily="@font/inter_bold"
-                            android:textColor="@color/white"
-                            android:textSize="13sp"
-                            tools:text="@string/dashboard_month_default" />
-
-                        <ImageView
-                            android:layout_width="16dp"
-                            android:layout_height="16dp"
-                            android:layout_marginStart="6dp"
-                            android:src="@android:drawable/arrow_down_float"
-                            app:tint="@color/white" />
-                    </LinearLayout>
-                </androidx.cardview.widget.CardView>
-            </LinearLayout>
-
             <androidx.cardview.widget.CardView
                 android:id="@+id/cardBalance"
-                style="@style/main_card"
-                android:layout_marginTop="20dp">
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="0dp"
+                app:cardCornerRadius="28dp"
+                app:cardElevation="6dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@color/brand_primary"
+                    android:background="@drawable/bg_budget_master_card"
                     android:orientation="vertical"
                     android:padding="24dp">
 
-                    <TextView
-                        style="@style/main_card_title"
-                        android:layout_width="wrap_content"
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="@string/home_main_card_title_total" />
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            style="@style/main_card_title"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/home_main_card_title_total" />
+
+                        <androidx.cardview.widget.CardView
+                            android:id="@+id/cardDateSelector"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:cardBackgroundColor="#26FFFFFF"
+                            app:cardCornerRadius="20dp"
+                            app:cardElevation="0dp">
+
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="38dp"
+                                android:gravity="center"
+                                android:orientation="horizontal"
+                                android:paddingStart="13dp"
+                                android:paddingEnd="11dp">
+
+                                <TextView
+                                    android:id="@+id/tvDate"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:fontFamily="@font/inter_bold"
+                                    android:textColor="#ffffff"
+                                    android:textSize="12sp"
+                                    tools:text="@string/dashboard_month_default" />
+
+                                <ImageView
+                                    android:layout_width="15dp"
+                                    android:layout_height="15dp"
+                                    android:layout_marginStart="5dp"
+                                    android:src="@android:drawable/arrow_down_float"
+                                    app:tint="#ffffff" />
+                            </LinearLayout>
+                        </androidx.cardview.widget.CardView>
+                    </LinearLayout>
 
                     <TextView
                         android:id="@+id/total_money_amount"
@@ -130,13 +108,17 @@
                             android:layout_height="wrap_content"
                             android:layout_marginEnd="8dp"
                             android:layout_weight="1"
-                            android:background="@drawable/bg_input_fields"
+                            android:background="@drawable/bg_budget_master_glass"
                             android:orientation="vertical"
                             android:padding="14dp">
 
                             <TextView
-                                style="@style/main_card_right_label"
-                                android:text="@string/income" />
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/inter_extrabold"
+                                android:text="@string/budget_label_income"
+                                android:textColor="#9fadd4"
+                                android:textSize="12sp" />
 
                             <TextView
                                 android:id="@+id/income_money_amount"
@@ -150,19 +132,24 @@
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginStart="8dp"
+                            android:layout_marginEnd="8dp"
                             android:layout_weight="1"
-                            android:background="@drawable/bg_input_fields"
+                            android:background="@drawable/bg_budget_master_glass"
                             android:orientation="vertical"
                             android:padding="14dp">
-
                             <TextView
-                                style="@style/main_card_left_label"
-                                android:text="@string/expenses" />
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/inter_extrabold"
+                                android:text="@string/budget_label_expense"
+                                android:textColor="#9fadd4"
+                                android:textSize="12sp"  />
 
                             <TextView
                                 android:id="@+id/expenses_money_amount"
                                 style="@style/main_card_left_money_amount"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
                                 android:layout_marginTop="4dp"
                                 android:text="@string/zero_vnd" />
                         </LinearLayout>
@@ -177,13 +164,16 @@
                 android:layout_marginTop="24dp"
                 android:fontFamily="@font/outfit_bold"
                 android:text="@string/dashboard_spending_by_category"
-                android:textColor="@color/screen_title"
+                android:textColor="@color/brand_primary"
                 android:textSize="19sp" />
 
             <androidx.cardview.widget.CardView
                 android:id="@+id/cv_pieChart"
                 style="@style/main_card"
-                android:layout_marginTop="12dp">
+                android:layout_marginTop="12dp"
+                app:cardBackgroundColor="#Ffffff"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="1dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -191,12 +181,12 @@
                     android:baselineAligned="false"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
-                    android:padding="18dp">
+                    android:padding="10dp">
 
                     <com.github.mikephil.charting.charts.PieChart
                         android:id="@+id/pieChart"
-                        android:layout_width="132dp"
-                        android:layout_height="132dp"
+                        android:layout_width="152dp"
+                        android:layout_height="152dp"
                         android:layout_marginEnd="16dp" />
 
                     <androidx.recyclerview.widget.RecyclerView
@@ -222,7 +212,7 @@
                     android:layout_weight="1"
                     android:fontFamily="@font/outfit_bold"
                     android:text="@string/dashboard_recent_transactions"
-                    android:textColor="@color/screen_title"
+                    android:textColor="@color/brand_primary"
                     android:textSize="19sp" />
 
                 <TextView
@@ -235,8 +225,8 @@
                     android:gravity="center"
                     android:paddingStart="12dp"
                     android:paddingEnd="12dp"
-                    android:text="@string/see_all"
-                    android:textColor="@color/brand_primary"
+                    android:text="See All"
+                    android:textColor="#8089E6"
                     android:textSize="14sp" />
             </LinearLayout>
 

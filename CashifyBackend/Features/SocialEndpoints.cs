@@ -537,8 +537,12 @@ public static class SocialEndpoints
                 var commentSnap = await commentRef.GetSnapshotAsync();
 
                 if (!commentSnap.Exists)
-                    return Results.NotFound("Bình luận không tồn tại");
-                if (commentSnap.GetValue<string>("userId") != uid)
+                    return Results.NotFound("Comment's not exist");
+
+                var currentUserSnap = await db.Collection("users").Document(uid).GetSnapshotAsync();
+                bool isAdmin = currentUserSnap.ContainsField("role") && currentUserSnap.GetValue<string>("role") == "ADMIN";
+
+                if (commentSnap.GetValue<string>("userId") != uid && !isAdmin)
                     return Results.StatusCode(403);
 
                 await commentRef.UpdateAsync(new Dictionary<string, object>
@@ -547,7 +551,7 @@ public static class SocialEndpoints
                     { "isEdited", true }
                 });
 
-                return Results.Ok(new { message = "Đã sửa bình luận" });
+                return Results.Ok(new { message = "Edited" });
             }
             catch (Exception ex) { return Results.Problem(ex.Message); }
         });
@@ -569,6 +573,9 @@ public static class SocialEndpoints
                 var postRef = db.Collection("posts").Document(body.PostId);
                 var commentRef = postRef.Collection("comments").Document(body.CommentId);
 
+                var currentUserSnap = await db.Collection("users").Document(uid).GetSnapshotAsync();
+                bool isAdmin = currentUserSnap.ContainsField("role") && currentUserSnap.GetValue<string>("role") == "ADMIN";
+
                 await db.RunTransactionAsync(async transaction =>
                 {
                     var postSnap = await transaction.GetSnapshotAsync(postRef);
@@ -580,7 +587,7 @@ public static class SocialEndpoints
                     var postOwnerId = postSnap.GetValue<string>("userId");
                     var commentOwnerId = commentSnap.GetValue<string>("userId");
 
-                    if (uid != commentOwnerId && uid != postOwnerId)
+                    if (uid != commentOwnerId && uid != postOwnerId && !isAdmin)
                         throw new Exception("Không có quyền xóa");
 
                     transaction.Delete(commentRef);

@@ -11,7 +11,7 @@
         android:id="@+id/main"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@color/bg_main">
+        android:background="@drawable/bg_budget_screen">
 
         <androidx.fragment.app.FragmentContainerView
             android:id="@+id/nav_host_fragment"
@@ -22,40 +22,47 @@
             app:defaultNavHost="true"
             app:navGraph="@navigation/nav_graph" />
 
-        <com.google.android.material.bottomnavigation.BottomNavigationView
-            android:id="@+id/bottom_navigation"
+        <FrameLayout
+            android:id="@+id/bottom_nav_container"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="@dimen/bottom_nav_height"
             android:layout_gravity="bottom"
-            android:layout_marginHorizontal="10dp"
-            android:layout_marginBottom="35dp"
-            app:itemActiveIndicatorStyle="@null"
-            app:itemHorizontalTranslationEnabled="false"
-            app:itemIconSize="26dp"
-            app:itemIconTint="@color/nav_color_selector"
-            app:itemRippleColor="@null"
-            app:itemTextAppearanceActive="@style/BottomNavWorkspaceLabelActive"
-            app:itemTextAppearanceInactive="@style/BottomNavWorkspaceLabelInactive"
-            app:itemTextColor="@color/nav_color_selector"
-            app:labelVisibilityMode="labeled"
-            app:menu="@menu/bottom_nav_menu"
-            android:background="@drawable/bg_bottom_nav" />
+            android:layout_marginHorizontal="@dimen/bottom_nav_horizontal_margin"
+            android:layout_marginBottom="@dimen/bottom_nav_system_margin"
+            android:clipChildren="false"
+            android:clipToPadding="false">
 
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_add_transaction"
-            android:layout_width="52dp"
-            android:layout_height="52dp"
-            android:layout_gravity="bottom|center_horizontal"
-            android:layout_marginBottom="64dp"
-            android:contentDescription="@string/action_add_transaction"
-            app:backgroundTint="@color/brand_primary"
-            app:borderWidth="0dp"
-            app:elevation="12dp"
-            app:fabCustomSize="52dp"
-            app:maxImageSize="22dp"
-            app:shapeAppearanceOverlay="@style/CircleFabShape"
-            app:srcCompat="@drawable/ic_add_plain"
-            app:tint="@color/white" />
+            <com.google.android.material.bottomnavigation.BottomNavigationView
+                android:id="@+id/bottom_navigation"
+                style="@style/CashifyBottomNavigation"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="center"
+                android:background="@drawable/bg_bottom_nav"
+                app:itemIconTint="@color/nav_color_selector"
+                app:itemTextAppearanceActive="@style/BottomNavWorkspaceLabelActive"
+                app:itemTextAppearanceInactive="@style/BottomNavWorkspaceLabelInactive"
+                app:labelVisibilityMode="unlabeled"
+                app:menu="@menu/bottom_nav_menu" />
+
+            <androidx.appcompat.widget.AppCompatImageButton
+                android:id="@+id/fab_add_transaction"
+                android:layout_width="@dimen/bottom_nav_center_button_size"
+                android:layout_height="@dimen/bottom_nav_center_button_size"
+                android:layout_gravity="top|center_horizontal"
+                android:layout_marginTop="@dimen/bottom_nav_center_button_top_margin"
+                android:background="@drawable/bg_budget_add_category_button"
+                android:clickable="true"
+                android:contentDescription="@string/action_add_transaction"
+                android:elevation="@dimen/bottom_nav_center_button_elevation"
+                android:focusable="true"
+                android:minWidth="@dimen/bottom_nav_center_button_min_touch"
+                android:minHeight="@dimen/bottom_nav_center_button_min_touch"
+                android:padding="@dimen/bottom_nav_center_button_icon_padding"
+                android:scaleType="centerInside"
+                app:srcCompat="@drawable/ic_add_transaction"
+                app:tint="@color/brand_primary" />
+        </FrameLayout>
 
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 

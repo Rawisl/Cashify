@@ -57,7 +57,7 @@
                 android:textColor="@color/screen_subtitle"
                 android:textSize="16sp"
                 app:backgroundTint="@color/btn_disabled_bg"
-                app:cornerRadius="10dp" />
+                app:cornerRadius="16dp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnConfirm"
@@ -71,7 +71,7 @@
                 android:textColor="@color/white"
                 android:textSize="16sp"
                 app:backgroundTint="@color/brand_primary"
-                app:cornerRadius="10dp" />
+                app:cornerRadius="16dp" />
 
         </LinearLayout>
 

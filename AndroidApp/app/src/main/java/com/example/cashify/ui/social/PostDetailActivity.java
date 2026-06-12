@@ -37,6 +37,7 @@ import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,7 +45,7 @@ import java.util.List;
 public class PostDetailActivity extends AppCompatActivity {
 
     public static final String EXTRA_POST_ID = "postId";
-
+    private boolean isAdmin = false;
     private ImageView imgLikeHeart;
     private ImageView imgPostAvatar;
     private ImageView imgPostImage;
@@ -90,6 +91,20 @@ public class PostDetailActivity extends AppCompatActivity {
         postId = getIntent().getStringExtra(EXTRA_POST_ID);
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         currentUserId = user == null ? "" : user.getUid();
+
+        // KIỂM TRA QUYỀN ADMIN
+        if (!currentUserId.isEmpty()) {
+            FirebaseFirestore.getInstance().collection("users").document(currentUserId).get()
+                    .addOnSuccessListener(doc -> {
+                        if (doc != null && doc.exists()) {
+                            isAdmin = "ADMIN".equals(doc.getString("role"));
+                            // Truyền cờ Admin xuống cho Comment Adapter luôn
+                            if (commentAdapter != null) {
+                                commentAdapter.setAdmin(isAdmin);
+                            }
+                        }
+                    });
+        }
 
         viewModel = new ViewModelProvider(this).get(PostDetailViewModel.class);
 
@@ -258,12 +273,13 @@ public class PostDetailActivity extends AppCompatActivity {
         sheetView.findViewById(R.id.btnEditComment).setVisibility(View.GONE);
 
         boolean isOwner = !currentUserId.isEmpty() && currentUserId.equals(postOwnerId);
+        boolean canEditOrDelete = isOwner || isAdmin; // ADMIN BẤT TỬ
 
         // Ánh xạ nút sửa bài viết từ layout
         View btnEditPost = sheetView.findViewById(R.id.btnEditPost);
         View btnDeletePost = sheetView.findViewById(R.id.btnDeleteComment);
 
-        if (isOwner) {
+        if (canEditOrDelete) {
             if (btnEditPost != null) btnEditPost.setVisibility(View.VISIBLE); // Hiện nút sửa lên
             btnDeletePost.setVisibility(View.VISIBLE);
             sheetView.findViewById(R.id.btnHideComment).setVisibility(View.GONE);

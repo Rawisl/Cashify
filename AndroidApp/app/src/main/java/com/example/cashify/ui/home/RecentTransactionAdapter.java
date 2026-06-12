@@ -40,17 +40,17 @@ public class RecentTransactionAdapter extends RecyclerView.Adapter<RecentTransac
 
     // Hàm update data tự động lọc bỏ header ngày tháng
     public void updateData(List<TransactionViewModel.HistoryItem> newData) {
+        List<TransactionViewModel.HistoryItem> onlyTransactions = new ArrayList<>();
         if (newData != null) {
-            List<TransactionViewModel.HistoryItem> onlyTransactions = new ArrayList<>();
             for (TransactionViewModel.HistoryItem item : newData) {
                 // Chỉ nhặt những item là giao dịch để hiển thị trên Home
-                if (item.getType() == TransactionViewModel.HistoryItem.TYPE_TRANSACTION) {
+                if (item != null && item.getType() == TransactionViewModel.HistoryItem.TYPE_TRANSACTION) {
                     onlyTransactions.add(item);
                 }
             }
-            this.items = onlyTransactions;
-            notifyDataSetChanged();
         }
+        this.items = onlyTransactions;
+        notifyDataSetChanged();
     }
 
     @NonNull
@@ -78,27 +78,27 @@ public class RecentTransactionAdapter extends RecyclerView.Adapter<RecentTransac
 
         // 2. Gán Subtitle (Category • Time) - Học y chang HistoryAdapter
         if (holder.tvSubtitle != null) {
-            SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, h:mm a", Locale.ENGLISH);
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM • hh:mm a", Locale.ENGLISH);
             String time = sdf.format(new Date(trans.timestamp));
-            holder.tvSubtitle.setText(item.getCategoryName() + " • " + time);
+            holder.tvSubtitle.setText(time);
         }
 
         // 3. Gán Số tiền và Màu sắc - Mix giữa màu của History và Formatter của Cashify
         if (holder.tvAmount != null) {
-            String formattedAmount = CurrencyFormatter.formatCompactVND(trans.amount);
             if (trans.type == 1) { // Income
-                holder.tvAmount.setText("+" + formattedAmount);
+                holder.tvAmount.setText("+" + CurrencyFormatter.formatCompactAmount(trans.amount));
                 holder.tvAmount.setTextColor(Color.parseColor("#1DB424"));
             } else { // Expense
-                holder.tvAmount.setText("-" + formattedAmount);
+                holder.tvAmount.setText(CurrencyFormatter.formatCompactAmount(-trans.amount));
                 holder.tvAmount.setTextColor(Color.parseColor("#D14040"));
             }
         }
 
         // 4. Gán Icon và Màu nền Icon - Học chuẩn từ HistoryAdapter
         if (holder.ivCategoryIcon != null) {
+            String iconName = item.getCategoryIcon();
             int iconResId = holder.itemView.getContext().getResources().getIdentifier(
-                    item.getCategoryIcon(), "drawable", holder.itemView.getContext().getPackageName());
+                    iconName != null ? iconName : "", "drawable", holder.itemView.getContext().getPackageName());
             holder.ivCategoryIcon.setImageResource(iconResId != 0 ? iconResId : R.drawable.ic_food);
 
             try {

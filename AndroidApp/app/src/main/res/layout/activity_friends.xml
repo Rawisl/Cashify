@@ -10,7 +10,7 @@
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#F0F2F8">
+            android:background="@drawable/bg_budget_screen">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -20,10 +20,10 @@
             <com.google.android.material.appbar.MaterialToolbar
                 android:id="@+id/toolbarFriends"
                 android:layout_width="match_parent"
-                android:layout_height="?attr/actionBarSize"
-                android:background="@drawable/bg_toolbar_rounded"
+                android:layout_height="40dp"
+                android:background="@drawable/bg_workspace_header_light"
                 app:navigationIcon="@drawable/ic_menu_padded"
-                app:navigationIconTint="@color/white">
+                app:navigationIconTint="@color/brand_primary">
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -31,7 +31,8 @@
                     android:layout_gravity="center"
                     android:text="@string/social_profile_friends"
                     android:textAppearance="@style/ToolbarTitleFont"
-                    android:textColor="@color/white" />
+                    android:textColor="@color/brand_primary"
+                    android:paddingBottom="5dp" />
 
                 <LinearLayout
                     android:layout_width="wrap_content"
@@ -44,17 +45,17 @@
 
                     <ImageButton
                         android:id="@+id/btnMessages"
-                        android:layout_width="44dp"
-                        android:layout_height="44dp"
+                        android:layout_width="38dp"
+                        android:layout_height="38dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
                         android:contentDescription="@string/message"
                         android:padding="10dp"
-                        app:srcCompat="@drawable/ic_messages"
-                        app:tint="@color/white" />
+                        app:srcCompat="@drawable/ic_messages_regular"
+                        app:tint="@color/brand_primary" />
 
                     <FrameLayout
-                        android:layout_width="44dp"
-                        android:layout_height="44dp"
+                        android:layout_width="38dp"
+                        android:layout_height="38dp"
                         android:layoutDirection="ltr">
 
                         <ImageButton
@@ -66,7 +67,7 @@
                             android:padding="10dp"
                             android:scaleType="center"
                             android:src="@drawable/ic_notification_regular"
-                            app:tint="@color/white" />
+                            app:tint="@color/brand_primary" />
 
                         <TextView
                             android:id="@+id/tvNotificationBadge"
@@ -289,7 +290,7 @@
             android:contentDescription="@string/add_friend"
             android:tint="@color/white"
             app:backgroundTint="#1A237E"
-            app:elevation="6dp"
+            app:elevation="1dp"
             app:srcCompat="@android:drawable/ic_input_add"
             app:tint="@null" />
     </FrameLayout>

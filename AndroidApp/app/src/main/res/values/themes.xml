@@ -21,7 +21,7 @@
 
 
     <style name="circle">
-        <item name="cornerFamily">rounded</item>
+        <item name="android:radius">24dp</item>
         <item name="cornerSize">50%</item>
     </style>
 
@@ -68,11 +68,12 @@
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_marginLeft">16dp</item>
-        <item name="android:layout_marginTop">8dp</item>
+        <item name="android:layout_marginTop">12dp</item>
         <item name="android:layout_marginRight">16dp</item>
-        <item name="cardCornerRadius">16dp</item>
-        <item name="cardElevation">0.5dp</item>
-        <item name="cardMaxElevation">2dp</item>
+        <item name="cardCornerRadius">24dp</item>
+        <item name="cardElevation">1dp</item>
+        <item name="cardMaxElevation">1dp</item>
+        <item name="cardBackgroundColor">@color/white</item>
     </style>
 
     <style name="buttons_layout">
@@ -205,7 +206,7 @@
         <item name="android:fontFamily">@font/inter_bold</item>
         <item name="android:textColor">@color/white</item>
         <item name="android:textSize">24sp</item>
-        <item name="cornerRadius">16dp</item>
+        <item name="cornerRadius">24dp</item>
     </style>
 
     <style name="btn_category_type">
@@ -233,7 +234,7 @@
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_gravity">left</item>
-        <item name="android:textColor">@color/screen_title</item>
+        <item name="android:textColor">@color/brand_primary</item>
         <item name="android:fontFamily">@font/inter_bold</item>
         <item name="android:layout_marginLeft">10dp</item>
         <item name="android:textSize">25sp</item>
@@ -248,9 +249,11 @@
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:fontFamily">@font/inter_regular</item>
-        <item name="android:textColor">@color/bg_main</item>
+        <item name="android:textColor">@color/bg_title</item>
         <item name="android:textSize">15sp</item>
+        <item name="android:textStyle">bold</item>
     </style>
+
 
     <style name="main_card_left_label">
         <item name="android:layout_width">wrap_content</item>
@@ -291,7 +294,7 @@
         <item name="android:includeFontPadding">false</item>
         <item name="android:maxLines">1</item>
         <item name="android:ellipsize">end</item>
-        <item name="android:textAlignment">viewEnd</item>
+
     </style>
 
     <style name="main_money_amount">
@@ -332,7 +335,7 @@
     <style name="float_btn_add" parent="Widget.Material3.FloatingActionButton.Primary">
         <item name="backgroundTint">@color/brand_primary</item>
         <item name="tint">@color/bg_main</item>
-        <item name="elevation">0.5dp</item>
+        <item name="elevation">1dp</item>
         <item name="hoveredFocusedTranslationZ">1dp</item>
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
@@ -462,19 +465,24 @@
     </style>
 
     <style name="BottomNavWorkspaceLabelActive" parent="TextAppearance.MaterialComponents.Caption">
-        <item name="android:fontFamily">@font/inter_bold</item>
-        <item name="fontFamily">@font/inter_bold</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:singleLine">true</item>
+
+    </style>
+
+    <style name="BottomNavWorkspaceLabelInactive" parent="TextAppearance.MaterialComponents.Caption">
         <item name="android:textSize">10.5sp</item>
         <item name="android:singleLine">true</item>
         <item name="android:includeFontPadding">false</item>
     </style>
 
-    <style name="BottomNavWorkspaceLabelInactive" parent="TextAppearance.MaterialComponents.Caption">
-        <item name="android:fontFamily">@font/inter_medium</item>
-        <item name="fontFamily">@font/inter_medium</item>
-        <item name="android:textSize">10.5sp</item>
-        <item name="android:singleLine">true</item>
-        <item name="android:includeFontPadding">false</item>
+    <style name="CashifyBottomNavigation" parent="Widget.MaterialComponents.BottomNavigationView">
+        <item name="itemActiveIndicatorStyle">@null</item>
+        <item name="itemHorizontalTranslationEnabled">false</item>
+        <item name="itemIconSize">@dimen/bottom_nav_icon_size</item>
+        <item name="itemPaddingTop">@dimen/bottom_nav_item_padding_top</item>
+        <item name="itemPaddingBottom">@dimen/bottom_nav_item_padding_bottom</item>
+        <item name="itemRippleColor">@null</item>
     </style>
 
     <style name="TabTextAppearance" parent="TextAppearance.Design.Tab">
@@ -492,9 +500,10 @@
     </style>
 
     <style name="MyCustomToolbarTitle" parent="TextAppearance.MaterialComponents.Headline6">
-        <item name="android:textColor">@color/white</item>
-        <item name="android:textSize">20sp</item>
+        <item name="android:textColor">@color/brand_primary</item>
+        <item name="android:textSize">22sp</item>
         <item name="android:textStyle">bold</item>
+        <item name="android:fontFamily">@font/inter_bold</item>
         <item name="fontFamily">@font/inter_bold</item>
     </style>
 

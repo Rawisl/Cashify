@@ -4,17 +4,17 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F0F2F8"
+    android:background="@drawable/bg_budget_screen"
     android:fitsSystemWindows="true"
     android:orientation="vertical">
 
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbarSuggestedFriends"
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        android:background="@drawable/bg_toolbar_rounded"
+        android:layout_height="40dp"
+        android:background="@drawable/bg_workspace_header_light"
         app:navigationIcon="@drawable/ic_arrow_left_back"
-        app:navigationIconTint="@color/white">
+        app:navigationIconTint="@color/brand_primary">
 
         <TextView
             android:layout_width="wrap_content"
@@ -22,7 +22,8 @@
             android:layout_gravity="center"
             android:text="@string/friend_suggestion"
             android:textAppearance="@style/ToolbarTitleFont"
-            android:textColor="@color/white" />
+            android:textColor="@color/brand_primary"
+            android:paddingBottom="5dp" />
     </com.google.android.material.appbar.MaterialToolbar>
 
     <androidx.cardview.widget.CardView

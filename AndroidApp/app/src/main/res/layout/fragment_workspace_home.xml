@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bg_main"
+    android:background="@drawable/bg_budget_screen"
     android:fitsSystemWindows="true"
     android:orientation="vertical">
 
@@ -17,28 +17,29 @@
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbarWorkspaceDetail"
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="@drawable/bg_toolbar_rounded"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_workspace_header_light"
             app:navigationIcon="@drawable/ic_menu_padded"
-            app:navigationIconTint="@color/white"
+            app:navigationIconTint="@color/brand_primary"
             app:titleTextAppearance="@style/MyCustomToolbarTitle"
+            app:titleTextColor="@color/brand_primary"
             app:titleCentered="true">
 
             <FrameLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
                 android:layout_gravity="end|center_vertical"
                 android:layout_marginEnd="12dp">
 
                 <ImageButton
                     android:id="@+id/btnWorkspaceNotifications"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
+                    android:layout_width="38dp"
+                    android:layout_height="38dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:padding="11dp"
                     android:scaleType="center"
                     android:src="@drawable/ic_notification_regular"
-                    app:tint="@color/white" />
+                    app:tint="@color/brand_primary" />
 
                 <TextView
                     android:id="@+id/tvNotificationBadge"

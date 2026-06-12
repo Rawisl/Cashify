@@ -71,10 +71,8 @@ public class WorkspaceTransactionAdapter extends RecyclerView.Adapter<RecyclerVi
 
     // Hàm set data mới từ ViewModel đổ xuống
     public void setHistoryData(List<TransactionViewModel.HistoryItem> newList) {
-        if (newList != null) {
-            this.items = newList;
-            notifyDataSetChanged();
-        }
+        this.items = newList != null ? newList : new ArrayList<>();
+        notifyDataSetChanged();
     }
 
     @Override
@@ -112,6 +110,8 @@ public class WorkspaceTransactionAdapter extends RecyclerView.Adapter<RecyclerVi
             Transaction t = item.getTransaction();
 
             if (t == null) return;
+            String bindKey = t.id != null ? t.id : String.valueOf(position);
+            tHolder.itemView.setTag(bindKey);
 
             // 1. FORMAT THỜI GIAN VÀ EMOJI THANH TOÁN
             SimpleDateFormat sdf = new SimpleDateFormat("h:mm a", Locale.ENGLISH);
@@ -128,12 +128,11 @@ public class WorkspaceTransactionAdapter extends RecyclerView.Adapter<RecyclerVi
             }
 
             // 2. XỬ LÝ SỐ TIỀN & MÀU CHỮ
-            String formattedAmount = CurrencyFormatter.formatDoubleToVND((double) t.amount);
             if (t.type == 0) {
-                tHolder.tvAmount.setText("-" + formattedAmount);
+                tHolder.tvAmount.setText(CurrencyFormatter.formatFullAmount(-t.amount));
                 tHolder.tvAmount.setTextColor(ContextCompat.getColor(context, R.color.status_red));
             } else {
-                tHolder.tvAmount.setText("+" + formattedAmount);
+                tHolder.tvAmount.setText("+" + CurrencyFormatter.formatFullAmount(t.amount));
                 tHolder.tvAmount.setTextColor(ContextCompat.getColor(context, R.color.status_green));
             }
 
@@ -145,6 +144,7 @@ public class WorkspaceTransactionAdapter extends RecyclerView.Adapter<RecyclerVi
                     tHolder.tvCreatorName.setText("Loading...");
                     FirebaseFirestore.getInstance().collection("users").document(t.userId).get()
                             .addOnSuccessListener(doc -> {
+                                if (!bindKey.equals(tHolder.itemView.getTag())) return;
                                 String name = doc.getString("displayName");
                                 if (name == null || name.isEmpty()) name = "Unknown Member";
                                 userNameCache.put(t.userId, name);
@@ -160,11 +160,13 @@ public class WorkspaceTransactionAdapter extends RecyclerView.Adapter<RecyclerVi
                 if (categoryCache.containsKey(t.firestoreCategoryId)) {
                     updateCategoryUI(tHolder, t, categoryCache.get(t.firestoreCategoryId), timeStr, paymentIcon);
                 } else {
+                    updateCategoryUI(tHolder, t, null, timeStr, paymentIcon);
                     FirebaseFirestore.getInstance()
                             .collection("workspaces").document(workspaceId)
                             .collection("categories").document(t.firestoreCategoryId)
                             .get()
                             .addOnSuccessListener(doc -> {
+                                if (!bindKey.equals(tHolder.itemView.getTag())) return;
                                 Category cat = doc.toObject(Category.class);
                                 if (cat != null) {
                                     categoryCache.put(t.firestoreCategoryId, cat);
@@ -205,11 +207,12 @@ public class WorkspaceTransactionAdapter extends RecyclerView.Adapter<RecyclerVi
         holder.tvSubtitle.setText(String.format("%s • %s • %s", catName, timeStr, paymentIcon));
 
         if (cat != null) {
-            int iconResId = context.getResources().getIdentifier(cat.iconName, "drawable", context.getPackageName());
+            String iconName = cat.iconName != null ? cat.iconName : "";
+            int iconResId = context.getResources().getIdentifier(iconName, "drawable", context.getPackageName());
             holder.ivCategoryIcon.setImageResource(iconResId != 0 ? iconResId : R.drawable.ic_food);
 
             try {
-                int originColor = Color.parseColor(cat.colorCode);
+                int originColor = Color.parseColor(cat.colorCode != null ? cat.colorCode : "#000000");
                 int pastelColor = Color.argb(51, Color.red(originColor), Color.green(originColor), Color.blue(originColor));
                 holder.ivCategoryIcon.setBackgroundTintList(ColorStateList.valueOf(pastelColor));
                 holder.ivCategoryIcon.setImageTintList(ColorStateList.valueOf(originColor));

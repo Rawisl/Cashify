@@ -1,6 +1,5 @@
 package com.example.cashify.ui.budget;
 
-import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import androidx.core.content.ContextCompat;
@@ -36,7 +35,7 @@ public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.BudgetView
     public List<BudgetWithSpent> getBudgets() { return budgetList; }
 
     public void setBudgets(List<BudgetWithSpent> budgets) {
-        this.budgetList = budgets;
+        this.budgetList = budgets != null ? budgets : new ArrayList<>();
         notifyDataSetChanged();
     }
 
@@ -52,13 +51,14 @@ public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.BudgetView
         BudgetWithSpent item = budgetList.get(position);
         Context context = holder.itemView.getContext();
 
-        double spent = item.spentAmount;
-        double limit = item.limitAmount;
+        double spent = sanitizeMoney(item.spentAmount);
+        double limit = sanitizeMoney(item.limitAmount);
 
         // KIỂM TRA KHOẢN CHI NGOÀI KẾ HOẠCH (Hạn mức bằng 0)
         boolean isUnplanned = (limit <= 0);
 
-        int percent = limit > 0 ? (int) ((spent / limit) * 100) : 0;
+        int percent = calculateBudgetPercent(spent, limit);
+        int targetProgress = clampProgress(percent);
         double remaining = limit - spent;
 
         String nameToShow = (item.categoryName != null) ? item.categoryName : ("Danh mục " + item.categoryId);
@@ -83,6 +83,7 @@ public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.BudgetView
         } catch (Exception e) {
             holder.ivCategoryIcon.setBackgroundTintList(ColorStateList.valueOf(
                     ContextCompat.getColor(context, R.color.status_background_red)));
+            holder.ivCategoryIcon.setImageTintList(ColorStateList.valueOf(Color.GRAY));
         }
 
 
@@ -95,10 +96,10 @@ public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.BudgetView
         if (isUnplanned) {
             holder.tvSpentAndLimit.setText(shortSpent + " (Unplanned)");
             holder.tvPercent.setText(""); // Không hiện % khi chưa có hạn mức
+            holder.tvPercent.setTextColor(ContextCompat.getColor(context, R.color.black));
             holder.pbBudget.setMax(100);
-            ObjectAnimator.ofInt(holder.pbBudget, "progress", 0, 100)
-                    .setDuration(1000)
-                    .start();
+            holder.pbBudget.clearAnimation();
+            holder.pbBudget.setProgress(0);
             holder.pbBudget.setProgressTintList(ColorStateList.valueOf(Color.parseColor("#BDBDBD"))); // Màu xám (Grey 400)
 
             holder.tvAlertMessage.setVisibility(View.VISIBLE);
@@ -112,10 +113,8 @@ public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.BudgetView
             holder.tvSpentAndLimit.setText(shortSpent + " / " + shortLimit);
             holder.tvPercent.setText(percent + "%");
             holder.pbBudget.setMax(100);
-            int targetProgress = Math.min(percent, 100);
-            ObjectAnimator.ofInt(holder.pbBudget, "progress", 0, targetProgress)
-                    .setDuration(1000)
-                    .start();
+            holder.pbBudget.clearAnimation();
+            holder.pbBudget.setProgress(targetProgress);
             holder.ivEdit.setImageResource(android.R.drawable.ic_menu_edit); // Hiện cây bút chì
 
             // LOGIC ĐỔI MÀU & HIỆN CẢNH BÁO
@@ -148,7 +147,7 @@ public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.BudgetView
 
             } else {
                 // Mức độ nhẹ (pastel-green): <...> VNĐ left to spend
-                int colorGreen = ContextCompat.getColor(context, R.color.cat_pastel_green);
+                int colorGreen = ContextCompat.getColor(context, R.color.status_green);
                 holder.pbBudget.setProgressTintList(ColorStateList.valueOf(colorGreen));
                 holder.tvPercent.setTextColor(ContextCompat.getColor(context, R.color.black)); // Chữ % để màu đen cho dễ đọc
                 holder.tvAlertMessage.setText(formattedRemaining + " left to spend");
@@ -157,11 +156,29 @@ public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.BudgetView
         }
 
         //bắt sự kiện click để mở numpad
-        holder.itemView.setOnClickListener(v -> listener.onBudgetClick(item));
+        holder.itemView.setOnClickListener(v -> {
+            if (listener != null) listener.onBudgetClick(item);
+        });
     }
 
     @Override
     public int getItemCount() { return budgetList.size(); }
+
+    private double sanitizeMoney(double value) {
+        return Double.isNaN(value) || Double.isInfinite(value) ? 0 : Math.max(0, value);
+    }
+
+    private int calculateBudgetPercent(double spent, double limit) {
+        if (spent <= 0 || limit <= 0) return 0;
+        double percent = (spent * 100.0d) / limit;
+        if (Double.isNaN(percent) || Double.isInfinite(percent) || percent <= 0) return 0;
+        if (percent >= Integer.MAX_VALUE) return Integer.MAX_VALUE;
+        return (int) percent;
+    }
+
+    private int clampProgress(int percent) {
+        return Math.max(0, Math.min(percent, 100));
+    }
 
     static class BudgetViewHolder extends RecyclerView.ViewHolder {
         TextView tvCategoryName, tvSpentAndLimit, tvPercent, tvAlertMessage;

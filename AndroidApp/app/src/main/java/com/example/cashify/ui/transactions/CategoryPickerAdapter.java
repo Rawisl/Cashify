@@ -29,7 +29,7 @@ public class CategoryPickerAdapter extends RecyclerView.Adapter<CategoryPickerAd
 
     public CategoryPickerAdapter(Context context, List<Category> list, OnCategoryClickListener listener) {
         this.context = context;
-        this.list = list;
+        this.list = list != null ? list : java.util.Collections.emptyList();
         this.listener = listener;
     }
 
@@ -48,7 +48,8 @@ public class CategoryPickerAdapter extends RecyclerView.Adapter<CategoryPickerAd
         boolean isSelected = (selectedPosition == position) ||
                 (item.firestoreId != null && item.firestoreId.equals(selectedFirestoreId));
         // 1. Lấy icon từ drawable
-        int resId = context.getResources().getIdentifier(item.iconName, "drawable", context.getPackageName());
+        String iconName = item.iconName != null ? item.iconName : "";
+        int resId = context.getResources().getIdentifier(iconName, "drawable", context.getPackageName());
         holder.imgIcon.setImageResource(resId != 0 ? resId : R.drawable.ic_other);
 
         // --- 2. XỬ LÝ MÀU SẮC GỐC ---
@@ -100,6 +101,7 @@ public class CategoryPickerAdapter extends RecyclerView.Adapter<CategoryPickerAd
         holder.itemView.setOnClickListener(v -> {
             int oldPos = selectedPosition;
             selectedPosition = holder.getAdapterPosition();
+            if (selectedPosition == RecyclerView.NO_POSITION) return;
 
             // Chỉ notify những item thay đổi trạng thái để tối ưu hiệu năng
             if (oldPos != -1) {
@@ -107,7 +109,7 @@ public class CategoryPickerAdapter extends RecyclerView.Adapter<CategoryPickerAd
             }
             notifyItemChanged(selectedPosition);
 
-            listener.onCategoryClick(item);
+            if (listener != null) listener.onCategoryClick(item);
         });
     }
 
@@ -128,7 +130,7 @@ public class CategoryPickerAdapter extends RecyclerView.Adapter<CategoryPickerAd
                 }
                 notifyItemChanged(selectedPosition);
 
-                listener.onCategoryClick(list.get(i));
+                if (listener != null) listener.onCategoryClick(list.get(i));
                 break;
             }
         }
@@ -158,7 +160,7 @@ public class CategoryPickerAdapter extends RecyclerView.Adapter<CategoryPickerAd
         }
     }
     public void setNewData(List<Category> newList) {
-        this.list = newList;
+        this.list = newList != null ? newList : java.util.Collections.emptyList();
         this.selectedPosition = -1; // Reset lại lựa chọn khi đổi tab Thu/Chi
         this.selectedFirestoreId = "";
         notifyDataSetChanged();

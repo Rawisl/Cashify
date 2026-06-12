@@ -49,6 +49,7 @@ public class BudgetFragment extends Fragment {
     private TextView tvMasterTitle, tvMasterLimit, tvMasterSpent, tvMasterRemaining, tvMasterAlert;
     private TextView tvMonth, tvWeek;
     private ProgressBar pbMaster;
+    private View masterCardSurface;
     private MaterialButtonToggleGroup toggleGroupPeriod;
     private MaterialButton btnWeekly, btnMonthly;
     private CardView cardMonthSelector, cardWeekSelector;
@@ -63,6 +64,8 @@ public class BudgetFragment extends Fragment {
     private long mLastClickTime = 0;
 
     private Toast mCurrentToast;
+    private boolean hasInitializedView = false;
+    private boolean skipNextResumeLoad = false;
 
     public BudgetFragment() {}
 
@@ -85,6 +88,7 @@ public class BudgetFragment extends Fragment {
         tvMasterSpent = view.findViewById(R.id.tvMasterSpent);
         tvMasterRemaining = view.findViewById(R.id.tvMasterRemaining);
         pbMaster = view.findViewById(R.id.pbMaster);
+        masterCardSurface = view.findViewById(R.id.layoutMasterCardSurface);
         tvMasterAlert = view.findViewById(R.id.tvMasterAlert);
         toggleGroupPeriod = view.findViewById(R.id.toggleGroupPeriod);
         btnWeekly = view.findViewById(R.id.btnWeekly);
@@ -203,6 +207,8 @@ public class BudgetFragment extends Fragment {
 
         // Kích nổ lần đầu
         triggerLoadData();
+        hasInitializedView = true;
+        skipNextResumeLoad = true;
 
         MainViewModel mainViewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
         mainViewModel.syncCompleted.observe(getViewLifecycleOwner(), isDone -> {
@@ -253,6 +259,18 @@ public class BudgetFragment extends Fragment {
         String monthFormat = getString(R.string.budget_month_format);
         String weekFormat = getString(R.string.budget_week_format);
         budgetViewModel.loadBudgetsData(isLinkedMode, currentPeriodType, monthFormat, weekFormat);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (hasInitializedView && budgetViewModel != null) {
+            if (skipNextResumeLoad) {
+                skipNextResumeLoad = false;
+                return;
+            }
+            triggerLoadData();
+        }
     }
 
     private void showMonthSelectorDialog() {
@@ -310,41 +328,98 @@ public class BudgetFragment extends Fragment {
 
     // --- HÀM VẼ GIAO DIỆN CHUẨN ---
     private void drawMasterCard(Budget masterBudget, long masterSpent, long totalCatLimits) {
+        long safeSpent = sanitizeMoney(masterSpent);
+        long safeTotalCatLimits = sanitizeMoney(totalCatLimits);
+
         if (masterBudget != null) {
-            long limit = masterBudget.limitAmount;
-            long remaining = limit - masterSpent;
-            int percent = limit > 0 ? (int) ((masterSpent * 100) / limit) : 0;
+            long limit = sanitizeMoney(masterBudget.limitAmount);
+            long remaining = limit - safeSpent;
+            int percent = calculateBudgetPercent(safeSpent, limit);
+            int progress = clampProgress(percent);
+            boolean isOverBudget = safeSpent > limit || remaining < 0;
+            applyMasterCardState(isOverBudget);
 
             tvMasterLimit.setText(CurrencyFormatter.formatFullVND(limit));
-            tvMasterSpent.setText(CurrencyFormatter.formatFullVND(masterSpent));
+            tvMasterSpent.setText(CurrencyFormatter.formatFullVND(safeSpent));
             tvMasterRemaining.setText(CurrencyFormatter.formatFullVND(remaining));
-            pbMaster.setProgress(Math.min(percent, 100));
+            pbMaster.setMax(100);
+            pbMaster.setProgress(progress);
 
             tvMasterAlert.setVisibility(View.VISIBLE);
-            if (totalCatLimits < limit && !(isLinkedMode && currentPeriodType.equals("MONTH"))) {
-                tvMasterAlert.setText("Master budget is empty" + CurrencyFormatter.formatCompactVND(limit - totalCatLimits));
+            if (limit <= 0) {
+                tvMasterAlert.setText("Set a master budget to start tracking");
                 tvMasterAlert.setTextColor(Color.WHITE);
-            } else if (totalCatLimits > limit && !(isLinkedMode && currentPeriodType.equals("MONTH"))) {
-                tvMasterAlert.setText("Category budgets exceed the Master budget by " + CurrencyFormatter.formatCompactVND(totalCatLimits - limit));
+            } else if (safeSpent <= 0) {
+                tvMasterAlert.setText("0% used • " + CurrencyFormatter.formatCompactVND(limit) + " left");
+                tvMasterAlert.setTextColor(Color.GREEN);
+            } else if (remaining < 0) {
+                tvMasterAlert.setText(percent + "% used • " + CurrencyFormatter.formatCompactVND(Math.abs(remaining)) + " over");
+                tvMasterAlert.setTextColor(ContextCompat.getColor(requireContext(), R.color.cat_pastel_coral));
+            } else if (safeTotalCatLimits < limit && !(isLinkedMode && currentPeriodType.equals("MONTH"))) {
+                tvMasterAlert.setText(percent + "% used • " + CurrencyFormatter.formatCompactVND(limit - safeTotalCatLimits) + " unallocated");
+                tvMasterAlert.setTextColor(Color.WHITE);
+            } else if (safeTotalCatLimits > limit && !(isLinkedMode && currentPeriodType.equals("MONTH"))) {
+                tvMasterAlert.setText("Category budgets exceed the Master budget by " + CurrencyFormatter.formatCompactVND(safeTotalCatLimits - limit));
                 tvMasterAlert.setTextColor(Color.YELLOW);
             } else {
-                tvMasterAlert.setText(CurrencyFormatter.formatCompactVND(Math.abs(remaining)) + (remaining >= 0 ? " left" : " over"));
+                tvMasterAlert.setText(percent + "% used • " + CurrencyFormatter.formatCompactVND(remaining) + " left");
                 tvMasterAlert.setTextColor(Color.GREEN);
             }
         } else {
+            applyMasterCardState(false);
             tvMasterLimit.setText(CurrencyFormatter.formatFullVND(0));
-            tvMasterSpent.setText(CurrencyFormatter.formatFullVND(masterSpent));
+            tvMasterSpent.setText(CurrencyFormatter.formatFullVND(safeSpent));
             tvMasterRemaining.setText(CurrencyFormatter.formatFullVND(0));
+            pbMaster.setMax(100);
             pbMaster.setProgress(0);
-            tvMasterAlert.setVisibility(View.GONE);
+            tvMasterAlert.setVisibility(View.VISIBLE);
+            tvMasterAlert.setText("Set a master budget to start tracking");
+            tvMasterAlert.setTextColor(Color.WHITE);
+        }
+    }
+
+    private long sanitizeMoney(long value) {
+        return Math.max(0L, value);
+    }
+
+    private int calculateBudgetPercent(long spent, long limit) {
+        if (spent <= 0 || limit <= 0) return 0;
+        double percent = (spent * 100.0d) / limit;
+        if (Double.isNaN(percent) || Double.isInfinite(percent) || percent <= 0) return 0;
+        if (percent >= Integer.MAX_VALUE) return Integer.MAX_VALUE;
+        return (int) percent;
+    }
+
+    private int clampProgress(int percent) {
+        return Math.max(0, Math.min(percent, 100));
+    }
+
+    private void applyMasterCardState(boolean isOverBudget) {
+        if (getContext() == null) return;
+
+        if (masterCardSurface != null) {
+            masterCardSurface.setBackgroundResource(isOverBudget
+                    ? R.drawable.bg_budget_master_card_danger
+                    : R.drawable.bg_budget_master_card);
+        }
+
+        if (pbMaster != null) {
+            int progressColor = ContextCompat.getColor(requireContext(), isOverBudget
+                    ? R.color.budget_master_progress_danger
+                    : R.color.budget_master_progress_normal);
+            int trackColor = ContextCompat.getColor(requireContext(), isOverBudget
+                    ? R.color.budget_master_progress_track_danger
+                    : R.color.budget_master_progress_track_normal);
+
+            pbMaster.setProgressTintList(ColorStateList.valueOf(progressColor));
+            pbMaster.setProgressBackgroundTintList(ColorStateList.valueOf(trackColor));
         }
     }
 
     private void updateToggleColors() {
         if (getContext() == null) return;
-        int colorGreen = ContextCompat.getColor(requireContext(), R.color.status_green);
         int colorWhite = ContextCompat.getColor(requireContext(), R.color.white);
-        int colorBrand = ContextCompat.getColor(requireContext(), R.color.brand_primary);
+        int colorBrand = Color.parseColor("#1A237E");
         int colorTransparent = Color.TRANSPARENT;
 
         if (btnAddBudget != null) {
@@ -366,8 +441,8 @@ public class BudgetFragment extends Fragment {
 
     private void openNumpadToEditBudget(int categoryId, double currentLimit) {
         NumpadBottomSheet numpad = new NumpadBottomSheet();
-        numpad.setInitialAmount(String.valueOf((long) currentLimit));
-        numpad.setListener((raw, formatted) -> triggerSaveBudget(categoryId, Double.parseDouble(raw)));
+        numpad.setInitialBaseAmount(currentLimit);
+        numpad.setListener((raw, formatted) -> triggerSaveBudget(categoryId, CurrencyFormatter.parseVNDToDouble(raw)));
         numpad.show(getChildFragmentManager(), "NumpadBottomSheet");
     }
 

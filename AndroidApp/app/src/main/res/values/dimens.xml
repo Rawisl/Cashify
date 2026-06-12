@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Bottom Navigation single source of truth:
+         normal nav icon size, normal item baseline, selected item float,
+         center Add Transaction button size, and center button spring scale. -->
+    <dimen name="bottom_nav_height">72dp</dimen>
+    <dimen name="bottom_nav_horizontal_margin">15dp</dimen>
+    <dimen name="bottom_nav_workspace_horizontal_margin">20dp</dimen>
+    <dimen name="bottom_nav_system_margin">20dp</dimen>
+    <dimen name="bottom_nav_icon_size">26dp</dimen>
+    <dimen name="bottom_nav_item_padding_top">0dp</dimen>
+    <dimen name="bottom_nav_item_padding_bottom">0dp</dimen>
+    <dimen name="bottom_nav_item_vertical_offset">10dp</dimen>
+    <dimen name="bottom_nav_selected_icon_float_offset">5dp</dimen>
+
+    <dimen name="bottom_nav_social_height">64dp</dimen>
+    <dimen name="bottom_nav_social_horizontal_margin">20dp</dimen>
+    <dimen name="bottom_nav_social_icon_size">24dp</dimen>
+    <dimen name="bottom_nav_social_elevation">8dp</dimen>
+    <dimen name="bottom_nav_social_horizontal_padding">8dp</dimen>
+    <dimen name="bottom_nav_social_vertical_padding">6dp</dimen>
+    <dimen name="bottom_nav_social_item_min_height">52dp</dimen>
+    <dimen name="bottom_nav_social_item_padding_top">3dp</dimen>
+    <dimen name="bottom_nav_social_item_padding_bottom">2dp</dimen>
+    <dimen name="bottom_nav_social_label_top_margin">3dp</dimen>
+    <fraction name="bottom_nav_social_inactive_alpha">78%</fraction>
+
+    <dimen name="bottom_nav_center_button_size">52dp</dimen>
+    <dimen name="bottom_nav_center_button_min_touch">48dp</dimen>
+    <dimen name="bottom_nav_center_button_icon_padding">12dp</dimen>
+    <!-- Top margin is 8dp because a centered 52dp button in a 72dp bar starts at 10dp; this raises it by 2dp. -->
+    <dimen name="bottom_nav_center_button_top_margin">8dp</dimen>
+    <dimen name="bottom_nav_center_button_elevation">10dp</dimen>
+    <dimen name="bottom_nav_center_button_translation_z">2dp</dimen>
+
+    <fraction name="bottom_nav_center_button_press_scale_up">108%</fraction>
+    <fraction name="bottom_nav_center_button_press_scale_down">96%</fraction>
+    <integer name="bottom_nav_center_button_press_up_duration">90</integer>
+    <integer name="bottom_nav_center_button_press_down_duration">80</integer>
+    <integer name="bottom_nav_center_button_press_settle_duration">120</integer>
+    <integer name="bottom_nav_icon_float_duration">180</integer>
+</resources>

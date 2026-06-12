@@ -123,10 +123,12 @@ public class HomeFragment extends Fragment {
 
         // Dùng câu query lấy sẵn 5 giao dịch + Category từ Room (KHÔNG CẦN VÒNG LẶP NẶNG MÁY)
         viewModel.getRecentTransactionsWithCategory(currentWorkspaceId).observe(getViewLifecycleOwner(), transWithCatList -> {
-            if (transWithCatList != null && !transWithCatList.isEmpty()) {
-                List<TransactionViewModel.HistoryItem> recentItems = new ArrayList<>();
+            List<TransactionViewModel.HistoryItem> recentItems = new ArrayList<>();
 
+            if (transWithCatList != null) {
                 for (TransactionWithCategory item : transWithCatList) {
+                    if (item == null || item.transaction == null) continue;
+
                     // Check kỹ cả bên trong xem nó có null không, nếu null thì gán mặc định
                     String catName = (item.category != null && item.category.name != null) ? item.category.name : "Đang đồng bộ...";
                     String catIcon = (item.category != null && item.category.iconName != null) ? item.category.iconName : "ic_other";
@@ -134,22 +136,20 @@ public class HomeFragment extends Fragment {
 
                     recentItems.add(new TransactionViewModel.HistoryItem(item.transaction, catName, catIcon, catColor));
                 }
-
-                adapter.updateData(recentItems);
-                rvRecentTransactions.setVisibility(View.VISIBLE);
             }
+
+            adapter.updateData(recentItems);
+            rvRecentTransactions.setVisibility(recentItems.isEmpty() ? View.GONE : View.VISIBLE);
         });
 
         viewModel.getDashboardData().observe(getViewLifecycleOwner(), state -> {
             // Cập nhật text số dư
             tvTotalBalance.setText(CurrencyFormatter.formatFullVND(state.actualBalance));
-            tvIncome.setText(CurrencyFormatter.formatFullVND(state.totalIncome));
-            tvExpense.setText(CurrencyFormatter.formatFullVND(state.totalExpense));
+            tvIncome.setText(CurrencyFormatter.formatCompactAmount(state.totalIncome));
+            tvExpense.setText(CurrencyFormatter.formatCompactAmount(state.totalExpense));
 
             //Bơm data cho Legend Adapter (MỚI THÊM)
-            if (state.legendItems != null) {
-                legendAdapter.updateData(state.legendItems);
-            }
+            legendAdapter.updateData(state.legendItems);
 
             //Vẽ biểu đồ gọn
             ArrayList<PieEntry> entries = new ArrayList<>();
@@ -172,8 +172,8 @@ public class HomeFragment extends Fragment {
 
                 // Lấy thẳng mảng màu từ ViewModel ném vào
                 dataSet.setColors(state.pieColors);
-                dataSet.setSliceSpace(3f);
-                dataSet.setSelectionShift(5f);
+                dataSet.setSliceSpace(0f);
+                dataSet.setSelectionShift(2f);
 
                 PieData data = new PieData(dataSet);
                 data.setDrawValues(false); // Vẫn tắt value mặc định
@@ -182,7 +182,7 @@ public class HomeFragment extends Fragment {
                 SimpleDateFormat sdf = new SimpleDateFormat("MMMM", Locale.ENGLISH);
                 String currentMonth = sdf.format(currentCalendar.getTime());
                 pieChart.setCenterText(getString(R.string.chart_center_text, currentMonth));
-                pieChart.setCenterTextSize(12f);
+                pieChart.setCenterTextSize(15f);
             }
             pieChart.invalidate();
         });
@@ -251,6 +251,7 @@ public class HomeFragment extends Fragment {
                 .listenToUnreadNotifications(new com.example.cashify.data.remote.FirebaseManager.DataCallback<Integer>() {
                     @Override
                     public void onSuccess(Integer count) {
+                        if (!isAdded() || getView() == null) return;
                         if (count != null && count > 0) {
                             tvNotificationBadge.setVisibility(View.VISIBLE);
                             tvNotificationBadge.setText(count > 9 ? "9+" : String.valueOf(count));
@@ -261,6 +262,7 @@ public class HomeFragment extends Fragment {
 
                     @Override
                     public void onError(String message) {
+                        if (!isAdded() || getView() == null) return;
                         tvNotificationBadge.setVisibility(View.GONE);
                     }
                 });
@@ -297,14 +299,14 @@ public class HomeFragment extends Fragment {
         pieChart.setDrawHoleEnabled(true); //bật cái lỗ tròn ở giữa mới vẽ được center text
         pieChart.setHoleColor(Color.TRANSPARENT);
         pieChart.setTransparentCircleRadius(0f);
-        pieChart.setHoleRadius(65f); // Kích thước lỗ tròn ở giữa
+        pieChart.setHoleRadius(70f); // Kích thước lỗ tròn ở giữa
         pieChart.animateY(700);
 
         pieChart.setDrawEntryLabels(false); // Tắt tên dán đè lên miếng bánh cho đỡ rối
         pieChart.getDescription().setEnabled(false); // Tắt dòng chữ Description góc dưới
 
         //Ép mọi miếng bánh phải rộng ít nhất 15 độ (tầm này là ngón tay người bấm vừa)
-        pieChart.setMinAngleForSlices(15f);
+        pieChart.setMinAngleForSlices(17f);
 
         pieChart.setUsePercentValues(true);
 
@@ -314,7 +316,7 @@ public class HomeFragment extends Fragment {
 
         // Text ở giữa cái lỗ
         pieChart.setCenterText(getString(R.string.chart_center_text, monthName));
-        pieChart.setCenterTextSize(12f);
+        pieChart.setCenterTextSize(15f);
         // Khởi tạo Typeface từ font chữ và màu, không dùng mã font và mã màu thường mà phải dùng resources/context compat
         Typeface tf = ResourcesCompat.getFont(getContext(), R.font.inter_bold);
         pieChart.setCenterTextColor(ContextCompat.getColor(getContext(), R.color.brand_primary));
@@ -342,7 +344,7 @@ public class HomeFragment extends Fragment {
                             String.format(Locale.getDefault(), "%.1f%%", percentage);
 
                     pieChart.setCenterText(centerText);
-                    pieChart.setCenterTextSize(12f);
+                    pieChart.setCenterTextSize(15f);
                 }
             }
 
@@ -354,7 +356,7 @@ public class HomeFragment extends Fragment {
 
                 // Trả lại nguyên trạng
                 pieChart.setCenterText(getString(R.string.chart_center_text, currentMonth));
-                pieChart.setCenterTextSize(12f);
+                pieChart.setCenterTextSize(15f);
             }
         });
     }

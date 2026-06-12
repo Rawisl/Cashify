@@ -8,7 +8,7 @@
     android:layout_marginBottom="8dp"
     app:cardBackgroundColor="@color/white"
     app:cardElevation="1dp"
-    app:cardCornerRadius="16dp"
+    app:cardCornerRadius="24dp"
     app:strokeWidth="0dp"
     android:clickable="true"
     android:focusable="true"
@@ -24,7 +24,7 @@
         android:gravity="center_vertical"
         android:clickable="false"
         android:focusable="false"
-        android:background="@null">
+        android:background="@color/white">
 
         <!-- Icon Danh mục -->
         <com.google.android.material.imageview.ShapeableImageView

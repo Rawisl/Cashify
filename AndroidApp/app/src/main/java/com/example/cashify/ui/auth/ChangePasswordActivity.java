@@ -153,6 +153,9 @@ public class ChangePasswordActivity extends AppCompatActivity {
     }
 
     private void setupClickListeners() {
+        android.view.View btnBack = findViewById(R.id.btnBack);
+        if (btnBack != null) btnBack.setOnClickListener(v -> finish());
+
         btnChangePassword.setOnClickListener(v -> {
             String currentPw = getInputText(tilCurrentPassword);
             String newPw     = getInputText(tilNewPassword);

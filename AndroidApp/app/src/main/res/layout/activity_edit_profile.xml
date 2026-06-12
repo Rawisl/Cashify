@@ -3,17 +3,21 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="@android:color/white"
-    android:fitsSystemWindows="true">
+    android:background="@drawable/bg_budget_screen"
+    android:fitsSystemWindows="true"
+    android:orientation="vertical">
 
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbarEditProfile"
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
+        android:layout_height="40dp"
+        android:background="@drawable/bg_workspace_header_light"
         app:title="@string/update_profile"
         app:titleCentered="true"
-        app:navigationIcon="?attr/homeAsUpIndicator" />
+        app:titleTextAppearance="@style/ToolbarTitleFont"
+        app:titleTextColor="@color/brand_primary"
+        app:navigationIcon="?attr/homeAsUpIndicator"
+        app:navigationIconTint="@color/brand_primary" />
 
     <ScrollView
         android:layout_width="match_parent"
@@ -45,41 +49,74 @@
                     android:layout_gravity="bottom|end"
                     app:fabSize="mini"
                     app:srcCompat="@android:drawable/ic_menu_camera"
-                    app:backgroundTint="#EEEEEE"
-                    app:tint="@android:color/black"/>
+                    app:backgroundTint="@color/bg_title"
+                    app:tint="@color/black"/>
             </FrameLayout>
 
             <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="48dp"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                android:hint="@string/ten_hien_thi">
+                android:hint="@string/ten_hien_thi"
+                app:boxBackgroundColor="@color/white"
+                app:boxCornerRadiusBottomEnd="18dp"
+                app:boxCornerRadiusBottomStart="18dp"
+                app:boxCornerRadiusTopEnd="18dp"
+                app:boxCornerRadiusTopStart="18dp"
+                app:boxStrokeColor="@color/auth_input_stroke"
+                app:boxStrokeErrorColor="@color/status_red"
+                app:boxStrokeWidth="1.5dp"
+                app:boxStrokeWidthFocused="2dp"
+                app:hintTextColor="@color/screen_subtitle">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edtEditName"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="textPersonName" />
+                    android:layout_height="54dp"
+                    android:fontFamily="@font/inter_medium"
+                    android:inputType="textPersonName"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:textColor="@color/brand_primary"
+                    android:textColorHint="@color/screen_subtitle"
+                    android:textSize="14sp" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                android:hint="@string/email">
+                android:layout_marginTop="14dp"
+                android:hint="@string/email"
+                app:boxBackgroundColor="@color/white"
+                app:boxCornerRadiusBottomEnd="18dp"
+                app:boxCornerRadiusBottomStart="18dp"
+                app:boxCornerRadiusTopEnd="18dp"
+                app:boxCornerRadiusTopStart="18dp"
+                app:boxStrokeColor="@color/auth_input_stroke"
+                app:boxStrokeErrorColor="@color/status_red"
+                app:boxStrokeWidth="1.5dp"
+                app:boxStrokeWidthFocused="2dp"
+                app:hintTextColor="@color/screen_subtitle">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edtEditEmail"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_height="54dp"
                     android:enabled="false"
-                    android:inputType="textEmailAddress" />
+                    android:fontFamily="@font/inter_medium"
+                    android:inputType="textEmailAddress"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:textColor="@color/brand_primary"
+                    android:textColorHint="@color/screen_subtitle"
+                    android:textSize="14sp" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSaveProfile"
+                android:backgroundTint="@color/brand_primary"
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
                 android:layout_marginTop="48dp"

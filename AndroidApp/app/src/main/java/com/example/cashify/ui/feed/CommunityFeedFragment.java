@@ -837,6 +837,10 @@ public class CommunityFeedFragment extends Fragment {
                                 setPosting(false);
                                 if (response.isSuccessful()) {
                                     Toast.makeText(requireContext(), "Post updated successfully!", Toast.LENGTH_SHORT).show();
+
+                                    // 🌟 RUNG CHUÔNG BÁO NEWSFEED TẢI LẠI
+                                    com.example.cashify.ui.social.SocialNewsfeedFragment.needRefreshFeed = true;
+
                                     navigateBack();
                                 } else
                                     Toast.makeText(requireContext(), "Server error!", Toast.LENGTH_SHORT).show();
@@ -944,6 +948,10 @@ public class CommunityFeedFragment extends Fragment {
                         if (response.isSuccessful()) {
                             Toast.makeText(requireContext(), "Post created successfully!", Toast.LENGTH_SHORT).show();
                             resetComposer();
+
+                            // 🌟 RUNG CHUÔNG BÁO NEWSFEED TẢI LẠI
+                            com.example.cashify.ui.social.SocialNewsfeedFragment.needRefreshFeed = true;
+
                             navigateBack();
                         } else {
                             Toast.makeText(requireContext(), "Failed to create post: " + response.code(), Toast.LENGTH_SHORT).show();

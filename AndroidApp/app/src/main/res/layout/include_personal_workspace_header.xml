@@ -9,23 +9,24 @@
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbarPersonal"
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        android:background="@drawable/bg_toolbar_rounded"
+        android:layout_height="40dp"
+        android:background="@drawable/bg_workspace_header_light"
         app:navigationIcon="@drawable/ic_menu_padded"
-        app:navigationIconTint="@color/white">
+        app:navigationIconTint="@color/brand_primary">
 
         <TextView
             android:id="@+id/tvToolbarTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:text="@string/personal_workspace"
+            android:text="Dashboard"
             android:textAppearance="@style/ToolbarTitleFont"
-            android:textColor="@color/white" />
+            android:textColor="@color/brand_primary" 
+            android:paddingBottom="5dp"/>
 
         <FrameLayout
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
             android:layout_gravity="end|center_vertical"
             android:layout_marginEnd="12dp">
 
@@ -38,19 +39,20 @@
                 android:padding="11dp"
                 android:scaleType="center"
                 android:src="@drawable/ic_notification_regular"
-                app:tint="@color/white" />
+                app:tint="@color/brand_primary" />
 
             <TextView
                 android:id="@+id/tvNotificationBadge"
-                android:layout_width="18dp"
-                android:layout_height="18dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:layout_gravity="top|end"
                 android:layout_marginTop="8dp"
                 android:layout_marginEnd="8dp"
                 android:background="@drawable/bg_badge_red"
                 android:fontFamily="@font/inter_bold"
                 android:gravity="center"
-                android:text="@string/one"
+                android:paddingBottom="5dp"
+                android:text="1"
                 android:textColor="@color/white"
                 android:textSize="10sp"
                 android:visibility="gone" />

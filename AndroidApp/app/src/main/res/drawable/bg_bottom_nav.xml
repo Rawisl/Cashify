@@ -3,16 +3,16 @@
     <!-- Trạng thái khi được chọn/nhấn vào -->
     <item android:state_pressed="true">
         <shape>
-            <solid android:color="#F0F0F0" />
-            <corners android:radius="35dp" />
+            <solid android:color="@color/brand_primary" />
+            <corners android:radius="24dp" />
         </shape>
     </item>
 
     <!-- Trạng thái mặc định -->
     <item>
         <shape>
-            <solid android:color="@color/white" />
-            <corners android:radius="35dp" />
+            <solid android:color="#e4ebff" />
+            <corners android:radius="24dp" />
         </shape>
     </item>
 </selector>

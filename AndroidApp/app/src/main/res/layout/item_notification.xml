@@ -43,7 +43,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             tools:text="@string/placeholder_notif_title"
-            android:textColor="#111111"
+            android:fontFamily="@font/inter_bold"
+            android:textColor="@color/item_title"
             android:textSize="15sp"
             android:textStyle="bold" />
 
@@ -55,7 +56,8 @@
             android:ellipsize="end"
             android:maxLines="2"
             tools:text="@string/placeholder_notif_message"
-            android:textColor="#666666"
+            android:fontFamily="@font/inter_regular"
+            android:textColor="@color/item_description"
             android:textSize="13sp" />
 
         <TextView
@@ -64,7 +66,8 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             tools:text="@string/placeholder_notif_time"
-            android:textColor="#999999"
+            android:fontFamily="@font/inter_regular"
+            android:textColor="@color/btn_disabled_text"
             android:textSize="11sp" />
     </LinearLayout>
 

@@ -34,7 +34,7 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
     }
 
     public void setData(List<NotificationItem> newList) {
-        this.list = newList;
+        this.list = newList != null ? newList : new ArrayList<>();
         notifyDataSetChanged();
     }
 
@@ -58,7 +58,8 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
         holder.viewUnreadDot.setVisibility(notif.isRead() ? View.GONE : View.VISIBLE);
         holder.itemView.setBackgroundColor(notif.isRead() ? Color.TRANSPARENT : Color.parseColor("#F9FAFC"));
 
-        switch (notif.getType()) {
+        String type = notif.getType() != null ? notif.getType() : "";
+        switch (type) {
             case "FRIEND_REQUEST":
                 holder.imgIcon.setImageResource(R.drawable.ic_friends_solid);
                 holder.imgIcon.setColorFilter(Color.parseColor("#E91E63"));
@@ -81,7 +82,9 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                 break;
         }
 
-        holder.itemView.setOnClickListener(v -> listener.onClick(notif));
+        holder.itemView.setOnClickListener(v -> {
+            if (listener != null) listener.onClick(notif);
+        });
     }
 
     @Override
