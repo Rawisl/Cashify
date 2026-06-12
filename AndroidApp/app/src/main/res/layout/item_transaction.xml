@@ -1,77 +1,82 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_marginBottom="14dp"
-    app:cardBackgroundColor="#F1F3F9"
-    app:cardElevation="1dp"
-    app:cardCornerRadius="24dp"
-    app:strokeWidth="0dp"
-    android:clickable="true"
-    android:focusable="true"
-    android:background="?attr/selectableItemBackground">
-
-    <LinearLayout
-        android:id="@+id/itemContainer"
-        style="@style/btn_component_layout"
+    <com.google.android.material.card.MaterialCardView
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingStart="16dp"
-        android:paddingTop="16dp"
-        android:paddingEnd="16dp"
-        android:paddingBottom="16dp"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:clickable="false"
-        android:focusable="false"
-        android:background="#ffffff">
-
-        <com.google.android.material.imageview.ShapeableImageView
-            android:id="@+id/ivCategoryIcon"
-            android:layout_width="58dp"
-            android:layout_height="58dp"
-            android:layout_gravity="center_vertical"
-            android:padding="12dp"
-            android:scaleType="centerInside" />
-
+        android:layout_marginBottom="14dp"
+        app:cardBackgroundColor="#F1F3F9"
+        app:cardElevation="1dp"
+        app:cardCornerRadius="24dp"
+        app:strokeWidth="0dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="?attr/selectableItemBackground">
 
         <LinearLayout
-            style="@style/btn_text_layout"
-            android:layout_width="0dp"
+            android:id="@+id/itemContainer"
+            style="@style/btn_component_layout"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="14dp"
-            android:orientation="vertical">
+            android:paddingStart="16dp"
+            android:paddingTop="16dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="16dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:clickable="false"
+            android:focusable="false"
+            android:background="#ffffff">
+
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/ivCategoryIcon"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:layout_gravity="center_vertical"
+                android:padding="12dp"
+                android:scaleType="centerInside" />
+
+
+            <LinearLayout
+                style="@style/btn_text_layout"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="14dp"
+                android:layout_marginEnd="10dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tvMainTitle"
+                    style="@style/btn_item_title"
+                    android:ellipsize="end"
+                    android:fontFamily="@font/inter_bold"
+                    android:maxLines="1"
+                    android:textColor="#111111"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/tvSubtitle"
+                    style="@style/btn_item_description"
+                    android:fontFamily="@font/inter_regular"
+                    android:textColor="@color/item_description"
+                    android:textSize="13sp" />
+            </LinearLayout>
 
             <TextView
-                android:id="@+id/tvMainTitle"
-                style="@style/btn_item_title"
-                android:ellipsize="end"
-                android:fontFamily="@font/inter_bold"
+                android:id="@+id/tvAmount"
+                style="@style/item_budget_money_amount"
+                android:layout_width="136dp"
+                android:layout_height="wrap_content"
+                android:ellipsize="none"
+                android:fontFamily="@font/outfit_bold"
+                android:gravity="end|center_vertical"
+                android:includeFontPadding="false"
                 android:maxLines="1"
-                android:textColor="#111111"
-                android:textSize="20dp" />
+                android:paddingStart="0dp"
+                android:singleLine="true"
+                android:textSize="17sp"
+                android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/tvSubtitle"
-                style="@style/btn_item_description"
-                android:fontFamily="@font/inter_regular"
-                android:textColor="@color/item_description"
-                android:textSize="13dp" />
         </LinearLayout>
-
-        <TextView
-            android:id="@+id/tvAmount"
-            style="@style/item_budget_money_amount"
-            android:layout_width="108dp"
-            android:layout_height="wrap_content"
-            android:fontFamily="@font/outfit_bold"
-            android:gravity="end|center_vertical"
-            android:paddingStart="8dp"
-            android:textSize="18dp"
-            android:textStyle="bold" />
-
-    </LinearLayout>
-</com.google.android.material.card.MaterialCardView>
+    </com.google.android.material.card.MaterialCardView>

@@ -441,8 +441,8 @@ public class BudgetFragment extends Fragment {
 
     private void openNumpadToEditBudget(int categoryId, double currentLimit) {
         NumpadBottomSheet numpad = new NumpadBottomSheet();
-        numpad.setInitialAmount(String.valueOf((long) currentLimit));
-        numpad.setListener((raw, formatted) -> triggerSaveBudget(categoryId, Double.parseDouble(raw)));
+        numpad.setInitialBaseAmount(currentLimit);
+        numpad.setListener((raw, formatted) -> triggerSaveBudget(categoryId, CurrencyFormatter.parseVNDToDouble(raw)));
         numpad.show(getChildFragmentManager(), "NumpadBottomSheet");
     }
 

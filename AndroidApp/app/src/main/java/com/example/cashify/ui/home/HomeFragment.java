@@ -145,8 +145,8 @@ public class HomeFragment extends Fragment {
         viewModel.getDashboardData().observe(getViewLifecycleOwner(), state -> {
             // Cập nhật text số dư
             tvTotalBalance.setText(CurrencyFormatter.formatFullVND(state.actualBalance));
-            tvIncome.setText(CurrencyFormatter.formatFullVND(state.totalIncome));
-            tvExpense.setText(CurrencyFormatter.formatFullVND(state.totalExpense));
+            tvIncome.setText(CurrencyFormatter.formatCompactAmount(state.totalIncome));
+            tvExpense.setText(CurrencyFormatter.formatCompactAmount(state.totalExpense));
 
             //Bơm data cho Legend Adapter (MỚI THÊM)
             legendAdapter.updateData(state.legendItems);

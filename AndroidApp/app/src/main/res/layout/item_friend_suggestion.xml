@@ -50,7 +50,7 @@
             android:id="@+id/btnAddFriend"
             android:layout_width="match_parent"
             android:layout_height="40dp"
-            android:layout_marginTop="14dp"
+            android:layout_marginTop="6dp"
             android:text="@string/add_friend"
             android:textAllCaps="false"
             android:textSize="13sp"

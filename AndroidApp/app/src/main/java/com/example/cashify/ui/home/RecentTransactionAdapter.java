@@ -85,12 +85,11 @@ public class RecentTransactionAdapter extends RecyclerView.Adapter<RecentTransac
 
         // 3. Gán Số tiền và Màu sắc - Mix giữa màu của History và Formatter của Cashify
         if (holder.tvAmount != null) {
-            String formattedAmount = CurrencyFormatter.formatCompactVND(trans.amount);
             if (trans.type == 1) { // Income
-                holder.tvAmount.setText("+" + formattedAmount);
+                holder.tvAmount.setText("+" + CurrencyFormatter.formatCompactAmount(trans.amount));
                 holder.tvAmount.setTextColor(Color.parseColor("#1DB424"));
             } else { // Expense
-                holder.tvAmount.setText("-" + formattedAmount);
+                holder.tvAmount.setText(CurrencyFormatter.formatCompactAmount(-trans.amount));
                 holder.tvAmount.setTextColor(Color.parseColor("#D14040"));
             }
         }
