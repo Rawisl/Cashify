@@ -122,6 +122,19 @@ public interface ApiService {
     @POST("/api/v1/post/delete")
     Call<Object> deletePost(@Header("Authorization") String token, @Body DeletePostRequest request);
 
+    @GET("/api/v1/achievements/available")
+    Call<List<AchievementSuggestion>> getAvailableAchievements(@Header("Authorization") String token);
+
+    class AchievementSuggestion {
+        public String id;
+        public String title;
+        public String description;
+        public String iconText;
+        public String amountLabel;
+        public String monthLabel;
+        public int progress;
+    }
+
     //các tương tác trên post
     @POST("/api/v1/post/like")
     Call<Object> toggleLike(

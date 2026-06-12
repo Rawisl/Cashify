@@ -49,7 +49,29 @@ public class SocialViewModel extends ViewModel {
                     _friendCount.postValue(count);
                 });
     }
+    // Thêm LiveData để lắng nghe trạng thái xóa
+    private final androidx.lifecycle.MutableLiveData<Boolean> isDeleteSuccess = new androidx.lifecycle.MutableLiveData<>();
+    public androidx.lifecycle.LiveData<Boolean> getIsDeleteSuccess() { return isDeleteSuccess; }
 
+    // Hàm gọi API xóa bài
+    public void deletePost(String postId, String token) {
+        com.example.cashify.utils.ApiClient.getClient().create(com.example.cashify.utils.ApiService.class)
+                .deletePost(token, new com.example.cashify.utils.ApiService.DeletePostRequest(postId))
+                .enqueue(new retrofit2.Callback<Object>() {
+                    @Override
+                    public void onResponse(@androidx.annotation.NonNull retrofit2.Call<Object> call, @androidx.annotation.NonNull retrofit2.Response<Object> response) {
+                        if (response.isSuccessful()) {
+                            isDeleteSuccess.setValue(true);
+                        } else {
+                            isDeleteSuccess.setValue(false);
+                        }
+                    }
+                    @Override
+                    public void onFailure(@androidx.annotation.NonNull retrofit2.Call<Object> call, @androidx.annotation.NonNull Throwable t) {
+                        isDeleteSuccess.setValue(false);
+                    }
+                });
+    }
     // ── TODO: Thêm LiveData cho newsfeed posts ─────────────────────
     // private final MutableLiveData<List<Post>> _posts = new MutableLiveData<>();
     // public LiveData<List<Post>> getPosts() { return _posts; }

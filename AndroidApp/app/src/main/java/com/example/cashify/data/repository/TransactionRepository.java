@@ -31,21 +31,39 @@ public class TransactionRepository {
     public void insert(Transaction transaction) {
         executor.execute(() -> {
             transactionDao.insert(transaction);
-            syncTransactionToCloud(transaction);
+            // Báo cho Firebase: Đây là lệnh Insert -> Tính toán cộng dồn
+            firebaseManager.syncTransactionWithStats(true, false, transaction, new FirebaseManager.DataCallback<Void>() {
+                @Override
+                public void onSuccess(Void data) { Log.d("SYNC_OK", "Insert and update stats successful!"); }
+                @Override
+                public void onError(String message) { Log.e("SYNC_FAIL", "Insert error: " + message); }
+            });
         });
     }
 
     public void update(Transaction transaction) {
         executor.execute(() -> {
             transactionDao.update(transaction);
-            syncTransactionToCloud(transaction);
+            // Báo cho Firebase: Đây chỉ là Update -> Đừng đụng vào bộ đếm Stats để tránh x2 dữ liệu
+            firebaseManager.syncTransactionWithStats(false, false, transaction, new FirebaseManager.DataCallback<Void>() {
+                @Override
+                public void onSuccess(Void data) { Log.d("SYNC_OK", "Update successful!"); }
+                @Override
+                public void onError(String message) { Log.e("SYNC_FAIL", "Update error: " + message); }
+            });
         });
     }
 
     public void delete(Transaction transaction) {
         executor.execute(() -> {
             transactionDao.delete(transaction);
-            // Logic xóa trên Firebase có thể gọi hàm xóa document riêng trong FirebaseManager
+            // Báo cho Firebase: Đây là lệnh Delete -> Trừ bộ đếm Stats đi
+            firebaseManager.syncTransactionWithStats(false, true, transaction, new FirebaseManager.DataCallback<Void>() {
+                @Override
+                public void onSuccess(Void data) { Log.d("SYNC_OK", "Delete and deduct stats successful!"); }
+                @Override
+                public void onError(String message) { Log.e("SYNC_FAIL", "Delete error: " + message); }
+            });
         });
     }
     public void getAll(String workspaceId, Callback<List<Transaction>> callback){
@@ -92,29 +110,7 @@ public class TransactionRepository {
         executor.execute(() -> callback.onResult(transactionDao.countTransactionsByDay(workspaceId, startOfDay, endOfDay)));
     }
 
-    private void syncTransactionToCloud(Transaction t) {
-        Map<String, Object> data = new HashMap<>();
-        data.put("amount", t.amount);
-        data.put("categoryId", t.categoryId);
-        data.put("note", t.note);
-        data.put("timestamp", t.timestamp);
-        data.put("paymentMethod", t.paymentMethod);
-        data.put("type", t.type);
-        data.put("workspaceId", t.workspaceId); // Nên đẩy cả ID này lên mây để dễ quản lý
 
-        String currentWorkspaceId = (t.workspaceId != null) ? t.workspaceId : "PERSONAL";
-
-        firebaseManager.syncLocalToCloud(currentWorkspaceId, "transactions", String.valueOf(t.id), data, new FirebaseManager.DataCallback<Void>() {
-            @Override
-            public void onSuccess(Void result) {
-                Log.d("SYNC_OK", "Transaction " + t.id + " Uploaded to cloud!");
-            }
-            @Override
-            public void onError(String message) {
-                Log.e("SYNC_FAIL", "Error uploading transaction: " + message);
-            }
-        });
-    }
 
     public void getById(String id, Callback<Transaction> callback) {
         executor.execute(() -> {

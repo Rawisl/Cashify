@@ -1072,4 +1072,87 @@ public class FirebaseManager {
                     callback.onSuccess(count);
                 });
     }
+    // ============================================================
+    // BỘ ĐẾM THỐNG KÊ V2 (GAMIFICATION: NIGHT OWL, BIG SPENDER, WORKSPACE)
+    // ============================================================
+    public void syncTransactionWithStats(boolean isInsert, boolean isDelete, com.example.cashify.data.model.Transaction t, DataCallback<Void> callback) {
+        String uid = getCurrentUserId();
+        if (uid == null) {
+            if (callback != null) callback.onError("Chưa đăng nhập!");
+            return;
+        }
+
+        WriteBatch batch = db.batch();
+        String workspaceId = (t.workspaceId != null) ? t.workspaceId : "PERSONAL";
+
+        // 1. LƯU GIAO DỊCH NHƯ CŨ
+        com.google.firebase.firestore.DocumentReference transRef;
+        if (workspaceId.equals("PERSONAL")) {
+            transRef = db.collection("users").document(uid).collection("transactions").document(String.valueOf(t.id));
+        } else {
+            transRef = db.collection("workspaces").document(workspaceId).collection("transactions").document(String.valueOf(t.id));
+        }
+
+        if (isDelete) {
+            batch.delete(transRef);
+        } else {
+            Map<String, Object> data = new HashMap<>();
+            data.put("amount", t.amount);
+            data.put("categoryId", t.categoryId);
+            data.put("note", t.note);
+            data.put("timestamp", t.timestamp);
+            data.put("paymentMethod", t.paymentMethod);
+            data.put("type", t.type);
+            data.put("workspaceId", workspaceId);
+            data.put("userId", uid);
+            batch.set(transRef, data);
+        }
+
+        // 2. CẬP NHẬT BỘ ĐẾM VÀ CÁC DANH HIỆU ẨN
+        if (isInsert || isDelete) {
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy_MM", java.util.Locale.getDefault());
+            String monthKey = sdf.format(new java.util.Date(t.timestamp));
+
+            Map<String, Object> statsUpdate = new HashMap<>();
+            int countChange = isDelete ? -1 : 1;
+            long amountChange = isDelete ? -t.amount : t.amount;
+
+            // Đếm số lượng và thu/chi cơ bản
+            statsUpdate.put("totalTransactions", FieldValue.increment(countChange));
+            if (t.type == 1) {
+                statsUpdate.put("income_" + monthKey, FieldValue.increment(amountChange));
+            } else if (t.type == 0) {
+                statsUpdate.put("spend_" + monthKey, FieldValue.increment(amountChange));
+            }
+
+            // CHỈ XÉT DANH HIỆU ĐẶC BIỆT KHI INSERT (KHÔNG XÉT KHI XÓA)
+            if (isInsert) {
+                // 🦉 CÚ ĐÊM (Night Owl): Từ 0h00 đến 3h59 sáng
+                java.util.Calendar cal = java.util.Calendar.getInstance();
+                cal.setTimeInMillis(t.timestamp);
+                int hour = cal.get(java.util.Calendar.HOUR_OF_DAY);
+                if (hour >= 0 && hour < 4) {
+                    statsUpdate.put("nightOwlUnlocked", true);
+                }
+
+                // 🐋 ĐẠI GIA (Big Spender): Giao dịch chi tiêu > 10 triệu
+                if (t.type == 0 && t.amount >= 10000000) {
+                    statsUpdate.put("bigSpenderUnlocked", true);
+                }
+            }
+
+            // Rẽ nhánh: Lưu vào users (cá nhân) hoặc workspaces (quỹ nhóm)
+            if (workspaceId.equals("PERSONAL")) {
+                com.google.firebase.firestore.DocumentReference statsRef = db.collection("users").document(uid).collection("user_stats").document("summary");
+                batch.set(statsRef, statsUpdate, com.google.firebase.firestore.SetOptions.merge());
+            } else {
+                com.google.firebase.firestore.DocumentReference wsStatsRef = db.collection("workspaces").document(workspaceId).collection("workspace_stats").document("summary");
+                batch.set(wsStatsRef, statsUpdate, com.google.firebase.firestore.SetOptions.merge());
+            }
+        }
+
+        batch.commit()
+                .addOnSuccessListener(v -> { if (callback != null) callback.onSuccess(null); })
+                .addOnFailureListener(e -> { if (callback != null) callback.onError(e.getMessage()); });
+    }
 }

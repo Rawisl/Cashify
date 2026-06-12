@@ -32,13 +32,18 @@ import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.drawable.DrawableCompat;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
+import com.example.cashify.ui.social.AchievementAdapter;
 import com.example.cashify.utils.ImageHelper;
 import com.example.cashify.utils.UploadNotificationHelper;
 import com.google.android.material.appbar.MaterialToolbar;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
@@ -54,6 +59,7 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import com.example.cashify.utils.DialogHelper;
 
 
@@ -97,7 +103,7 @@ public class CommunityFeedFragment extends Fragment {
     private TextView tvPreviewIcon, tvPreviewTitle, tvPreviewMonth, tvPreviewAmount;
     private ProgressBar pbPreviewProgress;
     private String generatedMilestoneJson = null; // Cục JSON để dành lúc bấm Đăng
-
+    private CommunityFeedViewModel viewModel;
     private final ActivityResultLauncher<String> pickImageLauncher =
             registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
                 if (uri == null) return;
@@ -139,6 +145,25 @@ public class CommunityFeedFragment extends Fragment {
         bindViews(view);
         setupToolbar(view);
         setupComposer(view);
+        viewModel = new ViewModelProvider(this).get(CommunityFeedViewModel.class);
+        ImageView btnRemoveMilestonePreview = view.findViewById(R.id.btnRemoveMilestonePreview);
+
+        btnRemoveMilestonePreview.setOnClickListener(v -> {
+            // 1. Ẩn thẻ Preview
+            milestonePreviewContainer.setVisibility(View.GONE);
+            milestoneMode = false;
+
+            // 2. Xóa data JSON đã lưu tạm
+            generatedMilestoneJson = null;
+
+            // 3. Phục hồi lại giao diện Composer như cũ
+            actionPhoto.setVisibility(View.VISIBLE);
+            actionMilestone.setVisibility(View.VISIBLE);
+            txtComposerHint.setText("Bạn muốn chia sẻ chuyện tiền bạc gì hôm nay?");
+
+            // 4. Check lại nút Đăng (nếu không có text/ảnh thì làm mờ nút)
+            updateSubmitState();
+        });
     }
 
     @Override
@@ -172,11 +197,13 @@ public class CommunityFeedFragment extends Fragment {
         imgComposerAvatar = view.findViewById(R.id.imgComposerAvatar);
         chipGroupTopics = view.findViewById(R.id.chipGroupTopics);
         milestonePreviewContainer = view.findViewById(R.id.milestonePreviewContainer);
-        tvPreviewIcon = view.findViewById(R.id.tvPreviewIcon);
-        tvPreviewTitle = view.findViewById(R.id.tvPreviewTitle);
-        tvPreviewMonth = view.findViewById(R.id.tvPreviewMonth);
-        tvPreviewAmount = view.findViewById(R.id.tvPreviewAmount);
-        pbPreviewProgress = view.findViewById(R.id.pbPreviewProgress);
+        if (milestonePreviewContainer != null) {
+            tvPreviewIcon = milestonePreviewContainer.findViewById(R.id.tvPreviewIcon);
+            tvPreviewTitle = milestonePreviewContainer.findViewById(R.id.tvPreviewTitle);
+            tvPreviewMonth = milestonePreviewContainer.findViewById(R.id.tvPreviewMonth);
+            tvPreviewAmount = milestonePreviewContainer.findViewById(R.id.tvPreviewAmount);
+            pbPreviewProgress = milestonePreviewContainer.findViewById(R.id.pbPreviewProgress);
+        }
     }
 
     private void setupToolbar(View view) {
@@ -197,7 +224,9 @@ public class CommunityFeedFragment extends Fragment {
         }
 
         editPostContent.addTextChangedListener(new TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
@@ -266,7 +295,8 @@ public class CommunityFeedFragment extends Fragment {
                 obj.put("amount", amountLabel);
                 obj.put("progress", uiProgress);
                 generatedMilestoneJson = obj.toString();
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         }
 
         // HỨNG DỮ LIỆU ĐỂ MỞ CHẾ ĐỘ CHỈNH SỬA
@@ -295,7 +325,8 @@ public class CommunityFeedFragment extends Fragment {
 
                     actionPhoto.setVisibility(View.GONE);
                     actionMilestone.setVisibility(View.GONE);
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) {
+                }
             }
         }
 
@@ -305,7 +336,10 @@ public class CommunityFeedFragment extends Fragment {
         btnAudienceFriends.setOnClickListener(v -> selectAudience("Friends"));
         btnAudiencePrivate.setOnClickListener(v -> selectAudience("Private"));
         actionPhoto.setOnClickListener(v -> pickImageLauncher.launch("image/*"));
-        actionMilestone.setOnClickListener(v -> selectCategory("Milestone", "milestone", true, R.id.chipSaving));
+        actionMilestone.setOnClickListener(v -> {
+            selectCategory("Milestone", "milestone", true, R.id.chipSaving);
+            showAchievementBottomSheet(); // Gọi hàm hiển thị popup
+        });
         actionThoughts.setOnClickListener(v -> selectCategory("Thoughts", "thoughts", false, R.id.chipBudgeting));
         actionAnalysis.setOnClickListener(v -> selectCategory("Analysis", "analysis", false, R.id.chipInvesting));
         actionShare.setOnClickListener(v -> selectCategory("Share", "share", false, R.id.chipDebt));
@@ -782,7 +816,10 @@ public class CommunityFeedFragment extends Fragment {
         // ==========================================
         if (editPostId != null) {
             FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-            if (user == null) { setPosting(false); return; }
+            if (user == null) {
+                setPosting(false);
+                return;
+            }
 
             user.getIdToken(true).addOnSuccessListener(tokenResult -> {
                 String token = "Bearer " + tokenResult.getToken();
@@ -795,14 +832,18 @@ public class CommunityFeedFragment extends Fragment {
 
                 com.example.cashify.utils.ApiClient.getClient().create(com.example.cashify.utils.ApiService.class)
                         .editPost(token, req).enqueue(new retrofit2.Callback<Object>() {
-                            @Override public void onResponse(@NonNull retrofit2.Call<Object> call, @NonNull retrofit2.Response<Object> response) {
+                            @Override
+                            public void onResponse(@NonNull retrofit2.Call<Object> call, @NonNull retrofit2.Response<Object> response) {
                                 setPosting(false);
                                 if (response.isSuccessful()) {
                                     Toast.makeText(requireContext(), "Post updated successfully!", Toast.LENGTH_SHORT).show();
                                     navigateBack();
-                                } else Toast.makeText(requireContext(), "Server error!", Toast.LENGTH_SHORT).show();
+                                } else
+                                    Toast.makeText(requireContext(), "Server error!", Toast.LENGTH_SHORT).show();
                             }
-                            @Override public void onFailure(@NonNull retrofit2.Call<Object> call, @NonNull Throwable t) {
+
+                            @Override
+                            public void onFailure(@NonNull retrofit2.Call<Object> call, @NonNull Throwable t) {
                                 setPosting(false);
                             }
                         });
@@ -904,65 +945,6 @@ public class CommunityFeedFragment extends Fragment {
                             Toast.makeText(requireContext(), "Post created successfully!", Toast.LENGTH_SHORT).show();
                             resetComposer();
                             navigateBack();
-                        } else {
-                            Toast.makeText(requireContext(), "Failed to create post: " + response.code(), Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                }
-
-                @Override
-                public void onFailure(@NonNull retrofit2.Call<Object> call, @NonNull Throwable t) {
-                    requireActivity().runOnUiThread(() -> {
-                        setPosting(false);
-                        Toast.makeText(requireContext(), "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-                    });
-                }
-            });
-        }).addOnFailureListener(e -> {
-            requireActivity().runOnUiThread(() -> {
-                setPosting(false);
-                Toast.makeText(requireContext(), "Firebase authentication failed", Toast.LENGTH_SHORT).show();
-            });
-        });
-    }
-
-    // Hàm gọi C# API để lưu Post vào Firestore
-    private void callBackendToCreatePost(String content, String type, String imageUrl, String milestoneData) {
-        requireActivity().runOnUiThread(() -> txtComposerHint.setText("Saving post..."));
-
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user == null) {
-            requireActivity().runOnUiThread(() -> {
-                setPosting(false);
-                Toast.makeText(requireContext(), "Not signed in!", Toast.LENGTH_SHORT).show();
-            });
-            return;
-        }
-
-        user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
-            String token = "Bearer " + getTokenResult.getToken();
-            com.example.cashify.utils.ApiService apiService = com.example.cashify.utils.ApiClient.getClient().create(com.example.cashify.utils.ApiService.class);
-
-            String audienceParam = "FRIENDS"; // Mặc định là Bạn bè
-            if ("Public".equals(selectedAudience)) {
-                audienceParam = "PUBLIC";
-            } else if ("Only Me".equals(selectedAudience)) {
-                audienceParam = "PRIVATE";
-            }
-
-            // Khởi tạo Request Model (Nhớ đảm bảo ApiService đã có class này)
-            com.example.cashify.utils.ApiService.CreatePostRequest request =
-                    new com.example.cashify.utils.ApiService.CreatePostRequest(content, type, imageUrl, milestoneData,audienceParam);
-
-            apiService.createPost(token, request).enqueue(new retrofit2.Callback<Object>() {
-                @Override
-                public void onResponse(@NonNull retrofit2.Call<Object> call, @NonNull retrofit2.Response<Object> response) {
-                    requireActivity().runOnUiThread(() -> {
-                        setPosting(false);
-                        if (response.isSuccessful()) {
-                            Toast.makeText(requireContext(), "Post created successfully!", Toast.LENGTH_SHORT).show();
-                            resetComposer();
-                            navigateBack(); // Quay lại trang Feed
                         } else {
                             Toast.makeText(requireContext(), "Failed to create post: " + response.code(), Toast.LENGTH_SHORT).show();
                         }
@@ -1114,5 +1096,81 @@ public class CommunityFeedFragment extends Fragment {
             if (value != null && !value.trim().isEmpty()) return value.trim();
         }
         return "";
+    }
+
+    // HÀM GỌI API VÀ HIỆN BOTTOM SHEET THÀNH TỰU
+    private void showAchievementBottomSheet() {
+        BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(requireContext());
+
+        // 1. Nạp thẳng cái giao diện XML xịn xò vào
+        View bottomSheetView = getLayoutInflater().inflate(R.layout.layout_bottom_sheet_achievement, null);
+        bottomSheetDialog.setContentView(bottomSheetView);
+
+        ProgressBar progressLoading = bottomSheetView.findViewById(R.id.progressLoadingAchievements);
+        TextView tvEmpty = bottomSheetView.findViewById(R.id.tvEmptyAchievements);
+        RecyclerView rvAchievements = bottomSheetView.findViewById(R.id.rvAchievements);
+
+        rvAchievements.setLayoutManager(new LinearLayoutManager(requireContext()));
+        bottomSheetDialog.show();
+
+        viewModel.fetchAvailableAchievements();
+
+        viewModel.getAchievements().removeObservers(getViewLifecycleOwner());
+
+        viewModel.getAchievements().observe(getViewLifecycleOwner(), list -> {
+            progressLoading.setVisibility(View.GONE);
+            if (list == null || list.isEmpty()) {
+                tvEmpty.setVisibility(View.VISIBLE);
+                rvAchievements.setVisibility(View.GONE);
+            } else {
+                tvEmpty.setVisibility(View.GONE);
+                rvAchievements.setVisibility(View.VISIBLE);
+
+                // ĐÃ FIX: Dùng đúng biến 'list' của LiveData
+                AchievementAdapter achievementAdapter = new AchievementAdapter(list, achievement -> {
+
+                    if (bottomSheetDialog != null) {
+                        bottomSheetDialog.dismiss();
+                    }
+
+                    // ĐÃ FIX: Bật chế độ Milestone và dùng đúng tên biến milestonePreviewContainer
+                    milestoneMode = true;
+                    milestonePreviewContainer.setVisibility(View.VISIBLE);
+                    tvPreviewIcon.setText(achievement.iconText);
+                    tvPreviewTitle.setText(achievement.title);
+                    tvPreviewMonth.setText(achievement.monthLabel);
+                    tvPreviewAmount.setText(achievement.amountLabel);
+                    pbPreviewProgress.setProgress(achievement.progress);
+
+                    // Ẩn các nút rườm rà đi vì đã có thẻ Milestone rồi
+                    actionPhoto.setVisibility(View.GONE);
+                    actionMilestone.setVisibility(View.GONE);
+                    txtComposerHint.setText("Cột mốc của bạn đã sẵn sàng! Hãy viết vài lời chia sẻ nhé.");
+
+                    // ĐÃ FIX: Dùng đúng biến generatedMilestoneJson
+                    try {
+                        org.json.JSONObject json = new org.json.JSONObject();
+                        json.put("achievementId", achievement.id);
+                        json.put("iconText", achievement.iconText);
+                        json.put("title", achievement.title);
+                        json.put("description", achievement.description);
+                        json.put("month", achievement.monthLabel);
+                        json.put("amount", achievement.amountLabel);
+                        json.put("progress", achievement.progress);
+
+                        generatedMilestoneJson = json.toString();
+
+                        // Bật sáng nút "Đăng bài"
+                        updateSubmitState();
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                });
+
+                // ĐÃ FIX: Dùng đúng biến rvAchievements
+                rvAchievements.setAdapter(achievementAdapter);
+            }
+        });
     }
 }

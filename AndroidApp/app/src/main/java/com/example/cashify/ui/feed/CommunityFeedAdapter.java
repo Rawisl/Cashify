@@ -12,6 +12,7 @@ import android.view.ViewGroup;
 import android.view.animation.LinearInterpolator;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -34,8 +35,6 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-// FIX 1: Bỏ "import okhttp3.Callback" — xung đột với retrofit2.Callback
-//         dùng retrofit2.Call / retrofit2.Callback / retrofit2.Response trực tiếp
 
 public class CommunityFeedAdapter extends ListAdapter<FeedItem, RecyclerView.ViewHolder> {
 
@@ -78,7 +77,9 @@ public class CommunityFeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vie
         this.avatarClickListener = avatarClickListener;
     }
 
-    /** Gọi từ Fragment sau khi parse feed để đánh dấu các post đã liked */
+    /**
+     * Gọi từ Fragment sau khi parse feed để đánh dấu các post đã liked
+     */
     public void addLikedId(String id) {
         likedItemIds.add(id);
     }
@@ -182,20 +183,20 @@ public class CommunityFeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vie
 
         NormalPostViewHolder(@NonNull View itemView) {
             super(itemView);
-            imgAvatar        = itemView.findViewById(R.id.imgAvatar);
-            txtAvatar        = itemView.findViewById(R.id.txtAvatar);
-            name             = itemView.findViewById(R.id.txtUserName);
-            time             = itemView.findViewById(R.id.txtPostTime);
-            content          = itemView.findViewById(R.id.txtPostContent);
-            seeMore          = itemView.findViewById(R.id.txtSeeMore);
+            imgAvatar = itemView.findViewById(R.id.imgAvatar);
+            txtAvatar = itemView.findViewById(R.id.txtAvatar);
+            name = itemView.findViewById(R.id.txtUserName);
+            time = itemView.findViewById(R.id.txtPostTime);
+            content = itemView.findViewById(R.id.txtPostContent);
+            seeMore = itemView.findViewById(R.id.txtSeeMore);
             imagePlaceholder = itemView.findViewById(R.id.postImagePlaceholder);
-            imgPostImage     = itemView.findViewById(R.id.imgPostImage);
-            decorCircle      = itemView.findViewById(R.id.decorCircle);
-            decorIcon        = itemView.findViewById(R.id.decorIcon);
-            decorCaption     = itemView.findViewById(R.id.decorCaption);
-            menuButton       = itemView.findViewById(R.id.btnPostMenu);
-            btnLike          = itemView.findViewById(R.id.btnLike);
-            tvLikeCount      = itemView.findViewById(R.id.tvLikeCount);
+            imgPostImage = itemView.findViewById(R.id.imgPostImage);
+            decorCircle = itemView.findViewById(R.id.decorCircle);
+            decorIcon = itemView.findViewById(R.id.decorIcon);
+            decorCaption = itemView.findViewById(R.id.decorCaption);
+            menuButton = itemView.findViewById(R.id.btnPostMenu);
+            btnLike = itemView.findViewById(R.id.btnLike);
+            tvLikeCount = itemView.findViewById(R.id.tvLikeCount);
         }
 
         void bind(FeedItem.NormalPost post, boolean expanded) {
@@ -230,7 +231,8 @@ public class CommunityFeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vie
             content.setMaxLines(expanded ? Integer.MAX_VALUE : 3);
             bindSeeMore(seeMore, content, post.getId(), post.expandable, expanded, this);
             menuButton.setOnClickListener(v -> {
-                if (menuClickListener != null) menuClickListener.onMenuClick(post); // post hoặc milestone tùy ViewHolder
+                if (menuClickListener != null)
+                    menuClickListener.onMenuClick(post); // post hoặc milestone tùy ViewHolder
             });
             // Ảnh bài viết
             if (post.hasImage && post.imageUrl != null && !post.imageUrl.isEmpty()) {
@@ -307,59 +309,78 @@ public class CommunityFeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vie
     // MilestoneViewHolder
     // =========================================================================
     class MilestoneViewHolder extends RecyclerView.ViewHolder {
+        // Ánh xạ từ thẻ VÀNG (layout_milestone_preview.xml)
         private final ImageView imgAvatar;
         private final TextView txtAvatar;
         private final TextView name;
         private final TextView icon;
         private final TextView title;
         private final TextView description;
-        private final TextView seeMore;
         private final TextView month;
         private final TextView amount;
+        private final ProgressBar pbProgress;
         private final View goalPanel;
         private final ImageButton menuButton;
+
+        // Các nút Like/Comment nằm ngoài thẻ Vàng
         private final TextView btnLike;
         private final TextView btnComment;
         private final TextView btnShare;
+        private final TextView seeMore;
+
         private final View shineView;
         private AnimatorSet shineAnimator;
         private int shineLoopId = 0;
 
         MilestoneViewHolder(@NonNull View itemView) {
             super(itemView);
-            shineView   = itemView.findViewById(R.id.viewMilestoneShine);
-            imgAvatar   = itemView.findViewById(R.id.imgMilestoneAvatar);
-            txtAvatar   = itemView.findViewById(R.id.txtMilestoneAvatar);
-            name        = itemView.findViewById(R.id.txtMilestoneUserName);
-            icon        = itemView.findViewById(R.id.txtMilestoneIcon);
-            title       = itemView.findViewById(R.id.txtMilestoneTitle);
+            // 1. Ánh xạ các view BÊN TRONG thẻ Vàng
+            shineView = itemView.findViewById(R.id.viewMilestoneShine);
+            imgAvatar = itemView.findViewById(R.id.imgMilestoneAvatar);
+            txtAvatar = itemView.findViewById(R.id.txtMilestoneAvatar);
+            name = itemView.findViewById(R.id.txtMilestoneUserName);
+            icon = itemView.findViewById(R.id.txtMilestoneIcon);
+            title = itemView.findViewById(R.id.txtMilestoneTitle);
             description = itemView.findViewById(R.id.txtMilestoneDescription);
-            seeMore     = itemView.findViewById(R.id.txtMilestoneSeeMore);
-            month       = itemView.findViewById(R.id.txtMilestoneMonth);
-            amount      = itemView.findViewById(R.id.txtMilestoneAmount);
-            goalPanel   = itemView.findViewById(R.id.layoutMilestoneGoalPanel);
-            menuButton  = itemView.findViewById(R.id.btnMilestoneMenu);
-            btnLike     = itemView.findViewById(R.id.btnMilestoneLike);
-            btnComment  = itemView.findViewById(R.id.btnMilestoneComment);
-            btnShare    = itemView.findViewById(R.id.btnMilestoneShare);
+            month = itemView.findViewById(R.id.txtMilestoneMonth);
+            amount = itemView.findViewById(R.id.txtMilestoneAmount);
+            pbProgress = itemView.findViewById(R.id.pbMilestoneProgress);
+            goalPanel = itemView.findViewById(R.id.layoutMilestoneGoalPanel);
+            menuButton = itemView.findViewById(R.id.btnMilestoneMenu);
+
+            // 2. Ánh xạ các view BÊN NGOÀI thẻ Vàng (ở file item_post_milestone gốc)
+            seeMore = itemView.findViewById(R.id.txtMilestoneSeeMore);
+            btnLike = itemView.findViewById(R.id.btnMilestoneLike);
+            btnComment = itemView.findViewById(R.id.btnMilestoneComment);
+            btnShare = itemView.findViewById(R.id.btnMilestoneShare);
         }
 
         void bind(FeedItem.MilestonePost milestone, boolean expanded) {
             itemView.setOnClickListener(v -> notifyPostClick(milestone));
             startShineAnimation();
-            icon.setText("");
+
+            // Đổ Data vào các View của thẻ Vàng
+            icon.setText(milestone.iconText != null ? milestone.iconText : "🏆");
             name.setText(milestone.userName);
             title.setText(milestone.title);
             description.setText(milestone.description);
+
             description.setVisibility(milestone.description == null || milestone.description.trim().isEmpty()
                     ? View.GONE : View.VISIBLE);
             description.setMaxLines(expanded ? Integer.MAX_VALUE : 3);
+
             month.setText(milestone.time == null || milestone.time.isEmpty() ? milestone.month : milestone.time);
             amount.setText(milestone.amount);
+
+            if (pbProgress != null) {
+                pbProgress.setProgress(milestone.progress);
+            }
             goalPanel.setVisibility(hasMeaningfulMilestoneAmount(milestone.amount) ? View.VISIBLE : View.GONE);
+
             bindSeeMore(seeMore, description, milestone.getId(), milestone.expandable, expanded, this);
+
             menuButton.setOnClickListener(v -> {
-                if (menuClickListener != null) menuClickListener.onMenuClick(milestone); // post hoặc milestone tùy ViewHolder
+                if (menuClickListener != null) menuClickListener.onMenuClick(milestone);
             });
 
             View.OnClickListener onAvatarClicked = v -> {
@@ -367,6 +388,7 @@ public class CommunityFeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vie
                     avatarClickListener.onAvatarClick(milestone.getUserId());
                 }
             };
+
             imgAvatar.setVisibility(View.VISIBLE);
             txtAvatar.setVisibility(View.GONE);
             ImageHelper.loadAvatar(milestone.avatarUrl, imgAvatar, milestone.userName);
@@ -374,6 +396,7 @@ public class CommunityFeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vie
             txtAvatar.setOnClickListener(onAvatarClicked);
             name.setOnClickListener(onAvatarClicked);
 
+            // Xử lý Like (Giữ nguyên của bác)
             boolean currentlyLiked = likedItemIds.contains(milestone.getId());
             applyLikeState(btnLike, currentlyLiked);
             btnLike.setOnClickListener(v -> {

@@ -139,7 +139,7 @@
                         android:ellipsize="end"
                         android:fontFamily="@font/inter_bold"
                         android:maxLines="1"
-                        android:textColor="#313B60"
+                        android:textColor="@color/brand_primary"
                         android:textSize="15sp"
                         tools:text="@string/username" />
 
@@ -160,12 +160,11 @@
                     android:layout_height="38dp"
                     android:layout_marginEnd="8dp"
                     android:background="@drawable/bg_milestone_trophy_badge"
-                    android:drawableTop="@drawable/ic_feed_trophy"
-                    android:drawableTint="#B8892B"
                     android:gravity="center"
                     android:includeFontPadding="false"
-                    android:paddingTop="9dp"
-                    android:text="" />
+                    android:textColor="#B8892B"
+                    android:textSize="20sp"
+                    tools:text="🐝" />
 
                 <ImageButton
                     android:id="@+id/btnMilestoneMenu"
@@ -259,30 +258,45 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:background="@drawable/bg_milestone_goal_panel"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
+                android:orientation="vertical"
                 android:padding="12dp">
 
-                <ImageView
-                    android:layout_width="30dp"
-                    android:layout_height="30dp"
-                    android:background="@drawable/bg_milestone_trophy_badge"
-                    android:padding="7dp"
-                    android:src="@drawable/ic_feed_trophy"
-                    app:tint="#B8892B" />
-
-                <TextView
-                    android:id="@+id/txtMilestoneAmount"
-                    android:layout_width="0dp"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="10dp"
-                    android:layout_weight="1"
-                    android:ellipsize="end"
-                    android:fontFamily="@font/inter_bold"
-                    android:maxLines="1"
-                    android:textColor="#313B60"
-                    android:textSize="12sp"
-                    tools:text="6.800.000đ / 10.000.000đ" />
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:background="@drawable/bg_milestone_trophy_badge"
+                        android:padding="4dp"
+                        android:src="@drawable/ic_feed_trophy"
+                        app:tint="#B8892B" />
+
+                    <TextView
+                        android:id="@+id/txtMilestoneAmount"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:layout_weight="1"
+                        android:ellipsize="end"
+                        android:fontFamily="@font/inter_bold"
+                        android:maxLines="1"
+                        android:textColor="#313B60"
+                        android:textSize="14sp"
+                        tools:text="100 Giao dịch" />
+                </LinearLayout>
+
+                <ProgressBar
+                    android:id="@+id/pbMilestoneProgress"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="6dp"
+                    android:layout_marginTop="10dp"
+                    android:progressDrawable="@drawable/bg_milestone_progress_horizontal"
+                    tools:progress="100" />
             </LinearLayout>
 
             <LinearLayout

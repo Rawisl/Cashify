@@ -312,8 +312,38 @@ public class AddTransactionActivity extends AppCompatActivity {
 
         viewModel.saveSuccess.observe(this, success -> {
             if (success) {
-                ToastHelper.show(this, isEditMode ? "Updated!" : "Saved!");
-                finish();
+                if (isEditMode || (workspaceId != null && !workspaceId.equals("PERSONAL"))) {
+                    finish();
+                    return;
+                }
+
+                // 1. CHUẨN BỊ DATA ĐỂ KIỂM TRA LUẬT CHƠI
+                // Check Cú Đêm (Từ 0h - 3h59)
+                java.util.Calendar cal = viewModel.calendar.getValue();
+                int hour = (cal != null) ? cal.get(java.util.Calendar.HOUR_OF_DAY) : java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY);
+                boolean isNightOwl = (hour >= 0 && hour < 4);
+
+                // Check Đại Gia (> 10 củ)
+                double amount = CurrencyFormatter.parseVNDToDouble(edtAmount.getText().toString());
+                boolean isBigSpender = (Boolean.TRUE.equals(viewModel.isExpense.getValue()) && amount >= 10000000);
+
+                // 2. GỌI ĐẾM SỐ LƯỢNG VÀ QUYẾT ĐỊNH BẮN TOAST
+                viewModel.getPersonalTransactionCount(count -> {
+                    runOnUiThread(() -> {
+                        // Ưu tiên bắn Toast theo độ khó (Nếu đạt nhiều cái cùng lúc thì báo cái xịn nhất)
+                        if (count == 10 || count == 50 || count == 100 || count == 500) {
+                            ToastHelper.showAchievement(getApplicationContext(), "Hardworking Bee (" + count + ")");
+                        }
+                        else if (isBigSpender) {
+                            ToastHelper.showAchievement(getApplicationContext(), "Big Whale");
+                        }
+                        else if (isNightOwl) {
+                            ToastHelper.showAchievement(getApplicationContext(), "Night Owl");
+                        }
+
+                        finish();
+                    });
+                });
             }
         });
     }
