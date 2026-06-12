@@ -1,78 +1,77 @@
 package com.example.cashify.utils;
 
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.util.Locale;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 
-public class CurrencyFormatter
-{
+public class CurrencyFormatter {
 
-    // Setup bộ ký hiệu chuẩn Việt Nam (Dấu chấm chia nghìn, phẩy chia thập phân)
-    private static final DecimalFormat dfNormal;
-    private static final DecimalFormat dfShort;
+    public static String formatCompactAmount(double baseVndAmount) {
+        if (CurrencyManager.isUsd()) {
+            return formatUsdSigned(CurrencyManager.toDisplayAmount(baseVndAmount));
+        }
 
-    static {
-        DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.US);
-        symbols.setGroupingSeparator('.');
-        symbols.setDecimalSeparator(',');
+        double absAmount = Math.abs(baseVndAmount);
+        String sign = baseVndAmount < 0 ? "-" : "";
 
-        dfNormal = new DecimalFormat("#,###", symbols); // Dành cho 15.000.000
-        dfShort = new DecimalFormat("#.##", symbols);   // Dành cho 15,5
+        if (absAmount >= 1_000_000_000) {
+            return sign + trimCompact(absAmount / 1_000_000_000) + "B";
+        }
+        if (absAmount >= 1_000_000) {
+            return sign + trimCompact(absAmount / 1_000_000) + "M";
+        }
+        if (absAmount >= 100_000) {
+            return sign + Math.round(absAmount / 1_000) + "K";
+        }
+        return sign + CurrencyManager.VND_FORMAT.format(Math.round(absAmount)) + "\u0111";
     }
 
-    /**
-     * KHUÔN 1: DÙNG CHO MASTER CARD (Full HD, chỉ rút gọn khi lên Tỷ)
-     * VD: 15.000.000 -> 15.000.000 VNĐ
-     * VD: 1.500.000.000 -> 1,5 Tỷ VNĐ
-     */
+    public static String formatFullAmount(double baseVndAmount) {
+        if (CurrencyManager.isUsd()) {
+            return formatUsdSigned(CurrencyManager.toDisplayAmount(baseVndAmount));
+        }
+
+        double absAmount = Math.abs(baseVndAmount);
+        String sign = baseVndAmount < 0 ? "-" : "";
+        return sign + CurrencyManager.VND_FORMAT.format(Math.round(absAmount)) + " \u0111";
+    }
+
+    public static String formatUsdUnsigned(double usdAmount) {
+        double rounded = roundUsd(Math.abs(usdAmount));
+        boolean hasCents = BigDecimal.valueOf(rounded).remainder(BigDecimal.ONE).compareTo(BigDecimal.ZERO) != 0;
+        return (hasCents ? CurrencyManager.USD_DECIMAL_FORMAT : CurrencyManager.USD_WHOLE_FORMAT).format(rounded) + "$";
+    }
+
+    private static String formatUsdSigned(double usdAmount) {
+        double rounded = roundUsd(usdAmount);
+        String sign = rounded < 0 ? "-" : "";
+        return sign + formatUsdUnsigned(rounded);
+    }
+
+    private static double roundUsd(double amount) {
+        return BigDecimal.valueOf(amount).setScale(2, RoundingMode.HALF_UP).doubleValue();
+    }
+
+    private static String trimCompact(double value) {
+        double rounded = BigDecimal.valueOf(value).setScale(1, RoundingMode.HALF_UP).doubleValue();
+        if (rounded == Math.rint(rounded)) {
+            return String.valueOf((long) rounded);
+        }
+        return CurrencyManager.VND_COMPACT_FORMAT.format(rounded);
+    }
+
     public static String formatFullVND(double amount) {
-        double absAmount = Math.abs(amount);
-        String sign = amount < 0 ? "-" : "";
-
-        if (absAmount >= 1_000_000_000) {
-            return sign + dfShort.format(absAmount / 1_000_000_000) + " Tỷ VND";
-        } else {
-            // Dưới 1 tỷ thì cứ full số 0 cho sướng mắt
-            return sign + (absAmount == 0 ? "0" : dfNormal.format(absAmount)) + " VND";
-        }
+        return formatFullAmount(amount);
     }
 
-    /**
-     * KHUÔN 2: DÙNG CHO THẺ CATEGORY TRONG LIST (Rút gọn cả Triệu và Tỷ cho nhỏ gọn)
-     * VD: 850.000 -> 850.000 đ
-     * VD: 15.500.000 -> 15,5 Tr
-     * VD: 1.500.000.000 -> 1,5 Tỷ
-     */
     public static String formatCompactVND(double amount) {
-        double absAmount = Math.abs(amount);
-        String sign = amount < 0 ? "-" : "";
-
-        if (absAmount >= 1_000_000_000) {
-            return sign + dfShort.format(absAmount / 1_000_000_000) + " Tỷ";
-        } else if (absAmount >= 1_000_000) {
-            return sign + dfShort.format(absAmount / 1_000_000) + " Tr";
-        } else {
-            // Dưới 1 triệu thì hiện bình thường, thay chữ VNĐ bằng 'đ' cho ngắn nhất có thể
-            return sign + (absAmount == 0 ? "0" : dfNormal.format(absAmount)) + " đ";
-        }
+        return formatCompactAmount(amount);
     }
 
-    // Bổ sung hàm Parse: Gom toàn bộ logic bóc tách chuỗi dơ bẩn vào đây
     public static double parseVNDToDouble(String formattedAmount) {
-        if (formattedAmount == null || formattedAmount.trim().isEmpty()) {
-            return 0;
-        }
-        try {
-            // Giữ lại số nguyên, loại bỏ dấu phẩy, chấm, chữ cái...
-            String cleanString = formattedAmount.replaceAll("[^\\d]", "");
-            if (cleanString.isEmpty()) return 0;
-            return Double.parseDouble(cleanString);
-        } catch (NumberFormatException e) {
-            return 0;
-        }
+        return CurrencyManager.parseInputToBase(formattedAmount);
     }
+
     public static String formatDoubleToVND(double amount) {
-        // Sử dụng khuôn format có dấu phân cách hàng ngàn (VD: 50.000)
-        return dfNormal.format(amount);
+        return CurrencyManager.formatInputValue(amount);
     }
 }

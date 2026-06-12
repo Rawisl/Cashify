@@ -106,11 +106,12 @@ public class HistoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             // 3. Số tiền và Màu sắc (Xanh cho Thu, Đỏ cho Chi)
             if (tHolder.tvAmount != null) {
                 boolean isIncome = trans.type == 1;
-                String sign = isIncome ? "+" : "-";
                 int color = ContextCompat.getColor(holder.itemView.getContext(),
                         isIncome ? R.color.status_green : R.color.status_red);
+                double signedAmount = isIncome ? trans.amount : -trans.amount;
+                String formattedAmount = CurrencyFormatter.formatFullAmount(signedAmount);
 
-                tHolder.tvAmount.setText(sign + CurrencyFormatter.formatFullVND((double) trans.amount));
+                tHolder.tvAmount.setText(isIncome ? "+" + formattedAmount : formattedAmount);
                 tHolder.tvAmount.setTextColor(color);
             }
 

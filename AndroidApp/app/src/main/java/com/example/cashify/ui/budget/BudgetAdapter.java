@@ -147,7 +147,7 @@ public class BudgetAdapter extends RecyclerView.Adapter<BudgetAdapter.BudgetView
 
             } else {
                 // Mức độ nhẹ (pastel-green): <...> VNĐ left to spend
-                int colorGreen = ContextCompat.getColor(context, R.color.cat_pastel_green);
+                int colorGreen = ContextCompat.getColor(context, R.color.status_green);
                 holder.pbBudget.setProgressTintList(ColorStateList.valueOf(colorGreen));
                 holder.tvPercent.setTextColor(ContextCompat.getColor(context, R.color.black)); // Chữ % để màu đen cho dễ đọc
                 holder.tvAlertMessage.setText(formattedRemaining + " left to spend");

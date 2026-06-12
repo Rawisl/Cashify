@@ -23,6 +23,8 @@ import androidx.core.content.ContextCompat;
 import com.example.cashify.R;
 import com.example.cashify.data.local.AppDatabase;
 import com.example.cashify.data.model.Category;
+import com.example.cashify.utils.CurrencyManager;
+import com.example.cashify.utils.CurrencyFormatter;
 import com.example.cashify.utils.NumpadBottomSheet;
 import com.example.cashify.utils.ToastHelper;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
@@ -104,6 +106,8 @@ public class BudgetBottomSheetDialog extends BottomSheetDialogFragment {
 
         edtBudgetAmount = view.findViewById(R.id.edtBudgetAmount);
         layoutInputAmount = view.findViewById(R.id.layoutInputAmount);
+        layoutInputAmount.setPrefixText(CurrencyManager.isUsd() ? "$" : "\u20ab");
+        layoutInputAmount.setSuffixText(null);
 
         layoutCategorySelector = view.findViewById(R.id.layoutCategorySelector);
 
@@ -167,10 +171,10 @@ public class BudgetBottomSheetDialog extends BottomSheetDialogFragment {
         btnSaveBudget.setBackgroundTintList(ColorStateList.valueOf(blueColor));
 
         tvTitle.setText(title);
-        tvCurrentSpending.setText(String.format("%,.0f VND", currentSpending));
+        tvCurrentSpending.setText(CurrencyFormatter.formatFullVND(currentSpending));
 
         if (currentLimit > 0) {
-            edtBudgetAmount.setText(String.format("%.0f", currentLimit));
+            edtBudgetAmount.setText(CurrencyFormatter.formatDoubleToVND(currentLimit));
         }
 
         btnClose.setOnClickListener(v -> dismiss());
@@ -188,7 +192,7 @@ public class BudgetBottomSheetDialog extends BottomSheetDialogFragment {
                 return;
             }
 
-            double finalLimit = Double.parseDouble(amountVal);
+            double finalLimit = CurrencyFormatter.parseVNDToDouble(amountVal);
             if (actionListener != null) {
                 int idToSave = (categoryId == 0) ? selectedCategoryIdFromDropdown : categoryId;
                 actionListener.onSave(idToSave, finalLimit);

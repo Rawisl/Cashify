@@ -128,12 +128,11 @@ public class WorkspaceTransactionAdapter extends RecyclerView.Adapter<RecyclerVi
             }
 
             // 2. XỬ LÝ SỐ TIỀN & MÀU CHỮ
-            String formattedAmount = CurrencyFormatter.formatDoubleToVND((double) t.amount);
             if (t.type == 0) {
-                tHolder.tvAmount.setText("-" + formattedAmount);
+                tHolder.tvAmount.setText(CurrencyFormatter.formatFullAmount(-t.amount));
                 tHolder.tvAmount.setTextColor(ContextCompat.getColor(context, R.color.status_red));
             } else {
-                tHolder.tvAmount.setText("+" + formattedAmount);
+                tHolder.tvAmount.setText("+" + CurrencyFormatter.formatFullAmount(t.amount));
                 tHolder.tvAmount.setTextColor(ContextCompat.getColor(context, R.color.status_green));
             }
 

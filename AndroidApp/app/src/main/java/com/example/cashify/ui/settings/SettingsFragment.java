@@ -11,6 +11,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -29,6 +30,7 @@ import com.example.cashify.ui.auth.LoginActivity;
 import com.example.cashify.ui.category.CategoryManagement;
 import com.example.cashify.ui.main.PersonalWorkspaceHeader;
 import com.example.cashify.utils.DialogHelper;
+import com.example.cashify.utils.CurrencyManager;
 import com.example.cashify.utils.ToastHelper;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 
@@ -43,8 +45,14 @@ public class SettingsFragment extends Fragment {
     private SwitchMaterial toggleNotification;
     private LinearLayout languageOptions;
     private ImageView languageArrow;
+    private LinearLayout currencyOptions;
+    private ImageView currencyArrow;
+    private TextView currencySummary;
+    private TextView optionCurrencyVnd;
+    private TextView optionCurrencyUsd;
     private boolean isUpdatingNotificationToggle = false;
     private boolean isLanguageExpanded = false;
+    private boolean isCurrencyExpanded = false;
 
     private final ActivityResultLauncher<String> requestPermissionLauncher =
             registerForActivityResult(
@@ -81,6 +89,17 @@ public class SettingsFragment extends Fragment {
         btnLanguage.setOnClickListener(v -> toggleLanguageOptions());
         View englishOption = view.findViewById(R.id.option_language_english);
         englishOption.setOnClickListener(v -> setLanguageExpanded(false));
+
+        currencyOptions = view.findViewById(R.id.layout_currency_options);
+        currencyArrow = view.findViewById(R.id.iv_currency_arrow);
+        currencySummary = view.findViewById(R.id.tv_currency_summary);
+        optionCurrencyVnd = view.findViewById(R.id.option_currency_vnd);
+        optionCurrencyUsd = view.findViewById(R.id.option_currency_usd);
+        LinearLayout btnCurrency = view.findViewById(R.id.btn_currency);
+        btnCurrency.setOnClickListener(v -> toggleCurrencyOptions());
+        optionCurrencyVnd.setOnClickListener(v -> setCurrency(CurrencyManager.CURRENCY_VND));
+        optionCurrencyUsd.setOnClickListener(v -> setCurrency(CurrencyManager.CURRENCY_USD));
+        syncCurrencySelection();
 
         LinearLayout btnSecurity = view.findViewById(R.id.btn_security);
         btnSecurity.setOnClickListener(v -> {
@@ -158,6 +177,7 @@ public class SettingsFragment extends Fragment {
     public void onResume() {
         super.onResume();
         syncToggleWithPreference();
+        syncCurrencySelection();
     }
 
     private void setupNotificationToggle(LinearLayout btnNotification) {
@@ -233,5 +253,44 @@ public class SettingsFragment extends Fragment {
         if (languageArrow != null) {
             languageArrow.animate().rotation(expanded ? 90f : 0f).setDuration(180).start();
         }
+    }
+
+    private void toggleCurrencyOptions() {
+        setCurrencyExpanded(!isCurrencyExpanded);
+    }
+
+    private void setCurrencyExpanded(boolean expanded) {
+        isCurrencyExpanded = expanded;
+        if (currencyOptions != null) {
+            currencyOptions.setVisibility(expanded ? View.VISIBLE : View.GONE);
+        }
+        if (currencyArrow != null) {
+            currencyArrow.animate().rotation(expanded ? 90f : 0f).setDuration(180).start();
+        }
+    }
+
+    private void setCurrency(String currencyCode) {
+        String current = CurrencyManager.getSelectedCurrency(requireContext());
+        if (current.equals(currencyCode)) {
+            setCurrencyExpanded(false);
+            return;
+        }
+
+        CurrencyManager.setSelectedCurrency(requireContext(), currencyCode);
+        syncCurrencySelection();
+        setCurrencyExpanded(false);
+        ToastHelper.show(requireContext(), getString(R.string.settings_currency_updated));
+    }
+
+    private void syncCurrencySelection() {
+        if (currencySummary == null || optionCurrencyVnd == null || optionCurrencyUsd == null || getContext() == null) return;
+
+        String selectedCurrency = CurrencyManager.getSelectedCurrency(requireContext());
+        boolean isVnd = CurrencyManager.CURRENCY_VND.equals(selectedCurrency);
+        currencySummary.setText(isVnd
+                ? getString(R.string.settings_item_currency_vnd_desc)
+                : getString(R.string.settings_item_currency_usd_desc));
+        optionCurrencyVnd.setTextColor(ContextCompat.getColor(requireContext(), isVnd ? R.color.brand_primary : R.color.item_description));
+        optionCurrencyUsd.setTextColor(ContextCompat.getColor(requireContext(), isVnd ? R.color.item_description : R.color.brand_primary));
     }
 }

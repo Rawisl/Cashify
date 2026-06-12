@@ -49,7 +49,7 @@
         android:layout_height="36dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:padding="8dp"
-        android:src="@drawable/ic_delete_user"
+            android:src="@drawable/ic_delete_user"
         android:visibility="gone"
         app:tint="@color/status_red"
         tools:visibility="visible" />

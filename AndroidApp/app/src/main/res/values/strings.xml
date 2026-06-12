@@ -203,6 +203,12 @@
     <string name="settings_item_category_desc">Organize categories</string>
     <string name="settings_item_notifications">Notifications</string>
     <string name="settings_item_notifications_desc">Manage notification settings</string>
+    <string name="settings_section_currency">Currency</string>
+    <string name="settings_item_currency_vnd">Vietnamese Dong</string>
+    <string name="settings_item_currency_vnd_desc">VND - \u20ab</string>
+    <string name="settings_item_currency_usd">US Dollar</string>
+    <string name="settings_item_currency_usd_desc">USD - $</string>
+    <string name="settings_currency_updated">Currency updated</string>
     <string name="settings_item_logout">Log out</string>
     <string name="settings_item_logout_desc">Sign out of your account</string>
     <string name="settings_item_reset_transaction">Reset transaction history</string>
