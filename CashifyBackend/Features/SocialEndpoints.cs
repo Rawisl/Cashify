@@ -224,7 +224,7 @@ public static class SocialEndpoints
                 // LUẬT CHƠI CÁ NHÂN
                 // ==========================================
 
-                // 🌟 MỐC 1: SỐ LƯỢNG GIAO DỊCH
+                // SỐ LƯỢNG GIAO DỊCH
                 int[] transMilestones = { 10, 50, 100, 500 };
                 foreach (var m in transMilestones)
                 {
@@ -245,7 +245,7 @@ public static class SocialEndpoints
                     }
                 }
 
-                // 🌟 MỐC 2: CHUỖI NGÀY KỶ LUẬT (STREAK)
+                //CHUỖI NGÀY KỶ LUẬT (STREAK)
                 int[] streakMilestones = { 3, 7, 15, 30, 100 };
                 foreach (var s in streakMilestones)
                 {
@@ -268,7 +268,7 @@ public static class SocialEndpoints
 
                 if (statsSnap.Exists)
                 {
-                    // 🌟 MỐC 3: CÚ ĐÊM (NIGHT OWL)
+                    // CÚ ĐÊM (NIGHT OWL)
                     bool isNightOwl = statsSnap.ContainsField("nightOwlUnlocked") && Convert.ToBoolean(statsSnap.GetValue<object>("nightOwlUnlocked"));
                     if (isNightOwl && !sharedIds.Contains("ach_night_owl"))
                     {
@@ -284,7 +284,7 @@ public static class SocialEndpoints
                         });
                     }
 
-                    // 🌟 MỐC 4: ĐẠI GIA CHỐT ĐƠN (BIG SPENDER)
+                    //BIG SPENDER
                     bool isBigSpender = statsSnap.ContainsField("bigSpenderUnlocked") && Convert.ToBoolean(statsSnap.GetValue<object>("bigSpenderUnlocked"));
                     if (isBigSpender && !sharedIds.Contains("ach_big_spender"))
                     {
@@ -301,7 +301,7 @@ public static class SocialEndpoints
                     }
                 }
 
-                // 🌟 MỐC 5: DƯƠNG THÁI QUÁ
+                //DƯƠNG THÁI QUÁ
                 long surplus = totalIncomeThisMonth - totalSpendThisMonth;
                 string surplusAchId = $"recap_surplus_{now.Year}_{now.Month}";
                 if (surplus > 0 && !sharedIds.Contains(surplusAchId))
@@ -345,7 +345,7 @@ public static class SocialEndpoints
                                 Title = "The Carry",
                                 Description = "You are the MVP! The largest single contributor.",
                                 IconText = "🦸‍♂️",
-                                MonthLabel = wsName, // 👉 ĐÃ SỬA: Hiển thị thẳng Tên Nhóm vào nhãn (Tag)
+                                MonthLabel = wsName, 
                                 AmountLabel = $"{maxIncome:N0}đ",
                                 Progress = 100
                             });
@@ -364,7 +364,7 @@ public static class SocialEndpoints
                                 Title = "Biggest Spender",
                                 Description = "You hold the spending record!",
                                 IconText = "🛍️",
-                                MonthLabel = wsName, // 👉 ĐÃ SỬA: Hiển thị thẳng Tên Nhóm vào nhãn (Tag)
+                                MonthLabel = wsName,
                                 AmountLabel = $"{maxSpend:N0}đ",
                                 Progress = 100
                             });
