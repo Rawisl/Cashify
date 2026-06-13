@@ -272,7 +272,7 @@ public class MainViewModel extends ViewModel {
                                             tempCat.id = t.categoryId;
                                             // Gắn luôn firestoreId để lát Category thật về nó tự Update đè lên thằng ảo này!
                                             tempCat.firestoreId = (firestoreCatId != null && !firestoreCatId.isEmpty()) ? firestoreCatId : String.valueOf(oldCatId);
-                                            tempCat.name = "Đang đồng bộ...";
+                                            tempCat.name = "Syncing...";
                                             tempCat.iconName = "ic_other";
                                             tempCat.colorCode = "#A9A9A9";
                                             tempCat.type = doc.getLong("type") != null ? doc.getLong("type").intValue() : 0;
@@ -306,7 +306,7 @@ public class MainViewModel extends ViewModel {
 
                                 db.transactionDao().insert(t);
                             } catch (Exception parseEx) {
-                                Log.e("SYNC", "Bỏ qua giao dịch bị lỗi format: " + doc.getId(), parseEx);
+                                Log.e("SYNC", "Skipped malformed transaction: " + doc.getId(), parseEx);
                             }
                         }
                         Log.d("SYNC", "Downloaded " + documents.size() + " transactions.");
@@ -364,7 +364,7 @@ public class MainViewModel extends ViewModel {
         // 1. Lấy thông tin user hiện tại
         com.google.firebase.auth.FirebaseAuth auth = com.google.firebase.auth.FirebaseAuth.getInstance();
         if (auth.getCurrentUser() == null) {
-            Log.e("REALTIME_SYNC", "User chưa đăng nhập, không thể đồng bộ!");
+            Log.e("REALTIME_SYNC", "Sync failed: Not logged in");
             return;
         }
         String uid = auth.getCurrentUser().getUid();
@@ -440,7 +440,7 @@ public class MainViewModel extends ViewModel {
                                                     tempCat.id = t.categoryId;
                                                     //Gắn luôn firestoreId để lát Category thật về nó tự Update đè lên thằng ảo này!
                                                     tempCat.firestoreId = (firestoreCatId != null && !firestoreCatId.isEmpty()) ? firestoreCatId : String.valueOf(oldCatId);
-                                                    tempCat.name = "Đang đồng bộ...";
+                                                    tempCat.name = "Syncing...";
                                                     tempCat.iconName = "ic_other";
                                                     tempCat.colorCode = "#A9A9A9";
                                                     tempCat.type = doc.getLong("type") != null ? doc.getLong("type").intValue() : 0;
@@ -473,7 +473,7 @@ public class MainViewModel extends ViewModel {
 
                                         db.transactionDao().insert(t); // Transaction insert bình thường
                                     } catch (Exception parseEx) {
-                                        Log.e("REALTIME_SYNC", "Lỗi parse dữ liệu ở transaction: " + doc.getId(), parseEx);
+                                        Log.e("REALTIME_SYNC", "Transaction parsing error: " + doc.getId(), parseEx);
                                     }
                                 }
                                 syncCompleted.postValue(true);

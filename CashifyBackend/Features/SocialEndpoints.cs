@@ -190,9 +190,6 @@ public static class SocialEndpoints
                     return Results.Unauthorized();
 
                 var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(authHeader.Substring("Bearer ".Length))).Uid;
-                string? currentWorkspaceId = request.Query["workspaceId"]; // Nhận ID quỹ nếu đang đứng ở Quỹ
-                bool isWorkspace = !string.IsNullOrEmpty(currentWorkspaceId) && currentWorkspaceId != "PERSONAL";
-
                 var availableList = new List<AchievementSuggestion>();
 
                 // 1. Lấy danh sách achievement đã chia sẻ để không báo lại
@@ -203,22 +200,14 @@ public static class SocialEndpoints
                 var userSnap = await db.Collection("users").Document(uid).GetSnapshotAsync();
                 int streakDays = userSnap.ContainsField("streakDays") ? Convert.ToInt32(userSnap.GetValue<object>("streakDays")) : 0;
 
-                // 3. Kéo Thống kê (Rẽ nhánh Cá nhân hoặc Quỹ nhóm)
-                DocumentSnapshot statsSnap;
-                if (isWorkspace)
-                {
-                    statsSnap = await db.Collection("workspaces").Document(currentWorkspaceId).Collection("workspace_stats").Document("summary").GetSnapshotAsync();
-                }
-                else
-                {
-                    statsSnap = await db.Collection("users").Document(uid).Collection("user_stats").Document("summary").GetSnapshotAsync();
-                }
+                // 3. Kéo Thống kê Cá nhân
+                var statsSnap = await db.Collection("users").Document(uid).Collection("user_stats").Document("summary").GetSnapshotAsync();
 
+                var now = DateTimeOffset.UtcNow;
+                string monthKey = $"{now.Year}_{now.Month:D2}";
                 int totalTrans = 0;
                 long totalIncomeThisMonth = 0;
                 long totalSpendThisMonth = 0;
-                var now = DateTimeOffset.UtcNow;
-                string monthKey = $"{now.Year}_{now.Month:D2}";
 
                 if (statsSnap.Exists)
                 {
@@ -232,55 +221,52 @@ public static class SocialEndpoints
                 }
 
                 // ==========================================
-                // LUẬT CHƠI MỚI (NEW ACHIEVEMENTS)
+                // LUẬT CHƠI CÁ NHÂN
                 // ==========================================
 
-                // 🌟 MỐC 1: SỐ LƯỢNG GIAO DỊCH (Cho cả Cá nhân và Quỹ)
+                // 🌟 MỐC 1: SỐ LƯỢNG GIAO DỊCH
                 int[] transMilestones = { 10, 50, 100, 500 };
                 foreach (var m in transMilestones)
                 {
-                    string achId = isWorkspace ? $"ws_ach_trans_{m}_{currentWorkspaceId}" : $"ach_trans_{m}";
+                    string achId = $"ach_trans_{m}";
                     if (totalTrans >= m && !sharedIds.Contains(achId))
                     {
                         availableList.Add(new AchievementSuggestion
                         {
                             Id = achId,
-                            Title = isWorkspace ? "Tổ Đội Chăm Chỉ" : "Ong Chăm Chỉ",
-                            Description = isWorkspace ? $"Quỹ nhóm đã đạt {m} giao dịch. Tinh thần đồng đội tuyệt vời!" : $"Đã ghi chép giao dịch thứ {m} trên Cashify!",
-                            IconText = isWorkspace ? "🤝" : "🐝",
-                            MonthLabel = "Thành tựu vĩnh viễn",
-                            AmountLabel = $"{m} Giao dịch",
+                            Title = "Hardworking Bee",
+                            Description = $"Recorded {m} transactions on Cashify!",
+                            IconText = "🐝",
+                            MonthLabel = "Lifetime",
+                            AmountLabel = $"{m} Entries",
                             Progress = 100
                         });
                         break;
                     }
                 }
 
-                // 🌟 MỐC 2: CHUỖI NGÀY KỶ LUẬT (STREAK - Chỉ cá nhân)
-                if (!isWorkspace)
+                // 🌟 MỐC 2: CHUỖI NGÀY KỶ LUẬT (STREAK)
+                int[] streakMilestones = { 3, 7, 15, 30, 100 };
+                foreach (var s in streakMilestones)
                 {
-                    int[] streakMilestones = { 3, 7, 15, 30, 100, 160, 365 };
-                    foreach (var s in streakMilestones)
+                    string achId = $"ach_streak_{s}";
+                    if (streakDays >= s && !sharedIds.Contains(achId))
                     {
-                        string achId = $"ach_streak_{s}";
-                        if (streakDays >= s && !sharedIds.Contains(achId))
+                        availableList.Add(new AchievementSuggestion
                         {
-                            availableList.Add(new AchievementSuggestion
-                            {
-                                Id = achId,
-                                Title = "Kỷ Luật Thép",
-                                Description = $"Bạn đã ghi chép liên tục {s} ngày không trượt phát nào!",
-                                IconText = "🔥",
-                                MonthLabel = "Chuỗi ngày",
-                                AmountLabel = $"{s} Ngày",
-                                Progress = 100
-                            });
-                            break;
-                        }
+                            Id = achId,
+                            Title = "Iron Discipline",
+                            Description = $"You've tracked expenses for {s} consecutive days!",
+                            IconText = "🔥",
+                            MonthLabel = "Streak",
+                            AmountLabel = $"{s} Days",
+                            Progress = 100
+                        });
+                        break;
                     }
                 }
 
-                if (statsSnap.Exists && !isWorkspace)
+                if (statsSnap.Exists)
                 {
                     // 🌟 MỐC 3: CÚ ĐÊM (NIGHT OWL)
                     bool isNightOwl = statsSnap.ContainsField("nightOwlUnlocked") && Convert.ToBoolean(statsSnap.GetValue<object>("nightOwlUnlocked"));
@@ -289,11 +275,11 @@ public static class SocialEndpoints
                         availableList.Add(new AchievementSuggestion
                         {
                             Id = "ach_night_owl",
-                            Title = "Cú Đêm Tài Chính",
-                            Description = "Kẻ thức thời là trang tuấn kiệt, ghi chép lúc 2h sáng mới chuẩn.",
+                            Title = "Night Owl",
+                            Description = "Tracking expenses at 2 AM is a lifestyle.",
                             IconText = "🦉",
-                            MonthLabel = "Thành tựu vĩnh viễn",
-                            AmountLabel = "Cú Đêm",
+                            MonthLabel = "Lifetime",
+                            AmountLabel = "Night Owl",
                             Progress = 100
                         });
                     }
@@ -305,36 +291,90 @@ public static class SocialEndpoints
                         availableList.Add(new AchievementSuggestion
                         {
                             Id = "ach_big_spender",
-                            Title = "Đại Gia Chốt Đơn",
-                            Description = "Một lần tiêu bằng người ta làm cả tháng. Khét đấy!",
+                            Title = "Big Whale",
+                            Description = "You spent more in one go than most do in a month!",
                             IconText = "🐋",
-                            MonthLabel = "Thành tựu vĩnh viễn",
-                            AmountLabel = "> 10 Triệu",
+                            MonthLabel = "Lifetime",
+                            AmountLabel = "> 10M VND",
                             Progress = 100
                         });
                     }
                 }
 
-                // 🌟 MỐC 5: DƯƠNG THÁI QUÁ (DƯ DẢ - Cho cả Cá nhân và Quỹ)
+                // 🌟 MỐC 5: DƯƠNG THÁI QUÁ
                 long surplus = totalIncomeThisMonth - totalSpendThisMonth;
-                string surplusAchId = isWorkspace ? $"ws_recap_surplus_{now.Year}_{now.Month}_{currentWorkspaceId}" : $"recap_surplus_{now.Year}_{now.Month}";
+                string surplusAchId = $"recap_surplus_{now.Year}_{now.Month}";
                 if (surplus > 0 && !sharedIds.Contains(surplusAchId))
                 {
                     availableList.Add(new AchievementSuggestion
                     {
                         Id = surplusAchId,
-                        Title = isWorkspace ? "Quỹ Nhóm Giàu Có" : "Dương Thái Quá",
-                        Description = isWorkspace ? "Tháng này quỹ nhóm thu nhiều hơn chi. Sắp được đi ăn lẩu rồi!" : "Tháng này bạn làm ra nhiều hơn xài đi.",
+                        Title = "Healthy Finances",
+                        Description = "You earned more than you spent this month. Keep it up!",
                         IconText = "💰",
-                        MonthLabel = $"Tháng {now.Month}/{now.Year}",
-                        AmountLabel = $"Dư: {surplus.ToString("N0")}đ",
+                        MonthLabel = $"{now.Month}/{now.Year}",
+                        AmountLabel = $"Surplus: {surplus:N0}đ",
                         Progress = 100
                     });
                 }
 
+                // ==========================================
+                // LUẬT CHƠI QUỸ NHÓM (QUÉT TẤT CẢ CÁC QUỸ)
+                // ==========================================
+                // Tìm tất cả các quỹ mà User này đang làm thành viên
+                var workspacesSnap = await db.Collection("workspaces").WhereArrayContains("members", uid).GetSnapshotAsync();
+
+                foreach (var wsDoc in workspacesSnap.Documents)
+                {
+                    string wsId = wsDoc.Id;
+                    string wsName = wsDoc.ContainsField("name") ? wsDoc.GetValue<string>("name") : "Group";
+                    var wsStatsSnap = await wsDoc.Reference.Collection("workspace_stats").Document("summary").GetSnapshotAsync();
+
+                    if (wsStatsSnap.Exists)
+                    {
+                        // THE CARRY
+                        string carryId = wsStatsSnap.ContainsField("theCarryId") ? wsStatsSnap.GetValue<string>("theCarryId") : "";
+                        long maxIncome = wsStatsSnap.ContainsField("maxSingleIncome") ? Convert.ToInt64(wsStatsSnap.GetValue<object>("maxSingleIncome")) : 0;
+                        string dynamicCarryId = $"ws_the_carry_{wsId}_{maxIncome}";
+
+                        if (uid == carryId && maxIncome > 0 && !sharedIds.Contains(dynamicCarryId))
+                        {
+                            availableList.Add(new AchievementSuggestion
+                            {
+                                Id = dynamicCarryId,
+                                Title = "The Carry",
+                                Description = "You are the MVP! The largest single contributor.",
+                                IconText = "🦸‍♂️",
+                                MonthLabel = wsName, // 👉 ĐÃ SỬA: Hiển thị thẳng Tên Nhóm vào nhãn (Tag)
+                                AmountLabel = $"{maxIncome:N0}đ",
+                                Progress = 100
+                            });
+                        }
+
+                        // BIGGEST SPENDER
+                        string spenderId = wsStatsSnap.ContainsField("biggestSpenderId") ? wsStatsSnap.GetValue<string>("biggestSpenderId") : "";
+                        long maxSpend = wsStatsSnap.ContainsField("maxSingleSpend") ? Convert.ToInt64(wsStatsSnap.GetValue<object>("maxSingleSpend")) : 0;
+                        string dynamicSpenderId = $"ws_biggest_spender_{wsId}_{maxSpend}";
+
+                        if (uid == spenderId && maxSpend > 0 && !sharedIds.Contains(dynamicSpenderId))
+                        {
+                            availableList.Add(new AchievementSuggestion
+                            {
+                                Id = dynamicSpenderId,
+                                Title = "Biggest Spender",
+                                Description = "You hold the spending record!",
+                                IconText = "🛍️",
+                                MonthLabel = wsName, // 👉 ĐÃ SỬA: Hiển thị thẳng Tên Nhóm vào nhãn (Tag)
+                                AmountLabel = $"{maxSpend:N0}đ",
+                                Progress = 100
+                            });
+                        }
+                    }
+                }
+
                 return Results.Ok(availableList);
             }
-            catch (Exception ex) { return Results.Problem($"Lỗi lấy thành tựu: {ex.Message}"); }
+            catch (Exception ex) { return Results.Problem($"Error fetching achievements: {ex.Message}"); }
         });
 
         // ---------------------------------------------------------

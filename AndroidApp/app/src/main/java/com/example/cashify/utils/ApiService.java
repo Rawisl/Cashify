@@ -215,7 +215,23 @@ public interface ApiService {
 
     // Gộp chung các Request có cấu trúc na ná nhau cho gọn
     class WorkspaceActionRequest {
-        public String WorkspaceId, NewOwnerId, TargetUid, TransactionId, CategoryId, MessageId;
+        @SerializedName("workspaceId")
+        public String WorkspaceId;
+
+        @SerializedName("newOwnerId")
+        public String NewOwnerId;
+
+        @SerializedName("targetUid")
+        public String TargetUid;
+
+        @SerializedName("transactionId")
+        public String TransactionId;
+
+        @SerializedName("categoryId")
+        public String CategoryId;
+
+        @SerializedName("messageId")
+        public String MessageId;
     }
 
     class EditCategoryRequest {

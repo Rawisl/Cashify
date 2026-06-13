@@ -230,7 +230,7 @@ public class WorkspaceViewModel extends ViewModel {
                     }
                     @Override
                     public void onError(String message) {
-                        _errorMessage.postValue("Gửi tin nhắn thất bại: " + message);
+                        _errorMessage.postValue("Failed to send message: " + message);
                         if (onSuccess != null) onSuccess.run(); // vẫn tiếp tục gửi ảnh tiếp theo
                     }
                 });
@@ -247,7 +247,7 @@ public class WorkspaceViewModel extends ViewModel {
 
             @Override
             public void onError(String message) {
-                _errorMessage.postValue("Thu hồi tin nhắn thất bại: " + message);
+                _errorMessage.postValue("Failed to unsend message: " + message);
             }
         });
     }
@@ -312,6 +312,32 @@ public class WorkspaceViewModel extends ViewModel {
             public void onError(String message) {
                 _errorMessage.postValue("Invite failed: " + message);
                 _isLoading.postValue(false);
+            }
+        });
+    }
+    // ============================================================
+    // LOGIC XÓA GIAO DỊCH QUỸ NHÓM (CALL C# BACKEND)
+    // ============================================================
+    public void deleteWorkspaceTransaction(String workspaceId, String transactionId) {
+        if (workspaceId == null || transactionId == null) {
+            _errorMessage.setValue("Thiếu thông tin để xóa giao dịch");
+            return;
+        }
+
+        _isLoading.setValue(true);
+
+        // Gọi thẳng qua FirebaseManager (Nơi chứa API Retrofit C# sếp đã viết)
+        FirebaseManager.getInstance().deleteWorkspaceTransaction(workspaceId, transactionId, new FirebaseManager.DataCallback<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                _isLoading.postValue(false);
+                _actionSuccess.postValue(true); // Báo UI xóa thành công để đóng Dialog/Activity
+            }
+
+            @Override
+            public void onError(String message) {
+                _isLoading.postValue(false);
+                _errorMessage.postValue("Lỗi xóa giao dịch: " + message);
             }
         });
     }

@@ -307,8 +307,8 @@ public class CommunityFeedFragment extends Fragment {
 
             // Fill data cũ vào
             editPostContent.setText(oldContent);
-            btnSubmitPost.setText("Lưu cập nhật");
-            txtComposerHint.setText("Chỉnh sửa nội dung bài viết của bạn.");
+            btnSubmitPost.setText("Save changes");
+            txtComposerHint.setText("What's on your mind? Edit your post here...");
 
             // Nếu là bài Cột mốc thì dựng lại thẻ Preview
             if (oldMilestone != null && !oldMilestone.isEmpty()) {

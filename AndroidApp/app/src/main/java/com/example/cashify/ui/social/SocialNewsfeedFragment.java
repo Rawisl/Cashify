@@ -365,11 +365,11 @@ public class SocialNewsfeedFragment extends Fragment {
                 .addOnFailureListener(e -> {
                     if (!isAdded()) return;
                     finishFeedLoading();
-                    Log.e("FEED", "Firebase lỗi: " + e.getMessage());
+                    Log.e("FEED", "Firebase error: " + e.getMessage());
                     if (feedItems.isEmpty()) {
                         showFeedError(true);
                     } else {
-                        Toast.makeText(requireContext(), "Lỗi tải thêm bài viết", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(requireContext(), "Failed to load more posts", Toast.LENGTH_SHORT).show();
                     }
                 });
     }
@@ -387,7 +387,7 @@ public class SocialNewsfeedFragment extends Fragment {
         Long commentCount = doc.getLong("commentCount");
 
         if (timestamp == null) timestamp = 0L;
-        if (authorName == null) authorName = "Người dùng Cashify";
+        if (authorName == null) authorName = "Cashify User";
 
         boolean hasImage = !imageUrl.isEmpty();
         boolean expandable = content.length() > 120;
@@ -397,7 +397,7 @@ public class SocialNewsfeedFragment extends Fragment {
         if (type.toLowerCase().contains("milestone")) {
             String milestoneData = doc.getString("milestoneData") != null ? doc.getString("milestoneData") : "";
 
-            String milestoneTitle = "Cột mốc mới";
+            String milestoneTitle = "New Achievement";
             String milestoneDescription = "";
             String amountText = "";
             String iconText = "🏆";
@@ -412,7 +412,7 @@ public class SocialNewsfeedFragment extends Fragment {
                     amountText = json.optString("amount", "");
                     progressValue = json.optInt("progress", 0);
                 } catch (Exception e) {
-                    Log.e("FEED_PARSE", "Lỗi giải mã JSON: " + e.getMessage());
+                    Log.e("FEED_PARSE", "JSON parse error: " + e.getMessage());
                 }
             }
 

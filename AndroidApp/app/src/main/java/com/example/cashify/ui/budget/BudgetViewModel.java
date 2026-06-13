@@ -334,15 +334,15 @@ public class BudgetViewModel extends AndroidViewModel {
                             .generateAutoMilestone(token, req).enqueue(new retrofit2.Callback<Object>() {
                                 @Override
                                 public void onResponse(@NonNull retrofit2.Call<Object> call, @NonNull retrofit2.Response<Object> response) {
-                                    if (response.isSuccessful()) callback.onSuccess("Đã khoe cột mốc lên bảng tin!");
-                                    else callback.onError("Lỗi tạo bài: " + response.code());
+                                    if (response.isSuccessful()) callback.onSuccess("Milestone shared to feed!");
+                                    else callback.onError("Failed to create post: " + response.code());
                                 }
 
                                 @Override
                                 public void onFailure(@NonNull retrofit2.Call<Object> call, @NonNull Throwable t) {
-                                    callback.onError("Lỗi mạng: " + t.getMessage());
+                                    callback.onError("Network error: " + t.getMessage());
                                 }
                             });
-                }).addOnFailureListener(e -> callback.onError("Lỗi xác thực Firebase!"));
+                }).addOnFailureListener(e -> callback.onError("Firebase authentication error!"));
     }
 }

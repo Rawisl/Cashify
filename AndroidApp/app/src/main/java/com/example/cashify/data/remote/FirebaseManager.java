@@ -497,11 +497,11 @@ public class FirebaseManager {
 
         batch.commit()
                 .addOnSuccessListener(v -> {
-                    Log.e(TAG, "sendFriendRequest tới " + targetUid + " thành công");
+                    Log.e(TAG, "sendFriendRequest to " + targetUid + " successfully");
                     callback.onSuccess(null);
                 })
                 .addOnFailureListener(e -> {
-                    Log.e(TAG, "sendFriendRequest thất bại: " + e.getMessage());
+                    Log.e(TAG, "sendFriendRequest failed: " + e.getMessage());
                     callback.onError(e.getMessage());
                 });
     }
@@ -645,10 +645,10 @@ public class FirebaseManager {
 
                 @Override
                 public void onFailure(retrofit2.Call<ApiService.WorkspaceCreateResponse> call, Throwable t) {
-                    callback.onError("Lỗi mạng: " + t.getMessage());
+                    callback.onError("Network error: " + t.getMessage());
                 }
             });
-        }).addOnFailureListener(e -> callback.onError("Lỗi Auth: " + e.getMessage()));
+        }).addOnFailureListener(e -> callback.onError("Auth error: " + e.getMessage()));
     }
 
     public void leaveWorkspace(String workspaceId, DataCallback<Void> callback) {
@@ -779,15 +779,15 @@ public class FirebaseManager {
                 @Override
                 public void onResponse(retrofit2.Call<Object> call, retrofit2.Response<Object> response) {
                     if (response.isSuccessful()) callback.onSuccess(null);
-                    else callback.onError("Bị từ chối (Mã: " + response.code() + ")");
+                    else callback.onError("Denied (Code: " + response.code() + ")");
                 }
 
                 @Override
                 public void onFailure(retrofit2.Call<Object> call, Throwable t) {
-                    callback.onError("Lỗi mạng: " + t.getMessage());
+                    callback.onError("Network error: " + t.getMessage());
                 }
             });
-        }).addOnFailureListener(e -> callback.onError("Lỗi Auth: " + e.getMessage()));
+        }).addOnFailureListener(e -> callback.onError("Auth error: " + e.getMessage()));
     }
 
     // ============================================================
@@ -832,15 +832,15 @@ public class FirebaseManager {
                     } catch (Exception ignored) {
                     }
 
-                    callback.onError("Lỗi server: " + response.code());
+                    callback.onError("Server error: " + response.code());
                 }
 
                 @Override
                 public void onFailure(retrofit2.Call<Object> call, Throwable t) {
-                    callback.onError("Lỗi mạng: " + t.getMessage());
+                    callback.onError("Network error: " + t.getMessage());
                 }
             });
-        }).addOnFailureListener(e -> callback.onError("Lỗi Auth: " + e.getMessage()));
+        }).addOnFailureListener(e -> callback.onError("Auth error: " + e.getMessage()));
     }
 
     public void sendDirectFriendMessage(String receiverId, String text, String imageUrl, DataCallback<Void> callback) {
@@ -864,15 +864,15 @@ public class FirebaseManager {
                         return;
                     }
 
-                    callback.onError(extractApiError(response, "Lỗi server: " + response.code()));
+                    callback.onError(extractApiError(response, "Server error: " + response.code()));
                 }
 
                 @Override
                 public void onFailure(retrofit2.Call<Object> call, Throwable t) {
-                    callback.onError("Lỗi mạng: " + t.getMessage());
+                    callback.onError("Network error: " + t.getMessage());
                 }
             });
-        }).addOnFailureListener(e -> callback.onError("Lỗi Auth: " + e.getMessage()));
+        }).addOnFailureListener(e -> callback.onError("Auth error: " + e.getMessage()));
     }
 
     public void recallDirectFriendMessage(String friendUid, String messageId, DataCallback<Void> callback) {
@@ -894,15 +894,15 @@ public class FirebaseManager {
                         return;
                     }
                     // Dùng lại hàm extractApiError có sẵn để báo lỗi chính xác từ Server
-                    callback.onError(extractApiError(response, "Lỗi server: " + response.code()));
+                    callback.onError(extractApiError(response, "Server error: " + response.code()));
                 }
 
                 @Override
                 public void onFailure(retrofit2.Call<Object> call, Throwable t) {
-                    callback.onError("Lỗi mạng: " + t.getMessage());
+                    callback.onError("Network error: " + t.getMessage());
                 }
             });
-        }).addOnFailureListener(e -> callback.onError("Lỗi Auth: " + e.getMessage()));
+        }).addOnFailureListener(e -> callback.onError("Auth error: " + e.getMessage()));
     }
 
     public void getFriendSuggestions(DataCallback<List<User>> callback) {
@@ -922,15 +922,15 @@ public class FirebaseManager {
                         callback.onSuccess(response.body() != null ? response.body() : new ArrayList<>());
                         return;
                     }
-                    callback.onError(extractApiError(response, "Lỗi server: " + response.code()));
+                    callback.onError(extractApiError(response, "Server error: " + response.code()));
                 }
 
                 @Override
                 public void onFailure(retrofit2.Call<List<User>> call, Throwable t) {
-                    callback.onError("Lỗi mạng: " + t.getMessage());
+                    callback.onError("Network error: " + t.getMessage());
                 }
             });
-        }).addOnFailureListener(e -> callback.onError("Lỗi Auth: " + e.getMessage()));
+        }).addOnFailureListener(e -> callback.onError("Auth error: " + e.getMessage()));
     }
 
     public void getFriendMessageChats(DataCallback<List<User>> callback) {
@@ -972,15 +972,15 @@ public class FirebaseManager {
                 @Override
                 public void onResponse(retrofit2.Call<List<DirectConversation>> call, retrofit2.Response<List<DirectConversation>> response) {
                     if (response.isSuccessful()) callback.onSuccess(response.body() != null ? response.body() : new ArrayList<>());
-                    else callback.onError(extractApiError(response, "Lỗi server: " + response.code()));
+                    else callback.onError(extractApiError(response, "Server error: " + response.code()));
                 }
 
                 @Override
                 public void onFailure(retrofit2.Call<List<DirectConversation>> call, Throwable t) {
-                    callback.onError("Lỗi mạng: " + t.getMessage());
+                    callback.onError("Network error: " + t.getMessage());
                 }
             });
-        }).addOnFailureListener(e -> callback.onError("Lỗi Auth: " + e.getMessage()));
+        }).addOnFailureListener(e -> callback.onError("Auth error: " + e.getMessage()));
     }
 
     // Hàm tạo ID phòng chat y hệt bên C# (Xếp theo bảng chữ cái)

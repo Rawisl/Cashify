@@ -122,9 +122,9 @@ public class PostDetailActivity extends AppCompatActivity {
                 observeViewModel();
                 viewModel.loadPost(postId, authHeader);
                 viewModel.loadComments(postId, authHeader);
-            }).addOnFailureListener(e -> showError("Không lấy được phiên đăng nhập."));
+            }).addOnFailureListener(e -> showError("Failed to get login session."));
         } else {
-            showError("Bạn cần đăng nhập để xem bài viết.");
+            showError("Please log in to view posts.");
         }
     }
 
@@ -221,7 +221,7 @@ public class PostDetailActivity extends AppCompatActivity {
 
                 // Chặn không cho lưu bình luận rỗng
                 if (newContent.isEmpty()) {
-                    etEditComment.setError("Bình luận không được để trống");
+                    etEditComment.setError("Comment cannot be empty");
                     return;
                 }
 
@@ -358,9 +358,9 @@ public class PostDetailActivity extends AppCompatActivity {
                 String cContent = mapStr(map, "content");
                 long cTs = mapNum(map, "timestamp");
                 commentList.add(new Comment(cId, cUid, cAvatar,
-                        cName.isEmpty() ? "Người dùng Cashify" : cName,
+                        cName.isEmpty() ? "Cashify User" : cName,
                         cContent,
-                        cTs > 0 ? TimeFormatter.format(cTs) : "Vừa xong", 0));
+                        cTs > 0 ? TimeFormatter.format(cTs) : "Just now", 0));
             }
             commentAdapter.notifyDataSetChanged();
             updateEmptyComments();
@@ -370,7 +370,7 @@ public class PostDetailActivity extends AppCompatActivity {
     private void bindPost(ApiService.SocialPostDetailResponse post) {
         postOwnerId = post.authorId == null ? "" : post.authorId;
         commentAdapter.updatePostOwnerId(postOwnerId);
-        tvPostUsername.setText(nonEmpty(post.authorName, "Người dùng Cashify"));
+        tvPostUsername.setText(nonEmpty(post.authorName, "Cashify User"));
         tvPostTime.setText(post.timestamp > 0 ? TimeFormatter.format(post.timestamp) : "");
         tvPostContent.setText(nonEmpty(post.content, ""));
         likeCount = Math.max(0, post.likeCount);
@@ -382,7 +382,7 @@ public class PostDetailActivity extends AppCompatActivity {
         applyPostLikeState();
 
         ImageHelper.loadAvatar(post.authorAvatarUrl, imgPostAvatar,
-                nonEmpty(post.authorName, nonEmpty(post.authorId, "Người dùng Cashify")));
+                nonEmpty(post.authorName, nonEmpty(post.authorId, "Cashify User")));
         if (post.imageUrl != null && !post.imageUrl.trim().isEmpty()) {
             imgPostImage.setVisibility(View.VISIBLE);
             Glide.with(this)
@@ -413,7 +413,7 @@ public class PostDetailActivity extends AppCompatActivity {
 
                 milestoneContainer.setVisibility(View.VISIBLE);
             } catch (Exception e) {
-                android.util.Log.e("Milestone", "Lỗi parse JSON: " + e.getMessage());
+                android.util.Log.e("Milestone", "JSON parse error: " + e.getMessage());
                 milestoneContainer.setVisibility(View.GONE);
             }
         } else {
@@ -448,7 +448,7 @@ public class PostDetailActivity extends AppCompatActivity {
         imgSendComment.setEnabled(false);
         etCommentInput.setText("");
 
-        commentList.add(new Comment(null, currentUserId, null, "Bạn", text, "Vừa xong", 0));
+        commentList.add(new Comment(null, currentUserId, null, "You", text, "Just now", 0));
         commentAdapter.notifyItemInserted(commentList.size() - 1);
         commentCount++;
         tvCommentCount.setText(String.valueOf(commentCount));
@@ -484,7 +484,7 @@ public class PostDetailActivity extends AppCompatActivity {
     }
 
     private void updateShareText() {
-        tvShareCount.setText(shareCount > 0 ? String.valueOf(shareCount) : "Chia sẻ");
+        tvShareCount.setText(shareCount > 0 ? String.valueOf(shareCount) : "Share");
     }
 
     private void setLoading(boolean loading) {

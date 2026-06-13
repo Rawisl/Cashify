@@ -312,33 +312,60 @@ public class AddTransactionActivity extends AppCompatActivity {
 
         viewModel.saveSuccess.observe(this, success -> {
             if (success) {
-                if (isEditMode || (workspaceId != null && !workspaceId.equals("PERSONAL"))) {
+                if (isEditMode) {
                     finish();
                     return;
                 }
 
-                // 1. CHUẨN BỊ DATA ĐỂ KIỂM TRA LUẬT CHƠI
-                // Check Cú Đêm (Từ 0h - 3h59)
+                // ==========================================
+                // LUẬT GAMIFICATION CHO CÁ NHÂN (ROOM DB)
+                // ==========================================
                 java.util.Calendar cal = viewModel.calendar.getValue();
                 int hour = (cal != null) ? cal.get(java.util.Calendar.HOUR_OF_DAY) : java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY);
-                boolean isNightOwl = (hour >= 0 && hour < 4);
-
-                // Check Đại Gia (> 10 củ)
                 double amount = CurrencyFormatter.parseVNDToDouble(edtAmount.getText().toString());
-                boolean isBigSpender = (Boolean.TRUE.equals(viewModel.isExpense.getValue()) && amount >= 10000000);
+                boolean isExpense = Boolean.TRUE.equals(viewModel.isExpense.getValue());
 
-                // 2. GỌI ĐẾM SỐ LƯỢNG VÀ QUYẾT ĐỊNH BẮN TOAST
+                boolean isNightOwl = (hour >= 0 && hour < 4);
+                boolean isBigSpender = (isExpense && amount >= 10000000);
+
+                android.content.SharedPreferences prefs = getSharedPreferences("GamificationPrefs", MODE_PRIVATE);
+                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault());
+                String todayStr = sdf.format(new java.util.Date());
+                String lastDateStr = prefs.getString("last_transaction_date", "");
+                int currentStreak = prefs.getInt("current_streak", 0);
+                boolean isStreakJustUpdated = false;
+
+                if (!todayStr.equals(lastDateStr)) {
+                    java.util.Calendar yesterday = java.util.Calendar.getInstance();
+                    yesterday.add(java.util.Calendar.DAY_OF_YEAR, -1);
+                    String yesterdayStr = sdf.format(yesterday.getTime());
+
+                    if (lastDateStr.equals(yesterdayStr)) {
+                        currentStreak++;
+                    } else {
+                        currentStreak = 1;
+                    }
+
+                    isStreakJustUpdated = true;
+                    prefs.edit().putString("last_transaction_date", todayStr).putInt("current_streak", currentStreak).apply();
+                }
+
+                final int finalStreak = currentStreak;
+                final boolean finalIsStreakJustUpdated = isStreakJustUpdated;
+
                 viewModel.getPersonalTransactionCount(count -> {
                     runOnUiThread(() -> {
-                        // Ưu tiên bắn Toast theo độ khó (Nếu đạt nhiều cái cùng lúc thì báo cái xịn nhất)
-                        if (count == 10 || count == 50 || count == 100 || count == 500) {
-                            ToastHelper.showAchievement(getApplicationContext(), "Hardworking Bee (" + count + ")");
+                        if (finalIsStreakJustUpdated && (finalStreak == 3 || finalStreak == 7 || finalStreak == 15 || finalStreak == 30 || finalStreak == 100 || finalStreak == 160 || finalStreak == 365)) {
+                            ToastHelper.showAchievement(getApplicationContext(), "🔥 " + finalStreak + "-Day Streak!");
+                        }
+                        else if (count == 10 || count == 50 || count == 100 || count == 500) {
+                            ToastHelper.showAchievement(getApplicationContext(), "🐝 Hardworking Bee (" + count + ")");
                         }
                         else if (isBigSpender) {
-                            ToastHelper.showAchievement(getApplicationContext(), "Big Whale");
+                            ToastHelper.showAchievement(getApplicationContext(), "🐋 Big Whale");
                         }
                         else if (isNightOwl) {
-                            ToastHelper.showAchievement(getApplicationContext(), "Night Owl");
+                            ToastHelper.showAchievement(getApplicationContext(), "🦉 Night Owl");
                         }
 
                         finish();
@@ -406,7 +433,28 @@ public class AddTransactionActivity extends AppCompatActivity {
                         @Override
                         public void onResponse(retrofit2.Call<Object> call, retrofit2.Response<Object> response) {
                             if (response.isSuccessful()) {
-                                ToastHelper.show(AddTransactionActivity.this, isEditMode ? "Updated on Server!" : "Saved securely!");
+                                if (isEditMode) {
+                                    finish();
+                                    return;
+                                }
+
+                                // ==========================================
+                                // ĐỌC CỜ TỪ SERVER TRẢ VỀ ĐỂ BẮN TOAST
+                                // ==========================================
+                                Object responseBody = response.body();
+                                if (responseBody instanceof java.util.Map) {
+                                    java.util.Map<String, Object> map = (java.util.Map<String, Object>) responseBody;
+
+                                    boolean isNewCarry = Boolean.TRUE.equals(map.get("isNewCarry"));
+                                    boolean isNewSpender = Boolean.TRUE.equals(map.get("isNewSpender"));
+
+                                    if (isNewCarry) {
+                                        ToastHelper.showAchievement(getApplicationContext(), "🦸‍♂️ New Carry (MVP)!");
+                                    } else if (isNewSpender) {
+                                        ToastHelper.showAchievement(getApplicationContext(), "🛍️ New Biggest Spender!");
+                                    }
+                                }
+
                                 finish();
                             } else {
                                 btnConfirm.setEnabled(true);
@@ -437,15 +485,45 @@ public class AddTransactionActivity extends AppCompatActivity {
                 DialogHelper.DialogType.DANGER,
                 true,
                 () -> {
+                    // NẾU LÀ QUỸ CHUNG -> GỌI API C# ĐỂ XÓA (Xuyên thủng Security Rules)
                     if (workspaceId != null && !workspaceId.trim().isEmpty() && !workspaceId.equals("null") && !workspaceId.equals("PERSONAL")) {
-                        FirebaseFirestore.getInstance()
-                                .collection("workspaces").document(workspaceId)
-                                .collection("transactions").document(editTransactionId)
-                                .delete()
-                                .addOnSuccessListener(a -> {
-                                    DialogHelper.showSuccess(this, "Done", "Deleted from Cloud!", () -> finish());
+                        btnDelete.setEnabled(false); // Chống spam
+
+                        com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser().getIdToken(true)
+                                .addOnSuccessListener(getTokenResult -> {
+                                    String token = "Bearer " + getTokenResult.getToken();
+
+                                    // Nhồi tham số cho API
+                                    ApiService.WorkspaceActionRequest req = new ApiService.WorkspaceActionRequest();
+                                    req.WorkspaceId = workspaceId;
+                                    req.TransactionId = editTransactionId;
+
+                                    ApiService apiService = ApiClient.getClient().create(ApiService.class);
+                                    apiService.deleteWorkspaceTransaction(token, req).enqueue(new retrofit2.Callback<Object>() {
+                                        @Override
+                                        public void onResponse(retrofit2.Call<Object> call, retrofit2.Response<Object> response) {
+                                            if (response.isSuccessful()) {
+                                                DialogHelper.showSuccess(AddTransactionActivity.this, "Done", "Transaction deleted!", () -> finish());
+                                            } else {
+                                                btnDelete.setEnabled(true);
+                                                ToastHelper.show(AddTransactionActivity.this, "Server rejected: " + response.code());
+                                            }
+                                        }
+
+                                        @Override
+                                        public void onFailure(retrofit2.Call<Object> call, Throwable t) {
+                                            btnDelete.setEnabled(true);
+                                            ToastHelper.show(AddTransactionActivity.this, "Network error: " + t.getMessage());
+                                        }
+                                    });
+                                })
+                                .addOnFailureListener(e -> {
+                                    btnDelete.setEnabled(true);
+                                    ToastHelper.show(this, "Auth Token Error: " + e.getMessage());
                                 });
+
                     } else {
+                        // NẾU LÀ CÁ NHÂN -> GỌI VIEWMODEL CHẠY ROOM DB BÌNH THƯỜNG
                         viewModel.deleteCurrentTransaction();
                     }
                 },
@@ -613,7 +691,8 @@ public class AddTransactionActivity extends AppCompatActivity {
 
                 if (!found) {
                     for (Category cat : categories) {
-                        if (cat.name.contains("Khác") || cat.name.toLowerCase().contains("other")) {
+                        // ĐÃ XÓA CHỮ "Khác"
+                        if (cat.name.toLowerCase().contains("other")) {
                             viewModel.selectedCategory.setValue(cat);
                             break;
                         }

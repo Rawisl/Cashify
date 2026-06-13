@@ -30,10 +30,10 @@ public class DatabaseSeeder {
                     dao.insert(makeCategory(11, "Tiền trọ", "ic_house", "#93CE9D", 0));
                     dao.insert(makeCategory(12, "Khác", "ic_other", "#000000", 0));
 
-                    Log.d("DatabaseSeeder", "Tải dữ liệu thành công!");
+                    Log.d("DatabaseSeeder", "Load category successfully!");
                 }
             } catch (Exception e) {
-                Log.e("DatabaseSeeder", "Lỗi tải dữ liệu: ", e);
+                Log.e("DatabaseSeeder", "Load category error: ", e);
             }
         });
     }

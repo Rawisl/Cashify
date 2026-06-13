@@ -47,7 +47,7 @@ public class FriendChatViewModel extends ViewModel {
 
             @Override
             public void onError(String message) {
-                Log.e(TAG, "Lỗi tải tin nhắn: " + message);
+                Log.e(TAG, "Failed to load messages: " + message);
                 loadErrorMessage.postValue(message);
             }
         });
@@ -100,7 +100,7 @@ public class FriendChatViewModel extends ViewModel {
 
             @Override
             public void onError(String message) {
-                sendErrorMessage.postValue("Lỗi thu hồi tin nhắn: " + message);
+                sendErrorMessage.postValue("Failed to unsend message:  " + message);
             }
         });
     }

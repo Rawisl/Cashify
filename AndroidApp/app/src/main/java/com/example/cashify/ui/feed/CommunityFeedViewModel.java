@@ -38,7 +38,7 @@ public class CommunityFeedViewModel extends ViewModel {
                         }
                         @Override
                         public void onFailure(Call<List<ApiService.AchievementSuggestion>> call, Throwable t) {
-                            errorMessage.postValue("Lỗi mạng: " + t.getMessage());
+                            errorMessage.postValue("Network error: " + t.getMessage());
                         }
                     });
         });

@@ -361,7 +361,7 @@ public class WorkspaceChatFragment extends Fragment {
             }
             return outputFile.length() > 0 ? outputFile : null;
         } catch (Exception e) {
-            Log.e("WS_IMG", "getFileFromUri lỗi: " + e.getMessage(), e);
+            Log.e("WS_IMG", "getFileFromUri error: " + e.getMessage(), e);
             return null;
         }
     }

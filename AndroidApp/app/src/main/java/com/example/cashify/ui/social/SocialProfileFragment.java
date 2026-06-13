@@ -256,7 +256,7 @@ public class SocialProfileFragment extends Fragment {
                                                @NonNull Response<List<Object>> response) {
                             if (!isAdded()) return;
                             if (!response.isSuccessful() || response.body() == null) {
-                                android.util.Log.e("PROFILE", "API lỗi: " + response.code());
+                                android.util.Log.e("PROFILE", "API error: " + response.code());
                                 showEmptyState(true);
                                 return;
                             }
@@ -266,13 +266,13 @@ public class SocialProfileFragment extends Fragment {
                         @Override
                         public void onFailure(@NonNull Call<List<Object>> call, @NonNull Throwable t) {
                             if (!isAdded()) return;
-                            android.util.Log.e("PROFILE", "Mạng lỗi: " + t.getMessage());
+                            android.util.Log.e("PROFILE", "Network error: " + t.getMessage());
                             showEmptyState(true);
                         }
                     });
 
         }).addOnFailureListener(e -> {
-            android.util.Log.e("PROFILE", "Token lỗi: " + e.getMessage());
+            android.util.Log.e("PROFILE", "Token error: " + e.getMessage());
             showEmptyState(true);
         });
     }
@@ -420,15 +420,15 @@ public class SocialProfileFragment extends Fragment {
                                 @Override
                                 public void onResponse(@NonNull Call<Object> call, @NonNull Response<Object> response) {
                                     if (response.isSuccessful()) {
-                                        Toast.makeText(requireContext(), "Đã xóa bài", Toast.LENGTH_SHORT).show();
+                                        Toast.makeText(requireContext(), "Deleted", Toast.LENGTH_SHORT).show();
                                         loadMyPosts(); // Load lại tường nhà
                                     } else {
-                                        Toast.makeText(requireContext(), "Lỗi xóa bài", Toast.LENGTH_SHORT).show();
+                                        Toast.makeText(requireContext(), "Failed to delete post", Toast.LENGTH_SHORT).show();
                                     }
                                 }
                                 @Override
                                 public void onFailure(@NonNull Call<Object> call, @NonNull Throwable t) {
-                                    Toast.makeText(requireContext(), "Lỗi mạng", Toast.LENGTH_SHORT).show();
+                                    Toast.makeText(requireContext(), "Network error", Toast.LENGTH_SHORT).show();
                                 }
                             });
                 });
