@@ -131,11 +131,16 @@ public class MainActivity extends BaseActivity {
                 Bundle bundle = new Bundle();
                 bundle.putString("WORKSPACE_ID", currentWorkspaceId);
                 controller.navigate(R.id.nav_workspace_container, bundle);
+                // Xóa cờ để chống mở lại khi xoay màn hình
+                getIntent().removeExtra("OPEN_WORKSPACE_ID");
             });
         }
 
         if (getIntent().getBooleanExtra("OPEN_SOCIAL", false)) {
-            navigateWhenHome(controller -> controller.navigate(R.id.nav_social_container));
+            navigateWhenHome(controller -> {
+                controller.navigate(R.id.nav_social_container);
+                getIntent().removeExtra("OPEN_SOCIAL");
+            });
         }
 
         if (getIntent().getBooleanExtra("ACTION_EDIT_POST", false)) {
@@ -144,18 +149,29 @@ public class MainActivity extends BaseActivity {
                 bundle.putString("edit_post_id", getIntent().getStringExtra("edit_post_id"));
                 bundle.putString("edit_post_content", getIntent().getStringExtra("edit_post_content"));
 
-                // Hứng luôn cục Milestone (nếu là bài Cột mốc)
                 if (getIntent().hasExtra("edit_milestone_data")) {
                     bundle.putString("edit_milestone_data", getIntent().getStringExtra("edit_milestone_data"));
                 }
 
-                // Ném Bundle sang màn hình Đăng bài
+                // ==========================================
+                // 🌟 FIX BACKSTACK CHUẨN Ở ĐÂY:
+                // Nhét Social Container vào trước, rồi mới mở Post Feed đè lên.
+                // Lúc back ra, nó sẽ hạ cánh xuống Social.
+                // ==========================================
+                controller.navigate(R.id.nav_social_container);
                 controller.navigate(R.id.nav_post_feed, bundle);
+
+                getIntent().removeExtra("ACTION_EDIT_POST");
             });
         }
 
         if (getIntent().getBooleanExtra("OPEN_POST_FEED", false)) {
-            navigateWhenHome(controller -> controller.navigate(R.id.nav_post_feed));
+            navigateWhenHome(controller -> {
+                // Fix tương tự cho thao tác mở bảng Đăng bài mới từ Intent
+                controller.navigate(R.id.nav_social_container);
+                controller.navigate(R.id.nav_post_feed);
+                getIntent().removeExtra("OPEN_POST_FEED");
+            });
         }
     }
 

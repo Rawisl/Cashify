@@ -9,6 +9,8 @@
 
     <!-- THÊM MỚI: Bắt buộc cho Android 13+ để hiện thông báo -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!--Cho cái điện thoại thành máy rung lets goooooo-->
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <application
         android:name=".ui.main.MyApplication"

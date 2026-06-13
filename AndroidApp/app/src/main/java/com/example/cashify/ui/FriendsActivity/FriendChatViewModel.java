@@ -47,7 +47,7 @@ public class FriendChatViewModel extends ViewModel {
 
             @Override
             public void onError(String message) {
-                Log.e(TAG, "Lỗi tải tin nhắn: " + message);
+                Log.e(TAG, "Failed to load messages: " + message);
                 loadErrorMessage.postValue(message);
             }
         });
@@ -90,6 +90,19 @@ public class FriendChatViewModel extends ViewModel {
                         if (onSuccess != null) onSuccess.run(); // vẫn tiếp tục gửi ảnh tiếp
                     }
                 });
+    }
+
+    public void recallMessage(String friendUid, String messageId) {
+        FirebaseManager.getInstance().recallDirectFriendMessage(friendUid, messageId, new FirebaseManager.DataCallback<Void>() {
+            @Override
+            public void onSuccess(Void data) {
+            }
+
+            @Override
+            public void onError(String message) {
+                sendErrorMessage.postValue("Failed to unsend message:  " + message);
+            }
+        });
     }
 
     @Override

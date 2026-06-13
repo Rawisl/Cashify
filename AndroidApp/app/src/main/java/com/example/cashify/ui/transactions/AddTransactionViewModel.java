@@ -132,4 +132,11 @@ public class AddTransactionViewModel extends AndroidViewModel {
             calendar.setValue(cal);
         }
     }
+    // Hàm hỗ trợ đếm số lượng giao dịch cá nhân để kiểm tra thành tựu
+    public void getPersonalTransactionCount(com.example.cashify.data.repository.TransactionRepository.Callback<Integer> callback) {
+        transRepo.getAll("PERSONAL", result -> {
+            int count = (result != null) ? result.size() : 0;
+            callback.onResult(count); // Trả số lượng về nơi gọi
+        });
+    }
 }

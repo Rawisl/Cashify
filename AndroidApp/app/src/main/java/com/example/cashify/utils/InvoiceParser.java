@@ -23,7 +23,7 @@ public class InvoiceParser {
 
     public static void parse(String ocrText, ParseCallback callback) {
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user == null) { callback.onFailure("Chưa đăng nhập!"); return; }
+        if (user == null) { callback.onFailure("Not logged in!"); return; }
 
         user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
             String token = "Bearer " + getTokenResult.getToken();
@@ -38,15 +38,15 @@ public class InvoiceParser {
                     if (response.isSuccessful() && response.body() != null) {
                         callback.onSuccess(response.body());
                     } else {
-                        callback.onFailure("Lỗi từ AI Server: " + response.code());
+                        callback.onFailure("AI Server error: " + response.code());
                     }
                 }
 
                 @Override
                 public void onFailure(Call<ParsedInvoice> call, Throwable t) {
-                    callback.onFailure("Mất kết nối mạng: " + t.getMessage());
+                    callback.onFailure("Network connection lost: " + t.getMessage());
                 }
             });
-        }).addOnFailureListener(e -> callback.onFailure("Lỗi Auth: " + e.getMessage()));
+        }).addOnFailureListener(e -> callback.onFailure("Auth error: " + e.getMessage()));
     }
 }

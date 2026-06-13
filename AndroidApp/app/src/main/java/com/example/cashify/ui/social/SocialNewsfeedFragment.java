@@ -40,6 +40,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
 
 import org.json.JSONObject;
 
@@ -78,10 +79,15 @@ public class SocialNewsfeedFragment extends Fragment {
     private static final int FEED_PAGE_SIZE = 10;
     private final List<FeedItem> feedItems = new ArrayList<>();
     private final Set<String> loadedPostIds = new HashSet<>();
+    private boolean isAdmin = false;
     private boolean isLoadingFeed = false;
     private boolean isRefreshingFeed = false;
     private boolean isLastFeedPage = false;
-    private long nextFeedCursor = 0L;
+    public static boolean needRefreshFeed = false;
+
+    // BIẾN PHÂN TRANG (PAGINATION)
+    private DocumentSnapshot lastVisibleFeedDoc = null;
+    private final List<String> cachedFriendIds = new ArrayList<>();
 
     @Nullable
     @Override
@@ -99,8 +105,34 @@ public class SocialNewsfeedFragment extends Fragment {
         refreshFeed(false);
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Mỗi lần màn hình Bảng tin hiện lên, check xem có chuông báo không
+        if (needRefreshFeed) {
+            refreshFeed(false);
+            needRefreshFeed = false; // Tải xong thì tắt chuông
+        }
+    }
+
     private void initViewModel() {
         socialViewModel = new ViewModelProvider(requireActivity()).get(SocialViewModel.class);
+
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user != null) {
+            socialViewModel.loadProfile(user.getUid());
+        }
+
+        // LẮNG NGHE LỆNH XÓA BÀI THÀNH CÔNG TỪ VIEWMODEL -> TỰ ĐỘNG F5 BẢNG TIN
+        socialViewModel.getIsDeleteSuccess().observe(getViewLifecycleOwner(), success -> {
+            if (Boolean.TRUE.equals(success)) {
+                Toast.makeText(requireContext(), "Deleted", Toast.LENGTH_SHORT).show();
+                refreshFeed(false); // Gọi hàm vuốt làm mới ngầm
+
+                // Mẹo: Ép kiểu về MutableLiveData để reset cờ, tránh lỗi bị F5 liên tục khi lỡ xoay ngang dọc màn hình
+                ((androidx.lifecycle.MutableLiveData<Boolean>) socialViewModel.getIsDeleteSuccess()).setValue(false);
+            }
+        });
     }
 
     private void initViews(View view) {
@@ -120,11 +152,15 @@ public class SocialNewsfeedFragment extends Fragment {
         scrollNewsfeed = view.findViewById(R.id.scrollNewsfeed);
 
         if (rvFeed != null) {
-            feedAdapter = new CommunityFeedAdapter(item -> {
-                Intent intent = new Intent(requireContext(), PostDetailActivity.class);
-                intent.putExtra(PostDetailActivity.EXTRA_POST_ID, item.getId());
-                startActivity(intent);
-            });
+            feedAdapter = new CommunityFeedAdapter(
+                    item -> {
+                        Intent intent = new Intent(requireContext(), PostDetailActivity.class);
+                        intent.putExtra(PostDetailActivity.EXTRA_POST_ID, item.getId());
+                        startActivity(intent);
+                    },
+                    this::showPostBottomSheet
+            );
+
             rvFeed.setLayoutManager(new LinearLayoutManager(requireContext()));
             rvFeed.setAdapter(feedAdapter);
             rvFeed.setHasFixedSize(false);
@@ -141,6 +177,7 @@ public class SocialNewsfeedFragment extends Fragment {
                         View child = v.getChildAt(0);
                         if (child == null) return;
                         int distanceToBottom = child.getMeasuredHeight() - (scrollY + v.getHeight());
+                        // Kích hoạt load page mới khi cuộn cách đáy 320dp
                         if (distanceToBottom <= dp(320)) {
                             loadNextFeedPage();
                         }
@@ -166,10 +203,22 @@ public class SocialNewsfeedFragment extends Fragment {
             createPostPromptButton.setOnClickListener(v -> runPressAnimation(v, this::openCreatePost));
         }
         setupProfileSurfaces(view);
+
+        // LẤY ROLE TỪ VIEWMODEL
+        socialViewModel.getProfile().observe(getViewLifecycleOwner(), doc -> {
+            if (doc != null && doc.contains("role")) {
+                boolean isUserAdmin = "ADMIN".equals(doc.getString("role"));
+                if (isUserAdmin && !isAdmin) {
+                    isAdmin = true;
+                    isLoadingFeed = false;
+                    refreshFeed(false);
+                }
+            }
+        });
     }
 
     // =========================================================
-    // LOAD FEED THẬT — ĐÃ FIX
+    // LOAD FEED THẬT
     // =========================================================
     private void refreshFeed(boolean fromSwipe) {
         if (isLoadingFeed) {
@@ -178,7 +227,11 @@ public class SocialNewsfeedFragment extends Fragment {
         }
         isRefreshingFeed = fromSwipe;
         isLastFeedPage = false;
-        nextFeedCursor = 0L;
+
+        // RESET PHÂN TRANG
+        lastVisibleFeedDoc = null;
+        cachedFriendIds.clear();
+
         loadedPostIds.clear();
         feedItems.clear();
         if (feedAdapter != null) {
@@ -192,9 +245,9 @@ public class SocialNewsfeedFragment extends Fragment {
     }
 
     private void loadNextFeedPage() {
-        // Pagination not implemented for Firebase query yet
-        // if (isLoadingFeed || isRefreshingFeed || isLastFeedPage || feedItems.isEmpty()) return;
-        // loadFeedPageFromFirebase(friendIds, false);
+        // NGĂN CHẶN SPAM CALL KHI ĐANG LOAD HOẶC ĐÃ HẾT BÀI
+        if (isLoadingFeed || isRefreshingFeed || isLastFeedPage || feedItems.isEmpty()) return;
+        loadFeedPageFromFirebase(cachedFriendIds, false);
     }
 
     private void loadFriendListAndFeed() {
@@ -208,70 +261,78 @@ public class SocialNewsfeedFragment extends Fragment {
         isLoadingFeed = true;
         showFeedSkeleton(true);
 
-        // Load friend list from Firebase
-        FirebaseFirestore.getInstance().collection("users").document(user.getUid()).collection("friends")
+        FirebaseFirestore.getInstance().collection("users").document(user.getUid())
                 .get()
-                .addOnSuccessListener(snapshots -> {
-                    List<String> friendIds = new ArrayList<>();
-                    for (DocumentSnapshot doc : snapshots.getDocuments()) {
-                        friendIds.add(doc.getId());
+                .addOnSuccessListener(userDoc -> {
+                    if (userDoc != null && userDoc.exists()) {
+                        isAdmin = "ADMIN".equals(userDoc.getString("role"));
                     }
 
-                    if (friendIds.isEmpty()) {
-                        // No friends - show empty state
-                        finishFeedLoading();
-                        showFeedEmpty(true);
-                        showNoFriendsEmptyState(true);
+                    if (isAdmin) {
+                        cachedFriendIds.clear();
+                        loadFeedPageFromFirebase(cachedFriendIds, true);
                     } else {
-                        // Has friends - load posts filtered by friends
-                        loadFeedPageFromFirebase(friendIds, true);
+                        FirebaseFirestore.getInstance().collection("users").document(user.getUid()).collection("friends")
+                                .get()
+                                .addOnSuccessListener(snapshots -> {
+                                    cachedFriendIds.clear();
+                                    for (DocumentSnapshot doc : snapshots.getDocuments()) {
+                                        cachedFriendIds.add(doc.getId());
+                                    }
+                                    loadFeedPageFromFirebase(cachedFriendIds, true);
+                                })
+                                .addOnFailureListener(e -> {
+                                    finishFeedLoading();
+                                    Log.e("FEED", "Lỗi tải danh sách bạn: " + e.getMessage());
+                                    showFeedError(true);
+                                });
                     }
                 })
                 .addOnFailureListener(e -> {
                     finishFeedLoading();
-                    Log.e("FEED", "Lỗi tải danh sách bạn: " + e.getMessage());
+                    Log.e("FEED", "Lỗi lấy thông tin user: " + e.getMessage());
                     showFeedError(true);
                 });
     }
 
     private void loadFeedPageFromFirebase(List<String> friendIds, boolean firstPage) {
-        // Also include own posts
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user == null) {
-            finishFeedLoading();
-            showFeedError(true);
-            return;
+        if (user == null) return;
+
+        Query query = FirebaseFirestore.getInstance().collection("posts");
+
+        if (!isAdmin) {
+            List<String> allUserIds = new ArrayList<>(friendIds);
+            allUserIds.add(user.getUid());
+
+            if (allUserIds.size() > 30) {
+                allUserIds = allUserIds.subList(0, 30);
+            }
+            query = query.whereIn("userId", allUserIds);
         }
 
-        List<String> allUserIds = new ArrayList<>(friendIds);
-        allUserIds.add(user.getUid()); // Include own posts
+        // ĐÍNH KÈM SẮP XẾP VÀ LIMIT
+        query = query.orderBy("timestamp", Query.Direction.DESCENDING).limit(FEED_PAGE_SIZE);
 
-        // Firebase whereIn limit is 30
-        if (allUserIds.size() > 30) {
-            allUserIds = allUserIds.subList(0, 30);
-            Log.w("FEED", "Giới hạn 30 bạn bè cho Firebase whereIn");
+        // KẸP CURSOR VÀO NẾU LÀ TẢI TRANG TIẾP THEO
+        if (!firstPage && lastVisibleFeedDoc != null) {
+            query = query.startAfter(lastVisibleFeedDoc);
         }
 
-        isLoadingFeed = true;
-        boolean showInitialSkeleton = firstPage && !isRefreshingFeed && feedItems.isEmpty();
-        showFeedSkeleton(showInitialSkeleton);
-        if (progressFeed != null) {
-            progressFeed.setVisibility(firstPage && !isRefreshingFeed && !showInitialSkeleton ? View.VISIBLE : View.GONE);
+        // Bật Loading More cho UX dưới đáy
+        if (!firstPage && progressFeedMore != null) {
+            progressFeedMore.setVisibility(View.VISIBLE);
         }
-        if (progressFeedMore != null) {
-            progressFeedMore.setVisibility(firstPage ? View.GONE : View.VISIBLE);
-        }
-        showFeedEnd(false);
 
-        // Query Firebase posts collection with whereIn
-        FirebaseFirestore.getInstance().collection("posts")
-                .whereIn("userId", allUserIds)
-                .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
-                .limit(FEED_PAGE_SIZE)
-                .get()
+        query.get()
                 .addOnSuccessListener(snapshots -> {
                     if (!isAdded()) return;
                     finishFeedLoading();
+
+                    // LƯU LẠI CON TRỎ CỦA BÀI VIẾT CUỐI CÙNG
+                    if (!snapshots.isEmpty()) {
+                        lastVisibleFeedDoc = snapshots.getDocuments().get(snapshots.size() - 1);
+                    }
 
                     List<FeedItem> newItems = new ArrayList<>();
                     for (DocumentSnapshot doc : snapshots.getDocuments()) {
@@ -282,80 +343,116 @@ public class SocialNewsfeedFragment extends Fragment {
                     }
 
                     appendFeedItems(newItems);
-                    isLastFeedPage = newItems.size() < FEED_PAGE_SIZE;
-                    showFeedEmpty(feedItems.isEmpty());
+
+                    // NẾU SỐ LƯỢNG KÉO VỀ ÍT HƠN LIMIT -> HẾT DATA
+                    isLastFeedPage = snapshots.size() < FEED_PAGE_SIZE;
+
+                    if (feedItems.isEmpty()) {
+                        showFeedEmpty(true);
+                        if (!isAdmin && friendIds.isEmpty()) {
+                            showNoFriendsEmptyState(true);
+                        } else {
+                            showNoFriendsEmptyState(false);
+                        }
+                    } else {
+                        showFeedEmpty(false);
+                        showNoFriendsEmptyState(false);
+                    }
+
                     showFeedError(false);
-                    showNoFriendsEmptyState(false);
                     updateFeedEndState();
                 })
                 .addOnFailureListener(e -> {
                     if (!isAdded()) return;
                     finishFeedLoading();
-                    Log.e("FEED", "Firebase lỗi: " + e.getMessage());
+                    Log.e("FEED", "Firebase error: " + e.getMessage());
                     if (feedItems.isEmpty()) {
                         showFeedError(true);
                     } else {
-                        Toast.makeText(requireContext(), "Cannot load more posts", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(requireContext(), "Failed to load more posts", Toast.LENGTH_SHORT).show();
                     }
                 });
     }
 
     private FeedItem mapFirebaseDocToFeedItem(DocumentSnapshot doc) {
         String id = doc.getId();
-        String content = doc.getString("content");
+        String content = doc.getString("content") != null ? doc.getString("content") : "";
         String imageUrl = doc.getString("imageUrl") != null ? doc.getString("imageUrl") : "";
         String type = doc.getString("type") != null ? doc.getString("type") : "normal";
         Long timestamp = doc.getLong("timestamp");
         String userId = doc.getString("userId");
         String authorName = doc.getString("authorName");
         String authorAvatarUrl = doc.getString("authorAvatarUrl") != null ? doc.getString("authorAvatarUrl") : "";
+        Long likeCount = doc.getLong("likeCount");
+        Long commentCount = doc.getLong("commentCount");
 
         if (timestamp == null) timestamp = 0L;
-        if (authorName == null) authorName = "Người dùng Cashify";
+        if (authorName == null) authorName = "Cashify User";
 
         boolean hasImage = !imageUrl.isEmpty();
-        boolean expandable = content != null && content.length() > 120;
+        boolean expandable = content.length() > 120;
 
-        if (type != null && type.toLowerCase().contains("milestone")) {
+        FeedItem item = null;
+
+        if (type.toLowerCase().contains("milestone")) {
             String milestoneData = doc.getString("milestoneData") != null ? doc.getString("milestoneData") : "";
-            String milestoneTitle = doc.getString("title") != null ? doc.getString("title") : content;
-            String milestoneDescription = doc.getString("description") != null ? doc.getString("description") : "";
-            String amountText = doc.getString("amountText") != null ? doc.getString("amountText") : "";
 
-            Long progress = doc.getLong("progress");
-            int progressValue = progress != null ? progress.intValue() : 0;
+            String milestoneTitle = "New Achievement";
+            String milestoneDescription = "";
+            String amountText = "";
+            String iconText = "🏆";
+            int progressValue = 0;
 
-            return new FeedItem.MilestonePost(
+            if (!milestoneData.trim().isEmpty()) {
+                try {
+                    org.json.JSONObject json = new org.json.JSONObject(milestoneData);
+                    iconText = json.optString("iconText", "🏆");
+                    milestoneTitle = json.optString("title", "Cột mốc mới");
+                    milestoneDescription = json.optString("description", "");
+                    amountText = json.optString("amount", "");
+                    progressValue = json.optInt("progress", 0);
+                } catch (Exception e) {
+                    Log.e("FEED_PARSE", "JSON parse error: " + e.getMessage());
+                }
+            }
+
+            item = new FeedItem.MilestonePost(
                     id,
                     userId,
                     authorName,
                     com.example.cashify.utils.TimeFormatter.format(timestamp),
                     milestoneTitle,
-                    milestoneDescription,
+                    !content.isEmpty() ? content : milestoneDescription,
                     "Cột mốc",
                     amountText,
-                    progressValue > 0 ? progressValue + "%" : "",
+                    iconText,
                     progressValue,
-                    milestoneDescription.length() > 120,
+                    (!content.isEmpty() ? content : milestoneDescription).length() > 120,
                     milestoneData,
                     authorAvatarUrl,
                     initials(authorName)
             );
         } else {
-            return new FeedItem.NormalPost(
+            item = new FeedItem.NormalPost(
                     id,
                     userId,
                     authorName,
                     com.example.cashify.utils.TimeFormatter.format(timestamp),
-                    content != null ? content : "",
+                    content,
                     hasImage,
                     imageUrl,
-                    ContextCompat.getColor(requireContext(), R.color.brand_primary),
                     initials(authorName),
                     expandable,
                     authorAvatarUrl
             );
         }
+
+        if (item != null) {
+            item.setLikeCount(likeCount != null ? likeCount.intValue() : 0);
+            item.setCommentCount(commentCount != null ? commentCount.intValue() : 0);
+        }
+
+        return item;
     }
 
     private void appendFeedItems(List<FeedItem> newItems) {
@@ -374,17 +471,6 @@ public class SocialNewsfeedFragment extends Fragment {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private void updateNextCursor(List<Object> rawPosts) {
-        // Not used for Firebase query
-        if (rawPosts == null || rawPosts.isEmpty()) return;
-        Object last = rawPosts.get(rawPosts.size() - 1);
-        if (last instanceof Map) {
-            long timestamp = num((Map<String, Object>) last, "timestamp");
-            if (timestamp > 0) nextFeedCursor = timestamp;
-        }
-    }
-
     private void finishFeedLoading() {
         isLoadingFeed = false;
         isRefreshingFeed = false;
@@ -392,92 +478,6 @@ public class SocialNewsfeedFragment extends Fragment {
         if (progressFeedMore != null) progressFeedMore.setVisibility(View.GONE);
         if (swipeRefreshNewsfeed != null) swipeRefreshNewsfeed.setRefreshing(false);
         showFeedSkeleton(false);
-    }
-
-    // Old API-based method - kept for reference but not used
-    @SuppressWarnings("unchecked")
-    private List<FeedItem> mapResponseToFeedItems(List<Object> raw) {
-        List<FeedItem> result = new ArrayList<>();
-        for (Object obj : raw) {
-            if (!(obj instanceof Map)) continue;
-            Map<String, Object> map = (Map<String, Object>) obj;
-
-            String id       = str(map, "postId");
-            String content  = str(map, "content");
-            String imageUrl = str(map, "imageUrl");
-
-            // Backend lưu "kind" thay vì "type" — kiểm tra cả hai
-            String type = str(map, "type");
-            if (type.isEmpty()) type = str(map, "kind");
-
-            long timestamp  = num(map, "timestamp");
-            String userId   = str(map, "userId");
-            String name     = str(map, "authorName");
-            String avatarUrl = str(map, "authorAvatarUrl");
-
-            boolean isLiked = Boolean.TRUE.equals(map.get("isLiked"));
-            boolean hasImage   = !imageUrl.isEmpty();
-            boolean expandable = content.length() > 120;
-
-            if (isLiked && feedAdapter != null && !id.isEmpty()) feedAdapter.addLikedId(id);
-
-
-            if (type.toLowerCase().contains("milestone")) {
-                String milestoneData = str(map, "milestoneData");
-                String milestoneTitle = firstNonEmpty(
-                        str(map, "title"),
-                        jsonString(milestoneData, "title"),
-                        content,
-                        "Cột mốc mới"
-                );
-                String milestoneDescription = firstNonEmpty(
-                        str(map, "description"),
-                        jsonString(milestoneData, "description")
-                );
-                if (sameText(milestoneTitle, milestoneDescription) || sameText(milestoneTitle, content)) {
-                    milestoneDescription = "";
-                }
-                String amountText = firstNonEmpty(
-                        str(map, "amountText"),
-                        jsonString(milestoneData, "amountText"),
-                        jsonString(milestoneData, "amount")
-                );
-                int progress = (int) Math.max(0, Math.min(100,
-                        firstPositive(num(map, "progress"), jsonLong(milestoneData, "progress"))));
-
-                result.add(new FeedItem.MilestonePost(
-                        id,
-                        userId,
-                        name.isEmpty() ? "Người dùng Cashify" : name,
-                        com.example.cashify.utils.TimeFormatter.format(timestamp),
-                        milestoneTitle,
-                        milestoneDescription,
-                        firstNonEmpty(jsonString(milestoneData, "period"), "Cột mốc"),
-                        amountText,
-                        progress > 0 ? progress + "%" : "",
-                        progress,
-                        milestoneDescription.length() > 120,
-                        milestoneData,
-                        avatarUrl,
-                        initials(name)
-                ));
-            } else {
-                result.add(new FeedItem.NormalPost(
-                        id,
-                        userId,
-                        name.isEmpty() ? "Người dùng Cashify" : name,
-                        com.example.cashify.utils.TimeFormatter.format(timestamp),
-                        content,
-                        hasImage,
-                        imageUrl,
-                        ContextCompat.getColor(requireContext(), R.color.brand_primary),
-                        initials(name),
-                        expandable,
-                        avatarUrl
-                ));
-            }
-        }
-        return result;
     }
 
     private void showFeedEmpty(boolean show) {
@@ -542,7 +542,6 @@ public class SocialNewsfeedFragment extends Fragment {
             if (layoutFeedError != null) layoutFeedError.setVisibility(View.GONE);
             showFeedEnd(false);
 
-            // Setup button to navigate to FriendsActivity
             View btnFindFriends = layoutNoFriends != null ? layoutNoFriends.findViewById(R.id.btnFindFriends) : null;
             if (btnFindFriends != null) {
                 btnFindFriends.setOnClickListener(v -> {
@@ -754,5 +753,78 @@ public class SocialNewsfeedFragment extends Fragment {
                         .withEndAction(action)
                         .start())
                 .start();
+    }
+
+    private void showPostBottomSheet(FeedItem item) {
+        if (getActivity() == null) return;
+        com.google.android.material.bottomsheet.BottomSheetDialog dialog =
+                new com.google.android.material.bottomsheet.BottomSheetDialog(requireContext());
+        View sheetView = LayoutInflater.from(requireContext()).inflate(R.layout.bottom_sheet_option, null);
+
+        sheetView.findViewById(R.id.btnEditComment).setVisibility(View.GONE);
+
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        String currentUserId = user != null ? user.getUid() : "";
+
+        // Check xem có phải bài của mình không
+        boolean canEditOrDelete = (!currentUserId.isEmpty() && currentUserId.equals(item.getUserId())) || isAdmin;
+        View btnEditPost = sheetView.findViewById(R.id.btnEditPost);
+        View btnDeletePost = sheetView.findViewById(R.id.btnDeleteComment);
+
+        if (canEditOrDelete) {
+            if (btnEditPost != null) btnEditPost.setVisibility(View.VISIBLE);
+            btnDeletePost.setVisibility(View.VISIBLE);
+            sheetView.findViewById(R.id.btnHideComment).setVisibility(View.GONE);
+            sheetView.findViewById(R.id.btnReportPost).setVisibility(View.GONE);
+
+            // 1. LOGIC XÓA BÀI TRÊN NEWSFEED
+            btnDeletePost.setOnClickListener(v -> {
+                dialog.dismiss();
+                if (user == null) return;
+                user.getIdToken(true).addOnSuccessListener(result -> {
+                    String token = "Bearer " + result.getToken();
+                    socialViewModel.deletePost(item.getId(), token);
+                }).addOnFailureListener(e ->
+                        Toast.makeText(requireContext(), "Lỗi xác thực", Toast.LENGTH_SHORT).show()
+                );
+            });
+
+            // 2. LOGIC SỬA BÀI TRÊN NEWSFEED
+            if (btnEditPost != null) {
+                btnEditPost.setOnClickListener(v -> {
+                    dialog.dismiss();
+                    Intent intent = new Intent(requireContext(), MainActivity.class);
+                    intent.putExtra("ACTION_EDIT_POST", true);
+                    intent.putExtra("edit_post_id", item.getId());
+
+                    if (item instanceof FeedItem.NormalPost) {
+                        intent.putExtra("edit_post_content", ((FeedItem.NormalPost) item).text);
+                    } else if (item instanceof FeedItem.MilestonePost) {
+                        intent.putExtra("edit_post_content", ((FeedItem.MilestonePost) item).title);
+                        intent.putExtra("edit_milestone_data", ((FeedItem.MilestonePost) item).milestoneJson);
+                    }
+                    startActivity(intent);
+                });
+            }
+        } else {
+            // NẾU LÀ BÀI CỦA NGƯỜI KHÁC -> CHỈ CHO ẨN HOẶC BÁO CÁO
+            if (btnEditPost != null) btnEditPost.setVisibility(View.GONE);
+            btnDeletePost.setVisibility(View.GONE);
+            sheetView.findViewById(R.id.btnHideComment).setVisibility(View.VISIBLE);
+            sheetView.findViewById(R.id.btnReportPost).setVisibility(View.VISIBLE);
+
+            sheetView.findViewById(R.id.btnHideComment).setOnClickListener(v -> {
+                dialog.dismiss();
+                Toast.makeText(requireContext(), "Hided this post", Toast.LENGTH_SHORT).show();
+            });
+            sheetView.findViewById(R.id.btnReportPost).setOnClickListener(v -> {
+                dialog.dismiss();
+                Toast.makeText(requireContext(), "Reported this post", Toast.LENGTH_SHORT).show();
+            });
+        }
+
+        sheetView.findViewById(R.id.btnCancelComment).setOnClickListener(v -> dialog.dismiss());
+        dialog.setContentView(sheetView);
+        dialog.show();
     }
 }

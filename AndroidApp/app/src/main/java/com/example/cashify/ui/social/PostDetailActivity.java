@@ -3,6 +3,7 @@ package com.example.cashify.ui.social;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -20,34 +21,31 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.drawable.DrawableCompat;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.example.cashify.R;
-import com.example.cashify.utils.ApiClient;
+import com.example.cashify.ui.main.MainActivity;
 import com.example.cashify.utils.ApiService;
 import com.example.cashify.utils.HeartAnimation;
 import com.example.cashify.utils.ImageHelper;
 import com.example.cashify.utils.TimeFormatter;
 import com.google.android.material.appbar.MaterialToolbar;
-// ✅ Kept both imports: Firebase for auth, BottomSheet for post menu
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
-
 public class PostDetailActivity extends AppCompatActivity {
 
     public static final String EXTRA_POST_ID = "postId";
-
+    private boolean isAdmin = false;
     private ImageView imgLikeHeart;
     private ImageView imgPostAvatar;
     private ImageView imgPostImage;
@@ -67,11 +65,14 @@ public class PostDetailActivity extends AppCompatActivity {
     private EditText etCommentInput;
     private ImageView imgSendComment;
     private ImageView imgPostMenu;
+    private View milestoneContainer;
+    private TextView tvPreviewIcon, tvPreviewTitle, tvPreviewMonth, tvPreviewAmount;
+    private ProgressBar pbPreviewProgress;
+    private ImageView btnRemoveMilestonePreview;
 
-    // ✅ Full state fields from feature/social-ui (master's hardcoded strings removed)
     private final List<Comment> commentList = new ArrayList<>();
     private CommentAdapter commentAdapter;
-    private ApiService apiService;
+    private PostDetailViewModel viewModel;
     private String postId;
     private String authHeader;
     private String currentUserId = "";
@@ -80,16 +81,32 @@ public class PostDetailActivity extends AppCompatActivity {
     private int likeCount = 0;
     private int commentCount = 0;
     private int shareCount = 0;
+    private String globalMilestoneData = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_post_detail);
 
-        apiService = ApiClient.getClient().create(ApiService.class);
         postId = getIntent().getStringExtra(EXTRA_POST_ID);
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         currentUserId = user == null ? "" : user.getUid();
+
+        // KIỂM TRA QUYỀN ADMIN
+        if (!currentUserId.isEmpty()) {
+            FirebaseFirestore.getInstance().collection("users").document(currentUserId).get()
+                    .addOnSuccessListener(doc -> {
+                        if (doc != null && doc.exists()) {
+                            isAdmin = "ADMIN".equals(doc.getString("role"));
+                            // Truyền cờ Admin xuống cho Comment Adapter luôn
+                            if (commentAdapter != null) {
+                                commentAdapter.setAdmin(isAdmin);
+                            }
+                        }
+                    });
+        }
+
+        viewModel = new ViewModelProvider(this).get(PostDetailViewModel.class);
 
         initViews();
         setupToolbar();
@@ -98,30 +115,51 @@ public class PostDetailActivity extends AppCompatActivity {
         setupShareButton();
         setupCommentInput();
         setupPostMenu();
-        loadPostDetail();
+
+        if (user != null) {
+            user.getIdToken(true).addOnSuccessListener(result -> {
+                authHeader = "Bearer " + result.getToken();
+                observeViewModel();
+                viewModel.loadPost(postId, authHeader);
+                viewModel.loadComments(postId, authHeader);
+            }).addOnFailureListener(e -> showError("Failed to get login session."));
+        } else {
+            showError("Please log in to view posts.");
+        }
     }
 
     private void initViews() {
-        // ✅ Full view initialization from feature/social-ui (master's partial list removed)
-        imgLikeHeart         = findViewById(R.id.imgLikeHeart);
-        imgPostAvatar        = findViewById(R.id.imgPostAvatar);
-        imgPostImage         = findViewById(R.id.imgPostImage);
-        tvLikeCount          = findViewById(R.id.tvLikeCount);
-        tvCommentCount       = findViewById(R.id.tvCommentCount);
-        tvShareCount         = findViewById(R.id.tvShareCount);
-        tvPostUsername       = findViewById(R.id.tvPostUsername);
-        tvPostTime           = findViewById(R.id.tvPostTime);
-        tvPostContent        = findViewById(R.id.tvPostContent);
-        tvPostDetailMessage  = findViewById(R.id.tvPostDetailMessage);
-        tvEmptyComments      = findViewById(R.id.tvEmptyComments);
-        progressPostDetail   = findViewById(R.id.progressPostDetail);
-        cardPostDetail       = findViewById(R.id.cardPostDetail);
-        layoutLikeButton     = findViewById(R.id.layoutLikeButton);
-        layoutShareButton    = findViewById(R.id.layoutShareButton);
+        imgLikeHeart = findViewById(R.id.imgLikeHeart);
+        imgPostAvatar = findViewById(R.id.imgPostAvatar);
+        imgPostImage = findViewById(R.id.imgPostImage);
+        tvLikeCount = findViewById(R.id.tvLikeCount);
+        tvCommentCount = findViewById(R.id.tvCommentCount);
+        tvShareCount = findViewById(R.id.tvShareCount);
+        tvPostUsername = findViewById(R.id.tvPostUsername);
+        tvPostTime = findViewById(R.id.tvPostTime);
+        tvPostContent = findViewById(R.id.tvPostContent);
+        tvPostDetailMessage = findViewById(R.id.tvPostDetailMessage);
+        tvEmptyComments = findViewById(R.id.tvEmptyComments);
+        progressPostDetail = findViewById(R.id.progressPostDetail);
+        cardPostDetail = findViewById(R.id.cardPostDetail);
+        layoutLikeButton = findViewById(R.id.layoutLikeButton);
+        layoutShareButton = findViewById(R.id.layoutShareButton);
         recyclerViewComments = findViewById(R.id.recyclerViewComments);
-        etCommentInput       = findViewById(R.id.etCommentInput);
-        imgSendComment       = findViewById(R.id.imgSendComment);
-        imgPostMenu          = findViewById(R.id.imgPostMenu);
+        etCommentInput = findViewById(R.id.etCommentInput);
+        imgSendComment = findViewById(R.id.imgSendComment);
+        imgPostMenu = findViewById(R.id.imgPostMenu);
+        milestoneContainer = findViewById(R.id.milestoneContainer);
+
+        tvPreviewIcon = milestoneContainer.findViewById(R.id.tvPreviewIcon);
+        tvPreviewTitle = milestoneContainer.findViewById(R.id.tvPreviewTitle);
+        tvPreviewMonth = milestoneContainer.findViewById(R.id.tvPreviewMonth);
+        tvPreviewAmount = milestoneContainer.findViewById(R.id.tvPreviewAmount);
+        pbPreviewProgress = milestoneContainer.findViewById(R.id.pbPreviewProgress);
+        btnRemoveMilestonePreview = milestoneContainer.findViewById(R.id.btnRemoveMilestonePreview);
+
+        if (btnRemoveMilestonePreview != null) {
+            btnRemoveMilestonePreview.setVisibility(View.GONE);
+        }
     }
 
     private void setupToolbar() {
@@ -135,28 +173,81 @@ public class PostDetailActivity extends AppCompatActivity {
     }
 
     private void setupComments() {
-        commentAdapter = new CommentAdapter(
-                commentList,
-                new CommentAdapter.OnCommentActionListener() {
-                    @Override public void onEditComment(int position) {
-                        Toast.makeText(PostDetailActivity.this, "Edit comment unsupported", Toast.LENGTH_SHORT).show();
-                    }
+        commentAdapter = new CommentAdapter(commentList, new CommentAdapter.OnCommentActionListener() {
+            @Override
+            public void onEditComment(int position) {
+                Comment c = commentList.get(position);
+                showEditCommentDialog(c);
+            }
 
-                    @Override public void onDeleteComment(int position) {
-                        Toast.makeText(PostDetailActivity.this, "Delete comment unsupported", Toast.LENGTH_SHORT).show();
-                    }
+            @Override
+            public void onDeleteComment(int position) {
+                Comment c = commentList.get(position);
+                viewModel.deleteComment(postId, c.getId(), authHeader);
+            }
 
-                    @Override public void onHideComment(int position) {
-                        commentList.remove(position);
-                        commentAdapter.notifyItemRemoved(position);
-                        updateEmptyComments();
-                    }
-                },
-                currentUserId,
-                postOwnerId
-        );
+            @Override
+            public void onHideComment(int position) {
+                commentList.remove(position);
+                commentAdapter.notifyItemRemoved(position);
+                updateEmptyComments();
+            }
+        }, currentUserId, postOwnerId);
         recyclerViewComments.setLayoutManager(new LinearLayoutManager(this));
         recyclerViewComments.setAdapter(commentAdapter);
+    }
+
+    private void showEditCommentDialog(Comment comment) {
+        try {
+            BottomSheetDialog dialog = new BottomSheetDialog(this);
+            View view = LayoutInflater.from(this).inflate(R.layout.bottom_sheet_edit_comment, null);
+
+            // Ánh xạ View từ layout mới của bác
+            EditText etEditComment = view.findViewById(R.id.etEditComment);
+            View btnSaveComment = view.findViewById(R.id.btnSaveComment);
+
+            // 1. Đổ nội dung cũ vào EditText
+            etEditComment.setText(comment.getContent());
+            etEditComment.requestFocus();
+
+            // Đưa con trỏ (nháy chuột) xuống cuối chữ để user tiện viết tiếp
+            if (etEditComment.getText() != null) {
+                etEditComment.setSelection(etEditComment.getText().length());
+            }
+
+            // 2. Lắng nghe nút Lưu
+            btnSaveComment.setOnClickListener(v -> {
+                String newContent = etEditComment.getText().toString().trim();
+
+                // Chặn không cho lưu bình luận rỗng
+                if (newContent.isEmpty()) {
+                    etEditComment.setError("Comment cannot be empty");
+                    return;
+                }
+
+                // Chặn không cho gọi API nếu nội dung không thay đổi gì
+                if (newContent.equals(comment.getContent())) {
+                    dialog.dismiss();
+                    return;
+                }
+
+                // 3. Báo ViewModel gọi API để sửa
+                viewModel.editComment(postId, comment.getId(), newContent, authHeader);
+
+                // Đóng menu
+                dialog.dismiss();
+
+                Toast.makeText(this, "Saving changes...", Toast.LENGTH_SHORT).show();
+            });
+
+            dialog.setContentView(view);
+            dialog.show();
+
+        } catch (Exception e) {
+            // Fallback lỡ như layout bị lỗi
+            etCommentInput.setText(comment.getContent());
+            etCommentInput.requestFocus();
+        }
     }
 
     private void setupLikeButton() {
@@ -171,32 +262,53 @@ public class PostDetailActivity extends AppCompatActivity {
         imgSendComment.setOnClickListener(v -> sendComment());
     }
 
-    // ✅ setupPostMenu uses BottomSheet from master (replaces PopupMenu from feature/social-ui)
-    //    and applies proper Firebase-based ownership check (currentUserId vs postOwnerId)
     private void setupPostMenu() {
         imgPostMenu.setOnClickListener(v -> showPostBottomSheet());
     }
 
     private void showPostBottomSheet() {
         BottomSheetDialog dialog = new BottomSheetDialog(this);
-        View sheetView = LayoutInflater.from(this)
-                .inflate(R.layout.bottom_sheet_option, null);
+        View sheetView = LayoutInflater.from(this).inflate(R.layout.bottom_sheet_option, null);
 
         sheetView.findViewById(R.id.btnEditComment).setVisibility(View.GONE);
 
         boolean isOwner = !currentUserId.isEmpty() && currentUserId.equals(postOwnerId);
+        boolean canEditOrDelete = isOwner || isAdmin; // ADMIN BẤT TỬ
 
-        if (isOwner) {
-            sheetView.findViewById(R.id.btnDeleteComment).setVisibility(View.VISIBLE);
+        // Ánh xạ nút sửa bài viết từ layout
+        View btnEditPost = sheetView.findViewById(R.id.btnEditPost);
+        View btnDeletePost = sheetView.findViewById(R.id.btnDeleteComment);
+
+        if (canEditOrDelete) {
+            if (btnEditPost != null) btnEditPost.setVisibility(View.VISIBLE); // Hiện nút sửa lên
+            btnDeletePost.setVisibility(View.VISIBLE);
             sheetView.findViewById(R.id.btnHideComment).setVisibility(View.GONE);
             sheetView.findViewById(R.id.btnReportPost).setVisibility(View.GONE);
 
             sheetView.findViewById(R.id.btnDeleteComment).setOnClickListener(v -> {
                 dialog.dismiss();
-                finish();
+                viewModel.deletePost(postId, authHeader);
             });
+            if (btnEditPost != null) {
+                btnEditPost.setOnClickListener(v -> {
+                    dialog.dismiss();
+
+                    // Bắn dữ liệu sang MainActivity để nó mở khung Composer sửa bài
+                    Intent intent = new Intent(PostDetailActivity.this, MainActivity.class);
+                    intent.putExtra("ACTION_EDIT_POST", true);
+                    intent.putExtra("edit_post_id", postId);
+                    intent.putExtra("edit_post_content", tvPostContent.getText().toString().trim());
+
+                    if (globalMilestoneData != null && !globalMilestoneData.isEmpty()) {
+                        intent.putExtra("edit_milestone_data", globalMilestoneData);
+                    }
+
+                    startActivity(intent);
+                });
+            }
         } else {
-            sheetView.findViewById(R.id.btnDeleteComment).setVisibility(View.GONE);
+            if (btnEditPost != null) btnEditPost.setVisibility(View.GONE);
+            btnDeletePost.setVisibility(View.GONE);
             sheetView.findViewById(R.id.btnHideComment).setVisibility(View.VISIBLE);
             sheetView.findViewById(R.id.btnReportPost).setVisibility(View.VISIBLE);
 
@@ -219,85 +331,46 @@ public class PostDetailActivity extends AppCompatActivity {
         dialog.show();
     }
 
-    private void loadPostDetail() {
-        if (postId == null || postId.trim().isEmpty()) {
-            showError("Không tìm thấy mã bài viết.");
-            return;
-        }
+    private void observeViewModel() {
+        viewModel.getIsLoading().observe(this, this::setLoading);
+        viewModel.getErrorMessage().observe(this, this::showError);
 
-        setLoading(true);
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user == null) {
-            showError("Bạn cần đăng nhập để xem bài viết.");
-            return;
-        }
-
-        user.getIdToken(true).addOnSuccessListener(result -> {
-            authHeader = "Bearer " + result.getToken();
-            apiService.getPostDetail(postId, authHeader).enqueue(new Callback<ApiService.SocialPostDetailResponse>() {
-                @Override
-                public void onResponse(@NonNull Call<ApiService.SocialPostDetailResponse> call,
-                                       @NonNull Response<ApiService.SocialPostDetailResponse> response) {
-                    if (!response.isSuccessful() || response.body() == null) {
-                        showError(response.code() == 404 ? "Bài viết không tồn tại." : "Không tải được bài viết.");
-                        return;
-                    }
-                    bindPost(response.body());
-                    setLoading(false);
-                    loadComments();
-                }
-
-                @Override
-                public void onFailure(@NonNull Call<ApiService.SocialPostDetailResponse> call, @NonNull Throwable t) {
-                    showError("Không kết nối được backend: " + t.getMessage());
-                }
-            });
-        }).addOnFailureListener(e -> showError("Không lấy được phiên đăng nhập."));
-    }
-
-    private void loadComments() {
-        // ĐỔI: getPostComments → getComments (trả List<Object>)
-        apiService.getComments(postId, authHeader).enqueue(new Callback<List<Object>>() {
-            @Override
-            @SuppressWarnings("unchecked")
-            public void onResponse(@NonNull Call<List<Object>> call,
-                                   @NonNull Response<List<Object>> response) {
-                setLoading(false);
-                if (!response.isSuccessful() || response.body() == null) {
-                    showInlineMessage("Không tải được bình luận.");
-                    return;
-                }
-                commentList.clear();
-                for (Object obj : response.body()) {
-                    if (!(obj instanceof java.util.Map)) continue;
-                    java.util.Map<String, Object> map = (java.util.Map<String, Object>) obj;
-                    String cId      = mapStr(map, "commentId");
-                    String cUid     = mapStr(map, "userId");
-                    String cAvatar  = mapStr(map, "authorAvatarUrl");
-                    String cName    = mapStr(map, "authorName");
-                    String cContent = mapStr(map, "content");
-                    long   cTs      = mapNum(map, "timestamp");
-                    commentList.add(new Comment(cId, cUid, cAvatar,
-                            cName.isEmpty() ? "Người dùng Cashify" : cName,
-                            cContent,
-                            cTs > 0 ? TimeFormatter.format(cTs) : "Vừa xong", 0));
-                }
-                commentAdapter.notifyDataSetChanged();
-                updateEmptyComments();
+        viewModel.getPostDetail().observe(this, post -> {
+            if (post != null) {
+                bindPost(post);
             }
+        });
 
-            @Override
-            public void onFailure(@NonNull Call<List<Object>> call, @NonNull Throwable t) {
-                setLoading(false);
-                showInlineMessage("Không kết nối được bình luận.");
+        viewModel.getIsActionSuccess().observe(this, success -> {
+            if (success) finish();
+        });
+
+        viewModel.getComments().observe(this, list -> {
+            if (list == null) return;
+            commentList.clear();
+            for (Object obj : list) {
+                if (!(obj instanceof java.util.Map)) continue;
+                java.util.Map<String, Object> map = (java.util.Map<String, Object>) obj;
+                String cId = mapStr(map, "commentId");
+                String cUid = mapStr(map, "userId");
+                String cAvatar = mapStr(map, "authorAvatarUrl");
+                String cName = mapStr(map, "authorName");
+                String cContent = mapStr(map, "content");
+                long cTs = mapNum(map, "timestamp");
+                commentList.add(new Comment(cId, cUid, cAvatar,
+                        cName.isEmpty() ? "Cashify User" : cName,
+                        cContent,
+                        cTs > 0 ? TimeFormatter.format(cTs) : "Just now", 0));
             }
+            commentAdapter.notifyDataSetChanged();
+            updateEmptyComments();
         });
     }
 
     private void bindPost(ApiService.SocialPostDetailResponse post) {
         postOwnerId = post.authorId == null ? "" : post.authorId;
         commentAdapter.updatePostOwnerId(postOwnerId);
-        tvPostUsername.setText(nonEmpty(post.authorName, "Người dùng Cashify"));
+        tvPostUsername.setText(nonEmpty(post.authorName, "Cashify User"));
         tvPostTime.setText(post.timestamp > 0 ? TimeFormatter.format(post.timestamp) : "");
         tvPostContent.setText(nonEmpty(post.content, ""));
         likeCount = Math.max(0, post.likeCount);
@@ -309,7 +382,7 @@ public class PostDetailActivity extends AppCompatActivity {
         applyPostLikeState();
 
         ImageHelper.loadAvatar(post.authorAvatarUrl, imgPostAvatar,
-                nonEmpty(post.authorName, nonEmpty(post.authorId, "Người dùng Cashify")));
+                nonEmpty(post.authorName, nonEmpty(post.authorId, "Cashify User")));
         if (post.imageUrl != null && !post.imageUrl.trim().isEmpty()) {
             imgPostImage.setVisibility(View.VISIBLE);
             Glide.with(this)
@@ -326,49 +399,39 @@ public class PostDetailActivity extends AppCompatActivity {
         }
         cardPostDetail.setVisibility(View.VISIBLE);
         tvPostDetailMessage.setVisibility(View.GONE);
+
+        if (post.milestoneData != null && !post.milestoneData.trim().isEmpty()) {
+            globalMilestoneData = post.milestoneData;
+            try {
+                org.json.JSONObject json = new org.json.JSONObject(post.milestoneData);
+
+                tvPreviewIcon.setText(json.optString("iconText", "🏆"));
+                tvPreviewTitle.setText(json.optString("title", "Cột mốc"));
+                tvPreviewMonth.setText(json.optString("month", ""));
+                tvPreviewAmount.setText(json.optString("amount", ""));
+                pbPreviewProgress.setProgress(json.optInt("progress", 100));
+
+                milestoneContainer.setVisibility(View.VISIBLE);
+            } catch (Exception e) {
+                android.util.Log.e("Milestone", "JSON parse error: " + e.getMessage());
+                milestoneContainer.setVisibility(View.GONE);
+            }
+        } else {
+            milestoneContainer.setVisibility(View.GONE);
+        }
     }
 
     private void togglePostLike() {
         if (authHeader == null) return;
         boolean targetLiked = !isLiked;
-        layoutLikeButton.setEnabled(false);
 
-        // Optimistic UI: play animation + đổi màu ngay, không chờ API
         isLiked = targetLiked;
         likeCount = targetLiked ? likeCount + 1 : Math.max(0, likeCount - 1);
         tvLikeCount.setText(String.valueOf(likeCount));
         applyPostLikeState();
-        if (targetLiked) HeartAnimation.playRubberBand(imgLikeHeart); // ← THÊM
+        if (targetLiked) HeartAnimation.playRubberBand(imgLikeHeart);
 
-        apiService.toggleLike(authHeader, new ApiService.LikeActionRequest(postId, targetLiked))
-                .enqueue(new Callback<Object>() {
-                    @Override
-                    public void onResponse(@NonNull Call<Object> call,
-                                           @NonNull Response<Object> response) {
-                        layoutLikeButton.setEnabled(true);
-                        if (!response.isSuccessful()) {
-                            // Rollback nếu API lỗi
-                            isLiked = !targetLiked;
-                            likeCount = targetLiked ? Math.max(0, likeCount - 1) : likeCount + 1;
-                            tvLikeCount.setText(String.valueOf(likeCount));
-                            applyPostLikeState();
-                            Toast.makeText(PostDetailActivity.this,
-                                    "Không cập nhật được lượt thích", Toast.LENGTH_SHORT).show();
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(@NonNull Call<Object> call, @NonNull Throwable t) {
-                        layoutLikeButton.setEnabled(true);
-                        // Rollback
-                        isLiked = !targetLiked;
-                        likeCount = targetLiked ? Math.max(0, likeCount - 1) : likeCount + 1;
-                        tvLikeCount.setText(String.valueOf(likeCount));
-                        applyPostLikeState();
-                        Toast.makeText(PostDetailActivity.this,
-                                "Không kết nối được backend", Toast.LENGTH_SHORT).show();
-                    }
-                });
+        viewModel.toggleLike(postId, authHeader, targetLiked);
     }
 
     private void sendComment() {
@@ -383,49 +446,18 @@ public class PostDetailActivity extends AppCompatActivity {
         }
 
         imgSendComment.setEnabled(false);
-        etCommentInput.setText(""); // clear ngay để UX mượt hơn
+        etCommentInput.setText("");
 
-        apiService.addComment(authHeader, new ApiService.AddCommentRequest(postId, text))
-                .enqueue(new Callback<Object>() {
-                    @Override
-                    public void onResponse(@NonNull Call<Object> call,
-                                           @NonNull Response<Object> response) {
-                        imgSendComment.setEnabled(true);
-                        if (!response.isSuccessful()) {
-                            etCommentInput.setText(text); // restore nếu lỗi
-                            Toast.makeText(PostDetailActivity.this,
-                                    "Không gửi được bình luận (" + response.code() + ")",
-                                    Toast.LENGTH_SHORT).show();
-                            return;
-                        }
-                        // Build comment local
-                        commentList.add(new Comment(null, currentUserId, null,
-                                "Bạn", text, "Vừa xong", 0));
-                        commentAdapter.notifyItemInserted(commentList.size() - 1);
-                        commentCount++;
-                        tvCommentCount.setText(String.valueOf(commentCount));
-                        recyclerViewComments.smoothScrollToPosition(commentList.size() - 1);
-                        updateEmptyComments();
-                    }
+        commentList.add(new Comment(null, currentUserId, null, "You", text, "Just now", 0));
+        commentAdapter.notifyItemInserted(commentList.size() - 1);
+        commentCount++;
+        tvCommentCount.setText(String.valueOf(commentCount));
+        recyclerViewComments.smoothScrollToPosition(commentList.size() - 1);
+        updateEmptyComments();
 
-                    @Override
-                    public void onFailure(@NonNull Call<Object> call, @NonNull Throwable t) {
-                        imgSendComment.setEnabled(true);
-                        etCommentInput.setText(text); // restore nếu mạng chết
-                        Toast.makeText(PostDetailActivity.this,
-                                "Lỗi mạng: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-                    }
-                });
-    }
+        viewModel.addComment(postId, authHeader, text);
 
-    private String mapStr(java.util.Map<String, Object> map, String key) {
-        Object v = map.get(key);
-        return v instanceof String ? (String) v : "";
-    }
-
-    private long mapNum(java.util.Map<String, Object> map, String key) {
-        Object v = map.get(key);
-        return v instanceof Number ? ((Number) v).longValue() : 0L;
+        imgSendComment.setEnabled(true);
     }
 
     private void sharePost() {
@@ -440,18 +472,6 @@ public class PostDetailActivity extends AppCompatActivity {
         Toast.makeText(this, "Post link copied", Toast.LENGTH_SHORT).show();
     }
 
-    private Comment mapComment(ApiService.SocialCommentResponse item) {
-        return new Comment(
-                item.id,
-                item.authorId,
-                item.authorAvatarUrl,
-                nonEmpty(item.authorName, "Cashify User"),
-                nonEmpty(item.content, ""),
-                item.timestamp > 0 ? TimeFormatter.format(item.timestamp) : "",
-                Math.max(0, item.likeCount)
-        );
-    }
-
     private void applyPostLikeState() {
         int color = ContextCompat.getColor(this, isLiked ? R.color.status_red : R.color.icon_inactive);
         int textColor = ContextCompat.getColor(this, isLiked ? R.color.status_red : R.color.item_description);
@@ -464,7 +484,7 @@ public class PostDetailActivity extends AppCompatActivity {
     }
 
     private void updateShareText() {
-        tvShareCount.setText(shareCount > 0 ? String.valueOf(shareCount) : "Chia sẻ");
+        tvShareCount.setText(shareCount > 0 ? String.valueOf(shareCount) : "Share");
     }
 
     private void setLoading(boolean loading) {
@@ -487,11 +507,6 @@ public class PostDetailActivity extends AppCompatActivity {
         imgSendComment.setEnabled(false);
     }
 
-    private void showInlineMessage(String message) {
-        tvPostDetailMessage.setText(message);
-        tvPostDetailMessage.setVisibility(View.VISIBLE);
-    }
-
     private void updateEmptyComments() {
         boolean empty = commentList.isEmpty();
         recyclerViewComments.setVisibility(empty ? View.GONE : View.VISIBLE);
@@ -500,6 +515,16 @@ public class PostDetailActivity extends AppCompatActivity {
 
     private String nonEmpty(String value, String fallback) {
         return value == null || value.trim().isEmpty() ? fallback : value.trim();
+    }
+
+    private String mapStr(java.util.Map<String, Object> map, String key) {
+        Object v = map.get(key);
+        return v instanceof String ? (String) v : "";
+    }
+
+    private long mapNum(java.util.Map<String, Object> map, String key) {
+        Object v = map.get(key);
+        return v instanceof Number ? ((Number) v).longValue() : 0L;
     }
 
     @Override

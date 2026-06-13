@@ -24,9 +24,14 @@ public static class SocialEndpoints
                 var token = authHeader.Substring("Bearer ".Length);
                 var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token)).Uid;
 
+                // 1. Kéo Profile User xem có phải Admin không
+                var userSnap = await db.Collection("users").Document(uid).GetSnapshotAsync();
+                bool isAdmin = userSnap.ContainsField("role") && userSnap.GetValue<string>("role") == "ADMIN";
+
                 Query query = db.Collection("posts");
 
-                if (body.FriendIds != null && body.FriendIds.Count > 0)
+                // NẾU KHÔNG PHẢI ADMIN THÌ MỚI BỊ LỌC THEO BẠN BÈ
+                if (!isAdmin && body.FriendIds != null && body.FriendIds.Count > 0)
                 {
                     var limitedFriends = body.FriendIds.Take(30).ToList();
                     query = query.WhereIn("userId", limitedFriends);
@@ -154,11 +159,222 @@ public static class SocialEndpoints
                     { "timestamp", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() },
                     { "isEdited", false }
                 };
-
+                // Bắt sự kiện: Nếu là bài đăng MILESTONE, lưu cờ vào shared_achievements
+                if (body.Type == "MILESTONE_POST" && !string.IsNullOrEmpty(body.MilestoneData))
+                {
+                    try
+                    {
+                        var milestoneObj = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, System.Text.Json.JsonElement>>(body.MilestoneData);
+                        if (milestoneObj != null && milestoneObj.ContainsKey("achievementId"))
+                        {
+                            string achId = milestoneObj["achievementId"].GetString();
+                            var achRef = db.Collection("users").Document(uid).Collection("shared_achievements").Document(achId);
+                            await achRef.SetAsync(new { sharedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() });
+                        }
+                    }
+                    catch (Exception) { /* Bỏ qua nếu parse JSON lỗi */ }
+                }
                 await postRef.SetAsync(postData);
                 return Results.Ok(new { message = "Đăng bài thành công", postId });
             }
             catch (Exception ex) { return Results.Problem($"Lỗi tạo bài: {ex.Message}"); }
+        });
+
+        // quét transactions và check shared_achievement cho post
+        group.MapGet("/achievements/available", async (HttpRequest request, FirestoreDb db) =>
+        {
+            try
+            {
+                var authHeader = request.Headers["Authorization"].FirstOrDefault();
+                if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
+                    return Results.Unauthorized();
+
+                var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(authHeader.Substring("Bearer ".Length))).Uid;
+                var availableList = new List<AchievementSuggestion>();
+
+                // 1. Lấy danh sách achievement đã chia sẻ để không báo lại
+                var sharedSnap = await db.Collection("users").Document(uid).Collection("shared_achievements").GetSnapshotAsync();
+                var sharedIds = new HashSet<string>(sharedSnap.Documents.Select(d => d.Id));
+
+                // 2. Kéo Profile User (để lấy Chuỗi Streak)
+                var userSnap = await db.Collection("users").Document(uid).GetSnapshotAsync();
+                int streakDays = userSnap.ContainsField("streakDays") ? Convert.ToInt32(userSnap.GetValue<object>("streakDays")) : 0;
+
+                // 3. Kéo Thống kê Cá nhân
+                var statsSnap = await db.Collection("users").Document(uid).Collection("user_stats").Document("summary").GetSnapshotAsync();
+
+                var now = DateTimeOffset.UtcNow;
+                string monthKey = $"{now.Year}_{now.Month:D2}";
+                int totalTrans = 0;
+                long totalIncomeThisMonth = 0;
+                long totalSpendThisMonth = 0;
+
+                if (statsSnap.Exists)
+                {
+                    try
+                    {
+                        totalTrans = statsSnap.ContainsField("totalTransactions") ? Convert.ToInt32(statsSnap.GetValue<object>("totalTransactions")) : 0;
+                        totalIncomeThisMonth = statsSnap.ContainsField($"income_{monthKey}") ? Convert.ToInt64(statsSnap.GetValue<object>($"income_{monthKey}")) : 0;
+                        totalSpendThisMonth = statsSnap.ContainsField($"spend_{monthKey}") ? Convert.ToInt64(statsSnap.GetValue<object>($"spend_{monthKey}")) : 0;
+                    }
+                    catch { }
+                }
+
+                // ==========================================
+                // LUẬT CHƠI CÁ NHÂN
+                // ==========================================
+
+                // SỐ LƯỢNG GIAO DỊCH
+                int[] transMilestones = { 10, 50, 100, 500 };
+                foreach (var m in transMilestones)
+                {
+                    string achId = $"ach_trans_{m}";
+                    if (totalTrans >= m && !sharedIds.Contains(achId))
+                    {
+                        availableList.Add(new AchievementSuggestion
+                        {
+                            Id = achId,
+                            Title = "Hardworking Bee",
+                            Description = $"Recorded {m} transactions on Cashify!",
+                            IconText = "🐝",
+                            MonthLabel = "Lifetime",
+                            AmountLabel = $"{m} Entries",
+                            Progress = 100
+                        });
+                        break;
+                    }
+                }
+
+                //CHUỖI NGÀY KỶ LUẬT (STREAK)
+                int[] streakMilestones = { 3, 7, 15, 30, 100 };
+                foreach (var s in streakMilestones)
+                {
+                    string achId = $"ach_streak_{s}";
+                    if (streakDays >= s && !sharedIds.Contains(achId))
+                    {
+                        availableList.Add(new AchievementSuggestion
+                        {
+                            Id = achId,
+                            Title = "Iron Discipline",
+                            Description = $"You've tracked expenses for {s} consecutive days!",
+                            IconText = "🔥",
+                            MonthLabel = "Streak",
+                            AmountLabel = $"{s} Days",
+                            Progress = 100
+                        });
+                        break;
+                    }
+                }
+
+                if (statsSnap.Exists)
+                {
+                    // CÚ ĐÊM (NIGHT OWL)
+                    bool isNightOwl = statsSnap.ContainsField("nightOwlUnlocked") && Convert.ToBoolean(statsSnap.GetValue<object>("nightOwlUnlocked"));
+                    if (isNightOwl && !sharedIds.Contains("ach_night_owl"))
+                    {
+                        availableList.Add(new AchievementSuggestion
+                        {
+                            Id = "ach_night_owl",
+                            Title = "Night Owl",
+                            Description = "Tracking expenses at 2 AM is a lifestyle.",
+                            IconText = "🦉",
+                            MonthLabel = "Lifetime",
+                            AmountLabel = "Night Owl",
+                            Progress = 100
+                        });
+                    }
+
+                    //BIG SPENDER
+                    bool isBigSpender = statsSnap.ContainsField("bigSpenderUnlocked") && Convert.ToBoolean(statsSnap.GetValue<object>("bigSpenderUnlocked"));
+                    if (isBigSpender && !sharedIds.Contains("ach_big_spender"))
+                    {
+                        availableList.Add(new AchievementSuggestion
+                        {
+                            Id = "ach_big_spender",
+                            Title = "Big Whale",
+                            Description = "You spent more in one go than most do in a month!",
+                            IconText = "🐋",
+                            MonthLabel = "Lifetime",
+                            AmountLabel = "> 10M VND",
+                            Progress = 100
+                        });
+                    }
+                }
+
+                //DƯƠNG THÁI QUÁ
+                long surplus = totalIncomeThisMonth - totalSpendThisMonth;
+                string surplusAchId = $"recap_surplus_{now.Year}_{now.Month}";
+                if (surplus > 0 && !sharedIds.Contains(surplusAchId))
+                {
+                    availableList.Add(new AchievementSuggestion
+                    {
+                        Id = surplusAchId,
+                        Title = "Healthy Finances",
+                        Description = "You earned more than you spent this month. Keep it up!",
+                        IconText = "💰",
+                        MonthLabel = $"{now.Month}/{now.Year}",
+                        AmountLabel = $"Surplus: {surplus:N0}đ",
+                        Progress = 100
+                    });
+                }
+
+                // ==========================================
+                // LUẬT CHƠI QUỸ NHÓM (QUÉT TẤT CẢ CÁC QUỸ)
+                // ==========================================
+                // Tìm tất cả các quỹ mà User này đang làm thành viên
+                var workspacesSnap = await db.Collection("workspaces").WhereArrayContains("members", uid).GetSnapshotAsync();
+
+                foreach (var wsDoc in workspacesSnap.Documents)
+                {
+                    string wsId = wsDoc.Id;
+                    string wsName = wsDoc.ContainsField("name") ? wsDoc.GetValue<string>("name") : "Group";
+                    var wsStatsSnap = await wsDoc.Reference.Collection("workspace_stats").Document("summary").GetSnapshotAsync();
+
+                    if (wsStatsSnap.Exists)
+                    {
+                        // THE CARRY
+                        string carryId = wsStatsSnap.ContainsField("theCarryId") ? wsStatsSnap.GetValue<string>("theCarryId") : "";
+                        long maxIncome = wsStatsSnap.ContainsField("maxSingleIncome") ? Convert.ToInt64(wsStatsSnap.GetValue<object>("maxSingleIncome")) : 0;
+                        string dynamicCarryId = $"ws_the_carry_{wsId}_{maxIncome}";
+
+                        if (uid == carryId && maxIncome > 0 && !sharedIds.Contains(dynamicCarryId))
+                        {
+                            availableList.Add(new AchievementSuggestion
+                            {
+                                Id = dynamicCarryId,
+                                Title = "The Carry",
+                                Description = "You are the MVP! The largest single contributor.",
+                                IconText = "🦸‍♂️",
+                                MonthLabel = wsName, 
+                                AmountLabel = $"{maxIncome:N0}đ",
+                                Progress = 100
+                            });
+                        }
+
+                        // BIGGEST SPENDER
+                        string spenderId = wsStatsSnap.ContainsField("biggestSpenderId") ? wsStatsSnap.GetValue<string>("biggestSpenderId") : "";
+                        long maxSpend = wsStatsSnap.ContainsField("maxSingleSpend") ? Convert.ToInt64(wsStatsSnap.GetValue<object>("maxSingleSpend")) : 0;
+                        string dynamicSpenderId = $"ws_biggest_spender_{wsId}_{maxSpend}";
+
+                        if (uid == spenderId && maxSpend > 0 && !sharedIds.Contains(dynamicSpenderId))
+                        {
+                            availableList.Add(new AchievementSuggestion
+                            {
+                                Id = dynamicSpenderId,
+                                Title = "Biggest Spender",
+                                Description = "You hold the spending record!",
+                                IconText = "🛍️",
+                                MonthLabel = wsName,
+                                AmountLabel = $"{maxSpend:N0}đ",
+                                Progress = 100
+                            });
+                        }
+                    }
+                }
+
+                return Results.Ok(availableList);
+            }
+            catch (Exception ex) { return Results.Problem($"Error fetching achievements: {ex.Message}"); }
         });
 
         // ---------------------------------------------------------
@@ -223,7 +439,11 @@ public static class SocialEndpoints
 
                 if (!postSnap.Exists)
                     return Results.NotFound("Bài viết không tồn tại");
-                if (postSnap.GetValue<string>("userId") != uid)
+
+                var currentUserSnap = await db.Collection("users").Document(uid).GetSnapshotAsync();
+                bool isAdmin = currentUserSnap.ContainsField("role") && currentUserSnap.GetValue<string>("role") == "ADMIN";
+
+                if (postSnap.GetValue<string>("userId") != uid && !isAdmin)
                     return Results.StatusCode(403);
 
                 var updates = new Dictionary<string, object>
@@ -263,7 +483,11 @@ public static class SocialEndpoints
 
                 if (!postSnap.Exists)
                     return Results.NotFound("Bài viết không tồn tại");
-                if (postSnap.GetValue<string>("userId") != uid)
+
+                var currentUserSnap = await db.Collection("users").Document(uid).GetSnapshotAsync();
+                bool isAdmin = currentUserSnap.ContainsField("role") && currentUserSnap.GetValue<string>("role") == "ADMIN";
+
+                if (postSnap.GetValue<string>("userId") != uid && !isAdmin)
                     return Results.StatusCode(403);
 
                 var batch = db.StartBatch();
@@ -353,8 +577,12 @@ public static class SocialEndpoints
                 var commentSnap = await commentRef.GetSnapshotAsync();
 
                 if (!commentSnap.Exists)
-                    return Results.NotFound("Bình luận không tồn tại");
-                if (commentSnap.GetValue<string>("userId") != uid)
+                    return Results.NotFound("Comment's not exist");
+
+                var currentUserSnap = await db.Collection("users").Document(uid).GetSnapshotAsync();
+                bool isAdmin = currentUserSnap.ContainsField("role") && currentUserSnap.GetValue<string>("role") == "ADMIN";
+
+                if (commentSnap.GetValue<string>("userId") != uid && !isAdmin)
                     return Results.StatusCode(403);
 
                 await commentRef.UpdateAsync(new Dictionary<string, object>
@@ -363,7 +591,7 @@ public static class SocialEndpoints
                     { "isEdited", true }
                 });
 
-                return Results.Ok(new { message = "Đã sửa bình luận" });
+                return Results.Ok(new { message = "Edited" });
             }
             catch (Exception ex) { return Results.Problem(ex.Message); }
         });
@@ -385,6 +613,9 @@ public static class SocialEndpoints
                 var postRef = db.Collection("posts").Document(body.PostId);
                 var commentRef = postRef.Collection("comments").Document(body.CommentId);
 
+                var currentUserSnap = await db.Collection("users").Document(uid).GetSnapshotAsync();
+                bool isAdmin = currentUserSnap.ContainsField("role") && currentUserSnap.GetValue<string>("role") == "ADMIN";
+
                 await db.RunTransactionAsync(async transaction =>
                 {
                     var postSnap = await transaction.GetSnapshotAsync(postRef);
@@ -396,7 +627,7 @@ public static class SocialEndpoints
                     var postOwnerId = postSnap.GetValue<string>("userId");
                     var commentOwnerId = commentSnap.GetValue<string>("userId");
 
-                    if (uid != commentOwnerId && uid != postOwnerId)
+                    if (uid != commentOwnerId && uid != postOwnerId && !isAdmin)
                         throw new Exception("Không có quyền xóa");
 
                     transaction.Delete(commentRef);

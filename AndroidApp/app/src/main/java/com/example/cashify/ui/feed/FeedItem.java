@@ -7,25 +7,32 @@ public abstract class FeedItem {
     public static final int TYPE_MILESTONE = 2;
 
     private final String id;
-    private final String userId;
+    private final String userId; // Bắt buộc phải có để check quyền Sửa/Xóa
+    private int likeCount;
+    private int commentCount;
+    private boolean isLiked;
 
     protected FeedItem(String id, String userId) {
         this.id = id;
-        this.userId = userId;
+        this.userId = userId != null ? userId : ""; // Chống Null
     }
 
-    public String getId() {
-        return id;
-    }
+    // Getters
+    public String getId() { return id; }
+    public String getUserId() { return userId; }
+    public int getLikeCount() { return likeCount; }
+    public int getCommentCount() { return commentCount; }
+    public boolean isLiked() { return isLiked; }
 
-    public String getUserId() {
-        return userId;
-    } // GETTER GỌN GÀNG
+    // Setters (Dùng setter cho các biến có thể thay đổi để constructor bớt dài)
+    public void setLikeCount(int likeCount) { this.likeCount = likeCount; }
+    public void setCommentCount(int commentCount) { this.commentCount = commentCount; }
+    public void setLiked(boolean liked) { isLiked = liked; }
 
     public abstract int getType();
 
     // =========================================================================
-    // NormalPost — Lớp con tĩnh cho bài viết thông thường
+    // NormalPost
     // =========================================================================
     public static class NormalPost extends FeedItem {
         public final String userName;
@@ -34,73 +41,31 @@ public abstract class FeedItem {
         public final boolean hasImage;
         public final String imageUrl;
         public final String avatarUrl;
-        public final int avatarColor;
         public final String initials;
         public final boolean expandable;
 
         public NormalPost(
-                String id,
-                String userName,
-                String time,
-                String text,
-                boolean hasImage,
-                String imageUrl,
-                int avatarColor,
-                String initials,
-                boolean expandable,
-                String avatarUrl
+                String id, String userId, String userName, String time,
+                String text, boolean hasImage, String imageUrl,
+                String initials, boolean expandable, String avatarUrl
         ) {
-            this(id, "", userName, time, text, hasImage, imageUrl, avatarColor, initials, expandable, avatarUrl);
-        }
-
-        public NormalPost(
-                String id,
-                String userId,
-                String userName,
-                String time,
-                String text,
-                boolean hasImage,
-                String imageUrl,
-                int avatarColor,
-                String initials,
-                boolean expandable,
-                String avatarUrl
-        ) {
-            super(id, userId); // ĐẨY LÊN LỚP CHA
+            super(id, userId);
             this.userName = userName;
             this.time = time;
             this.text = text;
             this.hasImage = hasImage;
             this.imageUrl = imageUrl;
-            this.avatarColor = avatarColor;
             this.initials = initials;
             this.expandable = expandable;
             this.avatarUrl = avatarUrl;
         }
 
         @Override
-        public int getType() {
-            return TYPE_NORMAL;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof NormalPost)) return false;
-            NormalPost that = (NormalPost) o;
-            return Objects.equals(getId(), that.getId())
-                    && Objects.equals(text, that.text)
-                    && Objects.equals(imageUrl, that.imageUrl);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(getId(), text, imageUrl);
-        }
+        public int getType() { return TYPE_NORMAL; }
     }
 
     // =========================================================================
-    // MilestonePost — Lớp con tĩnh cho bài viết cột mốc
+    // MilestonePost
     // =========================================================================
     public static class MilestonePost extends FeedItem {
         public final String userName;
@@ -112,40 +77,17 @@ public abstract class FeedItem {
         public final String iconText;
         public final int progress;
         public final boolean expandable;
-        public final String milestoneJson; // THÊM CHUỖI JSON ĐỂ TRUYỀN SANG MÀN HÌNH EDIT
+        public final String milestoneJson;
         public final String avatarUrl;
         public final String initials;
 
         public MilestonePost(
-                String id,
-                String title,
-                String description,
-                String month,
-                String amount,
-                String iconText,
-                int progress,
-                boolean expandable
+                String id, String userId, String userName, String time,
+                String title, String description, String month, String amount,
+                String iconText, int progress, boolean expandable,
+                String milestoneJson, String avatarUrl, String initials
         ) {
-            this(id, "", "Người dùng Cashify", "", title, description, month, amount, iconText, progress, expandable, null, null, "CF");
-        }
-
-        public MilestonePost(
-                String id,
-                String userId,
-                String userName,
-                String time,
-                String title,
-                String description,
-                String month,
-                String amount,
-                String iconText,
-                int progress,
-                boolean expandable,
-                String milestoneJson,
-                String avatarUrl,
-                String initials
-        ) {
-            super(id, userId); // FIX: Truyền userId an toàn thông qua tham số constructor
+            super(id, userId);
             this.userName = userName;
             this.time = time;
             this.title = title;
@@ -161,8 +103,6 @@ public abstract class FeedItem {
         }
 
         @Override
-        public int getType() {
-            return TYPE_MILESTONE;
-        }
+        public int getType() { return TYPE_MILESTONE; }
     }
 }

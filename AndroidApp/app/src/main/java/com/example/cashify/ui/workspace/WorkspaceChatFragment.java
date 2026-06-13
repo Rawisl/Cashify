@@ -113,7 +113,6 @@ public class WorkspaceChatFragment extends Fragment {
             com.example.cashify.utils.DialogHelper.showCustomDialog(
                     requireContext(), "Recall Message", "Are you sure you want to recall this message?", "Recall", "Cancel", com.example.cashify.utils.DialogHelper.DialogType.DANGER, true,
                     () -> {
-                        // GỌI QUA VIEWMODEL (CHUẨN MVVM)
                         workspaceViewModel.deleteChatMessage(workspaceId, message.getMessageId());
                     }, null
             );
@@ -246,11 +245,16 @@ public class WorkspaceChatFragment extends Fragment {
     private void uploadAndPreview(Uri uri) {
         btnSendMessage.setEnabled(false);
         java.io.File file = getFileFromUri(uri);
-        if (file == null) { btnSendMessage.setEnabled(true); return; }
+        if (file == null) {
+            btnSendMessage.setEnabled(true);
+            return;
+        }
 
         com.example.cashify.utils.CloudinaryHelper.uploadImage(file,
                 new com.example.cashify.utils.CloudinaryHelper.UploadCallback() {
-                    @Override public void onProgress(int percent) {}
+                    @Override
+                    public void onProgress(int percent) {
+                    }
 
                     @Override
                     public void onSuccess(String imageUrl) {
@@ -325,7 +329,8 @@ public class WorkspaceChatFragment extends Fragment {
                 int idx = cursor.getColumnIndex(android.provider.OpenableColumns.SIZE);
                 if (idx != -1 && !cursor.isNull(idx)) return cursor.getLong(idx);
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
         return 0;
     }
 
@@ -356,7 +361,7 @@ public class WorkspaceChatFragment extends Fragment {
             }
             return outputFile.length() > 0 ? outputFile : null;
         } catch (Exception e) {
-            Log.e("WS_IMG", "getFileFromUri lỗi: " + e.getMessage(), e);
+            Log.e("WS_IMG", "getFileFromUri error: " + e.getMessage(), e);
             return null;
         }
     }

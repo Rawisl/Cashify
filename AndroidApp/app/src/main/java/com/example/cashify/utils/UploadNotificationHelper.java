@@ -41,7 +41,7 @@ public class UploadNotificationHelper {
     }
 
     public void done() {
-        builder.setContentTitle("Tải ảnh thành công")
+        builder.setContentTitle("Load image successfully")
                 .setContentText("")
                 .setProgress(0, 0, false)
                 .setOngoing(false); // Cho swipe được khi xong

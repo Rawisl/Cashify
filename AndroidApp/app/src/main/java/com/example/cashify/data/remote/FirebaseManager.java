@@ -497,11 +497,11 @@ public class FirebaseManager {
 
         batch.commit()
                 .addOnSuccessListener(v -> {
-                    Log.e(TAG, "sendFriendRequest tới " + targetUid + " thành công");
+                    Log.e(TAG, "sendFriendRequest to " + targetUid + " successfully");
                     callback.onSuccess(null);
                 })
                 .addOnFailureListener(e -> {
-                    Log.e(TAG, "sendFriendRequest thất bại: " + e.getMessage());
+                    Log.e(TAG, "sendFriendRequest failed: " + e.getMessage());
                     callback.onError(e.getMessage());
                 });
     }
@@ -645,10 +645,10 @@ public class FirebaseManager {
 
                 @Override
                 public void onFailure(retrofit2.Call<ApiService.WorkspaceCreateResponse> call, Throwable t) {
-                    callback.onError("Lỗi mạng: " + t.getMessage());
+                    callback.onError("Network error: " + t.getMessage());
                 }
             });
-        }).addOnFailureListener(e -> callback.onError("Lỗi Auth: " + e.getMessage()));
+        }).addOnFailureListener(e -> callback.onError("Auth error: " + e.getMessage()));
     }
 
     public void leaveWorkspace(String workspaceId, DataCallback<Void> callback) {
@@ -779,15 +779,15 @@ public class FirebaseManager {
                 @Override
                 public void onResponse(retrofit2.Call<Object> call, retrofit2.Response<Object> response) {
                     if (response.isSuccessful()) callback.onSuccess(null);
-                    else callback.onError("Bị từ chối (Mã: " + response.code() + ")");
+                    else callback.onError("Denied (Code: " + response.code() + ")");
                 }
 
                 @Override
                 public void onFailure(retrofit2.Call<Object> call, Throwable t) {
-                    callback.onError("Lỗi mạng: " + t.getMessage());
+                    callback.onError("Network error: " + t.getMessage());
                 }
             });
-        }).addOnFailureListener(e -> callback.onError("Lỗi Auth: " + e.getMessage()));
+        }).addOnFailureListener(e -> callback.onError("Auth error: " + e.getMessage()));
     }
 
     // ============================================================
@@ -832,15 +832,15 @@ public class FirebaseManager {
                     } catch (Exception ignored) {
                     }
 
-                    callback.onError("Lỗi server: " + response.code());
+                    callback.onError("Server error: " + response.code());
                 }
 
                 @Override
                 public void onFailure(retrofit2.Call<Object> call, Throwable t) {
-                    callback.onError("Lỗi mạng: " + t.getMessage());
+                    callback.onError("Network error: " + t.getMessage());
                 }
             });
-        }).addOnFailureListener(e -> callback.onError("Lỗi Auth: " + e.getMessage()));
+        }).addOnFailureListener(e -> callback.onError("Auth error: " + e.getMessage()));
     }
 
     public void sendDirectFriendMessage(String receiverId, String text, String imageUrl, DataCallback<Void> callback) {
@@ -864,15 +864,45 @@ public class FirebaseManager {
                         return;
                     }
 
-                    callback.onError(extractApiError(response, "Lỗi server: " + response.code()));
+                    callback.onError(extractApiError(response, "Server error: " + response.code()));
                 }
 
                 @Override
                 public void onFailure(retrofit2.Call<Object> call, Throwable t) {
-                    callback.onError("Lỗi mạng: " + t.getMessage());
+                    callback.onError("Network error: " + t.getMessage());
                 }
             });
-        }).addOnFailureListener(e -> callback.onError("Lỗi Auth: " + e.getMessage()));
+        }).addOnFailureListener(e -> callback.onError("Auth error: " + e.getMessage()));
+    }
+
+    public void recallDirectFriendMessage(String friendUid, String messageId, DataCallback<Void> callback) {
+        FirebaseUser user = auth.getCurrentUser();
+        if (user == null) {
+            callback.onError("Chưa đăng nhập!");
+            return;
+        }
+
+        user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
+            String token = "Bearer " + getTokenResult.getToken();
+            ApiService apiService = ApiClient.getClient().create(ApiService.class);
+
+            apiService.recallFriendMessage(token, friendUid, messageId).enqueue(new retrofit2.Callback<Object>() {
+                @Override
+                public void onResponse(retrofit2.Call<Object> call, retrofit2.Response<Object> response) {
+                    if (response.isSuccessful()) {
+                        callback.onSuccess(null);
+                        return;
+                    }
+                    // Dùng lại hàm extractApiError có sẵn để báo lỗi chính xác từ Server
+                    callback.onError(extractApiError(response, "Server error: " + response.code()));
+                }
+
+                @Override
+                public void onFailure(retrofit2.Call<Object> call, Throwable t) {
+                    callback.onError("Network error: " + t.getMessage());
+                }
+            });
+        }).addOnFailureListener(e -> callback.onError("Auth error: " + e.getMessage()));
     }
 
     public void getFriendSuggestions(DataCallback<List<User>> callback) {
@@ -892,15 +922,15 @@ public class FirebaseManager {
                         callback.onSuccess(response.body() != null ? response.body() : new ArrayList<>());
                         return;
                     }
-                    callback.onError(extractApiError(response, "Lỗi server: " + response.code()));
+                    callback.onError(extractApiError(response, "Server error: " + response.code()));
                 }
 
                 @Override
                 public void onFailure(retrofit2.Call<List<User>> call, Throwable t) {
-                    callback.onError("Lỗi mạng: " + t.getMessage());
+                    callback.onError("Network error: " + t.getMessage());
                 }
             });
-        }).addOnFailureListener(e -> callback.onError("Lỗi Auth: " + e.getMessage()));
+        }).addOnFailureListener(e -> callback.onError("Auth error: " + e.getMessage()));
     }
 
     public void getFriendMessageChats(DataCallback<List<User>> callback) {
@@ -942,15 +972,15 @@ public class FirebaseManager {
                 @Override
                 public void onResponse(retrofit2.Call<List<DirectConversation>> call, retrofit2.Response<List<DirectConversation>> response) {
                     if (response.isSuccessful()) callback.onSuccess(response.body() != null ? response.body() : new ArrayList<>());
-                    else callback.onError(extractApiError(response, "Lỗi server: " + response.code()));
+                    else callback.onError(extractApiError(response, "Server error: " + response.code()));
                 }
 
                 @Override
                 public void onFailure(retrofit2.Call<List<DirectConversation>> call, Throwable t) {
-                    callback.onError("Lỗi mạng: " + t.getMessage());
+                    callback.onError("Network error: " + t.getMessage());
                 }
             });
-        }).addOnFailureListener(e -> callback.onError("Lỗi Auth: " + e.getMessage()));
+        }).addOnFailureListener(e -> callback.onError("Auth error: " + e.getMessage()));
     }
 
     // Hàm tạo ID phòng chat y hệt bên C# (Xếp theo bảng chữ cái)
@@ -1041,5 +1071,88 @@ public class FirebaseManager {
                     int count = (snap != null) ? snap.size() : 0;
                     callback.onSuccess(count);
                 });
+    }
+    // ============================================================
+    // BỘ ĐẾM THỐNG KÊ V2 (GAMIFICATION: NIGHT OWL, BIG SPENDER, WORKSPACE)
+    // ============================================================
+    public void syncTransactionWithStats(boolean isInsert, boolean isDelete, com.example.cashify.data.model.Transaction t, DataCallback<Void> callback) {
+        String uid = getCurrentUserId();
+        if (uid == null) {
+            if (callback != null) callback.onError("Chưa đăng nhập!");
+            return;
+        }
+
+        WriteBatch batch = db.batch();
+        String workspaceId = (t.workspaceId != null) ? t.workspaceId : "PERSONAL";
+
+        // 1. LƯU GIAO DỊCH NHƯ CŨ
+        com.google.firebase.firestore.DocumentReference transRef;
+        if (workspaceId.equals("PERSONAL")) {
+            transRef = db.collection("users").document(uid).collection("transactions").document(String.valueOf(t.id));
+        } else {
+            transRef = db.collection("workspaces").document(workspaceId).collection("transactions").document(String.valueOf(t.id));
+        }
+
+        if (isDelete) {
+            batch.delete(transRef);
+        } else {
+            Map<String, Object> data = new HashMap<>();
+            data.put("amount", t.amount);
+            data.put("categoryId", t.categoryId);
+            data.put("note", t.note);
+            data.put("timestamp", t.timestamp);
+            data.put("paymentMethod", t.paymentMethod);
+            data.put("type", t.type);
+            data.put("workspaceId", workspaceId);
+            data.put("userId", uid);
+            batch.set(transRef, data);
+        }
+
+        // 2. CẬP NHẬT BỘ ĐẾM VÀ CÁC DANH HIỆU ẨN
+        if (isInsert || isDelete) {
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy_MM", java.util.Locale.getDefault());
+            String monthKey = sdf.format(new java.util.Date(t.timestamp));
+
+            Map<String, Object> statsUpdate = new HashMap<>();
+            int countChange = isDelete ? -1 : 1;
+            long amountChange = isDelete ? -t.amount : t.amount;
+
+            // Đếm số lượng và thu/chi cơ bản
+            statsUpdate.put("totalTransactions", FieldValue.increment(countChange));
+            if (t.type == 1) {
+                statsUpdate.put("income_" + monthKey, FieldValue.increment(amountChange));
+            } else if (t.type == 0) {
+                statsUpdate.put("spend_" + monthKey, FieldValue.increment(amountChange));
+            }
+
+            // CHỈ XÉT DANH HIỆU ĐẶC BIỆT KHI INSERT (KHÔNG XÉT KHI XÓA)
+            if (isInsert) {
+                // 🦉 CÚ ĐÊM (Night Owl): Từ 0h00 đến 3h59 sáng
+                java.util.Calendar cal = java.util.Calendar.getInstance();
+                cal.setTimeInMillis(t.timestamp);
+                int hour = cal.get(java.util.Calendar.HOUR_OF_DAY);
+                if (hour >= 0 && hour < 4) {
+                    statsUpdate.put("nightOwlUnlocked", true);
+                }
+
+                // 🐋 ĐẠI GIA (Big Spender): Giao dịch chi tiêu > 10 triệu
+                if (t.type == 0 && t.amount >= 10000000) {
+                    statsUpdate.put("bigSpenderUnlocked", true);
+                }
+            }
+
+            // Rẽ nhánh: Lưu vào users (cá nhân) hoặc workspaces (quỹ nhóm)
+            if (workspaceId.equals("PERSONAL")) {
+                com.google.firebase.firestore.DocumentReference statsRef = db.collection("users").document(uid).collection("user_stats").document("summary");
+                batch.set(statsRef, statsUpdate, com.google.firebase.firestore.SetOptions.merge());
+            } else {
+                com.google.firebase.firestore.DocumentReference wsStatsRef = db.collection("workspaces").document(workspaceId).collection("workspace_stats").document("summary");
+                batch.set(wsStatsRef, statsUpdate, com.google.firebase.firestore.SetOptions.merge());
+            }
+        }
+
+        batch.commit()
+                .addOnSuccessListener(v -> { if (callback != null) callback.onSuccess(null); })
+                .addOnFailureListener(e -> { if (callback != null) callback.onError(e.getMessage()); });
     }
 }

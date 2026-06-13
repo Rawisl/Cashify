@@ -44,13 +44,13 @@ public class PostDetailViewModel extends ViewModel {
                 if (response.isSuccessful() && response.body() != null) {
                     postDetail.setValue(response.body());
                 } else {
-                    errorMessage.setValue("Bài viết không tồn tại.");
+                    errorMessage.setValue("Post does not exist");
                 }
             }
             @Override
             public void onFailure(@NonNull Call<ApiService.SocialPostDetailResponse> call, @NonNull Throwable t) {
                 isLoading.setValue(false);
-                errorMessage.setValue("Lỗi mạng: " + t.getMessage());
+                errorMessage.setValue("Internet error: " + t.getMessage());
             }
         });
     }
@@ -66,7 +66,7 @@ public class PostDetailViewModel extends ViewModel {
             }
             @Override
             public void onFailure(@NonNull Call<List<Object>> call, @NonNull Throwable t) {
-                Log.e("PostDetailVM", "Lỗi load comments: " + t.getMessage());
+                Log.e("PostDetailVM", "Failed to load comments: " + t.getMessage());
             }
         });
     }
@@ -85,11 +85,11 @@ public class PostDetailViewModel extends ViewModel {
             @Override
             public void onResponse(@NonNull Call<Object> call, @NonNull Response<Object> response) {
                 if (response.isSuccessful()) loadComments(postId, token); // Reload lại list
-                else errorMessage.setValue("Lỗi gửi bình luận");
+                else errorMessage.setValue("Failed to send comment");
             }
             @Override
             public void onFailure(@NonNull Call<Object> call, @NonNull Throwable t) {
-                errorMessage.setValue("Lỗi mạng: " + t.getMessage());
+                errorMessage.setValue("Network error: " + t.getMessage());
             }
         });
     }
@@ -104,12 +104,12 @@ public class PostDetailViewModel extends ViewModel {
             public void onResponse(@NonNull Call<Object> call, @NonNull Response<Object> response) {
                 isLoading.setValue(false);
                 if (response.isSuccessful()) isActionSuccess.setValue(true); // Báo về UI để đóng màn hình
-                else errorMessage.setValue("Lỗi xóa bài");
+                else errorMessage.setValue("Failed to delete post");
             }
             @Override
             public void onFailure(@NonNull Call<Object> call, @NonNull Throwable t) {
                 isLoading.setValue(false);
-                errorMessage.setValue("Lỗi mạng");
+                errorMessage.setValue("Network error");
             }
         });
     }
@@ -119,7 +119,7 @@ public class PostDetailViewModel extends ViewModel {
             @Override
             public void onResponse(@NonNull Call<Object> call, @NonNull Response<Object> response) {
                 if (response.isSuccessful()) loadComments(postId, token);
-                else errorMessage.setValue("Lỗi xóa bình luận");
+                else errorMessage.setValue("Failed to delete comment");
             }
             @Override public void onFailure(@NonNull Call<Object> call, @NonNull Throwable t) {}
         });
@@ -135,7 +135,7 @@ public class PostDetailViewModel extends ViewModel {
             @Override
             public void onResponse(@NonNull Call<Object> call, @NonNull Response<Object> response) {
                 if (response.isSuccessful()) loadComments(postId, token);
-                else errorMessage.setValue("Lỗi sửa bình luận");
+                else errorMessage.setValue("Failed to update comment");
             }
             @Override public void onFailure(@NonNull Call<Object> call, @NonNull Throwable t) {}
         });
@@ -157,14 +157,14 @@ public class PostDetailViewModel extends ViewModel {
                 if (response.isSuccessful()) {
                     loadPost(postId, token); // Sửa xong thì load lại bài mới
                 } else {
-                    errorMessage.setValue("Lỗi sửa bài viết");
+                    errorMessage.setValue("Failed to update post");
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<Object> call, @NonNull Throwable t) {
                 isLoading.setValue(false);
-                errorMessage.setValue("Lỗi mạng: " + t.getMessage());
+                errorMessage.setValue("Network error: " + t.getMessage());
             }
         });
     }

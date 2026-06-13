@@ -315,124 +315,14 @@
                     android:textColor="#1A237E"
                     android:textSize="12sp" />
 
-                <LinearLayout
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvAchievementsProfile"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="14dp"
-                    android:orientation="horizontal">
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:gravity="center"
-                        android:orientation="vertical">
-
-                        <ImageView
-                            android:id="@+id/actionAchievementEarly"
-                            android:layout_width="62dp"
-                            android:layout_height="62dp"
-                            android:background="@drawable/bg_profile_achievement_circle_peach"
-                            android:clickable="true"
-                            android:focusable="true"
-                            android:padding="18dp"
-                            android:src="@drawable/ic_feed_trophy"
-                            app:tint="#EF5350" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="7dp"
-                            android:fontFamily="@font/inter_regular"
-                            android:text="@string/a_head_start"
-                            android:textColor="#607D8B"
-                            android:textSize="10sp" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:gravity="center"
-                        android:orientation="vertical">
-
-                        <ImageView
-                            android:id="@+id/actionAchievementTop"
-                            android:layout_width="62dp"
-                            android:layout_height="62dp"
-                            android:background="@drawable/bg_profile_achievement_circle_blue"
-                            android:clickable="true"
-                            android:focusable="true"
-                            android:padding="18dp"
-                            android:src="@drawable/ic_cozy_leaf"
-                            app:tint="#1A237E" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="7dp"
-                            android:fontFamily="@font/inter_regular"
-                            android:text="@string/mount_everest_aint_got_shit_on_me"
-                            android:textColor="#607D8B"
-                            android:textSize="10sp" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:gravity="center"
-                        android:orientation="vertical">
-
-                        <ImageView
-                            android:id="@+id/actionAchievementVault"
-                            android:layout_width="62dp"
-                            android:layout_height="62dp"
-                            android:background="@drawable/bg_profile_achievement_circle_gold"
-                            android:clickable="true"
-                            android:focusable="true"
-                            android:padding="18dp"
-                            android:src="@drawable/ic_security_regular"
-                            app:tint="#B58B3B" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="7dp"
-                            android:fontFamily="@font/inter_regular"
-                            android:text="@string/safely_safe"
-                            android:textColor="#607D8B"
-                            android:textSize="10sp" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:gravity="center"
-                        android:orientation="vertical">
-
-                        <ImageView
-                            android:id="@+id/actionAchievementGiver"
-                            android:layout_width="62dp"
-                            android:layout_height="62dp"
-                            android:background="@drawable/bg_profile_achievement_circle_peach"
-                            android:clickable="true"
-                            android:focusable="true"
-                            android:padding="18dp"
-                            android:src="@drawable/ic_heart_outline"
-                            app:tint="#EF5350" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="7dp"
-                            android:fontFamily="@font/inter_regular"
-                            android:text="@string/share_n_care"
-                            android:textColor="#607D8B"
-                            android:textSize="10sp" />
-                    </LinearLayout>
-                </LinearLayout>
+                    android:clipToPadding="false"
+                    android:orientation="horizontal"
+                    android:overScrollMode="never" />
 
                 <TextView
                     android:id="@+id/tvPinnedAchievement"

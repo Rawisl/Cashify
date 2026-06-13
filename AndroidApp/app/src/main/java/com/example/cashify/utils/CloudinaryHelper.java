@@ -58,17 +58,17 @@ public class CloudinaryHelper {
                         try {
                             if (response.errorBody() != null) errorBody = response.errorBody().string();
                         } catch (Exception ignored) {}
-                        Log.e("CLOUDINARY", "Lấy chữ ký thất bại - code: " + response.code() + " body: " + errorBody);
-                        callback.onFailure("Không lấy được chữ ký. Mã lỗi: " + response.code() + " - " + errorBody);
+                        Log.e("CLOUDINARY", "Failed to get signature - code: " + response.code() + " body: " + errorBody);
+                        callback.onFailure("Failed to get signature. Error code: " + response.code() + " - " + errorBody);
                     }
                 }
                 @Override
                 public void onFailure(Call<ApiService.CloudinarySignatureResponse> call, Throwable t) {
                     // ĐỨT MẠNG Ở BƯỚC LẤY CHỮ KÝ
-                    callback.onFailure("Mất kết nối mạng. Vui lòng thử lại.");
+                    callback.onFailure("Network error. Please try again.");
                 }
             });
-        }).addOnFailureListener(e -> callback.onFailure("Lỗi xác thực: " + e.getMessage()));
+        }).addOnFailureListener(e -> callback.onFailure("Authentication error: " + e.getMessage()));
     }
 
     private static void uploadToCloudinary(File imageFile,
