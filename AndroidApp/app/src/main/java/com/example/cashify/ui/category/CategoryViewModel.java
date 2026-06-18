@@ -13,45 +13,58 @@ import java.util.List;
 public class CategoryViewModel extends AndroidViewModel {
 
     private final CategoryRepository repository;
+
+    // Internal MutableLiveData (Writable) -> External LiveData (Read-only)
     private final MutableLiveData<List<Category>> incomeCategories = new MutableLiveData<>();
     private final MutableLiveData<List<Category>> expenseCategories = new MutableLiveData<>();
 
     public CategoryViewModel(@NonNull Application application) {
         super(application);
         repository = new CategoryRepository(application);
-        // Load dữ liệu lần đầu ngay khi khởi tạo
+        // Load initial data immediately upon initialization
         refreshData();
     }
-    // Getter để Activity "quan sát"
+
+    // --- Getters for UI observation ---
     public LiveData<List<Category>> getIncomeCategories() { return incomeCategories; }
     public LiveData<List<Category>> getExpenseCategories() { return expenseCategories; }
 
+    /**
+     * Refreshes the category lists from the database.
+     * postValue automatically triggers UI updates across all observing Activities/Fragments.
+     */
     public void refreshData() {
-        // PostValue sẽ báo cho các Activity đang quan sát biết là có hàng mới về
         repository.getCategoriesByType(0, expenseCategories::postValue);
         repository.getCategoriesByType(1, incomeCategories::postValue);
     }
 
-    public void insert(Category category)
-    {
+    // =========================================================================
+    // CRUD OPERATIONS
+    // =========================================================================
+
+    public void insert(Category category) {
         repository.insert(category, this::refreshData);
     }
 
-    public void update(Category category)
-    {
+    public void update(Category category) {
         repository.update(category, this::refreshData);
     }
 
-    // Gọi cái này khi user bấm xóa danh mục, tự xử lý soft/hard delete
-    public void deleteCategory(int categoryId)
-    {
+    /**
+     * Handles category deletion. 
+     * The Repository layer autonomously manages whether this is a soft or hard delete.
+     */
+    public void deleteCategory(int categoryId) {
         repository.deleteCategory(categoryId, this::refreshData);
     }
 
-    public void restoreCategory(int categoryId)
-    {
+    public void restoreCategory(int categoryId) {
         repository.restoreCategory(categoryId, this::refreshData);
     }
+
+    // =========================================================================
+    // ONE-OFF QUERIES (Using Callbacks instead of LiveData streams)
+    // =========================================================================
 
     public void getCategoriesByType(int type, CategoryRepository.Callback<List<Category>> callback) {
         repository.getCategoriesByType(type, callback);
@@ -64,5 +77,4 @@ public class CategoryViewModel extends AndroidViewModel {
     public void getAllActive(CategoryRepository.Callback<List<Category>> callback) {
         repository.getAllActive(callback);
     }
-
 }

@@ -1,15 +1,9 @@
 package com.example.cashify.ui.feed;
 
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
-import android.animation.AnimatorSet;
-import android.animation.ObjectAnimator;
 import android.content.res.ColorStateList;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.LinearInterpolator;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
@@ -17,7 +11,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.widget.PopupMenu;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.ListAdapter;
@@ -26,60 +19,63 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.example.cashify.R;
-import com.example.cashify.utils.ApiClient;
-import com.example.cashify.utils.ApiService;
+import com.example.cashify.utils.HeartAnimation;
 import com.example.cashify.utils.ImageHelper;
-import com.google.firebase.auth.FirebaseAuth;
+import com.example.cashify.utils.ShineAnimationHelper;
 
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-
 public class CommunityFeedAdapter extends ListAdapter<FeedItem, RecyclerView.ViewHolder> {
 
     private final Set<String> expandedItemIds = new HashSet<>();
-
-    // FIX 2: Khai báo likedItemIds — trước đây dùng khắp nơi nhưng chưa có field
     private final Set<String> likedItemIds = new HashSet<>();
 
     private final OnPostClickListener postClickListener;
-    private final OnPostMenuClickListener menuClickListener; // Khai báo biến
-
-    // THÊM MỚI: Lắng nghe sự kiện bấm vào Avatar từ Bảng tin
+    private final OnPostMenuClickListener menuClickListener;
     private OnAvatarClickListener avatarClickListener;
+    private OnLikeClickListener likeClickListener;
 
-    public interface OnPostClickListener {
-        void onPostClick(FeedItem item);
+    // --- CỜ HIỆU PHÂN CHIA PHÂN CẢNH: FEED VS DETAIL ---
+    private final boolean isDetailMode;
+
+    public interface OnPostClickListener { void onPostClick(FeedItem item); }
+    public interface OnAvatarClickListener { void onAvatarClick(String userId); }
+    public interface OnPostMenuClickListener { void onMenuClick(FeedItem item); }
+
+    public interface OnLikeClickListener {
+        void onLikeClick(String postId, boolean isLiked, LikeResultCallback callback);
     }
 
-    // THÊM MỚI: Interface định nghĩa sự kiện click Avatar
-    public interface OnAvatarClickListener {
-        void onAvatarClick(String userId);
+    public interface LikeResultCallback {
+        void onResult(boolean success);
     }
 
-    public interface OnPostMenuClickListener {
-        void onMenuClick(FeedItem item);
-    }
-
-    public CommunityFeedAdapter(OnPostClickListener postClickListener) {
-        this(postClickListener, null);
-    }
-
+    // Constructor dùng ngoài Newsfeed (Mặc định cắt chữ, có click)
     public CommunityFeedAdapter(OnPostClickListener postClickListener, OnPostMenuClickListener menuClickListener) {
         super(DIFF_CALLBACK);
         this.postClickListener = postClickListener;
         this.menuClickListener = menuClickListener;
+        this.isDetailMode = false;
     }
 
-    // THÊM MỚI: Setter để Fragment cấu hình hành động điều hướng sang Profile
+    // Constructor chuyên dụng dùng trong màn PostDetailActivity
+    public CommunityFeedAdapter(OnPostMenuClickListener menuClickListener) {
+        super(DIFF_CALLBACK);
+        this.postClickListener = null;
+        this.menuClickListener = menuClickListener;
+        this.isDetailMode = true; // Bật chế độ hiển thị chi tiết bài viết
+    }
+
     public void setOnAvatarClickListener(OnAvatarClickListener avatarClickListener) {
         this.avatarClickListener = avatarClickListener;
     }
 
-    /**
-     * Gọi từ Fragment sau khi parse feed để đánh dấu các post đã liked
-     */
+    public void setOnLikeClickListener(OnLikeClickListener likeClickListener) {
+        this.likeClickListener = likeClickListener;
+    }
+
     public void addLikedId(String id) {
         likedItemIds.add(id);
     }
@@ -108,7 +104,10 @@ public class CommunityFeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vie
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         FeedItem item = getItem(position);
-        boolean expanded = expandedItemIds.contains(item.getId());
+
+        // Nếu ở màn Detail thì luôn ép trạng thái mở rộng chữ, ngược lại thì kiểm tra mảng ID rộng
+        boolean expanded = isDetailMode || expandedItemIds.contains(item.getId());
+
         if (holder instanceof NormalPostViewHolder && item instanceof FeedItem.NormalPost) {
             ((NormalPostViewHolder) holder).bind((FeedItem.NormalPost) item, expanded);
         } else if (holder instanceof MilestoneViewHolder && item instanceof FeedItem.MilestonePost) {
@@ -120,11 +119,12 @@ public class CommunityFeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vie
     public void onViewRecycled(@NonNull RecyclerView.ViewHolder holder) {
         super.onViewRecycled(holder);
         if (holder instanceof MilestoneViewHolder) {
-            ((MilestoneViewHolder) holder).stopShineAnimation();
+            ((MilestoneViewHolder) holder).stopAnimation();
         }
     }
 
     private void toggleExpanded(String itemId, int position) {
+        if (isDetailMode) return; // Màn detail không cho phép thu gọn chữ
         if (expandedItemIds.contains(itemId)) {
             expandedItemIds.remove(itemId);
         } else {
@@ -133,53 +133,60 @@ public class CommunityFeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vie
         notifyItemChanged(position);
     }
 
-    // =========================================================================
-    // FIX 3: Implement applyLikeState() — trước đây được gọi nhưng không tồn tại
-    // =========================================================================
-    private void applyLikeState(TextView btn, boolean liked) {
-        Log.d("LIKE_DEBUG", "applyLikeState called: liked=" + liked + " | caller=" + getCallerInfo());
-        int colorRes = liked ? R.color.status_red : R.color.item_description;
-        int color = androidx.core.content.ContextCompat.getColor(btn.getContext(), colorRes);
-        btn.setCompoundDrawableTintList(ColorStateList.valueOf(color));
-        btn.setTextColor(color);
-    }
+    private void applyLikeState(ImageView icon, TextView text, boolean liked) {
+        int colorRes = liked ? R.color.status_red : R.color.icon_inactive;
+        int textColorRes = liked ? R.color.status_red : R.color.item_description;
 
-    // =========================================================================
-    // FIX 4: rollback() dùng applyLikeState() đã được implement ở trên
-    // =========================================================================
-    private void rollback(String postId, boolean failedState, TextView btn) {
-        Log.d("LIKE_DEBUG", "ROLLBACK called: postId=" + postId + " failedState=" + failedState);
-        if (failedState) {
-            likedItemIds.remove(postId);
-        } else {
-            likedItemIds.add(postId);
+        int color = ContextCompat.getColor(icon.getContext(), colorRes);
+        int textColor = ContextCompat.getColor(icon.getContext(), textColorRes);
+
+        icon.setColorFilter(color);
+        if (text != null) {
+            text.setTextColor(textColor);
         }
-        applyLikeState(btn, !failedState);
     }
 
-    private String getCallerInfo() {
-        StackTraceElement caller = Thread.currentThread().getStackTrace()[4];
-        return caller.getMethodName() + ":" + caller.getLineNumber();
+    private void handleLikeClick(FeedItem post, ImageView imgLikeHeart, TextView tvLikeCount) {
+        boolean nowLiked = !likedItemIds.contains(post.getId());
+
+        if (nowLiked) {
+            likedItemIds.add(post.getId());
+            post.setLikeCount(post.getLikeCount() + 1);
+            HeartAnimation.playRubberBand(imgLikeHeart);
+        } else {
+            likedItemIds.remove(post.getId());
+            post.setLikeCount(Math.max(0, post.getLikeCount() - 1));
+        }
+
+        tvLikeCount.setText(String.valueOf(post.getLikeCount()));
+        applyLikeState(imgLikeHeart, tvLikeCount, nowLiked);
+
+        if (likeClickListener != null) {
+            likeClickListener.onLikeClick(post.getId(), nowLiked, success -> {
+                if (!success) {
+                    if (nowLiked) {
+                        likedItemIds.remove(post.getId());
+                        post.setLikeCount(Math.max(0, post.getLikeCount() - 1));
+                    } else {
+                        likedItemIds.add(post.getId());
+                        post.setLikeCount(post.getLikeCount() + 1);
+                    }
+                    tvLikeCount.setText(String.valueOf(post.getLikeCount()));
+                    applyLikeState(imgLikeHeart, tvLikeCount, !nowLiked);
+                }
+            });
+        }
     }
 
     // =========================================================================
-    // NormalPostViewHolder
+    // NORMAL POST VIEWHOLDER
     // =========================================================================
     class NormalPostViewHolder extends RecyclerView.ViewHolder {
-        private final ImageView imgAvatar;
-        private final TextView txtAvatar;
-        private final TextView name;
-        private final TextView time;
-        private final TextView content;
-        private final TextView seeMore;
-        private final View imagePlaceholder;
-        private final ImageView imgPostImage;
-        private final View decorCircle;
-        private final ImageView decorIcon;
-        private final TextView decorCaption;
+        private final ImageView imgAvatar, imgPostImage, decorIcon, imgLikeHeart;
+        private final TextView txtAvatar, name, time, title, content, seeMore, decorCaption, tvLikeCount; // THÊM 'title'
+        private final TextView tvCommentCount, tvShareCount;
+        private final View imagePlaceholder, btnLike, btnComment, btnShare;
         private final ImageButton menuButton;
-        private final TextView btnLike;
-        private final TextView tvLikeCount;
 
         NormalPostViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -187,29 +194,42 @@ public class CommunityFeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vie
             txtAvatar = itemView.findViewById(R.id.txtAvatar);
             name = itemView.findViewById(R.id.txtUserName);
             time = itemView.findViewById(R.id.txtPostTime);
+
+            // ÁNH XẠ TIÊU ĐỀ & NỘI DUNG
+            title = itemView.findViewById(R.id.txtPostTitle);
             content = itemView.findViewById(R.id.txtPostContent);
+
             seeMore = itemView.findViewById(R.id.txtSeeMore);
             imagePlaceholder = itemView.findViewById(R.id.postImagePlaceholder);
             imgPostImage = itemView.findViewById(R.id.imgPostImage);
-            decorCircle = itemView.findViewById(R.id.decorCircle);
             decorIcon = itemView.findViewById(R.id.decorIcon);
             decorCaption = itemView.findViewById(R.id.decorCaption);
             menuButton = itemView.findViewById(R.id.btnPostMenu);
+
             btnLike = itemView.findViewById(R.id.btnLike);
+            imgLikeHeart = itemView.findViewById(R.id.imgLikeHeart);
             tvLikeCount = itemView.findViewById(R.id.tvLikeCount);
+
+            btnComment = itemView.findViewById(R.id.btnComment);
+            tvCommentCount = itemView.findViewById(R.id.tvCommentCount);
+
+            btnShare = itemView.findViewById(R.id.btnShare);
+            tvShareCount = itemView.findViewById(R.id.tvShareCount);
         }
 
         void bind(FeedItem.NormalPost post, boolean expanded) {
-            itemView.setOnClickListener(v -> notifyPostClick(post));
+            if (!isDetailMode) {
+                itemView.setOnClickListener(v -> { if (postClickListener != null) postClickListener.onPostClick(post); });
+            } else {
+                itemView.setOnClickListener(null);
+            }
 
-            // THÊM MỚI: Tách hàm xử lý click Avatar (gọi an toàn từ instance context)
             View.OnClickListener onAvatarClicked = v -> {
                 if (avatarClickListener != null && post.getUserId() != null) {
                     avatarClickListener.onAvatarClick(post.getUserId());
                 }
             };
 
-            // Avatar
             if (post.avatarUrl != null && !post.avatarUrl.isEmpty()) {
                 imgAvatar.setVisibility(View.VISIBLE);
                 txtAvatar.setVisibility(View.GONE);
@@ -220,25 +240,35 @@ public class CommunityFeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vie
                 ImageHelper.loadAvatar(null, imgAvatar, post.userName);
             }
 
-            // THÊM MỚI: Đăng ký click sự kiện cho cả ảnh Avatar hoặc Text Avatar đại diện
             imgAvatar.setOnClickListener(onAvatarClicked);
             txtAvatar.setOnClickListener(onAvatarClicked);
-            name.setOnClickListener(onAvatarClicked); // Bấm vào tên tác giả cũng mở được trang cá nhân
+            name.setOnClickListener(onAvatarClicked);
 
             name.setText(post.userName);
             time.setText(post.time);
-            content.setText(post.text);
-            content.setMaxLines(expanded ? Integer.MAX_VALUE : 3);
+
+            // LOGIC HIỂN THỊ TIÊU ĐỀ: Nếu rỗng thì ẩn hẳn đi để không bị trống một mảng trắng
+            if (post.title != null && !post.title.trim().isEmpty()) {
+                title.setVisibility(View.VISIBLE);
+                title.setText(post.title);
+            } else {
+                title.setVisibility(View.GONE);
+            }
+
+            // HIỂN THỊ NỘI DUNG TỪ BIẾN description (trước đây là text)
+            content.setText(post.description);
+            content.setMaxLines(isDetailMode ? Integer.MAX_VALUE : (expanded ? Integer.MAX_VALUE : 3));
+
+            // Xử lý nút Xem thêm...
             bindSeeMore(seeMore, content, post.getId(), post.expandable, expanded, this);
+
             menuButton.setOnClickListener(v -> {
-                if (menuClickListener != null)
-                    menuClickListener.onMenuClick(post); // post hoặc milestone tùy ViewHolder
+                if (menuClickListener != null) menuClickListener.onMenuClick(post);
             });
-            // Ảnh bài viết
+
             if (post.hasImage && post.imageUrl != null && !post.imageUrl.isEmpty()) {
                 imagePlaceholder.setVisibility(View.VISIBLE);
                 imgPostImage.setVisibility(View.VISIBLE);
-                decorCircle.setVisibility(View.GONE);
                 decorIcon.setVisibility(View.GONE);
                 decorCaption.setVisibility(View.GONE);
                 Glide.with(itemView.getContext())
@@ -253,92 +283,40 @@ public class CommunityFeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vie
             } else {
                 imagePlaceholder.setVisibility(View.GONE);
                 imgPostImage.setVisibility(View.GONE);
-                decorCircle.setVisibility(View.VISIBLE);
                 decorIcon.setVisibility(View.VISIBLE);
                 decorCaption.setVisibility(View.VISIBLE);
             }
 
-            // FIX 6: Đọc trạng thái like ban đầu từ likedItemIds thay vì luôn reset false
+            tvLikeCount.setText(String.valueOf(post.getLikeCount()));
+            if(tvCommentCount != null) tvCommentCount.setText(String.valueOf(post.getCommentCount()));
+
             boolean currentlyLiked = likedItemIds.contains(post.getId());
-            applyLikeState(btnLike, currentlyLiked);
+            applyLikeState(imgLikeHeart, tvLikeCount, currentlyLiked);
 
-            btnLike.setOnClickListener(v -> {
-                boolean nowLiked = !likedItemIds.contains(post.getId());
-
-                // Optimistic UI — đổi màu ngay không chờ API
-                if (nowLiked) {
-                    likedItemIds.add(post.getId());
-                } else {
-                    likedItemIds.remove(post.getId());
-                }
-                applyLikeState(btnLike, nowLiked);
-
-                // Lấy token và gọi API
-                FirebaseAuth.getInstance().getCurrentUser().getIdToken(false)
-                        .addOnSuccessListener(tokenResult -> {
-                            String token = "Bearer " + tokenResult.getToken();
-
-                            // FIX 7: Callback đầy đủ signature — trước đây dùng "..." placeholder
-                            ApiClient.getClient()
-                                    .create(ApiService.class)
-                                    .toggleLike(token, new ApiService.LikeActionRequest(post.getId(), nowLiked))
-                                    .enqueue(new retrofit2.Callback<Object>() {
-                                        @Override
-                                        public void onResponse(
-                                                @NonNull retrofit2.Call<Object> call,
-                                                @NonNull retrofit2.Response<Object> response) {
-                                            if (!response.isSuccessful()) {
-                                                rollback(post.getId(), nowLiked, btnLike);
-                                            }
-                                        }
-
-                                        @Override
-                                        public void onFailure(
-                                                @NonNull retrofit2.Call<Object> call,
-                                                @NonNull Throwable t) {
-                                            rollback(post.getId(), nowLiked, btnLike);
-                                        }
-                                    });
-                        })
-                        .addOnFailureListener(e -> rollback(post.getId(), nowLiked, btnLike));
-            });
+            btnLike.setOnClickListener(v -> handleLikeClick(post, imgLikeHeart, tvLikeCount));
+            if(btnComment != null) btnComment.setOnClickListener(v -> { if (!isDetailMode && postClickListener != null) postClickListener.onPostClick(post); });
+            if(btnShare != null) btnShare.setOnClickListener(v -> Toast.makeText(itemView.getContext(), "Post link copied", Toast.LENGTH_SHORT).show());
         }
     }
-
     // =========================================================================
-    // MilestoneViewHolder
+    // MILESTONE POST VIEWHOLDER
     // =========================================================================
     class MilestoneViewHolder extends RecyclerView.ViewHolder {
-        // Ánh xạ từ thẻ VÀNG (layout_milestone_preview.xml)
-        private final ImageView imgAvatar;
-        private final TextView txtAvatar;
-        private final TextView name;
-        private final TextView icon;
-        private final TextView title;
-        private final TextView description;
-        private final TextView month;
-        private final TextView amount;
+        private final ImageView imgAvatar, imgLikeHeart;
+        private final TextView txtAvatar, name, time, icon, title, description, month, amount, tvLikeCount;
+        private final TextView tvCommentCount, tvShareCount;
         private final ProgressBar pbProgress;
-        private final View goalPanel;
+        private final View goalPanel, btnLike, btnComment, btnShare;
         private final ImageButton menuButton;
-
-        // Các nút Like/Comment nằm ngoài thẻ Vàng
-        private final TextView btnLike;
-        private final TextView btnComment;
-        private final TextView btnShare;
         private final TextView seeMore;
-
-        private final View shineView;
-        private AnimatorSet shineAnimator;
-        private int shineLoopId = 0;
+        private final ShineAnimationHelper shineHelper;
 
         MilestoneViewHolder(@NonNull View itemView) {
             super(itemView);
-            // 1. Ánh xạ các view BÊN TRONG thẻ Vàng
-            shineView = itemView.findViewById(R.id.viewMilestoneShine);
             imgAvatar = itemView.findViewById(R.id.imgMilestoneAvatar);
             txtAvatar = itemView.findViewById(R.id.txtMilestoneAvatar);
             name = itemView.findViewById(R.id.txtMilestoneUserName);
+            time = itemView.findViewById(R.id.txtPostTime);
             icon = itemView.findViewById(R.id.txtMilestoneIcon);
             title = itemView.findViewById(R.id.txtMilestoneTitle);
             description = itemView.findViewById(R.id.txtMilestoneDescription);
@@ -347,36 +325,52 @@ public class CommunityFeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vie
             pbProgress = itemView.findViewById(R.id.pbMilestoneProgress);
             goalPanel = itemView.findViewById(R.id.layoutMilestoneGoalPanel);
             menuButton = itemView.findViewById(R.id.btnMilestoneMenu);
-
-            // 2. Ánh xạ các view BÊN NGOÀI thẻ Vàng (ở file item_post_milestone gốc)
             seeMore = itemView.findViewById(R.id.txtMilestoneSeeMore);
+
             btnLike = itemView.findViewById(R.id.btnMilestoneLike);
+            imgLikeHeart = itemView.findViewById(R.id.imgLikeHeart);
+            tvLikeCount = itemView.findViewById(R.id.tvLikeCount);
+
             btnComment = itemView.findViewById(R.id.btnMilestoneComment);
+            tvCommentCount = itemView.findViewById(R.id.tvCommentCount);
+
             btnShare = itemView.findViewById(R.id.btnMilestoneShare);
+            tvShareCount = itemView.findViewById(R.id.tvShareCount);
+
+            View shineView = itemView.findViewById(R.id.viewMilestoneShine);
+            shineHelper = new ShineAnimationHelper(shineView, itemView);
         }
 
         void bind(FeedItem.MilestonePost milestone, boolean expanded) {
-            itemView.setOnClickListener(v -> notifyPostClick(milestone));
-            startShineAnimation();
+            if (!isDetailMode) {
+                itemView.setOnClickListener(v -> { if (postClickListener != null) postClickListener.onPostClick(milestone); });
+            } else {
+                itemView.setOnClickListener(null);
+            }
 
-            // Đổ Data vào các View của thẻ Vàng
             icon.setText(milestone.iconText != null ? milestone.iconText : "🏆");
             name.setText(milestone.userName);
+            time.setText(milestone.time);
+            month.setText(milestone.month);
             title.setText(milestone.title);
             description.setText(milestone.description);
 
-            description.setVisibility(milestone.description == null || milestone.description.trim().isEmpty()
-                    ? View.GONE : View.VISIBLE);
-            description.setMaxLines(expanded ? Integer.MAX_VALUE : 3);
+            description.setVisibility(milestone.description == null || milestone.description.trim().isEmpty() ? View.GONE : View.VISIBLE);
 
-            month.setText(milestone.time == null || milestone.time.isEmpty() ? milestone.month : milestone.time);
+            // Ép buộc hiển thị vô hạn dòng nếu ở Detail Mode
+            description.setMaxLines(isDetailMode ? Integer.MAX_VALUE : (expanded ? Integer.MAX_VALUE : 3));
             amount.setText(milestone.amount);
 
             if (pbProgress != null) {
-                pbProgress.setProgress(milestone.progress);
+                if (milestone.progress <= 0) {
+                    pbProgress.setVisibility(View.GONE);
+                } else {
+                    pbProgress.setVisibility(View.VISIBLE);
+                    pbProgress.setProgress(milestone.progress);
+                }
             }
-            goalPanel.setVisibility(hasMeaningfulMilestoneAmount(milestone.amount) ? View.VISIBLE : View.GONE);
 
+            goalPanel.setVisibility(hasMeaningfulMilestoneAmount(milestone.amount) ? View.VISIBLE : View.GONE);
             bindSeeMore(seeMore, description, milestone.getId(), milestone.expandable, expanded, this);
 
             menuButton.setOnClickListener(v -> {
@@ -396,160 +390,43 @@ public class CommunityFeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vie
             txtAvatar.setOnClickListener(onAvatarClicked);
             name.setOnClickListener(onAvatarClicked);
 
-            // Xử lý Like (Giữ nguyên của bác)
+            tvLikeCount.setText(String.valueOf(milestone.getLikeCount()));
+            if(tvCommentCount != null) tvCommentCount.setText(String.valueOf(milestone.getCommentCount()));
+
             boolean currentlyLiked = likedItemIds.contains(milestone.getId());
-            applyLikeState(btnLike, currentlyLiked);
-            btnLike.setOnClickListener(v -> {
-                boolean nowLiked = !likedItemIds.contains(milestone.getId());
-                if (nowLiked) {
-                    likedItemIds.add(milestone.getId());
-                } else {
-                    likedItemIds.remove(milestone.getId());
-                }
-                applyLikeState(btnLike, nowLiked);
+            applyLikeState(imgLikeHeart, tvLikeCount, currentlyLiked);
 
-                FirebaseAuth.getInstance().getCurrentUser().getIdToken(false)
-                        .addOnSuccessListener(tokenResult -> {
-                            String token = "Bearer " + tokenResult.getToken();
-                            ApiClient.getClient()
-                                    .create(ApiService.class)
-                                    .toggleLike(token, new ApiService.LikeActionRequest(milestone.getId(), nowLiked))
-                                    .enqueue(new retrofit2.Callback<Object>() {
-                                        @Override
-                                        public void onResponse(
-                                                @NonNull retrofit2.Call<Object> call,
-                                                @NonNull retrofit2.Response<Object> response) {
-                                            if (!response.isSuccessful()) {
-                                                rollback(milestone.getId(), nowLiked, btnLike);
-                                            }
-                                        }
+            btnLike.setOnClickListener(v -> handleLikeClick(milestone, imgLikeHeart, tvLikeCount));
+            if(btnComment != null) btnComment.setOnClickListener(v -> { if (!isDetailMode && postClickListener != null) postClickListener.onPostClick(milestone); });
+            if(btnShare != null) btnShare.setOnClickListener(v -> Toast.makeText(itemView.getContext(), "Post link copied", Toast.LENGTH_SHORT).show());
 
-                                        @Override
-                                        public void onFailure(
-                                                @NonNull retrofit2.Call<Object> call,
-                                                @NonNull Throwable t) {
-                                            rollback(milestone.getId(), nowLiked, btnLike);
-                                        }
-                                    });
-                        })
-                        .addOnFailureListener(e -> rollback(milestone.getId(), nowLiked, btnLike));
-            });
-            btnComment.setOnClickListener(v -> notifyPostClick(milestone));
-            btnShare.setOnClickListener(v ->
-                    Toast.makeText(itemView.getContext(), "Post link copied", Toast.LENGTH_SHORT).show());
+            shineHelper.start();
         }
 
-        void startShineAnimation() {
-            if (shineView == null) return;
-            stopShineAnimation();
-            int loopId = ++shineLoopId;
-            shineView.setAlpha(0f);
-            shineView.setTranslationX(0f);
-            shineView.setTranslationY(0f);
-            shineView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
-
-            shineView.post(() -> {
-                if (shineLoopId != loopId || shineView.getWindowToken() == null) return;
-
-                float cardWidth = Math.max(itemView.getWidth(), 360);
-                float cardHeight = Math.max(itemView.getHeight(), 260);
-                float shineHeight = Math.max(shineView.getHeight(), cardHeight);
-                float startX = -(cardWidth * 0.75f) - shineView.getWidth() - 80f;
-                float startY = (cardHeight * 0.65f) + 140f;
-                float endX = cardWidth + (shineHeight * 0.45f) + 80f;
-                float endY = -cardHeight - 180f;
-
-                shineView.setTranslationX(startX);
-                shineView.setTranslationY(startY);
-
-                ObjectAnimator moveX = ObjectAnimator.ofFloat(
-                        shineView,
-                        View.TRANSLATION_X,
-                        startX,
-                        endX
-                );
-                ObjectAnimator moveY = ObjectAnimator.ofFloat(
-                        shineView,
-                        View.TRANSLATION_Y,
-                        startY,
-                        endY
-                );
-                ObjectAnimator opacity = ObjectAnimator.ofFloat(
-                        shineView,
-                        View.ALPHA,
-                        0f,
-                        0f,
-                        0.28f,
-                        0.28f,
-                        0f
-                );
-
-                shineAnimator = new AnimatorSet();
-                shineAnimator.playTogether(moveX, moveY, opacity);
-                shineAnimator.setDuration(2300L);
-                shineAnimator.setStartDelay(50L);
-                shineAnimator.setInterpolator(new LinearInterpolator());
-                shineAnimator.addListener(new AnimatorListenerAdapter() {
-                    @Override
-                    public void onAnimationEnd(Animator animation) {
-                        if (shineLoopId == loopId && shineAnimator != null && shineView.getWindowToken() != null) {
-                            startShineAnimation();
-                        }
-                    }
-                });
-                shineAnimator.start();
-            });
-        }
-
-        void stopShineAnimation() {
-            shineLoopId++;
-            if (shineAnimator != null) {
-                shineAnimator.removeAllListeners();
-                shineAnimator.cancel();
-                shineAnimator = null;
-            }
-            if (shineView != null) {
-                shineView.setAlpha(0f);
-                shineView.setTranslationX(0f);
-                shineView.setTranslationY(0f);
-                shineView.clearAnimation();
-            }
+        void stopAnimation() {
+            shineHelper.stop();
         }
 
         private boolean hasMeaningfulMilestoneAmount(String value) {
             if (value == null) return false;
             String clean = value.trim();
-            return !clean.isEmpty()
-                    && !clean.equals("100%")
-                    && !clean.startsWith("http://")
-                    && !clean.startsWith("https://");
+            return !clean.isEmpty() && !clean.equals("100%") && !clean.startsWith("http://") && !clean.startsWith("https://");
         }
     }
 
-    // =========================================================================
-    // Helpers
-    // =========================================================================
     private void notifyPostClick(FeedItem item) {
-        if (postClickListener != null) {
-            postClickListener.onPostClick(item);
-        }
+        if (!isDetailMode && postClickListener != null) postClickListener.onPostClick(item);
     }
 
-    private void bindSeeMore(
-            TextView button,
-            TextView content,
-            String itemId,
-            boolean expandable,
-            boolean expanded,
-            RecyclerView.ViewHolder holder
-    ) {
-        if (!expandable) {
+    private void bindSeeMore(TextView button, TextView content, String itemId, boolean expandable, boolean expanded, RecyclerView.ViewHolder holder) {
+        // Nếu ở màn Detail Mode -> Giấu nút "Xem thêm..." vô điều kiện
+        if (isDetailMode || !expandable) {
             button.setVisibility(View.GONE);
             button.setOnClickListener(null);
             return;
         }
         button.setVisibility(View.VISIBLE);
-        button.setText(expanded ? "Thu gọn" : "Xem thêm...");
+        button.setText(expanded ? "Show less" : "See more...");
         button.setOnClickListener(v -> {
             int position = holder.getBindingAdapterPosition();
             if (position != RecyclerView.NO_POSITION) {
@@ -558,17 +435,15 @@ public class CommunityFeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vie
         });
     }
 
-    // FIX 5: Nhận Context để lấy display density thật, không hardcode 1f
-    private static final DiffUtil.ItemCallback<FeedItem> DIFF_CALLBACK =
-            new DiffUtil.ItemCallback<FeedItem>() {
-                @Override
-                public boolean areItemsTheSame(@NonNull FeedItem oldItem, @NonNull FeedItem newItem) {
-                    return oldItem.getId().equals(newItem.getId());
-                }
+    private static final DiffUtil.ItemCallback<FeedItem> DIFF_CALLBACK = new DiffUtil.ItemCallback<FeedItem>() {
+        @Override
+        public boolean areItemsTheSame(@NonNull FeedItem oldItem, @NonNull FeedItem newItem) {
+            return oldItem.getId().equals(newItem.getId());
+        }
 
-                @Override
-                public boolean areContentsTheSame(@NonNull FeedItem oldItem, @NonNull FeedItem newItem) {
-                    return Objects.equals(oldItem, newItem);
-                }
-            };
+        @Override
+        public boolean areContentsTheSame(@NonNull FeedItem oldItem, @NonNull FeedItem newItem) {
+            return Objects.equals(oldItem, newItem);
+        }
+    };
 }

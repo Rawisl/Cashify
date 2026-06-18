@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,7 +14,6 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -21,17 +21,19 @@ import androidx.cardview.widget.CardView;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
-import com.example.cashify.data.model.Budget;
 import com.example.cashify.data.local.BudgetWithSpent;
+import com.example.cashify.data.model.Budget;
 import com.example.cashify.ui.main.MainViewModel;
 import com.example.cashify.ui.main.PersonalWorkspaceHeader;
+import com.example.cashify.utils.CurrencyFormatter;
 import com.example.cashify.utils.DialogHelper;
 import com.example.cashify.utils.NumpadBottomSheet;
-import com.example.cashify.utils.CurrencyFormatter;
+import com.example.cashify.utils.ToastHelper;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.materialswitch.MaterialSwitch;
@@ -45,7 +47,7 @@ public class BudgetFragment extends Fragment {
     private BudgetAdapter adapter;
     private BudgetViewModel budgetViewModel;
 
-    // Các View của thẻ Master Budget
+    // UI Components
     private TextView tvMasterTitle, tvMasterLimit, tvMasterSpent, tvMasterRemaining, tvMasterAlert;
     private TextView tvMonth, tvWeek;
     private ProgressBar pbMaster;
@@ -53,24 +55,22 @@ public class BudgetFragment extends Fragment {
     private MaterialButtonToggleGroup toggleGroupPeriod;
     private MaterialButton btnWeekly, btnMonthly;
     private CardView cardMonthSelector, cardWeekSelector;
-
-    private MaterialSwitch switchLinkedMode;
-    private boolean isLinkedMode = false;
-    private boolean isReadOnly = false;
     private ImageButton btnAddBudget;
+    private MaterialSwitch switchLinkedMode;
 
+    // State Trackers
     private Budget masterBudgetCache;
     private String currentPeriodType = "MONTH";
+    private boolean isLinkedMode = false;
+    private boolean isReadOnly = false;
     private long mLastClickTime = 0;
-
-    private Toast mCurrentToast;
     private boolean hasInitializedView = false;
     private boolean skipNextResumeLoad = false;
 
     public BudgetFragment() {}
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_budget, container, false);
     }
 
@@ -79,186 +79,18 @@ public class BudgetFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         PersonalWorkspaceHeader.bind(this, view);
-
         budgetViewModel = new ViewModelProvider(this).get(BudgetViewModel.class);
 
-        // Ánh xạ UI
-        tvMasterTitle = view.findViewById(R.id.tvMasterTitle);
-        tvMasterLimit = view.findViewById(R.id.tvMasterLimit);
-        tvMasterSpent = view.findViewById(R.id.tvMasterSpent);
-        tvMasterRemaining = view.findViewById(R.id.tvMasterRemaining);
-        pbMaster = view.findViewById(R.id.pbMaster);
-        masterCardSurface = view.findViewById(R.id.layoutMasterCardSurface);
-        tvMasterAlert = view.findViewById(R.id.tvMasterAlert);
-        toggleGroupPeriod = view.findViewById(R.id.toggleGroupPeriod);
-        btnWeekly = view.findViewById(R.id.btnWeekly);
-        btnMonthly = view.findViewById(R.id.btnMonthly);
-        btnAddBudget = view.findViewById(R.id.btnAddBudget);
-        switchLinkedMode = view.findViewById(R.id.switchLinkedMode);
+        initViews(view);
+        setupLinkedMode();
+        setupToggleGroup();
+        setupRecyclerView(view);
+        setupClickListeners(view);
+        setupObservers();
 
-        cardMonthSelector = view.findViewById(R.id.cardMonthSelector);
-        cardWeekSelector = view.findViewById(R.id.cardWeekSelector);
-        tvMonth = view.findViewById(R.id.tvMonth);
-        tvWeek = view.findViewById(R.id.tvWeek);
-
-        ImageView btnInfoLink = view.findViewById(R.id.btnInfoLink);
-
-        // Quản lý Linked Mode Switch
-        SharedPreferences prefs = requireContext().getSharedPreferences("BudgetPrefs", Context.MODE_PRIVATE);
-        isLinkedMode = prefs.getBoolean("isLinkedMode", false);
-        if (switchLinkedMode != null) {
-            switchLinkedMode.setChecked(isLinkedMode);
-            switchLinkedMode.setOnCheckedChangeListener((button, isChecked) -> {
-                isLinkedMode = isChecked;
-                prefs.edit().putBoolean("isLinkedMode", isLinkedMode).apply();
-                updateToggleColors();
-                triggerLoadData();
-            });
-        }
-
-        // --- LẮNG NGHE SỰ KIỆN CHUYỂN TAB WEEKLY / MONTHLY ---
-        toggleGroupPeriod.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
-            if (isChecked) {
-                currentPeriodType = (checkedId == R.id.btnWeekly) ? "WEEK" : "MONTH";
-                tvMasterTitle.setText(currentPeriodType.equals("WEEK") ? getString(R.string.budget_main_card_title_weekly) : getString(R.string.budget_main_card_title_monthly));
-                updateToggleColors();
-                triggerLoadData();
-            }
-        });
-        updateToggleColors();
-
-        // Click hiện bảng chọn Tháng/Tuần
-        cardMonthSelector.setOnClickListener(v -> showMonthSelectorDialog());
-        cardWeekSelector.setOnClickListener(v -> showWeekSelectorDialog());
-
-        // Lắng nghe dữ liệu (UI State) trả về từ ViewModel để vẽ
-        budgetViewModel.getUiState().observe(getViewLifecycleOwner(), state -> {
-            masterBudgetCache = state.masterBudget; // Lưu cache cho nút bấm
-            isReadOnly = state.isReadOnly;
-
-            tvMonth.setText(state.monthLabel);
-            tvWeek.setText(state.weekLabel);
-            updateToggleColors();
-
-            adapter.setBudgets(state.displayList);
-            drawMasterCard(state.masterBudget, state.masterSpent, state.totalCatLimits);
-        });
-
-        // Click Master Card
-        CardView cardMaster = view.findViewById(R.id.cardMaster);
-        if (cardMaster != null) {
-            cardMaster.setOnClickListener(v -> {
-                if (isReadOnly) { showDialogOnUI("Read-only", "Past months are read-only!", true);return; }
-                if (android.os.SystemClock.elapsedRealtime() - mLastClickTime < 1000) return;
-                mLastClickTime = android.os.SystemClock.elapsedRealtime();
-                double limit = masterBudgetCache != null ? masterBudgetCache.limitAmount : 0;
-                openNumpadToEditBudget(-1, limit);
-            });
-        }
-
-        // Click (+) Thêm mới
-        if (btnAddBudget != null) {
-            btnAddBudget.setOnClickListener(v -> {
-                if (isReadOnly) { showDialogOnUI("Read-only", "Past months are read-only!", true); return; }
-                if (android.os.SystemClock.elapsedRealtime() - mLastClickTime < 1000) return;
-                mLastClickTime = android.os.SystemClock.elapsedRealtime();
-                List<Integer> existingIds = new ArrayList<>();
-                if (adapter != null && adapter.getBudgets() != null) {
-                    for (BudgetWithSpent b : adapter.getBudgets()) existingIds.add(b.categoryId);
-                }
-                BudgetBottomSheetDialog dialog = new BudgetBottomSheetDialog(0, "Add Budget", 0, 0, "", "", new BudgetBottomSheetDialog.OnBudgetActionListener() {
-                    @Override public void onSave(int id, double limit) { triggerSaveBudget(id, limit); }
-                    @Override public void onDelete(int id) {}
-                });
-                dialog.setDisabledCategoryIds(existingIds);
-                dialog.show(getParentFragmentManager(), "AddBudget");
-            });
-        }
-
-        // Danh sách RecyclerView
-        RecyclerView rvBudgets = view.findViewById(R.id.rvCategoryBudgets);
-        GridLayoutManager budgetLayoutManager = new GridLayoutManager(getContext(), 2);
-        budgetLayoutManager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
-            @Override
-            public int getSpanSize(int position) {
-                return position == 0 ? 2 : 1;
-            }
-        });
-        rvBudgets.setLayoutManager(budgetLayoutManager);
-        adapter = new BudgetAdapter(item -> {
-            if (isReadOnly) {showDialogOnUI("Read-only", "Past months are read-only!", true);return; }
-            if (android.os.SystemClock.elapsedRealtime() - mLastClickTime < 1000) return;
-            mLastClickTime = android.os.SystemClock.elapsedRealtime();
-
-            if (isLinkedMode && currentPeriodType.equals("MONTH")) {
-                showDialogOnUI("Linked Mode", "Please edit category budgets in the Weekly tab!", true);
-                return;
-            }
-
-            String title = (item.categoryName != null) ? item.categoryName : "Category " + item.categoryId;
-
-            BudgetBottomSheetDialog dialog = new BudgetBottomSheetDialog(item.categoryId, title, item.spentAmount, item.limitAmount, item.categoryIcon, item.categoryColor, new BudgetBottomSheetDialog.OnBudgetActionListener() {
-                @Override public void onSave(int id, double limit) { triggerSaveBudget(id, limit); }
-                @Override public void onDelete(int id) { triggerDeleteBudget(id); }
-            });
-            dialog.show(getParentFragmentManager(), "EditBudget");
-        });
-        rvBudgets.setAdapter(adapter);
-
-        // Kích nổ lần đầu
         triggerLoadData();
         hasInitializedView = true;
         skipNextResumeLoad = true;
-
-        MainViewModel mainViewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
-        mainViewModel.syncCompleted.observe(getViewLifecycleOwner(), isDone -> {
-            if (isDone) {
-                triggerLoadData();
-            }
-        });
-
-        btnInfoLink.setOnClickListener(v -> {
-            DialogHelper.showSuccess(
-                    requireContext(),
-                    "About Linked Mode",
-                    "How Weekly & Monthly budgets work:\n\n" +
-                            "• OFF (Independent): Weekly and Monthly budgets operate completely separately. Their limits do not affect each other.\n\n" +
-                            "• ON (Linked): Budgets are connected. You set the overall Master Budget in the Monthly tab, but detailed category allocations must be done in the Weekly tab. The sum of your Weekly Master budgets cannot exceed the Monthly limit.",
-                    null
-            );
-        });
-
-        TextView btnShareMilestone = view.findViewById(R.id.btnShareMilestone);
-        btnShareMilestone.setOnClickListener(v -> {
-            // 1. CHUẨN MVVM: Lấy thẳng trạng thái mới nhất từ ViewModel ngay lúc bấm nút
-            BudgetViewModel.BudgetUIState state = budgetViewModel.getUiState().getValue();
-
-            // 2. Kiểm tra an toàn
-            if (state == null || state.masterBudget == null || state.masterBudget.limitAmount <= 0) {
-                showToastOnUI("Bạn chưa thiết lập ngân sách tổng!");
-                return;
-            }
-
-            long limit = state.masterBudget.limitAmount;
-            long spent = state.masterSpent;
-            String periodLabel = currentPeriodType.equals("MONTH") ? state.monthLabel : state.weekLabel;
-
-            // 3. Đóng gói Bưu kiện (Bundle)
-            android.os.Bundle bundle = new android.os.Bundle();
-            bundle.putLong("milestone_limit", limit);
-            bundle.putLong("milestone_spent", spent);
-            bundle.putString("milestone_period", currentPeriodType);
-            bundle.putString("milestone_label", periodLabel);
-
-            // 4. Chuyển trang
-            androidx.navigation.Navigation.findNavController(v).navigate(R.id.nav_post_feed, bundle);
-        });
-    }
-
-    private void triggerLoadData() {
-        String monthFormat = getString(R.string.budget_month_format);
-        String weekFormat = getString(R.string.budget_week_format);
-        budgetViewModel.loadBudgetsData(isLinkedMode, currentPeriodType, monthFormat, weekFormat);
     }
 
     @Override
@@ -272,6 +104,198 @@ public class BudgetFragment extends Fragment {
             triggerLoadData();
         }
     }
+
+    private void initViews(View view) {
+        tvMasterTitle = view.findViewById(R.id.tvMasterTitle);
+        tvMasterLimit = view.findViewById(R.id.tvMasterLimit);
+        tvMasterSpent = view.findViewById(R.id.tvMasterSpent);
+        tvMasterRemaining = view.findViewById(R.id.tvMasterRemaining);
+        pbMaster = view.findViewById(R.id.pbMaster);
+        masterCardSurface = view.findViewById(R.id.layoutMasterCardSurface);
+        tvMasterAlert = view.findViewById(R.id.tvMasterAlert);
+        toggleGroupPeriod = view.findViewById(R.id.toggleGroupPeriod);
+        btnWeekly = view.findViewById(R.id.btnWeekly);
+        btnMonthly = view.findViewById(R.id.btnMonthly);
+        btnAddBudget = view.findViewById(R.id.btnAddBudget);
+        switchLinkedMode = view.findViewById(R.id.switchLinkedMode);
+        cardMonthSelector = view.findViewById(R.id.cardMonthSelector);
+        cardWeekSelector = view.findViewById(R.id.cardWeekSelector);
+        tvMonth = view.findViewById(R.id.tvMonth);
+        tvWeek = view.findViewById(R.id.tvWeek);
+    }
+
+    private void setupLinkedMode() {
+        SharedPreferences prefs = requireContext().getSharedPreferences("BudgetPrefs", Context.MODE_PRIVATE);
+        isLinkedMode = prefs.getBoolean("isLinkedMode", false);
+
+        if (switchLinkedMode != null) {
+            switchLinkedMode.setChecked(isLinkedMode);
+            switchLinkedMode.setOnCheckedChangeListener((button, isChecked) -> {
+                isLinkedMode = isChecked;
+                prefs.edit().putBoolean("isLinkedMode", isLinkedMode).apply();
+                updateToggleColors();
+                triggerLoadData();
+            });
+        }
+    }
+
+    private void setupToggleGroup() {
+        toggleGroupPeriod.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
+            if (isChecked) {
+                currentPeriodType = (checkedId == R.id.btnWeekly) ? "WEEK" : "MONTH";
+                tvMasterTitle.setText(currentPeriodType.equals("WEEK")
+                        ? getString(R.string.budget_main_card_title_weekly)
+                        : getString(R.string.budget_main_card_title_monthly));
+                updateToggleColors();
+                triggerLoadData();
+            }
+        });
+        updateToggleColors();
+    }
+
+    private void setupRecyclerView(View view) {
+        RecyclerView rvBudgets = view.findViewById(R.id.rvCategoryBudgets);
+
+        GridLayoutManager budgetLayoutManager = new GridLayoutManager(getContext(), 2);
+        budgetLayoutManager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
+            @Override
+            public int getSpanSize(int position) {
+                return position == 0 ? 2 : 1;
+            }
+        });
+        rvBudgets.setLayoutManager(budgetLayoutManager);
+
+        adapter = new BudgetAdapter(item -> {
+            if (isReadOnly) {
+                DialogHelper.showAlert(requireContext(), "Read-only", "Past months are read-only!", null);
+                return;
+            }
+            if (SystemClock.elapsedRealtime() - mLastClickTime < 1000) return;
+            mLastClickTime = SystemClock.elapsedRealtime();
+
+            if (isLinkedMode && currentPeriodType.equals("MONTH")) {
+                DialogHelper.showAlert(requireContext(), "Linked Mode", "Please edit category budgets in the Weekly tab!", null);
+                return;
+            }
+
+            String title = (item.categoryName != null) ? item.categoryName : "Category " + item.categoryId;
+
+            BudgetBottomSheetDialog dialog = new BudgetBottomSheetDialog(item.categoryId, title, item.spentAmount, item.limitAmount, item.categoryIcon, item.categoryColor, new BudgetBottomSheetDialog.OnBudgetActionListener() {
+                @Override public void onSave(int id, double limit) { triggerSaveBudget(id, limit); }
+                @Override public void onDelete(int id) { triggerDeleteBudget(id); }
+            });
+            dialog.show(getParentFragmentManager(), "EditBudget");
+        });
+
+        rvBudgets.setAdapter(adapter);
+    }
+
+    private void setupClickListeners(View view) {
+        cardMonthSelector.setOnClickListener(v -> showMonthSelectorDialog());
+        cardWeekSelector.setOnClickListener(v -> showWeekSelectorDialog());
+
+        CardView cardMaster = view.findViewById(R.id.cardMaster);
+        if (cardMaster != null) {
+            cardMaster.setOnClickListener(v -> {
+                if (isReadOnly) {
+                    DialogHelper.showAlert(requireContext(), "Read-only", "Past months are read-only!", null);
+                    return;
+                }
+                if (SystemClock.elapsedRealtime() - mLastClickTime < 1000) return;
+                mLastClickTime = SystemClock.elapsedRealtime();
+
+                double limit = masterBudgetCache != null ? masterBudgetCache.limitAmount : 0;
+                openNumpadToEditBudget(-1, limit);
+            });
+        }
+
+        if (btnAddBudget != null) {
+            btnAddBudget.setOnClickListener(v -> {
+                if (isReadOnly) {
+                    DialogHelper.showAlert(requireContext(), "Read-only", "Past months are read-only!", null);
+                    return;
+                }
+                if (SystemClock.elapsedRealtime() - mLastClickTime < 1000) return;
+                mLastClickTime = SystemClock.elapsedRealtime();
+
+                List<Integer> existingIds = new ArrayList<>();
+                if (adapter != null && adapter.getBudgets() != null) {
+                    for (BudgetWithSpent b : adapter.getBudgets()) existingIds.add(b.categoryId);
+                }
+
+                BudgetBottomSheetDialog dialog = new BudgetBottomSheetDialog(0, "Add Budget", 0, 0, "", "", new BudgetBottomSheetDialog.OnBudgetActionListener() {
+                    @Override public void onSave(int id, double limit) { triggerSaveBudget(id, limit); }
+                    @Override public void onDelete(int id) {}
+                });
+
+                dialog.setDisabledCategoryIds(existingIds);
+                dialog.show(getParentFragmentManager(), "AddBudget");
+            });
+        }
+
+        ImageView btnInfoLink = view.findViewById(R.id.btnInfoLink);
+        btnInfoLink.setOnClickListener(v -> DialogHelper.showSuccess(
+                requireContext(),
+                "About Linked Mode",
+                "How Weekly & Monthly budgets work:\n\n" +
+                        "• OFF (Independent): Weekly and Monthly budgets operate completely separately. Their limits do not affect each other.\n\n" +
+                        "• ON (Linked): Budgets are connected. You set the overall Master Budget in the Monthly tab, but detailed category allocations must be done in the Weekly tab. The sum of your Weekly Master budgets cannot exceed the Monthly limit.",
+                null
+        ));
+
+        TextView btnShareMilestone = view.findViewById(R.id.btnShareMilestone);
+        btnShareMilestone.setOnClickListener(v -> {
+            BudgetViewModel.BudgetUIState state = budgetViewModel.getUiState().getValue();
+
+            if (state == null || state.masterBudget == null || state.masterBudget.limitAmount <= 0) {
+                ToastHelper.show(requireContext(), "Please set a master budget first.");
+                return;
+            }
+
+            long limit = state.masterBudget.limitAmount;
+            long spent = state.masterSpent;
+            String periodLabel = currentPeriodType.equals("MONTH") ? state.monthLabel : state.weekLabel;
+
+            Bundle bundle = new Bundle();
+            bundle.putLong("milestone_limit", limit);
+            bundle.putLong("milestone_spent", spent);
+            bundle.putString("milestone_period", currentPeriodType);
+            bundle.putString("milestone_label", periodLabel);
+
+            Navigation.findNavController(v).navigate(R.id.nav_post_feed, bundle);
+        });
+    }
+
+    private void setupObservers() {
+        budgetViewModel.getUiState().observe(getViewLifecycleOwner(), state -> {
+            masterBudgetCache = state.masterBudget;
+            isReadOnly = state.isReadOnly;
+
+            tvMonth.setText(state.monthLabel);
+            tvWeek.setText(state.weekLabel);
+            updateToggleColors();
+
+            adapter.setBudgets(state.displayList);
+            drawMasterCard(state.masterBudget, state.masterSpent, state.totalCatLimits);
+        });
+
+        MainViewModel mainViewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
+        mainViewModel.syncCompleted.observe(getViewLifecycleOwner(), isDone -> {
+            if (Boolean.TRUE.equals(isDone)) {
+                triggerLoadData();
+            }
+        });
+    }
+
+    private void triggerLoadData() {
+        String monthFormat = getString(R.string.budget_month_format);
+        String weekFormat = getString(R.string.budget_week_format);
+        budgetViewModel.loadBudgetsData(isLinkedMode, currentPeriodType, monthFormat, weekFormat);
+    }
+
+    // =========================================================================
+    // DIALOGS & ACTIONS
+    // =========================================================================
 
     private void showMonthSelectorDialog() {
         String monthFormat = getString(R.string.budget_month_format);
@@ -297,17 +321,16 @@ public class BudgetFragment extends Fragment {
                 }).show();
     }
 
-    // --- HÀM GỌI VIEWMODEL ĐỂ XỬ LÝ LOGIC ---
     private void triggerSaveBudget(int categoryId, double limitAmount) {
         budgetViewModel.validateAndSaveBudget(categoryId, limitAmount, currentPeriodType, isLinkedMode, new BudgetViewModel.BudgetActionCallback() {
             @Override
             public void onSuccess(String message) {
-                showToastOnUI(message);
+                ToastHelper.show(requireContext(), message);
                 triggerLoadData();
             }
             @Override
             public void onError(String error) {
-                showToastOnUI(error);
+                ToastHelper.show(requireContext(), error);
             }
         });
     }
@@ -316,17 +339,27 @@ public class BudgetFragment extends Fragment {
         budgetViewModel.deleteBudget(categoryId, currentPeriodType, isLinkedMode, new BudgetViewModel.BudgetActionCallback() {
             @Override
             public void onSuccess(String message) {
-                showToastOnUI(message);
+                ToastHelper.show(requireContext(), message);
                 triggerLoadData();
             }
             @Override
             public void onError(String error) {
-                showToastOnUI(error);
+                ToastHelper.show(requireContext(), error);
             }
         });
     }
 
-    // --- HÀM VẼ GIAO DIỆN CHUẨN ---
+    private void openNumpadToEditBudget(int categoryId, double currentLimit) {
+        NumpadBottomSheet numpad = new NumpadBottomSheet();
+        numpad.setInitialBaseAmount(currentLimit);
+        numpad.setListener((raw, formatted) -> triggerSaveBudget(categoryId, CurrencyFormatter.parseVNDToDouble(raw)));
+        numpad.show(getChildFragmentManager(), "NumpadBottomSheet");
+    }
+
+    // =========================================================================
+    // UI RENDERING
+    // =========================================================================
+
     private void drawMasterCard(Budget masterBudget, long masterSpent, long totalCatLimits) {
         long safeSpent = sanitizeMoney(masterSpent);
         long safeTotalCatLimits = sanitizeMoney(totalCatLimits);
@@ -337,6 +370,7 @@ public class BudgetFragment extends Fragment {
             int percent = calculateBudgetPercent(safeSpent, limit);
             int progress = clampProgress(percent);
             boolean isOverBudget = safeSpent > limit || remaining < 0;
+
             applyMasterCardState(isOverBudget);
 
             tvMasterLimit.setText(CurrencyFormatter.formatFullVND(limit));
@@ -372,26 +406,11 @@ public class BudgetFragment extends Fragment {
             tvMasterRemaining.setText(CurrencyFormatter.formatFullVND(0));
             pbMaster.setMax(100);
             pbMaster.setProgress(0);
+
             tvMasterAlert.setVisibility(View.VISIBLE);
             tvMasterAlert.setText("Set a master budget to start tracking");
             tvMasterAlert.setTextColor(Color.WHITE);
         }
-    }
-
-    private long sanitizeMoney(long value) {
-        return Math.max(0L, value);
-    }
-
-    private int calculateBudgetPercent(long spent, long limit) {
-        if (spent <= 0 || limit <= 0) return 0;
-        double percent = (spent * 100.0d) / limit;
-        if (Double.isNaN(percent) || Double.isInfinite(percent) || percent <= 0) return 0;
-        if (percent >= Integer.MAX_VALUE) return Integer.MAX_VALUE;
-        return (int) percent;
-    }
-
-    private int clampProgress(int percent) {
-        return Math.max(0, Math.min(percent, 100));
     }
 
     private void applyMasterCardState(boolean isOverBudget) {
@@ -418,6 +437,7 @@ public class BudgetFragment extends Fragment {
 
     private void updateToggleColors() {
         if (getContext() == null) return;
+
         int colorWhite = ContextCompat.getColor(requireContext(), R.color.white);
         int colorBrand = Color.parseColor("#1A237E");
         int colorTransparent = Color.TRANSPARENT;
@@ -439,34 +459,19 @@ public class BudgetFragment extends Fragment {
         btnMonthly.setTextColor(currentPeriodType.equals("MONTH") ? colorWhite : colorBrand);
     }
 
-    private void openNumpadToEditBudget(int categoryId, double currentLimit) {
-        NumpadBottomSheet numpad = new NumpadBottomSheet();
-        numpad.setInitialBaseAmount(currentLimit);
-        numpad.setListener((raw, formatted) -> triggerSaveBudget(categoryId, CurrencyFormatter.parseVNDToDouble(raw)));
-        numpad.show(getChildFragmentManager(), "NumpadBottomSheet");
+    private long sanitizeMoney(long value) {
+        return Math.max(0L, value);
     }
 
-    private void showToastOnUI(String msg) {
-        if (getActivity() != null) {
-            getActivity().runOnUiThread(() -> {
-                if (mCurrentToast != null) {
-                    mCurrentToast.cancel();
-                }
-                mCurrentToast = Toast.makeText(getContext(), msg, Toast.LENGTH_SHORT);
-                mCurrentToast.show();
-
-            });
-        }
+    private int calculateBudgetPercent(long spent, long limit) {
+        if (spent <= 0 || limit <= 0) return 0;
+        double percent = (spent * 100.0d) / limit;
+        if (Double.isNaN(percent) || Double.isInfinite(percent) || percent <= 0) return 0;
+        if (percent >= Integer.MAX_VALUE) return Integer.MAX_VALUE;
+        return (int) percent;
     }
-    private void showDialogOnUI(String title, String message, boolean isError) {
-        if (getActivity() != null) {
-            getActivity().runOnUiThread(() -> {
-                if (isError) {
-                    DialogHelper.showAlert(requireContext(), title, message, null);
-                } else {
-                    DialogHelper.showSuccess(requireContext(), title, message, null);
-                }
-            });
-        }
+
+    private int clampProgress(int percent) {
+        return Math.max(0, Math.min(percent, 100));
     }
 }

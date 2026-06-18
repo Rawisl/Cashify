@@ -1,22 +1,20 @@
 package com.example.cashify.data.model;
 
 /**
- * Model đại diện cho người dùng trong hệ thống.
- * Cấu trúc này phải khớp với Document trong Firestore collection "users".
+ * Model đại diện cho người dùng hệ thống.
+ * Cấu trúc này khớp chính xác với Document trong Firestore collection "users".
  */
-
 public class User {
-    //Phải thêm các trường: avatarUrl, displayName, phoneNumber vào class này.
-
     private String uid;
     private String email;
     private String displayName;
     private String avatarUrl;
     private String phoneNumber;
 
+    // Trạng thái bạn bè (Local state, không lưu lên Firestore gốc của User)
     private int friendStatus = 0;
-    public User() {
-    }
+
+    public User() {}
 
     public User(String uid, String email, String displayName) {
         this.uid = uid;
@@ -24,7 +22,6 @@ public class User {
         this.displayName = displayName;
     }
 
-    //Dùng khi muốn tạo hoặc copy nguyên một User có sẵn - full thông tin
     public User(String uid, String email, String displayName, String avatarUrl, String phoneNumber) {
         this.uid = uid;
         this.email = email;
@@ -32,6 +29,7 @@ public class User {
         this.avatarUrl = avatarUrl;
         this.phoneNumber = phoneNumber;
     }
+
     public String getUid() { return uid; }
     public void setUid(String uid) { this.uid = uid; }
 
@@ -46,21 +44,18 @@ public class User {
 
     public String getPhoneNumber() { return phoneNumber; }
     public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+
+    public int getFriendStatus() { return friendStatus; }
+    public void setFriendStatus(int friendStatus) { this.friendStatus = friendStatus; }
+
+    // Fallback UI: Ưu tiên Tên hiển thị -> Tiền tố Email -> Tên mặc định
     public String getNameToShow() {
-        if (displayName != null && !displayName.isEmpty()) {
+        if (displayName != null && !displayName.trim().isEmpty()) {
             return displayName;
         }
         if (email != null && email.contains("@")) {
-            return email.split("@")[0]; // Lấy phần trước @ của email
+            return email.split("@")[0];
         }
         return "Cashify User";
     }
-    public int getFriendStatus() {
-        return friendStatus;
-    }
-
-    public void setFriendStatus(int friendStatus) {
-        this.friendStatus = friendStatus;
-    }
-
 }

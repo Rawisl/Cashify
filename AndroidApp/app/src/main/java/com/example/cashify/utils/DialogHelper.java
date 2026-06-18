@@ -17,14 +17,29 @@ import androidx.core.content.ContextCompat;
 import com.example.cashify.R;
 import com.google.android.material.button.MaterialButton;
 
+/**
+ * Utility class to display unified custom dialogs across the app.
+ * * Usage Examples:
+ * * 1. Error/Alert Dialog (Single RED button):
+ * DialogHelper.showAlert(this, "Input Error", "Amount must be greater than 0", () -> etAmount.requestFocus());
+ * * 2. Success Dialog (Single PRIMARY button):
+ * DialogHelper.showSuccess(this, "Success", "Transaction saved successfully!", () -> finish());
+ * * 3. Standard Confirmation (Two buttons, default text):
+ * DialogHelper.showCustomDialog(this, "Save", "Save this transaction?", DialogHelper.DialogType.NORMAL, () -> saveToDB());
+ * * 4. Dangerous Action Confirmation (Custom text, RED confirm button):
+ * DialogHelper.showCustomDialog(this, "Delete Category", "Are you sure you want to delete this?",
+ * "Delete", "Cancel", DialogHelper.DialogType.DANGER, true, () -> deleteCategory(), null);
+ */
 public class DialogHelper {
 
     public enum DialogType {
-        NORMAL, // Nút confirm màu xanh
-        DANGER  // Nút confirm màu đỏ (dùng cho delete/error)
+        NORMAL, // Primary color confirm button (e.g., Save, OK)
+        DANGER  // Red color confirm button (e.g., Delete, Error)
     }
 
-    // Hàm đầy đủ (Full parameters)
+    /**
+     * Fully customizable dialog constructor.
+     */
     public static void showCustomDialog(
             Context context,
             String title,
@@ -40,58 +55,54 @@ public class DialogHelper {
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         dialog.setContentView(R.layout.layout_custom_dialog);
 
-        // Bo góc trong suốt
+        // Apply transparent background for custom rounded corners and set width to 85% of screen
         if (dialog.getWindow() != null) {
             dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
             int width = (int) (context.getResources().getDisplayMetrics().widthPixels * 0.85);
             dialog.getWindow().setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT);
         }
-        dialog.setCancelable(false); // Bắt buộc bấm nút
+
+        // Force user interaction with buttons
+        dialog.setCancelable(false);
 
         TextView tvTitle = dialog.findViewById(R.id.tvDialogTitle);
         TextView tvMessage = dialog.findViewById(R.id.tvDialogMessage);
-
-        // Đã cập nhật thành MaterialButton để khớp với file XML mới
         MaterialButton btnConfirm = dialog.findViewById(R.id.btnConfirm);
         MaterialButton btnCancel = dialog.findViewById(R.id.btnCancel);
 
-        // Gán text
-        // Căn giữa Title
         tvTitle.setGravity(Gravity.CENTER);
         tvTitle.setText(title);
         tvMessage.setText(message);
 
-        // Nếu truyền null thì lấy string mặc định trong app
+        // Fallback to default strings if custom text is not provided
         btnConfirm.setText(confirmText != null ? confirmText : context.getString(R.string.action_confirm));
         btnCancel.setText(cancelText != null ? cancelText : context.getString(R.string.action_cancel));
 
-        // Đổi màu nút Confirm trực tiếp qua TintList thay vì dùng file drawable
+        // Apply dynamic tint based on DialogType
         if (type == DialogType.DANGER) {
             btnConfirm.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(context, R.color.status_red)));
         } else {
             btnConfirm.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(context, R.color.brand_primary)));
         }
 
-        // Ẩn/Hiện nút Cancel
+        // Adjust layout dynamically if the Cancel button is hidden
         if (!showCancelButton) {
             btnCancel.setVisibility(View.GONE);
 
-            // Căn giữa button confirm: reset weight, đặt width cố định, gravity container = center
+            // Center the Confirm button
             LinearLayout btnContainer = dialog.findViewById(R.id.btnContainer);
             btnContainer.setGravity(Gravity.CENTER);
 
             LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                    (int) (context.getResources().getDisplayMetrics().widthPixels * 0.4), // ~40% màn hình
-                    (int) (56 * context.getResources().getDisplayMetrics().density)        // 56dp → px
+                    (int) (context.getResources().getDisplayMetrics().widthPixels * 0.4), // ~40% screen width
+                    (int) (56 * context.getResources().getDisplayMetrics().density)        // 56dp to px
             );
             params.setMargins(0, 0, 0, 0);
             btnConfirm.setLayoutParams(params);
-
         } else {
             btnCancel.setVisibility(View.VISIBLE);
         }
 
-        // Bắt sự kiện Click
         btnConfirm.setOnClickListener(v -> {
             if (onConfirm != null) {
                 onConfirm.run();
@@ -109,9 +120,13 @@ public class DialogHelper {
         dialog.show();
     }
 
-    // --- CÁC HÀM OVERLOAD RÚT GỌN ĐỂ GỌI CHO NHANH ---
+    // =========================================================================
+    // OVERLOADED CONVENIENCE METHODS
+    // =========================================================================
 
-    // 1. Dùng cho Xác nhận / Xóa bình thường (Có 2 nút, xài text mặc định)
+    /**
+     * Standard confirmation dialog (Two buttons, default text).
+     */
     public static void showCustomDialog(
             Context context,
             String title,
@@ -122,7 +137,9 @@ public class DialogHelper {
         showCustomDialog(context, title, message, null, null, type, true, onConfirm, null);
     }
 
-    // 2. Dùng cho Báo lỗi / Cảnh báo (Chỉ có 1 nút OK màu đỏ DANGER)
+    /**
+     * Alert/Error dialog (Single RED button).
+     */
     public static void showAlert(
             Context context,
             String title,
@@ -132,7 +149,9 @@ public class DialogHelper {
         showCustomDialog(context, title, message, "OK", null, DialogType.DANGER, false, onConfirm, null);
     }
 
-    // 3. Dùng cho Thông báo thành công / Info (Chỉ có 1 nút OK màu xanh NORMAL)
+    /**
+     * Success/Info dialog (Single PRIMARY button).
+     */
     public static void showSuccess(
             Context context,
             String title,
@@ -142,82 +161,3 @@ public class DialogHelper {
         showCustomDialog(context, title, message, "OK", null, DialogType.NORMAL, false, onConfirm, null);
     }
 }
-
-//Cách dùng:
-//// Báo lỗi: Số tiền phải lớn hơn 0
-//        DialogHelper.showAlert(
-//        this,
-//                "Lỗi nhập liệu",
-//        getString(R.string.error_invalid_money_amount),
-//        () -> {
-//                // Code thực thi sau khi người dùng bấm "OK" (Dialog tự động đóng)
-//                // Ví dụ: Focus lại vào ô nhập tiền
-//                etAmount.requestFocus();
-//        }
-//                );
-//
-//// Xác nhận lưu giao dịch
-//                DialogHelper.showCustomDialog(
-//        this,
-//                "Lưu giao dịch",
-//                "Bạn có chắc chắn muốn lưu giao dịch này vào hệ thống?",
-//        DialogHelper.DialogType.NORMAL, // NORMAL = Nút xanh
-//        () -> {
-//// Code lưu transaction vào Database ở đây
-//saveTransactionToDB();
-//        }
-//                );
-//
-//// Lấy tên category từ list, ví dụ "Ăn uống"
-//String categoryName = "Ăn uống";
-//
-//DialogHelper.showCustomDialog(
-//        this,
-//        getString(R.string.action_delete_category), // "Delete category"
-//getString(R.string.confirm_delete, categoryName), // "Are you sure you want to delete 'Ăn uống'?"
-//getString(R.string.action_delete), // Đổi chữ Confirm -> "Delete"
-//getString(R.string.action_cancel), // Giữ nguyên chữ "Cancel"
-//DialogHelper.DialogType.DANGER,    // DANGER = Nút đỏ
-//        true,                              // Cho phép hiện nút Cancel
-//        () -> {
-//// Code thực thi khi bấm "Delete"
-//deleteCategoryFromDB(categoryName);
-//        },
-//                () -> {
-//                // Code thực thi khi bấm "Cancel" (Ví dụ: log ra màn hình, hoặc bỏ trống)
-//                }
-//                );
-//
-//                DialogHelper.showCustomDialog(
-//        this,
-//                "Cảnh báo nguy hiểm",
-//        getString(R.string.settings_item_reset_transaction_desc), // "Delete all the transactions"
-//        "Đồng ý Reset", // Đổi tên nút cho rõ ràng
-//                "Thôi",
-//DialogHelper.DialogType.DANGER,
-//        true,
-//        () -> {
-//// Xóa toàn bộ DB
-//resetAllTransactions();
-//        },
-//                null // Nếu bấm Cancel không cần làm gì thêm thì truyền null cho lẹ
-//                );
-// Thông báo xóa thành công, bấm OK là tự tắt dialog, không cần code thêm
-//DialogHelper.showSuccess(
-//        this,
-//                "Thành công",
-//                "Đã xóa danh mục Ăn uống thành công!",
-//                null
-//);
-//
-//// Hoặc nếu muốn làm gì đó sau khi người dùng bấm OK:
-//DialogHelper.showSuccess(
-//        this,
-//                "Thành công",
-//                "Thêm giao dịch mới thành công!",
-//                () -> {
-//// Ví dụ: Load lại danh sách hoặc chuyển về màn hình Home
-//finish();
-//        }
-//                );
-//hehe

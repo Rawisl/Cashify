@@ -1,5 +1,6 @@
 package com.example.cashify.ui.workspace;
 
+import android.annotation.SuppressLint;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,6 +15,8 @@ import com.example.cashify.R;
 import com.example.cashify.data.model.User;
 import com.example.cashify.utils.ImageHelper;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -28,13 +31,14 @@ public class SelectFriendAdapter extends RecyclerView.Adapter<SelectFriendAdapte
     private final OnSelectionChangeListener listener;
 
     public SelectFriendAdapter(List<User> list, Set<String> selectedUids, OnSelectionChangeListener listener) {
-        this.list = list != null ? list : java.util.Collections.emptyList();
-        this.selectedUids = selectedUids != null ? selectedUids : new java.util.HashSet<>();
+        this.list = list != null ? list : new ArrayList<>();
+        this.selectedUids = selectedUids != null ? selectedUids : new HashSet<>();
         this.listener = listener;
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     public void updateList(List<User> newList) {
-        this.list = newList != null ? newList : java.util.Collections.emptyList();
+        this.list = newList != null ? newList : new ArrayList<>();
         notifyDataSetChanged();
     }
 
@@ -52,22 +56,36 @@ public class SelectFriendAdapter extends RecyclerView.Adapter<SelectFriendAdapte
 
         ImageHelper.loadAvatar(user.getAvatarUrl(), holder.imgAvatar, user.getNameToShow());
 
-        // Gỡ listener trước khi set trạng thái để không bị lặp vô tận
+        // CRITICAL: Detach the listener before setting the checked state to prevent infinite loops during view recycling
         holder.cbSelect.setOnCheckedChangeListener(null);
         holder.cbSelect.setChecked(selectedUids.contains(user.getUid()));
 
+        // Reattach listener to handle user interactions
         holder.cbSelect.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (isChecked) selectedUids.add(user.getUid());
-            else selectedUids.remove(user.getUid());
-            if (listener != null) listener.onSelectionChanged(selectedUids.size()); // Báo về Activity/Fragment cha
+            if (isChecked) {
+                selectedUids.add(user.getUid());
+            } else {
+                selectedUids.remove(user.getUid());
+            }
+
+            // Dispatch callback to parent View
+            if (listener != null) {
+                listener.onSelectionChanged(selectedUids.size());
+            }
         });
 
+        // Expand tap target to the entire row
         holder.itemView.setOnClickListener(v -> holder.cbSelect.setChecked(!holder.cbSelect.isChecked()));
     }
 
     @Override
-    public int getItemCount() { return list != null ? list.size() : 0; }
+    public int getItemCount() {
+        return list.size();
+    }
 
+    // =========================================================================
+    // VIEW HOLDER
+    // =========================================================================
     public static class ViewHolder extends RecyclerView.ViewHolder {
         ImageView imgAvatar;
         TextView tvName;

@@ -70,7 +70,6 @@ public class NotificationHelper {
         );
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, channelId)
-                // TODO: Hãy đảm bảo bạn có icon ic_notification trong thư mục res/drawable
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
                 .setContentTitle(title)
                 .setContentText(message)

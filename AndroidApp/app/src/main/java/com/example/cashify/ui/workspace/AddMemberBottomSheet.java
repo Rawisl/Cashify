@@ -1,6 +1,8 @@
 package com.example.cashify.ui.workspace;
 
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
@@ -35,6 +37,10 @@ public class AddMemberBottomSheet extends BottomSheetDialogFragment {
     private List<User> originalList = new ArrayList<>();
     private final Set<String> selectedUids = new HashSet<>();
 
+    // Search optimization (Debounce)
+    private final Handler searchHandler = new Handler(Looper.getMainLooper());
+    private Runnable searchRunnable;
+
     public static AddMemberBottomSheet newInstance(String workspaceId) {
         AddMemberBottomSheet fragment = new AddMemberBottomSheet();
         Bundle args = new Bundle();
@@ -52,21 +58,28 @@ public class AddMemberBottomSheet extends BottomSheetDialogFragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        if (getArguments() != null) workspaceId = getArguments().getString("WORKSPACE_ID");
+
+        if (getArguments() != null) {
+            workspaceId = getArguments().getString("WORKSPACE_ID");
+        }
 
         RecyclerView rvFriendSelect = view.findViewById(R.id.rvFriendSelect);
         btnInvite = view.findViewById(R.id.btnInvite);
         EditText etSearchFriend = view.findViewById(R.id.etSearchFriend);
+
+        // Bind to Activity-scoped ViewModel
         viewModel = new ViewModelProvider(requireActivity()).get(WorkspaceViewModel.class);
 
-        // Khởi tạo Adapter ĐÃ TÁCH
+        // Initialize Adapter with dynamic counter update
         adapter = new SelectFriendAdapter(new ArrayList<>(), selectedUids, selectedCount -> {
-            btnInvite.setText("Invite (" + selectedCount + ")");
+            btnInvite.setText(getString(R.string.invite_count_format, selectedCount));
+            // Fallback if string resource is missing: btnInvite.setText("Invite (" + selectedCount + ")");
         });
 
         rvFriendSelect.setLayoutManager(new LinearLayoutManager(getContext()));
         rvFriendSelect.setAdapter(adapter);
 
+        // Load and observe available friends
         viewModel.loadAvailableFriends(workspaceId);
         viewModel.availableFriends.observe(getViewLifecycleOwner(), users -> {
             if (users != null) {
@@ -75,40 +88,53 @@ public class AddMemberBottomSheet extends BottomSheetDialogFragment {
             }
         });
 
+        // Setup Debounced Search functionality
         etSearchFriend.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) { filter(s.toString().trim()); }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if (searchRunnable != null) searchHandler.removeCallbacks(searchRunnable);
+
+                String query = s == null ? "" : s.toString().trim();
+                searchRunnable = () -> filter(query);
+
+                // Wait 300ms after user stops typing before filtering
+                searchHandler.postDelayed(searchRunnable, 300);
+            }
+
             @Override public void afterTextChanged(Editable s) {}
         });
+
+        // Handle Invitation Action
         btnInvite.setOnClickListener(v -> {
             if (selectedUids.isEmpty()) {
                 ToastHelper.show(getContext(), "Please select at least one friend!");
                 return;
             }
 
-            // Lấy tên Quỹ hiện tại từ ViewModel đang chạy
+            // Retrieve current workspace name from ViewModel
             String wsName = "a workspace";
             if (viewModel.getWorkspaceLiveData().getValue() != null) {
                 wsName = viewModel.getWorkspaceLiveData().getValue().getName();
             }
 
-            // Gửi lời mời với ĐẦY ĐỦ 3 tham số
+            // Dispatch invite request
             viewModel.addSelectedMembers(workspaceId, wsName, new ArrayList<>(selectedUids));
         });
 
-
-        // Lắng nghe khi gửi mời thành công
+        // Observe Success State
         viewModel.actionSuccess.observe(getViewLifecycleOwner(), isSuccess -> {
-            if (isSuccess != null && isSuccess) {
-                ToastHelper.show(getContext(), "You have invited selected friends!");
-                viewModel.resetActionStatus(); // Reset lại cờ để lần sau bấm tiếp được
-                dismiss(); // Đóng BottomSheet
+            if (Boolean.TRUE.equals(isSuccess)) {
+                ToastHelper.show(getContext(), "Invitations sent successfully!");
+                viewModel.resetActionStatus();
+                dismiss();
             }
         });
 
-        // Lắng nghe nếu có lỗi xảy ra (Ví dụ: Server C# chưa bật)
+        // Observe Error State
         viewModel.errorMessage.observe(getViewLifecycleOwner(), error -> {
-            if (error != null) {
+            if (error != null && !error.isEmpty()) {
                 ToastHelper.show(getContext(), error);
                 viewModel.resetActionStatus();
             }
@@ -116,10 +142,18 @@ public class AddMemberBottomSheet extends BottomSheetDialogFragment {
     }
 
     private void filter(String query) {
-        if (query.isEmpty()) { adapter.updateList(originalList); return; }
+        if (query.isEmpty()) {
+            adapter.updateList(originalList);
+            return;
+        }
+
         List<User> filtered = new ArrayList<>();
+        String lowerCaseQuery = query.toLowerCase();
+
         for (User u : originalList) {
-            if (u.getNameToShow().toLowerCase().contains(query.toLowerCase())) filtered.add(u);
+            if (u.getNameToShow() != null && u.getNameToShow().toLowerCase().contains(lowerCaseQuery)) {
+                filtered.add(u);
+            }
         }
         adapter.updateList(filtered);
     }

@@ -33,21 +33,21 @@ public class AddFriendBottomSheet extends BottomSheetDialogFragment {
         edtEmailInput = view.findViewById(R.id.edtEmailInput);
         btnSendRequest = view.findViewById(R.id.btnSendRequest);
 
-        // Móc lấy ViewModel CHUNG với thằng Activity cha
+        // Bind to Activity-scoped ViewModel to share data/state with the parent Activity
         socialViewModel = new ViewModelProvider(requireActivity()).get(SocialViewModel.class);
 
         btnSendRequest.setOnClickListener(v -> {
             String email = edtEmailInput.getText() != null ? edtEmailInput.getText().toString().trim() : "";
 
             if (email.isEmpty()) {
-                edtEmailInput.setError("Vui lòng nhập Email!");
+                edtEmailInput.setError("Please enter an email address!");
                 return;
             }
 
-            // Gọi hàm check và bắn Request lên mây
+            // Delegate network request and validation to the ViewModel
             socialViewModel.searchAndSendRequestByEmail(email);
 
-            // Đóng BottomSheet vuốt xuống cái vèo cho ngầu
+            // Dismiss the BottomSheet immediately for a snappy UX
             dismiss();
         });
     }

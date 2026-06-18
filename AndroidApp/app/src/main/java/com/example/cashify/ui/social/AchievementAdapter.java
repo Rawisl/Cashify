@@ -10,21 +10,22 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
-import com.example.cashify.utils.ApiService.AchievementSuggestion;
+import com.example.cashify.data.remote.ApiDto;
+
 
 import java.util.List;
 
 public class AchievementAdapter extends RecyclerView.Adapter<AchievementAdapter.ViewHolder> {
 
-    private final List<AchievementSuggestion> achievements;
+    private final List<ApiDto.AchievementSuggestion> achievements;
     private final OnAchievementClickListener listener;
 
     // Interface để truyền sự kiện click ngược ra ngoài Fragment
     public interface OnAchievementClickListener {
-        void onAchievementClick(AchievementSuggestion achievement);
+        void onAchievementClick(ApiDto.AchievementSuggestion achievement);
     }
 
-    public AchievementAdapter(List<AchievementSuggestion> achievements, OnAchievementClickListener listener) {
+    public AchievementAdapter(List<ApiDto.AchievementSuggestion> achievements, OnAchievementClickListener listener) {
         this.achievements = achievements;
         this.listener = listener;
     }
@@ -39,7 +40,7 @@ public class AchievementAdapter extends RecyclerView.Adapter<AchievementAdapter.
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        AchievementSuggestion currentItem = achievements.get(position);
+        ApiDto.AchievementSuggestion currentItem = achievements.get(position);
 
         // Đổ dữ liệu text và icon emoji vào UI
         if (currentItem.iconText != null) {

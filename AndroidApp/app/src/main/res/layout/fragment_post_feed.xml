@@ -234,21 +234,42 @@
                     android:paddingBottom="20dp">
 
                     <EditText
-                        android:id="@+id/editPostContent"
+                        android:id="@+id/editPostTitle"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:background="@android:color/transparent"
                         android:fontFamily="@font/inter_bold"
+                        android:hint="Title"
+                        android:inputType="textCapSentences"
+                        android:maxLength="80"
+                        android:padding="0dp"
+                        android:textColor="@color/brand_primary"
+                        android:textColorHint="@color/btn_disabled_text"
+                        android:textSize="22sp" />
+
+                    <View
+                        android:id="@+id/dividerTitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="12dp"
+                        android:layout_marginBottom="12dp"
+                        android:background="@color/cardview_divider" />
+                    <EditText
+                        android:id="@+id/editPostContent"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@android:color/transparent"
+                        android:fontFamily="@font/inter_regular"
                         android:gravity="top|start"
                         android:hint="@string/post_content"
                         android:inputType="textMultiLine|textCapSentences"
                         android:lineSpacingExtra="5dp"
                         android:maxLength="280"
-                        android:minHeight="164dp"
+                        android:minHeight="120dp"
                         android:padding="0dp"
                         android:textColor="@color/item_title"
                         android:textColorHint="@color/btn_disabled_text"
-                        android:textSize="20sp" />
+                        android:textSize="18sp" />
 
                     <View
                         android:layout_width="match_parent"
@@ -263,7 +284,7 @@
                         android:fontFamily="@font/outfit_regular"
                         android:gravity="center_vertical|end"
                         android:text="@string/composer_count"
-                    android:textColor="@color/item_description"
+                        android:textColor="@color/item_description"
                         android:textSize="13sp" />
                 </LinearLayout>
 

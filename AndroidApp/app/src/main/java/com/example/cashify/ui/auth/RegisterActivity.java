@@ -1,22 +1,19 @@
 package com.example.cashify.ui.auth;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.util.Patterns;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.example.cashify.ui.main.MainActivity;
 import com.example.cashify.R;
 import com.example.cashify.utils.ToastHelper;
 
 public class RegisterActivity extends AppCompatActivity {
-    //màn hình đăng ký
+
     private AuthViewModel authViewModel;
     private EditText edtName, edtEmail, edtPassword, edtConfirmPassword;
     private Button btnRegister;
@@ -45,56 +42,44 @@ public class RegisterActivity extends AppCompatActivity {
         tvHasAccount = findViewById(R.id.tvHasAccount);
 
         btnRegister.setOnClickListener(v -> {
-            String name = edtName.getText().toString().trim();
-            String email = edtEmail.getText().toString().trim();
-            String pass = edtPassword.getText().toString().trim();
-            String confirmPass = edtConfirmPassword.getText().toString().trim();
+            // Null-safe text extraction
+            String name = edtName.getText() != null ? edtName.getText().toString().trim() : "";
+            String email = edtEmail.getText() != null ? edtEmail.getText().toString().trim() : "";
+            String pass = edtPassword.getText() != null ? edtPassword.getText().toString().trim() : "";
+            String confirmPass = edtConfirmPassword.getText() != null ? edtConfirmPassword.getText().toString().trim() : "";
 
-            // Kiểm tra rỗng (Thêm confirmPass vào check cho kỹ)
+            // Basic validation
             if (name.isEmpty() || email.isEmpty() || pass.isEmpty() || confirmPass.isEmpty()) {
-                ToastHelper.show(this, "Please fill in all fields");
+                ToastHelper.show(this, "Please fill in all fields.");
                 return;
             }
 
-            // THIẾU Ở ĐÂY: Kiểm tra định dạng Email hợp lệ (có @ và domain)
+            // Email format validation
             if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-                ToastHelper.show(this, "Invalid email address (example: abc@gmail.com)");
+                ToastHelper.show(this, "Invalid email format (e.g., example@gmail.com).");
                 return;
             }
 
-            // Kiểm tra độ dài mật khẩu
+            // Password strength and matching validation
             if (pass.length() < 6) {
-                ToastHelper.show(this, "Password must be at least 6 characters");
+                ToastHelper.show(this, "Password must be at least 6 characters.");
                 return;
             }
 
-            // Kiểm tra khớp mật khẩu
             if (!pass.equals(confirmPass)) {
-                ToastHelper.show(this, "Passwords do not match");
+                ToastHelper.show(this, "Passwords do not match.");
                 return;
             }
 
-            // Mọi thứ OK -> Gọi ViewModel
+            // All validations passed, delegate execution to ViewModel
             authViewModel.register(email, pass, name);
         });
 
-        // ============================================================
-        // TODO 3: NÚT "ĐÃ CÓ TÀI KHOẢN"
-        // - Kết thúc Activity (finish()) để quay lại màn hình Login.
-        // ============================================================
-
+        // Terminate Activity to return to the Login screen
         tvHasAccount.setOnClickListener(v -> finish());
     }
 
     private void observeViewModel() {
-        // ============================================================
-        // TODO 4: QUAN SÁT VIEWMODEL
-        // - isLoading: Hiện/ẩn ProgressBar.
-        // - errorMessage: Thông báo nếu Email đã tồn tại hoặc lỗi mạng.
-        // - isAuthSuccess: Nếu thành công, hiện Toast chúc mừng
-        //   và chuyển thẳng vào MainActivity (nhớ gọi finish() cái Register này).
-        // ============================================================
-
         authViewModel.isLoading.observe(this, isLoading -> {
             btnRegister.setEnabled(!isLoading);
             btnRegister.setText(isLoading ? "Processing..." : "Sign Up");
@@ -102,24 +87,16 @@ public class RegisterActivity extends AppCompatActivity {
 
         authViewModel.errorMessage.observe(this, error -> {
             if (error != null && !error.isEmpty()) {
-                ToastHelper.show(this, "Error: " + error);
+                ToastHelper.show(this, error);
             }
         });
 
         authViewModel.infoMessage.observe(this, info -> {
             if (info != null && !info.isEmpty()) {
                 ToastHelper.show(this, info);
+                // Close registration screen upon successful registration
                 finish();
             }
         });
-
-//        Để dành cái này sau phát triển
-//        authViewModel.isAuthSuccess.observe(this, isSuccess -> {
-//            if (isSuccess) {
-//               ToastHelper.show(this, "Register successful!");
-//                startActivity(new Intent(this, MainActivity.class));
-//                finishAffinity(); // Đóng hết tất cả màn hình Login/Register
-//            }
-//        });
     }
 }

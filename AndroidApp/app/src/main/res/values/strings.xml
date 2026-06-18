@@ -19,10 +19,12 @@
     <string name="action_see_all">See All</string>
     <string name="action_next">Next</string>
     <string name="action_update">Update</string>
-    <string name="action_search">Search…</string>
+    <string name="action_sign_in">Sign In</string>
+    <string name="action_search">Search...</string>
     <string name="action_reset">Reset</string>
     <string name="action_confirm">Confirm</string>
     <string name="action_back">Back</string>
+    <string name="action_processing">Processing...</string>
     <string name="action_add_new_budget">Add new budget</string>
     <string name="action_enter_amount">Enter amount</string>
     <string name="action_add_transaction">Add transaction</string>
@@ -31,6 +33,7 @@
     <string name="action_reset_transactions">Reset transactions</string>
     <string name="action_accept">Accept</string>
     <string name="action_decline">Decline</string>
+    <string name="onboarding_prompt">Already have an account? Sign In</string>
 
     <!-- ======================== -->
     <!-- Navigation              -->
@@ -540,5 +543,8 @@
     <string name="bank">🏦</string>
     <string name="cup">🏆</string>
 
-
+    <string name="friend_count_format">%1$d people</string>
+    <string name="friend_requests_waiting">%1$d requests waiting for your response</string>
+    <string name="friend_requests_empty">View pending friend requests</string>
+    <string name="invite_count_format">Invite (%1$d)</string>
 </resources>

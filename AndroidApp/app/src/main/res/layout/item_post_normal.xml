@@ -37,15 +37,6 @@
                 android:scaleType="centerCrop"
                 android:visibility="gone" />
 
-            <View
-                android:id="@+id/decorCircle"
-                android:layout_width="104dp"
-                android:layout_height="104dp"
-                android:layout_gravity="top|end"
-                android:layout_marginTop="-30dp"
-                android:layout_marginEnd="-24dp"
-                android:background="@drawable/bg_milestone_glow" />
-
             <ImageView
                 android:id="@+id/decorIcon"
                 android:layout_width="58dp"
@@ -135,7 +126,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:fontFamily="@font/inter_regular"
-                    android:textColor="@color/item_description"
+                        android:textColor="@color/item_description"
                         android:textSize="12sp"
                         tools:text="@string/time_ago" />
 
@@ -165,10 +156,22 @@
         </LinearLayout>
 
         <TextView
-            android:id="@+id/txtPostContent"
+            android:id="@+id/txtPostTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="14dp"
+            android:fontFamily="@font/inter_bold"
+            android:textColor="@color/brand_primary"
+            android:textSize="18sp"
+            android:visibility="gone"
+            tools:text="Title"
+            tools:visibility="visible" />
+
+        <TextView
+            android:id="@+id/txtPostContent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
             android:fontFamily="@font/inter_regular"
             android:lineSpacingExtra="4dp"
             android:textColor="@color/item_title"
@@ -190,58 +193,106 @@
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="44dp"
             android:layout_marginTop="14dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:fontFamily="@font/inter_regular"
-                android:text="@string/like_comment"
-                android:textColor="@color/item_description"
-                android:textSize="12sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="@font/inter_regular"
-                android:text="@string/share_state"
-                android:textColor="@color/item_description"
-                android:textSize="12sp" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="44dp"
-            android:layout_marginTop="12dp"
-            android:gravity="center"
-            android:orientation="horizontal">
-
-            <TextView
+            <LinearLayout
                 android:id="@+id/btnLike"
-                style="@style/feed_action_text"
-                android:background="@drawable/bg_social_action_soft"
-                android:drawableStart="@drawable/ic_feed_like"
-                android:text="@string/like" />
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginEnd="4dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_action_button"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp">
 
-            <TextView
+                <ImageView
+                    android:id="@+id/imgLikeHeart"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:src="@drawable/ic_heart_outline"
+                    app:tint="@color/icon_inactive" />
+
+                <TextView
+                    android:id="@+id/tvLikeCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="@string/zero"
+                    android:textColor="@color/item_description"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
                 android:id="@+id/btnComment"
-                style="@style/feed_action_text"
-                android:layout_marginStart="8dp"
-                android:background="@drawable/bg_social_action_soft"
-                android:drawableStart="@drawable/ic_feed_comment"
-                android:text="@string/comment" />
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_action_button"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp">
 
-            <TextView
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:src="@drawable/ic_comment"
+                    app:tint="@color/icon_inactive" />
+
+                <TextView
+                    android:id="@+id/tvCommentCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="@string/zero"
+                    android:textColor="@color/item_description"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
                 android:id="@+id/btnShare"
-                style="@style/feed_action_text"
-                android:layout_marginStart="8dp"
-                android:background="@drawable/bg_social_action_soft"
-                android:drawableStart="@drawable/ic_feed_share"
-                android:text="@string/share" />
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="4dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_action_button"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp">
+
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:src="@drawable/ic_share"
+                    app:tint="@color/icon_inactive" />
+
+                <TextView
+                    android:id="@+id/tvShareCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="@string/share"
+                    android:textColor="@color/item_description"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
         </LinearLayout>
+
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

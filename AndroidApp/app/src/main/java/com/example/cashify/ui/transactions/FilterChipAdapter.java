@@ -1,5 +1,6 @@
 package com.example.cashify.ui.transactions;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.view.LayoutInflater;
@@ -30,6 +31,7 @@ public class FilterChipAdapter extends RecyclerView.Adapter<FilterChipAdapter.Ch
         this.listener = listener;
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     public void setChips(List<FilterChip> newChips) {
         this.chips = newChips != null ? newChips : new ArrayList<>();
         notifyDataSetChanged();
@@ -38,7 +40,6 @@ public class FilterChipAdapter extends RecyclerView.Adapter<FilterChipAdapter.Ch
     @NonNull
     @Override
     public ChipViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        // Sử dụng layout mới chỉ có 1 thẻ Chip
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_filter_chip, parent, false);
         return new ChipViewHolder(view);
     }
@@ -49,12 +50,12 @@ public class FilterChipAdapter extends RecyclerView.Adapter<FilterChipAdapter.Ch
         Chip chipView = holder.filterChip;
         Context context = chipView.getContext();
 
-        // Set nội dung hiển thị
+        // Update text based on active state
         chipView.setText(chipData.isActive() ? chipData.getActiveLabel() : chipData.getFilLabel());
         chipView.setChipIconVisible(false);
         chipView.setCheckedIconVisible(false);
 
-        // Thay đổi Giao diện (Màu sắc & Icon) trực tiếp bằng code
+        // Dynamically update UI (Colors & Icons) based on state
         if (chipData.isActive()) {
             // --- ACTIVE STATE ---
             chipView.setChipBackgroundColorResource(R.color.status_background_green);
@@ -63,10 +64,9 @@ public class FilterChipAdapter extends RecyclerView.Adapter<FilterChipAdapter.Ch
 
             chipView.setCloseIconVisible(true);
             chipView.setCloseIconResource(android.R.drawable.ic_menu_close_clear_cancel);
-            // Đổi màu icon X thành xanh
             chipView.setCloseIconTint(ColorStateList.valueOf(ContextCompat.getColor(context, R.color.brand_primary)));
 
-            // Bấm vào dấu X để xóa lọc
+            // Action: Clear filter
             chipView.setOnCloseIconClickListener(v -> {
                 int adapterPosition = holder.getAdapterPosition();
                 if (listener != null && adapterPosition != RecyclerView.NO_POSITION) {
@@ -81,11 +81,10 @@ public class FilterChipAdapter extends RecyclerView.Adapter<FilterChipAdapter.Ch
             chipView.setTextColor(ContextCompat.getColor(context, R.color.item_title));
 
             chipView.setCloseIconVisible(true);
-            chipView.setCloseIconResource(android.R.drawable.arrow_down_float);
-            // Đổi màu icon mũi tên thành xám
+            chipView.setCloseIconResource(android.R.drawable.arrow_down_float); // Expand arrow
             chipView.setCloseIconTint(ColorStateList.valueOf(ContextCompat.getColor(context, R.color.item_title)));
 
-            // Bấm vào icon mũi tên để mở menu
+            // Action: Open filter menu
             chipView.setOnCloseIconClickListener(v -> {
                 int adapterPosition = holder.getAdapterPosition();
                 if (listener != null && adapterPosition != RecyclerView.NO_POSITION) {
@@ -94,7 +93,7 @@ public class FilterChipAdapter extends RecyclerView.Adapter<FilterChipAdapter.Ch
             });
         }
 
-        // Bấm vào phần chữ của Chip để mở menu
+        // Action: Open filter menu via body click
         chipView.setOnClickListener(v -> {
             int adapterPosition = holder.getAdapterPosition();
             if (listener != null && adapterPosition != RecyclerView.NO_POSITION) {

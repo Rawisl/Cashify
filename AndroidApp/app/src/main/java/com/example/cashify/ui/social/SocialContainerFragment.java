@@ -18,9 +18,16 @@ import androidx.navigation.fragment.NavHostFragment;
 import com.example.cashify.R;
 
 public class SocialContainerFragment extends Fragment {
+
+    // =========================================================================
+    // CONSTANTS: Navigation Bar Colors
+    // =========================================================================
     private static final int ACTIVE_COLOR = Color.rgb(26, 35, 126);
     private static final int INACTIVE_COLOR = Color.rgb(96, 125, 139);
 
+    // =========================================================================
+    // UI COMPONENTS
+    // =========================================================================
     private View navNewsfeed;
     private View navProfile;
     private ImageView imgNewsfeed;
@@ -48,6 +55,8 @@ public class SocialContainerFragment extends Fragment {
         if (navHostFragment == null) return;
 
         NavController navController = navHostFragment.getNavController();
+
+        // Bind UI Elements
         navNewsfeed = view.findViewById(R.id.navSocialNewsfeed);
         navProfile = view.findViewById(R.id.navSocialProfile);
         imgNewsfeed = view.findViewById(R.id.imgSocialNewsfeed);
@@ -55,16 +64,23 @@ public class SocialContainerFragment extends Fragment {
         txtNewsfeed = view.findViewById(R.id.txtSocialNewsfeed);
         txtProfile = view.findViewById(R.id.txtSocialProfile);
 
+        // Setup Click Listeners for Navigation Routing
         navNewsfeed.setOnClickListener(v -> navigateIfNeeded(navController, R.id.nav_social_newsfeed));
         navProfile.setOnClickListener(v -> navigateIfNeeded(navController, R.id.nav_social_profile));
 
+        // Listen for destination changes to update the active state styling
         navController.addOnDestinationChangedListener((controller, destination, arguments) ->
                 updateSelectedState(destination.getId()));
+
+        // Set initial state
         updateSelectedState(navController.getCurrentDestination() == null
                 ? R.id.nav_social_newsfeed
                 : navController.getCurrentDestination().getId());
     }
 
+    /**
+     * Prevents redundant navigation events if the user clicks the currently active tab.
+     */
     private void navigateIfNeeded(NavController navController, int destinationId) {
         if (navController.getCurrentDestination() != null
                 && navController.getCurrentDestination().getId() == destinationId) {
@@ -79,12 +95,18 @@ public class SocialContainerFragment extends Fragment {
         bindNavItem(navProfile, imgProfile, txtProfile, !newsfeedSelected);
     }
 
+    /**
+     * Applies styling (color, font weight, opacity) based on the active/inactive state of a nav item.
+     */
     private void bindNavItem(View item, ImageView icon, TextView label, boolean selected) {
         if (item == null || icon == null || label == null) return;
+
         int color = selected ? ACTIVE_COLOR : INACTIVE_COLOR;
         float inactiveAlpha = getResources().getFraction(R.fraction.bottom_nav_social_inactive_alpha, 1, 1);
+
         item.setSelected(selected);
         item.setAlpha(selected ? 1f : inactiveAlpha);
+
         icon.setColorFilter(color);
         label.setTextColor(color);
         label.setTypeface(label.getTypeface(), selected ? Typeface.BOLD : Typeface.NORMAL);

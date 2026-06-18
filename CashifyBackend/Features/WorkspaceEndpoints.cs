@@ -669,6 +669,72 @@ public static class WorkspaceEndpoints
             }
         });
 
+        // THÊM MỚI DANH MỤC QUỸ
+        group.MapPost("/category/add", async (HttpRequest request, AddCategoryRequest body, FirestoreDb db) =>
+        {
+            try
+            {
+                var authHeader = request.Headers["Authorization"].FirstOrDefault();
+                if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
+                    return Results.Unauthorized();
+
+                var token = authHeader.Substring("Bearer ".Length);
+                var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token)).Uid;
+
+                // Validate dữ liệu đầu vào cơ bản
+                if (string.IsNullOrEmpty(body.WorkspaceId) || string.IsNullOrEmpty(body.Name))
+                    return Results.BadRequest("Missing required category information");
+
+                var wsRef = db.Collection("workspaces").Document(body.WorkspaceId);
+                var wsSnap = await wsRef.GetSnapshotAsync();
+
+                if (!wsSnap.Exists)
+                    return Results.NotFound("Fund not found");
+
+                // Bảo mật: Giữ nguyên logic chỉ Owner mới được tác động đến cấu trúc danh mục
+                if (uid != wsSnap.GetValue<string>("ownerId"))
+                    return Results.StatusCode(403);
+
+                var batch = db.StartBatch();
+
+                // 1. Khởi tạo Document ID mới cho Category
+                var newCatRef = wsRef.Collection("categories").Document();
+
+                var categoryData = new Dictionary<string, object>
+        {
+            { "name", body.Name },
+            { "iconName", string.IsNullOrEmpty(body.IconName) ? "ic_other" : body.IconName },
+            { "colorCode", string.IsNullOrEmpty(body.ColorCode) ? "#313B60" : body.ColorCode },
+            { "type", body.Type },
+            { "isDefault", 0 },
+            { "isDeleted", 0 },
+            { "workspaceId", body.WorkspaceId } // Gắn thêm để đồng bộ cấu trúc Model bên Android
+        };
+
+                batch.Set(newCatRef, categoryData);
+
+                // 2. Ghi Log hành động để hiển thị lên bảng tin Workspace
+                var logRef = wsRef.Collection("logs").Document();
+                batch.Set(logRef, new
+                {
+                    actionType = "ADD_CATEGORY",
+                    message = $"created a new category \"{body.Name}\"",
+                    userId = uid,
+                    timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+                });
+
+                // 3. Thực thi đồng thời cả 2 thao tác
+                await batch.CommitAsync();
+
+                return Results.Ok(new
+                {
+                    message = "Category added successfully!",
+                    categoryId = newCatRef.Id // Trả ID về cho Android nếu cần dùng liền
+                });
+            }
+            catch (Exception ex) { return Results.Problem($"System error: {ex.Message}"); }
+        });
+
         //XÓA MỀM DANH MỤC CHO OWNER
         group.MapPost("/category/delete", async (HttpRequest request, CategoryDeleteRequest body, FirestoreDb db) =>
         {

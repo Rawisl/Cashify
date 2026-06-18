@@ -40,8 +40,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
 import com.example.cashify.ui.social.AchievementAdapter;
+import com.example.cashify.utils.CurrencyFormatter;
+import com.example.cashify.utils.DialogHelper;
 import com.example.cashify.utils.ImageHelper;
-import com.example.cashify.utils.UploadNotificationHelper;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.button.MaterialButton;
@@ -50,9 +51,9 @@ import com.google.android.material.chip.ChipGroup;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestore;
 
-import java.io.File;
+import org.json.JSONObject;
+
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -60,35 +61,28 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.example.cashify.utils.DialogHelper;
-
-
 public class CommunityFeedFragment extends Fragment {
+
     private final Handler handler = new Handler(Looper.getMainLooper());
+    private CommunityFeedViewModel viewModel;
 
     private EditText editPostContent;
-    private TextView txtComposerCount;
-    private TextView txtComposerHint;
-    private TextView btnAudience;
-    private TextView btnAudienceFriends;
-    private TextView btnAudiencePrivate;
-    private TextView actionMilestone;
-    private TextView actionThoughts;
-    private TextView actionAnalysis;
-    private TextView actionShare;
-    private TextView actionPhoto;
+    private EditText editPostTitle;
+    private TextView txtComposerCount, txtComposerHint, btnAudience;
+    private TextView btnAudienceFriends, btnAudiencePrivate;
+    private TextView actionMilestone, actionThoughts, actionAnalysis, actionShare, actionPhoto;
     private LinearLayout panelCategoryMode;
-    private ImageView imgModeIcon;
-    private TextView txtModeKicker;
-    private TextView txtModeTitle;
-    private TextView txtModeDescription;
-    private TextView txtModePrompt;
+    private ImageView imgModeIcon, imgPostPreview, imgComposerAvatar;
+    private TextView txtModeKicker, txtModeTitle, txtModeDescription, txtModePrompt;
     private MaterialButton btnSubmitPost;
     private ProgressBar progressPosting;
     private FrameLayout imagePreviewContainer;
-    private ImageView imgPostPreview;
-    private ImageView imgComposerAvatar;
     private ChipGroup chipGroupTopics;
+    private PopupWindow audiencePopup;
+
+    private View milestonePreviewContainer;
+    private TextView tvPreviewIcon, tvPreviewTitle, tvPreviewMonth, tvPreviewAmount;
+    private ProgressBar pbPreviewProgress;
 
     private Uri selectedImageUri;
     private boolean milestoneMode;
@@ -97,13 +91,8 @@ public class CommunityFeedFragment extends Fragment {
     private String selectedCategoryKey = "thoughts";
     private final Set<String> selectedTopicHashtags = new LinkedHashSet<>();
     private boolean applyingHashtagStyle = false;
-    private PopupWindow audiencePopup;
+    private String generatedMilestoneJson = null;
 
-    private View milestonePreviewContainer;
-    private TextView tvPreviewIcon, tvPreviewTitle, tvPreviewMonth, tvPreviewAmount;
-    private ProgressBar pbPreviewProgress;
-    private String generatedMilestoneJson = null; // Cục JSON để dành lúc bấm Đăng
-    private CommunityFeedViewModel viewModel;
     private final ActivityResultLauncher<String> pickImageLauncher =
             registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
                 if (uri == null) return;
@@ -118,7 +107,7 @@ public class CommunityFeedFragment extends Fragment {
                             "Cancel",
                             DialogHelper.DialogType.DANGER,
                             true,
-                            () -> actionPhoto.performClick(), // Dùng performClick thay vì gọi pickImageLauncher
+                            () -> actionPhoto.performClick(),
                             null
                     );
                     return;
@@ -133,35 +122,28 @@ public class CommunityFeedFragment extends Fragment {
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater,
-                             @Nullable ViewGroup container,
-                             @Nullable Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_post_feed, container, false);
     }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        viewModel = new ViewModelProvider(this).get(CommunityFeedViewModel.class);
+
         bindViews(view);
         setupToolbar(view);
         setupComposer(view);
-        viewModel = new ViewModelProvider(this).get(CommunityFeedViewModel.class);
-        ImageView btnRemoveMilestonePreview = view.findViewById(R.id.btnRemoveMilestonePreview);
+        setupObservers();
 
+        ImageView btnRemoveMilestonePreview = view.findViewById(R.id.btnRemoveMilestonePreview);
         btnRemoveMilestonePreview.setOnClickListener(v -> {
-            // 1. Ẩn thẻ Preview
             milestonePreviewContainer.setVisibility(View.GONE);
             milestoneMode = false;
-
-            // 2. Xóa data JSON đã lưu tạm
             generatedMilestoneJson = null;
-
-            // 3. Phục hồi lại giao diện Composer như cũ
             actionPhoto.setVisibility(View.VISIBLE);
             actionMilestone.setVisibility(View.VISIBLE);
-            txtComposerHint.setText("Bạn muốn chia sẻ chuyện tiền bạc gì hôm nay?");
-
-            // 4. Check lại nút Đăng (nếu không có text/ảnh thì làm mờ nút)
+            txtComposerHint.setText("What financial story would you like to share today?");
             updateSubmitState();
         });
     }
@@ -174,6 +156,7 @@ public class CommunityFeedFragment extends Fragment {
 
     private void bindViews(View view) {
         editPostContent = view.findViewById(R.id.editPostContent);
+        editPostTitle = view.findViewById(R.id.editPostTitle);
         txtComposerCount = view.findViewById(R.id.txtComposerCount);
         txtComposerHint = view.findViewById(R.id.txtComposerHint);
         btnAudience = view.findViewById(R.id.btnAudience);
@@ -196,6 +179,7 @@ public class CommunityFeedFragment extends Fragment {
         imgPostPreview = view.findViewById(R.id.imgPostPreview);
         imgComposerAvatar = view.findViewById(R.id.imgComposerAvatar);
         chipGroupTopics = view.findViewById(R.id.chipGroupTopics);
+
         milestonePreviewContainer = view.findViewById(R.id.milestonePreviewContainer);
         if (milestonePreviewContainer != null) {
             tvPreviewIcon = milestonePreviewContainer.findViewById(R.id.tvPreviewIcon);
@@ -214,28 +198,23 @@ public class CommunityFeedFragment extends Fragment {
     private void setupComposer(View view) {
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         TextView txtComposerName = view.findViewById(R.id.txtComposerName);
+
         if (user != null) {
             String composerName = cleanDisplayName(user.getDisplayName());
             txtComposerName.setText(composerName);
-            ImageHelper.loadAvatar(user.getPhotoUrl(), imgComposerAvatar,
-                    firstNonEmpty(composerName, user.getEmail(), user.getUid()));
-            FirebaseFirestore.getInstance().collection("users").document(user.getUid()).get()
-                    .addOnSuccessListener(doc -> bindCurrentUserProfile(doc, txtComposerName));
+            ImageHelper.loadAvatar(user.getPhotoUrl(), imgComposerAvatar, firstNonEmpty(composerName, user.getEmail(), user.getUid()));
+
+            // Delegate Firestore Profile Fetching to ViewModel
+            viewModel.loadUserProfile();
         }
 
         editPostContent.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
                 txtComposerCount.setText(String.format(Locale.US, "%d/280", s.length()));
                 updateSubmitState();
             }
-
-            @Override
-            public void afterTextChanged(Editable s) {
+            @Override public void afterTextChanged(Editable s) {
                 applyHashtagStyle(s);
             }
         });
@@ -243,129 +222,163 @@ public class CommunityFeedFragment extends Fragment {
         editPostContent.setOnFocusChangeListener((v, hasFocus) -> {
             if (hasFocus) {
                 txtComposerHint.setText(milestoneMode
-                        ? "Bài cột mốc sẽ hay hơn khi có một chiến thắng thật rõ."
-                        : "Bắt đầu một câu chuyện tài chính nhỏ.");
+                        ? "Milestones are better when celebrating a clear win."
+                        : "Start a small financial story.");
             }
         });
 
-        // HỨNG "BƯU KIỆN" TỪ BUDGET FRAGMENT TRUYỀN SANG
-        if (getArguments() != null && getArguments().containsKey("milestone_limit")) {
-            long limit = getArguments().getLong("milestone_limit");
-            long spent = getArguments().getLong("milestone_spent");
-            String periodType = getArguments().getString("milestone_period");
-            String periodLabel = getArguments().getString("milestone_label");
-
-            // Server không làm thì Client làm: Tự tính toán
-            long remaining = limit - spent;
-            int progress = (int) ((spent * 100) / limit);
-            int uiProgress = progress > 100 ? 100 : progress;
-
-            String amountLabel = remaining >= 0
-                    ? "Còn dư: " + com.example.cashify.utils.CurrencyFormatter.formatCompactVND(remaining)
-                    : "Vượt mức: " + com.example.cashify.utils.CurrencyFormatter.formatCompactVND(Math.abs(remaining));
-            String iconText = progress + "%";
-            String title = "Tổng kết " + ("MONTH".equals(periodType) ? "Ngân sách tháng" : "Ngân sách tuần");
-            String defaultDescription = remaining >= 0
-                    ? "You've managed your spending very well this period. Great job! 🚀"
-                    : "You've gone over budget this period. Try to stay on track next time. 🥲";
-
-            // Hiển thị lên giao diện thẻ Bo góc
-            milestoneMode = true;
-            milestonePreviewContainer.setVisibility(View.VISIBLE);
-            tvPreviewIcon.setText(iconText);
-            tvPreviewTitle.setText(title);
-            tvPreviewMonth.setText(periodLabel);
-            tvPreviewAmount.setText(amountLabel);
-            pbPreviewProgress.setProgress(uiProgress);
-
-            // Tắt nút Thêm Ảnh đi vì đã có cột mốc
-            actionPhoto.setVisibility(View.GONE);
-            actionMilestone.setVisibility(View.GONE);
-
-            // Gợi ý cho người dùng viết caption
-            txtComposerHint.setText("Your milestone is ready! Post your thought above.");
-
-            // Đóng gói JSON sẵn, đợi bấm Đăng là phi lên C#
-            try {
-                org.json.JSONObject obj = new org.json.JSONObject();
-                obj.put("iconText", iconText);
-                obj.put("title", title);
-                obj.put("description", defaultDescription); // Đề phòng user lười k gõ gì
-                obj.put("month", periodLabel);
-                obj.put("amount", amountLabel);
-                obj.put("progress", uiProgress);
-                generatedMilestoneJson = obj.toString();
-            } catch (Exception ignored) {
-            }
-        }
-
-        // HỨNG DỮ LIỆU ĐỂ MỞ CHẾ ĐỘ CHỈNH SỬA
-        if (getArguments() != null && getArguments().containsKey("edit_post_id")) {
-            String editId = getArguments().getString("edit_post_id");
-            String oldContent = getArguments().getString("edit_post_content");
-            String oldMilestone = getArguments().getString("edit_milestone_data");
-
-            // Fill data cũ vào
-            editPostContent.setText(oldContent);
-            btnSubmitPost.setText("Save changes");
-            txtComposerHint.setText("What's on your mind? Edit your post here...");
-
-            // Nếu là bài Cột mốc thì dựng lại thẻ Preview
-            if (oldMilestone != null && !oldMilestone.isEmpty()) {
-                milestoneMode = true;
-                generatedMilestoneJson = oldMilestone;
-                try {
-                    org.json.JSONObject json = new org.json.JSONObject(oldMilestone);
-                    milestonePreviewContainer.setVisibility(View.VISIBLE);
-                    tvPreviewIcon.setText(json.optString("iconText", getString(R.string.cup)));
-                    tvPreviewTitle.setText(json.optString("title", "Cột mốc"));
-                    tvPreviewMonth.setText(json.optString("month", ""));
-                    tvPreviewAmount.setText(json.optString("amount", ""));
-                    pbPreviewProgress.setProgress(json.optInt("progress", 0));
-
-                    actionPhoto.setVisibility(View.GONE);
-                    actionMilestone.setVisibility(View.GONE);
-                } catch (Exception ignored) {
-                }
-            }
-        }
+        handleIncomingArguments();
 
         updateAudienceButton();
         updateAudienceDock();
-        btnAudience.setOnClickListener(v -> selectAudience("Public"));
+        btnAudience.setOnClickListener(v -> showAudienceMenu(v));
         btnAudienceFriends.setOnClickListener(v -> selectAudience("Friends"));
         btnAudiencePrivate.setOnClickListener(v -> selectAudience("Private"));
         actionPhoto.setOnClickListener(v -> pickImageLauncher.launch("image/*"));
         actionMilestone.setOnClickListener(v -> {
             selectCategory("Milestone", "milestone", true, R.id.chipSaving);
-            showAchievementBottomSheet(); // Gọi hàm hiển thị popup
+            showAchievementBottomSheet();
         });
         actionThoughts.setOnClickListener(v -> selectCategory("Thoughts", "thoughts", false, R.id.chipBudgeting));
         actionAnalysis.setOnClickListener(v -> selectCategory("Analysis", "analysis", false, R.id.chipInvesting));
         actionShare.setOnClickListener(v -> selectCategory("Share", "share", false, R.id.chipDebt));
+
         setupTopicHashtags();
         view.findViewById(R.id.btnRemoveImage).setOnClickListener(v -> clearSelectedImage());
         btnSubmitPost.setOnClickListener(v -> submitPost());
+
         applyInitialCategoryArgument();
         updateCategoryTiles();
         updateCategoryDesign();
         updateSubmitState();
     }
 
+    private void handleIncomingArguments() {
+        if (getArguments() == null) return;
+
+        // Xử lý khi tạo Milestone từ Limit/Budget
+        if (getArguments().containsKey("milestone_limit")) {
+            long limit = getArguments().getLong("milestone_limit");
+            long spent = getArguments().getLong("milestone_spent");
+            String periodType = getArguments().getString("milestone_period");
+            String periodLabel = getArguments().getString("milestone_label");
+
+            long remaining = limit - spent;
+            int progress = (int) ((spent * 100) / limit);
+            int uiProgress = Math.min(progress, 100);
+
+            String amountLabel = remaining >= 0
+                    ? "Remaining: " + CurrencyFormatter.formatCompactVND(remaining)
+                    : "Overspent: " + CurrencyFormatter.formatCompactVND(Math.abs(remaining));
+            String title = "MONTH".equals(periodType) ? "Monthly Budget Summary" : "Weekly Budget Summary";
+            String defaultDescription = remaining >= 0
+                    ? "You've managed your spending very well this period. Great job! 🚀"
+                    : "You've gone over budget this period. Try to stay on track next time. 🥲";
+
+            milestoneMode = true;
+            milestonePreviewContainer.setVisibility(View.VISIBLE);
+            tvPreviewIcon.setText(progress + "%");
+            tvPreviewTitle.setText(title);
+            tvPreviewMonth.setText(periodLabel);
+            tvPreviewAmount.setText(amountLabel);
+            pbPreviewProgress.setProgress(uiProgress);
+
+            actionPhoto.setVisibility(View.GONE);
+            actionMilestone.setVisibility(View.GONE);
+            txtComposerHint.setText("Your milestone is ready! Post your thoughts above.");
+
+            // ẨN Ô TIÊU ĐỀ
+            if (editPostTitle != null) {
+                editPostTitle.setVisibility(View.GONE);
+                View divider = getView() != null ? getView().findViewById(R.id.dividerTitle) : null;
+                if (divider != null) divider.setVisibility(View.GONE);
+            }
+
+            try {
+                JSONObject obj = new JSONObject();
+                obj.put("iconText", progress + "%");
+                obj.put("title", title);
+                obj.put("description", defaultDescription);
+                obj.put("month", periodLabel);
+                obj.put("amount", amountLabel);
+                obj.put("progress", uiProgress);
+                generatedMilestoneJson = obj.toString();
+            } catch (Exception ignored) {}
+        }
+
+        // Xử lý khi Edit bài viết cũ
+        if (getArguments().containsKey("edit_post_id")) {
+            String oldTitle = getArguments().getString("edit_post_title");
+            String oldContent = getArguments().getString("edit_post_content");
+            String oldMilestone = getArguments().getString("edit_milestone_data");
+
+            if (oldTitle != null && editPostTitle != null) {
+                editPostTitle.setText(oldTitle);
+            }
+
+            editPostContent.setText(oldContent);
+            btnSubmitPost.setText("Save changes");
+            txtComposerHint.setText("What's on your mind? Edit your post here...");
+
+            if (oldMilestone != null && !oldMilestone.isEmpty()) {
+                selectedCategoryKey = "milestone";
+                selectedCategory = "Milestone";
+                setMilestoneMode(true);
+                generatedMilestoneJson = oldMilestone;
+
+                try {
+                    JSONObject json = new JSONObject(oldMilestone);
+                    milestonePreviewContainer.setVisibility(View.VISIBLE);
+                    tvPreviewIcon.setText(json.optString("iconText", "🏆"));
+                    tvPreviewTitle.setText(json.optString("title", "Milestone"));
+                    tvPreviewMonth.setText(json.optString("month", ""));
+                    tvPreviewAmount.setText(json.optString("amount", ""));
+                    pbPreviewProgress.setProgress(json.optInt("progress", 0));
+
+                    actionPhoto.setVisibility(View.GONE);
+                    actionMilestone.setVisibility(View.GONE);
+                } catch (Exception ignored) {}
+            }
+        }
+    }
+
+    private void setupObservers() {
+        TextView txtComposerName = getView().findViewById(R.id.txtComposerName);
+        viewModel.getUserProfile().observe(getViewLifecycleOwner(), doc -> bindCurrentUserProfile(doc, txtComposerName));
+
+        viewModel.getIsLoading().observe(getViewLifecycleOwner(), this::setPosting);
+
+        viewModel.getPostEvent().observe(getViewLifecycleOwner(), successMessage -> {
+            if (successMessage != null) {
+                Toast.makeText(requireContext(), successMessage, Toast.LENGTH_SHORT).show();
+                com.example.cashify.ui.social.SocialNewsfeedFragment.needRefreshFeed = true;
+                navigateBack();
+                viewModel.clearPostEvent();
+            }
+        });
+
+        viewModel.getErrorEvent().observe(getViewLifecycleOwner(), errorMsg -> {
+            if (errorMsg != null) {
+                Toast.makeText(requireContext(), errorMsg, Toast.LENGTH_LONG).show();
+                viewModel.clearErrorEvent();
+            }
+        });
+    }
+
     private void applyInitialCategoryArgument() {
         Bundle args = getArguments();
-        if (args == null) {
+        if (args == null) return;
+
+        if (args.containsKey("edit_post_id")) {
             return;
         }
+
         String categoryKey = args.getString("categoryKey", "");
-        if ("milestone".equals(categoryKey)) {
-            selectCategory("Cá»™t má»‘c", "milestone", true, R.id.chipSaving);
-        } else if ("analysis".equals(categoryKey)) {
-            selectCategory("PhÃ¢n tÃ­ch", "analysis", false, R.id.chipInvesting);
-        } else if ("share".equals(categoryKey)) {
-            selectCategory("Chia sáº»", "share", false, R.id.chipDebt);
-        } else if ("thoughts".equals(categoryKey)) {
-            selectCategory("Suy nghÄ©", "thoughts", false, R.id.chipBudgeting);
+        switch (categoryKey) {
+            case "milestone": selectCategory("Milestone", "milestone", true, R.id.chipSaving); break;
+            case "analysis": selectCategory("Analysis", "analysis", false, R.id.chipInvesting); break;
+            case "share": selectCategory("Share", "share", false, R.id.chipDebt); break;
+            case "thoughts": selectCategory("Thoughts", "thoughts", false, R.id.chipBudgeting); break;
         }
     }
 
@@ -422,14 +435,9 @@ public class CommunityFeedFragment extends Fragment {
             selectedAudience = label;
             updateAudienceButton();
             updateAudienceDock();
-            if (audiencePopup != null) {
-                audiencePopup.dismiss();
-            }
+            if (audiencePopup != null) audiencePopup.dismiss();
         });
-        menu.addView(item, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-        ));
+        menu.addView(item, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
     }
 
     private void updateAudienceButton() {
@@ -437,31 +445,21 @@ public class CommunityFeedFragment extends Fragment {
         btnAudience.setTextColor(ContextCompat.getColor(requireContext(), R.color.brand_primary));
         btnAudience.setCompoundDrawablePadding(dp(8));
         btnAudience.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                tintedDrawable(iconForAudience(selectedAudience)),
-                null,
-                tintedDrawable(R.drawable.ic_angle_down_regular),
-                null
+                tintedDrawable(iconForAudience(selectedAudience)), null,
+                tintedDrawable(R.drawable.ic_angle_down_regular), null
         );
-        btnAudience.setCompoundDrawableTintList(ColorStateList.valueOf(
-                ContextCompat.getColor(requireContext(), R.color.brand_primary)));
-        btnAudience.setContentDescription("Privacy: " + selectedAudience);
+        btnAudience.setCompoundDrawableTintList(ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.brand_primary)));
     }
 
     private int iconForAudience(String audience) {
-        if ("Public".equals(audience)) {
-            return R.drawable.ic_privacy_public;
-        }
-        if ("Only Me".equals(audience)) {
-            return R.drawable.ic_privacy_lock;
-        }
+        if ("Public".equals(audience)) return R.drawable.ic_privacy_public;
+        if ("Only Me".equals(audience)) return R.drawable.ic_privacy_lock;
         return R.drawable.ic_friends;
     }
 
     private Drawable tintedDrawable(int iconRes) {
         Drawable drawable = ContextCompat.getDrawable(requireContext(), iconRes);
-        if (drawable == null) {
-            return null;
-        }
+        if (drawable == null) return null;
         Drawable wrapped = DrawableCompat.wrap(drawable.mutate());
         DrawableCompat.setTint(wrapped, ContextCompat.getColor(requireContext(), R.color.brand_primary));
         return wrapped;
@@ -480,24 +478,15 @@ public class CommunityFeedFragment extends Fragment {
 
         view.setText("Only Me".equals(label) ? "Private" : label);
         view.setTextColor(textColor);
-        view.setBackgroundResource(selected
-                ? R.drawable.bg_publish_editorial
-                : R.drawable.bg_privacy_option_inactive);
+        view.setBackgroundResource(selected ? R.drawable.bg_publish_editorial : R.drawable.bg_privacy_option_inactive);
         view.setCompoundDrawablePadding(dp(6));
-        view.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                tintedDrawable(iconRes, iconColor),
-                null,
-                null,
-                null
-        );
+        view.setCompoundDrawablesRelativeWithIntrinsicBounds(tintedDrawable(iconRes, iconColor), null, null, null);
         view.setCompoundDrawableTintList(ColorStateList.valueOf(iconColor));
     }
 
     private Drawable tintedDrawable(int iconRes, int color) {
         Drawable drawable = ContextCompat.getDrawable(requireContext(), iconRes);
-        if (drawable == null) {
-            return null;
-        }
+        if (drawable == null) return null;
         Drawable wrapped = DrawableCompat.wrap(drawable.mutate());
         DrawableCompat.setTint(wrapped, color);
         return wrapped;
@@ -510,18 +499,18 @@ public class CommunityFeedFragment extends Fragment {
     private void setMilestoneMode(boolean enabled) {
         milestoneMode = enabled;
         txtComposerHint.setText(enabled
-                ? "Chế độ cột mốc: chia sẻ mục tiêu, chuỗi ngày tốt hoặc một chiến thắng nhỏ."
-                : "Bắt đầu một câu chuyện tài chính nhỏ.");
+                ? "Milestone mode: share your goal, streak, or a small win."
+                : "Start a small financial story.");
         editPostContent.setHint(enabled
-                ? "Bạn vừa đạt cột mốc nào?"
-                : "Bạn muốn chia sẻ chuyện tiền bạc gì hôm nay?");
+                ? "What milestone did you reach?"
+                : "What financial story would you like to share today?");
+        if (editPostTitle != null) {
+            editPostTitle.setVisibility(enabled ? View.GONE : View.VISIBLE);
+            getView().findViewById(R.id.dividerTitle).setVisibility(enabled ? View.GONE : View.VISIBLE);
+        }
         updateCategoryTiles();
         updateCategoryDesign();
         updateSubmitState();
-    }
-
-    private void selectCategory(String category, boolean milestone, int chipId) {
-        selectCategory(category, categoryKeyFromLabel(category), milestone, chipId);
     }
 
     private void selectCategory(String category, String categoryKey, boolean milestone, int chipId) {
@@ -530,26 +519,8 @@ public class CommunityFeedFragment extends Fragment {
         setMilestoneMode(milestone);
     }
 
-    private String categoryKeyFromLabel(String category) {
-        if (category == null) {
-            return "thoughts";
-        }
-        if (category.contains("Milestone")) {
-            return "milestone";
-        }
-        if (category.contains("Analysis")) {
-            return "analysis";
-        }
-        if (category.contains("Share")) {
-            return "share";
-        }
-        return "thoughts";
-    }
-
     private void setupTopicHashtags() {
-        if (chipGroupTopics == null) {
-            return;
-        }
+        if (chipGroupTopics == null) return;
         setupTopicChipStyle();
         chipGroupTopics.setOnCheckedStateChangeListener((group, checkedIds) -> {
             Set<String> nextHashtags = hashtagsForCheckedIds(checkedIds);
@@ -566,25 +537,16 @@ public class CommunityFeedFragment extends Fragment {
     }
 
     private void updateTopicChipStyle() {
-        styleTopicChip(R.id.chipBudgeting, "#FFF0C9", "#F2C15E", "#7A4D09");
-        styleTopicChip(R.id.chipSaving, "#E2F5DA", "#A7D99B", "#31523B");
-        styleTopicChip(R.id.chipDebt, "#FFE1E5", "#F2A9B4", "#7B3640");
-        styleTopicChip(R.id.chipInvesting, "#E2ECFF", "#AFC5F7", "#294A88");
+        setupTopicChipStyle();
     }
 
-    private void styleTopicChip(int chipId, String selectedBackgroundColor, String selectedStrokeColor, String selectedTextColor) {
+    private void styleTopicChip(int chipId, String bg, String stroke, String textStr) {
         Chip chip = chipGroupTopics.findViewById(chipId);
-        if (chip == null) {
-            return;
-        }
+        if (chip == null) return;
         boolean checked = chip.isChecked();
-        int backgroundColor = checked
-                ? android.graphics.Color.parseColor(selectedBackgroundColor)
-                : ContextCompat.getColor(requireContext(), R.color.bg_main);
-        int strokeColor = android.graphics.Color.parseColor(checked ? selectedStrokeColor : "#E8DCCB");
-        int textColor = checked
-                ? android.graphics.Color.parseColor(selectedTextColor)
-                : ContextCompat.getColor(requireContext(), R.color.brand_primary);
+        int backgroundColor = checked ? android.graphics.Color.parseColor(bg) : ContextCompat.getColor(requireContext(), R.color.bg_main);
+        int strokeColor = android.graphics.Color.parseColor(checked ? stroke : "#E8DCCB");
+        int textColor = checked ? android.graphics.Color.parseColor(textStr) : ContextCompat.getColor(requireContext(), R.color.brand_primary);
         chip.setCheckedIconVisible(false);
         chip.setChipBackgroundColor(ColorStateList.valueOf(backgroundColor));
         chip.setChipStrokeColor(ColorStateList.valueOf(strokeColor));
@@ -593,40 +555,26 @@ public class CommunityFeedFragment extends Fragment {
 
     private Set<String> hashtagsForCheckedIds(List<Integer> checkedIds) {
         Set<String> hashtags = new LinkedHashSet<>();
-        if (checkedIds == null) {
-            return hashtags;
-        }
-        for (Integer checkedId : checkedIds) {
-            if (checkedId != null) {
-                hashtags.add(hashtagForTopic(checkedId));
-            }
-        }
+        if (checkedIds == null) return hashtags;
+        for (Integer id : checkedIds) if (id != null) hashtags.add(hashtagForTopic(id));
         return hashtags;
     }
 
     private String hashtagForTopic(int checkedId) {
-        if (checkedId == R.id.chipSaving) {
-            return "#TietKiem";
-        } else if (checkedId == R.id.chipDebt) {
-            return "#No";
-        } else if (checkedId == R.id.chipInvesting) {
-            return "#DauTu";
-        }
-        return "#NganSach";
+        if (checkedId == R.id.chipSaving) return "#Saving";
+        if (checkedId == R.id.chipDebt) return "#Debt";
+        if (checkedId == R.id.chipInvesting) return "#Investing";
+        return "#Budgeting";
     }
 
     private void syncTopicHashtags(Set<String> nextHashtags) {
         String current = editPostContent.getText().toString();
-        for (String hashtag : selectedTopicHashtags) {
-            current = removeHashtagToken(current, hashtag);
-        }
-
+        for (String hashtag : selectedTopicHashtags) current = removeHashtagToken(current, hashtag);
         String next = current.replaceAll("\\s+$", "");
         if (!nextHashtags.isEmpty()) {
             String hashtagLine = String.join(" ", nextHashtags);
             next = next.isEmpty() ? hashtagLine : next + "\n" + hashtagLine;
         }
-
         editPostContent.setText(next);
         editPostContent.setSelection(editPostContent.length());
         selectedTopicHashtags.clear();
@@ -635,121 +583,75 @@ public class CommunityFeedFragment extends Fragment {
     }
 
     private String removeHashtagToken(String text, String hashtag) {
-        String next = text
-                .replace(hashtag + " ", "")
-                .replace(" " + hashtag, "")
-                .replace("\n" + hashtag, "\n")
-                .replace(hashtag, "");
-        return next
-                .replaceAll("[ \\t]+\\n", "\n")
-                .replaceAll("\\n{3,}", "\n\n");
+        return text.replace(hashtag + " ", "").replace(" " + hashtag, "")
+                .replace("\n" + hashtag, "\n").replace(hashtag, "")
+                .replaceAll("[ \\t]+\\n", "\n").replaceAll("\\n{3,}", "\n\n");
     }
 
     private void applyHashtagStyle(Editable editable) {
-        if (applyingHashtagStyle || editable == null) {
-            return;
-        }
+        if (applyingHashtagStyle || editable == null) return;
         applyingHashtagStyle = true;
         ForegroundColorSpan[] existing = editable.getSpans(0, editable.length(), ForegroundColorSpan.class);
-        for (ForegroundColorSpan span : existing) {
-            editable.removeSpan(span);
-        }
+        for (ForegroundColorSpan span : existing) editable.removeSpan(span);
 
         Matcher matcher = Pattern.compile("#[A-Za-z0-9_]+").matcher(editable.toString());
         while (matcher.find()) {
             String hashtag = editable.subSequence(matcher.start(), matcher.end()).toString();
-            editable.setSpan(
-                    new ForegroundColorSpan(colorForHashtag(hashtag)),
-                    matcher.start(),
-                    matcher.end(),
-                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-            );
+            editable.setSpan(new ForegroundColorSpan(colorForHashtag(hashtag)),
+                    matcher.start(), matcher.end(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
         applyingHashtagStyle = false;
     }
 
     private int colorForHashtag(String hashtag) {
-        if ("#TietKiem".equals(hashtag)) {
-            return android.graphics.Color.parseColor("#74A982");
-        }
-        if ("#No".equals(hashtag)) {
-            return android.graphics.Color.parseColor("#D98782");
-        }
-        if ("#DauTu".equals(hashtag)) {
-            return android.graphics.Color.parseColor("#8794DB");
-        }
+        if ("#Saving".equals(hashtag)) return android.graphics.Color.parseColor("#74A982");
+        if ("#Debt".equals(hashtag)) return android.graphics.Color.parseColor("#D98782");
+        if ("#Investing".equals(hashtag)) return android.graphics.Color.parseColor("#8794DB");
         return android.graphics.Color.parseColor("#D29A6F");
     }
 
     private void updateCategoryTiles() {
-        updateCategoryTile(actionMilestone, "Milestone", R.drawable.bg_category_tile_milestone,
-                "#4B2A11", "#8A6237");
-        updateCategoryTile(actionThoughts, "Thoughts", R.drawable.bg_category_tile_thoughts,
-                "#5A3422", "#B07D62");
-        updateCategoryTile(actionAnalysis, "Analysis", R.drawable.bg_category_tile_analysis,
-                "#3E260F", "#8A6237");
-        updateCategoryTile(actionShare, "Share", R.drawable.bg_category_tile_share,
-                "#5C3920", "#D4A373");
+        updateCategoryTile(actionMilestone, "Milestone", R.drawable.bg_category_tile_milestone, "#4B2A11", "#8A6237");
+        updateCategoryTile(actionThoughts, "Thoughts", R.drawable.bg_category_tile_thoughts, "#5A3422", "#B07D62");
+        updateCategoryTile(actionAnalysis, "Analysis", R.drawable.bg_category_tile_analysis, "#3E260F", "#8A6237");
+        updateCategoryTile(actionShare, "Share", R.drawable.bg_category_tile_share, "#5C3920", "#D4A373");
     }
 
     private void updateCategoryDesign() {
-        if (panelCategoryMode == null) {
-            return;
-        }
-
-        int panelBg;
-        int iconRes;
-        String kicker;
-        String title;
-        String description;
-        String prompt;
-        String composerHint;
-        String submitText;
+        if (panelCategoryMode == null) return;
+        int panelBg, iconRes;
+        String kicker, title, description, prompt, composerHint, submitText;
 
         switch (selectedCategoryKey) {
             case "milestone":
-                panelBg = R.drawable.bg_mode_panel_milestone;
-                iconRes = R.drawable.ic_feed_trophy;
-                kicker = "CELEBRATE A MILESTONE";
-                title = "Grow your story";
+                panelBg = R.drawable.bg_mode_panel_milestone; iconRes = R.drawable.ic_feed_trophy;
+                kicker = "CELEBRATE A MILESTONE"; title = "Grow your story";
                 description = "Turn a small financial win into a memorable milestone for your journey.";
                 prompt = "Prompt: What goal did you just reach, and why are you proud of it?";
-                composerHint = "Which milestone did you reach?";
-                submitText = "Post Milestone";
+                composerHint = "Which milestone did you reach?"; submitText = "Post Milestone";
                 break;
             case "analysis":
-                panelBg = R.drawable.bg_mode_panel_analysis;
-                iconRes = R.drawable.ic_cozy_chart;
-                kicker = "FINANCIAL DEEP DIVE";
-                title = "Analyze Progress";
+                panelBg = R.drawable.bg_mode_panel_analysis; iconRes = R.drawable.ic_cozy_chart;
+                kicker = "FINANCIAL DEEP DIVE"; title = "Analyze Progress";
                 description = "For data-backed observations, spending lessons, or financial patterns you just noticed.";
                 prompt = "Prompt: What changed most in your money habits this month?";
-                composerHint = "What would you like to analyze in your finances?";
-                submitText = "Post Analysis";
+                composerHint = "What would you like to analyze in your finances?"; submitText = "Post Analysis";
                 break;
             case "share":
-                panelBg = R.drawable.bg_mode_panel_share;
-                iconRes = R.drawable.ic_share;
-                kicker = "SHARE A FINANCIAL TIP";
-                title = "Grow together";
+                panelBg = R.drawable.bg_mode_panel_share; iconRes = R.drawable.ic_share;
+                kicker = "SHARE A FINANCIAL TIP"; title = "Grow together";
                 description = "A small tip, real experience, or story that can help the community.";
                 prompt = "Prompt: What money tip do you wish you had learned earlier?";
-                composerHint = "Which financial tip would you like to share?";
-                submitText = "Post Share";
+                composerHint = "Which financial tip would you like to share?"; submitText = "Post Share";
                 break;
-            case "thoughts":
             default:
-                panelBg = R.drawable.bg_mode_panel_thoughts;
-                iconRes = R.drawable.ic_cozy_notebook;
-                kicker = "DIGITAL JOURNAL";
-                title = "Share a Thought";
+                panelBg = R.drawable.bg_mode_panel_thoughts; iconRes = R.drawable.ic_cozy_notebook;
+                kicker = "DIGITAL JOURNAL"; title = "Share a Thought";
                 description = "A gentle space to share what you learned on your financial journey today.";
                 prompt = "Prompt: What did you realize today about how you spend money?";
-                composerHint = "What are you thinking about money today?";
-                submitText = "Post Thought";
+                composerHint = "What are you thinking about money today?"; submitText = "Post Thought";
                 break;
         }
-
         panelCategoryMode.setBackgroundResource(panelBg);
         imgModeIcon.setImageResource(iconRes);
         txtModeKicker.setText(kicker);
@@ -761,14 +663,12 @@ public class CommunityFeedFragment extends Fragment {
         btnSubmitPost.setText(submitText);
     }
 
-    private void updateCategoryTile(TextView tile, String category, int normalBg,
-                                    String normalTextColor, String normalIconColor) {
+    private void updateCategoryTile(TextView tile, String category, int normalBg, String normalTextColor, String normalIconColor) {
         boolean selected = category.equals(selectedCategory);
         tile.setBackgroundResource(selected ? R.drawable.bg_category_tile_selected : normalBg);
         tile.setText(selected ? "✓ " + category : category);
         tile.setTextColor(android.graphics.Color.parseColor(selected ? "#FFFFFFFF" : normalTextColor));
-        tile.setCompoundDrawableTintList(ColorStateList.valueOf(
-                android.graphics.Color.parseColor(selected ? "#FFFFFFFF" : normalIconColor)));
+        tile.setCompoundDrawableTintList(ColorStateList.valueOf(android.graphics.Color.parseColor(selected ? "#FFFFFFFF" : normalIconColor)));
     }
 
     private void clearSelectedImage() {
@@ -779,222 +679,22 @@ public class CommunityFeedFragment extends Fragment {
         updateSubmitState();
     }
 
-    // =========================================================================
-    // XỬ LÝ ĐĂNG BÀI: TÍCH HỢP CLOUDINARY & C# BACKEND
-    // =========================================================================
     private void submitPost() {
         String content = editPostContent.getText().toString().trim();
+        String title = editPostTitle != null && editPostTitle.getVisibility() == View.VISIBLE
+                ? editPostTitle.getText().toString().trim() : "";
+
         String type = milestoneMode ? "MILESTONE_POST" : "USER_POST";
-        String milestoneData = generatedMilestoneJson;
         String editPostId = getArguments() != null ? getArguments().getString("edit_post_id") : null;
 
-        // 1. VALIDATE LÊN ĐẦU: Chặn ngay nếu không có chữ/ảnh/cột mốc (Dù là tạo mới hay sửa bài)
-        if (content.isEmpty() && selectedImageUri == null && milestoneData == null) {
+        if (content.isEmpty() && selectedImageUri == null && generatedMilestoneJson == null && title.isEmpty()) {
             Toast.makeText(requireContext(), "Please write something, add an image, or add a milestone first.", Toast.LENGTH_SHORT).show();
-            editPostContent.requestFocus();
-            InputMethodManager imm = (InputMethodManager) requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);
-            if (imm != null) {
-                imm.showSoftInput(editPostContent, InputMethodManager.SHOW_IMPLICIT);
-            }
             return;
         }
 
-        String audienceParam = "FRIENDS"; // Mặc định
-        if ("Public".equals(selectedAudience)) {
-            audienceParam = "PUBLIC";
-        } else if ("Only Me".equals(selectedAudience)) {
-            audienceParam = "PRIVATE";
-        }
+        String audienceParam = "Public".equals(selectedAudience) ? "PUBLIC" : "Only Me".equals(selectedAudience) ? "PRIVATE" : "FRIENDS";
 
-        setPosting(true);
-
-        final String finalContentToSubmit = content;
-        final String finalAudienceToSubmit = audienceParam;
-
-        // ==========================================
-        // LUỒNG 1: NẾU LÀ CHẾ ĐỘ SỬA BÀI
-        // ==========================================
-        if (editPostId != null) {
-            FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-            if (user == null) {
-                setPosting(false);
-                return;
-            }
-
-            user.getIdToken(true).addOnSuccessListener(tokenResult -> {
-                String token = "Bearer " + tokenResult.getToken();
-                com.example.cashify.utils.ApiService.EditPostRequest req = new com.example.cashify.utils.ApiService.EditPostRequest();
-                req.PostId = editPostId;
-
-                // Dùng biến final ở đây
-                req.NewContent = finalContentToSubmit;
-                req.Audience = finalAudienceToSubmit;
-
-                com.example.cashify.utils.ApiClient.getClient().create(com.example.cashify.utils.ApiService.class)
-                        .editPost(token, req).enqueue(new retrofit2.Callback<Object>() {
-                            @Override
-                            public void onResponse(@NonNull retrofit2.Call<Object> call, @NonNull retrofit2.Response<Object> response) {
-                                setPosting(false);
-                                if (response.isSuccessful()) {
-                                    Toast.makeText(requireContext(), "Post updated successfully!", Toast.LENGTH_SHORT).show();
-
-                                    // 🌟 RUNG CHUÔNG BÁO NEWSFEED TẢI LẠI
-                                    com.example.cashify.ui.social.SocialNewsfeedFragment.needRefreshFeed = true;
-
-                                    navigateBack();
-                                } else
-                                    Toast.makeText(requireContext(), "Server error!", Toast.LENGTH_SHORT).show();
-                            }
-
-                            @Override
-                            public void onFailure(@NonNull retrofit2.Call<Object> call, @NonNull Throwable t) {
-                                setPosting(false);
-                            }
-                        });
-            });
-            return;
-        }
-
-        // ==========================================
-        // LUỒNG 2: NẾU LÀ TẠO BÀI ĐĂNG MỚI
-        // ==========================================
-        if (selectedImageUri != null) {
-            txtComposerHint.setText("Uploading image...");
-            File imageFile = getFileFromUri(selectedImageUri);
-
-            if (imageFile == null) {
-                setPosting(false);
-                Toast.makeText(requireContext(), "Could not read the image file!", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            UploadNotificationHelper notif = new UploadNotificationHelper(requireContext());
-
-            com.example.cashify.utils.CloudinaryHelper.uploadImage(imageFile, new com.example.cashify.utils.CloudinaryHelper.UploadCallback() {
-                @Override
-                public void onProgress(int percent) {
-                    notif.update(percent); // hiện trên status bar, không đụng UI fragment
-                }
-
-                @Override
-                public void onSuccess(String imageUrl) {
-                    notif.done();
-                    requireActivity().runOnUiThread(() ->
-                            callBackendToCreatePost(finalContentToSubmit, type, imageUrl, milestoneData, finalAudienceToSubmit)
-                    );
-                }
-
-                @Override
-                public void onFailure(String error) {
-                    notif.error();
-                    requireActivity().runOnUiThread(() -> {
-                        setPosting(false);
-
-                        boolean isFileTooLarge = error.contains("10MB");
-
-                        DialogHelper.showCustomDialog(
-                                requireContext(),
-                                isFileTooLarge ? "Image too large" : "Upload failed",
-                                isFileTooLarge
-                                        ? "The selected image exceeds 10MB. Please choose a smaller one and try again."
-                                        : error,
-                                isFileTooLarge ? "Choose another image" : "Retry",
-                                "Cancel",
-                                DialogHelper.DialogType.DANGER,
-                                true,
-                                () -> {
-                                    if (isFileTooLarge) {
-                                        pickImageLauncher.launch("image/*"); // Mở picker lại
-                                    } else {
-                                        submitPost(); // Thử upload lại
-                                    }
-                                },
-                                null
-                        );
-                    });
-                }
-            });
-        } else {
-            // Dùng biến final ở đây
-            callBackendToCreatePost(finalContentToSubmit, type, "", milestoneData, finalAudienceToSubmit);
-        }
-    }
-
-    // Nhớ update lại hàm callBackendToCreatePost để nó nhận tham số Audience nha sếp
-    private void callBackendToCreatePost(String content, String type, String imageUrl, String milestoneData, String audienceParam) {
-        requireActivity().runOnUiThread(() -> txtComposerHint.setText("Saving post..."));
-
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user == null) {
-            requireActivity().runOnUiThread(() -> {
-                setPosting(false);
-                Toast.makeText(requireContext(), "Not signed in!", Toast.LENGTH_SHORT).show();
-            });
-            return;
-        }
-
-        user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
-            String token = "Bearer " + getTokenResult.getToken();
-            com.example.cashify.utils.ApiService apiService = com.example.cashify.utils.ApiClient.getClient().create(com.example.cashify.utils.ApiService.class);
-
-            com.example.cashify.utils.ApiService.CreatePostRequest request =
-                    new com.example.cashify.utils.ApiService.CreatePostRequest(content, type, imageUrl, milestoneData, audienceParam);
-
-            apiService.createPost(token, request).enqueue(new retrofit2.Callback<Object>() {
-                @Override
-                public void onResponse(@NonNull retrofit2.Call<Object> call, @NonNull retrofit2.Response<Object> response) {
-                    requireActivity().runOnUiThread(() -> {
-                        setPosting(false);
-                        if (response.isSuccessful()) {
-                            Toast.makeText(requireContext(), "Post created successfully!", Toast.LENGTH_SHORT).show();
-                            resetComposer();
-
-                            // 🌟 RUNG CHUÔNG BÁO NEWSFEED TẢI LẠI
-                            com.example.cashify.ui.social.SocialNewsfeedFragment.needRefreshFeed = true;
-
-                            navigateBack();
-                        } else {
-                            Toast.makeText(requireContext(), "Failed to create post: " + response.code(), Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                }
-
-                @Override
-                public void onFailure(@NonNull retrofit2.Call<Object> call, @NonNull Throwable t) {
-                    requireActivity().runOnUiThread(() -> {
-                        setPosting(false);
-                        Toast.makeText(requireContext(), "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-                    });
-                }
-            });
-        }).addOnFailureListener(e -> {
-            requireActivity().runOnUiThread(() -> {
-                setPosting(false);
-                Toast.makeText(requireContext(), "Firebase authentication failed", Toast.LENGTH_SHORT).show();
-            });
-        });
-    }
-
-    // Hàm phụ trợ: Chuyển Uri của Android thành File vật lý để OkHttp (CloudinaryHelper) đọc được
-    private File getFileFromUri(Uri uri) {
-        try {
-            java.io.InputStream inputStream = requireContext().getContentResolver().openInputStream(uri);
-            if (inputStream == null) return null;
-
-            File tempFile = new File(requireContext().getCacheDir(), "upload_img_" + System.currentTimeMillis() + ".jpg");
-            java.io.OutputStream outputStream = new java.io.FileOutputStream(tempFile);
-            byte[] buffer = new byte[1024];
-            int length;
-            while ((length = inputStream.read(buffer)) > 0) {
-                outputStream.write(buffer, 0, length);
-            }
-            outputStream.close();
-            inputStream.close();
-            return tempFile;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
+        viewModel.submitPost(editPostId, title, content, type, selectedImageUri, generatedMilestoneJson, audienceParam);
     }
 
     private long getFileSizeFromUri(Uri uri) {
@@ -1007,29 +707,65 @@ public class CommunityFeedFragment extends Fragment {
                 }
             }
         } catch (Exception e) {
-            return 0; // Không đọc được thì cho qua, CloudinaryHelper sẽ chặn sau
+            return 0;
         }
         return 0;
     }
 
-    private String getSelectedTopic() {
-        int checkedId = chipGroupTopics.getCheckedChipId();
-        if (checkedId == View.NO_ID) {
-            return "Budget";
-        }
-        Chip chip = chipGroupTopics.findViewById(checkedId);
-        return chip == null ? "Budget" : chip.getText().toString();
-    }
+    private void showAchievementBottomSheet() {
+        BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(requireContext());
+        View bottomSheetView = getLayoutInflater().inflate(R.layout.layout_bottom_sheet_achievement, null);
+        bottomSheetDialog.setContentView(bottomSheetView);
 
-    private void resetComposer() {
-        editPostContent.setText("");
-        clearSelectedImage();
-        if (milestoneMode) {
-            setMilestoneMode(false);
-        }
-        selectedTopicHashtags.clear();
-        chipGroupTopics.clearCheck();
-        txtComposerHint.setText("Ready for your next post.");
+        ProgressBar progressLoading = bottomSheetView.findViewById(R.id.progressLoadingAchievements);
+        TextView tvEmpty = bottomSheetView.findViewById(R.id.tvEmptyAchievements);
+        RecyclerView rvAchievements = bottomSheetView.findViewById(R.id.rvAchievements);
+
+        rvAchievements.setLayoutManager(new LinearLayoutManager(requireContext()));
+        bottomSheetDialog.show();
+
+        viewModel.fetchAvailableAchievements();
+        viewModel.getAchievements().removeObservers(getViewLifecycleOwner());
+        viewModel.getAchievements().observe(getViewLifecycleOwner(), list -> {
+            progressLoading.setVisibility(View.GONE);
+            if (list == null || list.isEmpty()) {
+                tvEmpty.setVisibility(View.VISIBLE);
+                rvAchievements.setVisibility(View.GONE);
+            } else {
+                tvEmpty.setVisibility(View.GONE);
+                rvAchievements.setVisibility(View.VISIBLE);
+
+                AchievementAdapter achievementAdapter = new AchievementAdapter(list, achievement -> {
+                    if (bottomSheetDialog != null) bottomSheetDialog.dismiss();
+
+                    milestoneMode = true;
+                    milestonePreviewContainer.setVisibility(View.VISIBLE);
+                    tvPreviewIcon.setText(achievement.iconText);
+                    tvPreviewTitle.setText(achievement.title);
+                    tvPreviewMonth.setText(achievement.monthLabel);
+                    tvPreviewAmount.setText(achievement.amountLabel);
+                    pbPreviewProgress.setProgress(achievement.progress);
+
+                    actionPhoto.setVisibility(View.GONE);
+                    actionMilestone.setVisibility(View.GONE);
+                    txtComposerHint.setText("Your milestone is ready! Add some thoughts to share.");
+
+                    try {
+                        JSONObject json = new JSONObject();
+                        json.put("achievementId", achievement.id);
+                        json.put("iconText", achievement.iconText);
+                        json.put("title", achievement.title);
+                        json.put("description", achievement.description);
+                        json.put("month", achievement.monthLabel);
+                        json.put("amount", achievement.amountLabel);
+                        json.put("progress", achievement.progress);
+                        generatedMilestoneJson = json.toString();
+                        updateSubmitState();
+                    } catch (Exception ignored) {}
+                });
+                rvAchievements.setAdapter(achievementAdapter);
+            }
+        });
     }
 
     private void setPosting(boolean posting) {
@@ -1044,24 +780,17 @@ public class CommunityFeedFragment extends Fragment {
 
     private String publishTextForCategory() {
         switch (selectedCategoryKey) {
-            case "milestone":
-                return "Post Milestone";
-            case "analysis":
-                return "Post Analysis";
-            case "share":
-                return "Post Share";
-            case "thoughts":
-            default:
-                return "Post Thought";
+            case "milestone": return "Post Milestone";
+            case "analysis": return "Post Analysis";
+            case "share": return "Post Share";
+            default: return "Post Thought";
         }
     }
 
     private void updateSubmitState() {
         boolean hasText = editPostContent != null && editPostContent.getText().toString().trim().length() > 0;
         boolean hasImage = selectedImageUri != null;
-        boolean hasMilestone = generatedMilestoneJson != null; // Kiểm tra có Milestone không
-
-        // SỬA: Chỉ cần 1 trong 3 cái có dữ liệu là nút Đăng sẽ sáng lên
+        boolean hasMilestone = generatedMilestoneJson != null;
         boolean canSubmit = hasText || hasImage || hasMilestone;
 
         btnSubmitPost.setEnabled(canSubmit);
@@ -1079,106 +808,22 @@ public class CommunityFeedFragment extends Fragment {
     }
 
     private void bindCurrentUserProfile(DocumentSnapshot doc, TextView txtComposerName) {
-        if (doc == null || !doc.exists()) {
-            return;
-        }
+        if (doc == null || !doc.exists()) return;
         String displayName = cleanDisplayName(doc.getString("displayName"));
         String username = cleanDisplayName(doc.getString("username"));
-        txtComposerName.setText(!displayName.equals("Người dùng Cashify") ? displayName : username);
-
+        txtComposerName.setText(!displayName.equals("Cashify User") ? displayName : username);
         String avatarUrl = doc.getString("avatarUrl");
-        ImageHelper.loadAvatar(avatarUrl, imgComposerAvatar,
-                firstNonEmpty(displayName, username, doc.getId()));
+        ImageHelper.loadAvatar(avatarUrl, imgComposerAvatar, firstNonEmpty(displayName, username, doc.getId()));
     }
 
     private String cleanDisplayName(String value) {
-        if (value == null || value.trim().isEmpty() || value.contains("@")) {
-            return "Người dùng Cashify";
-        }
+        if (value == null || value.trim().isEmpty() || value.contains("@")) return "Cashify User";
         return value.trim();
     }
 
     private String firstNonEmpty(String... values) {
         if (values == null) return "";
-        for (String value : values) {
-            if (value != null && !value.trim().isEmpty()) return value.trim();
-        }
+        for (String value : values) if (value != null && !value.trim().isEmpty()) return value.trim();
         return "";
-    }
-
-    // HÀM GỌI API VÀ HIỆN BOTTOM SHEET THÀNH TỰU
-    private void showAchievementBottomSheet() {
-        BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(requireContext());
-
-        // 1. Nạp thẳng cái giao diện XML xịn xò vào
-        View bottomSheetView = getLayoutInflater().inflate(R.layout.layout_bottom_sheet_achievement, null);
-        bottomSheetDialog.setContentView(bottomSheetView);
-
-        ProgressBar progressLoading = bottomSheetView.findViewById(R.id.progressLoadingAchievements);
-        TextView tvEmpty = bottomSheetView.findViewById(R.id.tvEmptyAchievements);
-        RecyclerView rvAchievements = bottomSheetView.findViewById(R.id.rvAchievements);
-
-        rvAchievements.setLayoutManager(new LinearLayoutManager(requireContext()));
-        bottomSheetDialog.show();
-
-        viewModel.fetchAvailableAchievements();
-
-        viewModel.getAchievements().removeObservers(getViewLifecycleOwner());
-
-        viewModel.getAchievements().observe(getViewLifecycleOwner(), list -> {
-            progressLoading.setVisibility(View.GONE);
-            if (list == null || list.isEmpty()) {
-                tvEmpty.setVisibility(View.VISIBLE);
-                rvAchievements.setVisibility(View.GONE);
-            } else {
-                tvEmpty.setVisibility(View.GONE);
-                rvAchievements.setVisibility(View.VISIBLE);
-
-                // ĐÃ FIX: Dùng đúng biến 'list' của LiveData
-                AchievementAdapter achievementAdapter = new AchievementAdapter(list, achievement -> {
-
-                    if (bottomSheetDialog != null) {
-                        bottomSheetDialog.dismiss();
-                    }
-
-                    // ĐÃ FIX: Bật chế độ Milestone và dùng đúng tên biến milestonePreviewContainer
-                    milestoneMode = true;
-                    milestonePreviewContainer.setVisibility(View.VISIBLE);
-                    tvPreviewIcon.setText(achievement.iconText);
-                    tvPreviewTitle.setText(achievement.title);
-                    tvPreviewMonth.setText(achievement.monthLabel);
-                    tvPreviewAmount.setText(achievement.amountLabel);
-                    pbPreviewProgress.setProgress(achievement.progress);
-
-                    // Ẩn các nút rườm rà đi vì đã có thẻ Milestone rồi
-                    actionPhoto.setVisibility(View.GONE);
-                    actionMilestone.setVisibility(View.GONE);
-                    txtComposerHint.setText("Cột mốc của bạn đã sẵn sàng! Hãy viết vài lời chia sẻ nhé.");
-
-                    // ĐÃ FIX: Dùng đúng biến generatedMilestoneJson
-                    try {
-                        org.json.JSONObject json = new org.json.JSONObject();
-                        json.put("achievementId", achievement.id);
-                        json.put("iconText", achievement.iconText);
-                        json.put("title", achievement.title);
-                        json.put("description", achievement.description);
-                        json.put("month", achievement.monthLabel);
-                        json.put("amount", achievement.amountLabel);
-                        json.put("progress", achievement.progress);
-
-                        generatedMilestoneJson = json.toString();
-
-                        // Bật sáng nút "Đăng bài"
-                        updateSubmitState();
-
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                });
-
-                // ĐÃ FIX: Dùng đúng biến rvAchievements
-                rvAchievements.setAdapter(achievementAdapter);
-            }
-        });
     }
 }

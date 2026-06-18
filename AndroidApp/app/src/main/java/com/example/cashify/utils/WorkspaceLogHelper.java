@@ -4,47 +4,46 @@ import com.example.cashify.data.model.LogActionType;
 import com.example.cashify.data.repository.WorkspaceLogRepository;
 
 /**
- * WorkspaceLogHelper.java — "Súng bắn log" của toàn team.
- *
- * Đây là class duy nhất toàn team cần biết để ghi log.
- * Delegate thực sự xuống WorkspaceLogRepository.pushLog().
- *
- * ═══════════════════════════════════════════════════════════
- *  CÁCH DÙNG
- * ═══════════════════════════════════════════════════════════
- *
- *  // Thêm giao dịch
- *  WorkspaceLogHelper.pushLog(
- *      workspaceId,
- *      currentUserId,
- *      LogActionType.ADD_TRANS,
- *      "đã thêm khoản chi 150.000đ cho Ăn uống"
- *  );
- *
- *  // Đổi tên quỹ
- *  WorkspaceLogHelper.pushLog(
- *      workspaceId,
- *      currentUserId,
- *      LogActionType.RENAME_WORKSPACE,
- *      "đã đổi tên quỹ thành \"Quỹ Du lịch Đà Lạt\""
- *  );
+ * Facade utility for tracking Workspace Audit Logs.
+ * * Acts as the single entry point for the entire team to record workspace activities.
+ * It delegates the actual database operations to WorkspaceLogRepository.pushLog().
  *
  * ═══════════════════════════════════════════════════════════
- *  LƯU Ý VỀ message:
- *  - KHÔNG cần thêm tên người dùng vào message.
- *  - Adapter sẽ tự fetch và ghép tên ở đầu.
- *  - Message chỉ cần là phần hành động, vd: "đã xóa khoản thu 500.000đ"
+ * USAGE EXAMPLES
+ * ═══════════════════════════════════════════════════════════
+ *
+ * // 1. Adding a transaction
+ * WorkspaceLogHelper.pushLog(
+ * workspaceId,
+ * currentUserId,
+ * LogActionType.ADD_TRANS,
+ * "added an expense of 150.000đ for Food"
+ * );
+ *
+ * // 2. Renaming a workspace
+ * WorkspaceLogHelper.pushLog(
+ * workspaceId,
+ * currentUserId,
+ * LogActionType.RENAME_WORKSPACE,
+ * "renamed the fund to \"Da Lat Trip Fund\""
+ * );
+ *
+ * ═══════════════════════════════════════════════════════════
+ * MESSAGE FORMATTING RULES:
+ * - DO NOT include the user's name in the message string.
+ * - The UI Adapter will automatically fetch and prepend the user's display name.
+ * - The message should ONLY contain the action details, e.g., "deleted an income of 500.000đ"
  * ═══════════════════════════════════════════════════════════
  */
 public final class WorkspaceLogHelper {
 
     /**
-     * Ghi một log hành động vào Firestore.
+     * Pushes a new action log to the Firestore database.
      *
-     * @param workspaceId  ID của workspace/quỹ
-     * @param userId       UID Firebase của người thực hiện
-     * @param actionType   Hằng số từ {@link LogActionType}
-     * @param message      Nội dung hành động (không cần tên user)
+     * @param workspaceId  The target workspace/fund ID
+     * @param userId       The Firebase UID of the user performing the action
+     * @param actionType   A predefined constant from {@link LogActionType}
+     * @param message      The action description (excluding the user's name)
      */
     public static void pushLog(
             String workspaceId,
@@ -55,5 +54,6 @@ public final class WorkspaceLogHelper {
         WorkspaceLogRepository.pushLog(workspaceId, userId, actionType, message);
     }
 
+    // Prevents accidental instantiation
     private WorkspaceLogHelper() {}
 }

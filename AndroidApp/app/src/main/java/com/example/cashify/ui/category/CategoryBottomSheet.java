@@ -2,6 +2,7 @@ package com.example.cashify.ui.category;
 
 import android.content.res.ColorStateList;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -12,18 +13,17 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
 import com.example.cashify.data.model.Category;
 import com.example.cashify.utils.ToastHelper;
-import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 
@@ -41,7 +41,7 @@ public class CategoryBottomSheet extends BottomSheetDialogFragment {
     private Button btnSave;
     private RecyclerView gIcon, gColor;
 
-    // State variables (Bốc từ Activity sang)
+    // Default State Variables
     private String selectedIconName = "ic_other";
     private String selectedColorCode = "#313B60";
     private boolean isExpense = true;
@@ -55,7 +55,10 @@ public class CategoryBottomSheet extends BottomSheetDialogFragment {
 
     private String[] colorHexRepo;
 
-    // Hàm static để khởi tạo BottomSheet kèm dữ liệu (nếu là Edit)
+    /**
+     * Factory method to create a new instance of the BottomSheet.
+     * Passes the Category object if opening in Edit Mode.
+     */
     public static CategoryBottomSheet newInstance(Category category) {
         CategoryBottomSheet fragment = new CategoryBottomSheet();
         if (category != null) {
@@ -76,22 +79,18 @@ public class CategoryBottomSheet extends BottomSheetDialogFragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // 1. Kết nối ViewModel (Dùng requireActivity để xài chung data với màn hình chính)
+        // Bind ViewModel to the Activity scope to share data with the parent screen
         viewModel = new ViewModelProvider(requireActivity()).get(CategoryViewModel.class);
 
-        // 2. Chuẩn bị tài nguyên màu sắc
         prepareColorResources();
-
-        // 3. Ánh xạ View
         initViews(view);
 
-        // 4. Kiểm tra xem có phải mode Edit không
+        // Check for existing data (Edit Mode)
         if (getArguments() != null) {
             editCat = (Category) getArguments().getSerializable("edit_category");
             setupEditMode();
         }
 
-        // 5. Cập nhật UI ban đầu
         updatePopupUI();
         setupEventListeners();
     }
@@ -124,15 +123,17 @@ public class CategoryBottomSheet extends BottomSheetDialogFragment {
             selectedColorCode = editCat.colorCode;
             isExpense = (editCat.type == 0);
 
-            // Khóa Tab nếu đang edit (giống logic cũ của bạn)
+            // Lock the Income/Expense tabs to prevent changing category type during edit
             btnTabChi.setAlpha(0.5f);
             btnTabThu.setAlpha(0.5f);
+            btnTabChi.setEnabled(false);
+            btnTabThu.setEnabled(false);
         }
     }
 
     private void setupEventListeners() {
-        // Tab Chi
-        if (editCat == null) { // Chỉ cho chọn tab khi thêm mới
+        // Tab Listeners (Only active in Add Mode)
+        if (editCat == null) {
             btnTabChi.setOnClickListener(v -> {
                 isExpense = true;
                 updatePopupUI();
@@ -143,15 +144,15 @@ public class CategoryBottomSheet extends BottomSheetDialogFragment {
             });
         }
 
-        // Setup RecyclerView cho Icon (5 cột)
-        gIcon.setLayoutManager(new androidx.recyclerview.widget.GridLayoutManager(requireContext(), 5));
+        // Setup Icon Grid
+        gIcon.setLayoutManager(new GridLayoutManager(requireContext(), 5));
         gIcon.setAdapter(new PopupAdapter.IconAdapter(requireContext(), allIconsRepo, position -> {
             selectedIconName = getResources().getResourceEntryName(allIconsRepo[position]);
             updatePopupUI();
         }));
 
-        // Setup RecyclerView cho Màu (5 cột)
-        gColor.setLayoutManager(new androidx.recyclerview.widget.GridLayoutManager(requireContext(), 5));
+        // Setup Color Grid
+        gColor.setLayoutManager(new GridLayoutManager(requireContext(), 5));
         gColor.setAdapter(new PopupAdapter.ColorAdapter(requireContext(), colorHexRepo, position -> {
             selectedColorCode = colorHexRepo[position];
             updatePopupUI();
@@ -159,40 +160,39 @@ public class CategoryBottomSheet extends BottomSheetDialogFragment {
 
         btnSave.setOnClickListener(v -> handleSave());
 
-        // Bùa chuẩn cho RecyclerView
+        // =========================================================================
+        // SCROLL CONFLICT RESOLUTION
+        // =========================================================================
+        // Prevents the BottomSheet from dragging down when scrolling the inner RecyclerViews
         RecyclerView.OnItemTouchListener bulletproofScrollLock = new RecyclerView.OnItemTouchListener() {
             @Override
             public boolean onInterceptTouchEvent(@NonNull RecyclerView rv, @NonNull MotionEvent e) {
                 int action = e.getActionMasked();
                 if (action == MotionEvent.ACTION_DOWN) {
-                    // Ngón tay chạm vào -> Khóa BottomSheet
                     setBottomSheetDraggable(false);
                 } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
-                    // Ngón tay nhấc lên -> Nhả BottomSheet
                     setBottomSheetDraggable(true);
                 }
-                return false; // Phải return false để RecyclerView còn cuộn được
+                return false; // Must return false to allow the RecyclerView to process the scroll
             }
 
             @Override
-            public void onTouchEvent(@NonNull RecyclerView rv, @NonNull MotionEvent e) {
-            }
+            public void onTouchEvent(@NonNull RecyclerView rv, @NonNull MotionEvent e) {}
 
             @Override
-            public void onRequestDisallowInterceptTouchEvent(boolean disallowIntercept) {
-            }
+            public void onRequestDisallowInterceptTouchEvent(boolean disallowIntercept) {}
         };
 
-        // Gắn bùa vào 2 danh sách
         gIcon.addOnItemTouchListener(bulletproofScrollLock);
         gColor.addOnItemTouchListener(bulletproofScrollLock);
     }
 
     private void updatePopupUI() {
-        // Update Icon Preview
+        // Render Icon Preview
         int resId = getResources().getIdentifier(selectedIconName, "drawable", requireContext().getPackageName());
         imgPreview.setImageResource(resId != 0 ? resId : R.drawable.ic_food);
 
+        // Render Pastel Background for Preview
         try {
             int originColor = Color.parseColor(selectedColorCode);
             int pastelColor = Color.argb(51, Color.red(originColor), Color.green(originColor), Color.blue(originColor));
@@ -200,61 +200,76 @@ public class CategoryBottomSheet extends BottomSheetDialogFragment {
             shape.setShape(GradientDrawable.RECTANGLE);
             shape.setCornerRadius(14 * getResources().getDisplayMetrics().density);
             shape.setColor(pastelColor);
+
             imgPreview.setBackground(shape);
             imgPreview.setImageTintList(ColorStateList.valueOf(originColor));
         } catch (Exception e) {
             imgPreview.setImageTintList(ColorStateList.valueOf(Color.GRAY));
         }
 
-        // Update Tabs
-        if (isExpense) updateTabStyles(btnTabChi, btnTabThu, true);
-        else updateTabStyles(btnTabThu, btnTabChi, false);
+        // Toggle Active Tab Style
+        if (isExpense) {
+            updateTabStyles(btnTabChi, btnTabThu, true);
+        } else {
+            updateTabStyles(btnTabThu, btnTabChi, false);
+        }
     }
 
     private void updateTabStyles(TextView selected, TextView unselected, boolean isExpenseTab) {
         GradientDrawable selectedBg = new GradientDrawable();
         selectedBg.setColor(ContextCompat.getColor(requireContext(), R.color.tab_active_bg));
         selectedBg.setCornerRadius(10 * getResources().getDisplayMetrics().density);
+
         selected.setBackground(selectedBg);
         selected.setTextColor(isExpenseTab ? Color.parseColor("#D14040") : Color.parseColor("#1DB424"));
-        selected.setTypeface(null, android.graphics.Typeface.BOLD);
+        selected.setTypeface(null, Typeface.BOLD);
 
         unselected.setBackground(null);
         unselected.setTextColor(Color.parseColor("#9CA3AF"));
-        unselected.setTypeface(null, android.graphics.Typeface.NORMAL);
+        unselected.setTypeface(null, Typeface.NORMAL);
     }
 
     private void handleSave() {
-        String name = edtName.getText().toString().trim();
+        String name = edtName.getText() != null ? edtName.getText().toString().trim() : "";
         if (name.isEmpty()) {
             ToastHelper.show(getContext(), R.string.error_empty_category_name);
             return;
         }
 
+        // Apply edits to existing object, or create a new one
         Category c = (editCat != null) ? editCat : new Category();
         c.name = name;
         c.iconName = selectedIconName;
         c.colorCode = selectedColorCode;
         c.type = isExpense ? 0 : 1;
-        c.isDefault = 0;
-        c.isDeleted = 0;
 
+        // Ensure standard states are enforced on creation
+        if (editCat == null) {
+            c.isDefault = 0;
+            c.isDeleted = 0;
+        }
+
+        // Delegate persistence to ViewModel
         if (editCat != null) {
             viewModel.update(c);
         } else {
             viewModel.insert(c);
         }
 
-        dismiss(); // Xong việc thì cút (đóng sheet)
+        // Job done, dismiss the sheet
+        dismiss();
     }
 
-    // Hàm này dùng để Bật/Tắt khả năng trượt của BottomSheet
+    /**
+     * Toggles the swipe-to-dismiss behavior of the BottomSheet.
+     * Essential for nested scrolling structures.
+     */
     private void setBottomSheetDraggable(boolean isDraggable) {
         if (getDialog() instanceof BottomSheetDialog) {
             BottomSheetDialog dialog = (BottomSheetDialog) getDialog();
-
-            // Lấy thẳng Behavior từ Dialog luôn, không cần tìm View, không dính dáng chữ R nào nữa!
-            dialog.getBehavior().setDraggable(isDraggable);
+            if (dialog.getBehavior() != null) {
+                dialog.getBehavior().setDraggable(isDraggable);
+            }
         }
     }
 }

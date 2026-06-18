@@ -2,19 +2,20 @@ package com.example.cashify.data.model;
 
 import com.google.firebase.firestore.DocumentId;
 
+// POJO map dữ liệu Audit Log từ Firestore
 public class LogItem {
+    // Tự động map Document ID của Firestore vào biến này
     @DocumentId
     private String id;
+
     private String userId;
     private String actionType;
     private String message;
     private long timestamp;
 
-    // 1. CONSTRUCTOR TRỐNG (Bắt buộc phải có để Firestore .toObject hoạt động)
-    public LogItem() {
-    }
+    // Bắt buộc có constructor rỗng để Firestore .toObject() có thể khởi tạo
+    public LogItem() {}
 
-    // 2. CONSTRUCTOR ĐẦY ĐỦ THAM SỐ (Để bạn dùng trong Repository)
     public LogItem(String userId, String actionType, String message, long timestamp) {
         this.userId = userId;
         this.actionType = actionType;
@@ -22,7 +23,6 @@ public class LogItem {
         this.timestamp = timestamp;
     }
 
-    // 3. GETTERS & SETTERS (Bắt buộc phải có để Firestore đọc/ghi dữ liệu)
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 

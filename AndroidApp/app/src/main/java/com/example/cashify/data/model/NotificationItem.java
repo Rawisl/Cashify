@@ -3,18 +3,21 @@ package com.example.cashify.data.model;
 import com.google.firebase.firestore.Exclude;
 import com.google.firebase.firestore.PropertyName;
 
+// POJO map dữ liệu thông báo từ Firestore
 public class NotificationItem {
+
+    // Loại trừ id khỏi JSON khi push lên Firestore, chỉ dùng ở Local
     @Exclude
     private String id;
 
-    // Loại thông báo: "FRIEND_REQUEST", "WORKSPACE_INVITE", "WORKSPACE_TRANS", "WORKSPACE_CHAT"
+    // Loại: "FRIEND_REQUEST", "WORKSPACE_INVITE", "WORKSPACE_TRANS", "WORKSPACE_CHAT"
     private String type;
     private String title;
     private String message;
     private long timestamp;
     private boolean isRead;
 
-    // ID dùng để chuyển hướng (Ví dụ: ID của Quỹ, hoặc UID của người gửi lời mời)
+    // Reference ID dùng để điều hướng (VD: ID quỹ, ID người gửi)
     private String referenceId;
 
     public NotificationItem() {}
@@ -35,8 +38,10 @@ public class NotificationItem {
     public long getTimestamp() { return timestamp; }
     public void setTimestamp(long timestamp) { this.timestamp = timestamp; }
 
+    // Ép kiểu cho Firebase map đúng tên trường "isRead"
     @PropertyName("isRead")
     public boolean isRead() { return isRead; }
+
     @PropertyName("isRead")
     public void setRead(boolean read) { this.isRead = read; }
 

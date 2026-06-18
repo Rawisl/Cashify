@@ -1,58 +1,67 @@
 package com.example.cashify.ui.transactions;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
 import com.example.cashify.data.model.Category;
+
+import java.util.ArrayList;
 import java.util.List;
 
 public class CategoryPickerAdapter extends RecyclerView.Adapter<CategoryPickerAdapter.ViewHolder> {
+
     private List<Category> list;
-    private Context context;
+    private final Context context;
     private int selectedPosition = -1;
-    private OnCategoryClickListener listener;
+    private final OnCategoryClickListener listener;
     private String selectedFirestoreId = "";
+
     public interface OnCategoryClickListener {
         void onCategoryClick(Category category);
     }
 
     public CategoryPickerAdapter(Context context, List<Category> list, OnCategoryClickListener listener) {
         this.context = context;
-        this.list = list != null ? list : java.util.Collections.emptyList();
+        this.list = list != null ? list : new ArrayList<>();
         this.listener = listener;
     }
 
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        // Giữ nguyên layout item cũ của bạn
-        return new ViewHolder(LayoutInflater.from(context).inflate(R.layout.item_category_picker, parent, false));
+        View view = LayoutInflater.from(context).inflate(R.layout.item_category_picker, parent, false);
+        return new ViewHolder(view);
     }
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Category item = list.get(position);
         holder.tvName.setText(item.name != null ? item.name : "Unknown");
-        // Logic so sánh thông minh: Khớp ID int HOẶC khớp firestoreId String
+
+        // Smart match: Check locally generated int ID OR synced firestoreId
         boolean isSelected = (selectedPosition == position) ||
                 (item.firestoreId != null && item.firestoreId.equals(selectedFirestoreId));
-        // 1. Lấy icon từ drawable
+
+        // 1. Icon Binding
         String iconName = item.iconName != null ? item.iconName : "";
         int resId = context.getResources().getIdentifier(iconName, "drawable", context.getPackageName());
         holder.imgIcon.setImageResource(resId != 0 ? resId : R.drawable.ic_other);
 
-        // --- 2. XỬ LÝ MÀU SẮC GỐC ---
+        // 2. Base Color Resolution
         int color;
         try {
             color = Color.parseColor(item.colorCode);
@@ -60,50 +69,43 @@ public class CategoryPickerAdapter extends RecyclerView.Adapter<CategoryPickerAd
             color = ContextCompat.getColor(context, R.color.brand_primary);
         }
 
-        // Luôn nhuộm màu icon theo màu gốc của Category
+        // Apply base color to the vector icon
         holder.imgIcon.setImageTintList(ColorStateList.valueOf(color));
 
-
-        // --- 3. XỬ LÝ BACKGROUND PASTEL KHI ĐƯỢC CHỌN (CHỈNH SỬA CHÍNH TẠI ĐÂY) ---
-
-        // Tạo sẵn một GradientDrawable để làm nền bo tròn
+        // 3. Dynamic Selection Styling (Pastel Background)
         GradientDrawable shape = new GradientDrawable();
         shape.setShape(GradientDrawable.RECTANGLE);
-        shape.setCornerRadius(dpToPx(context, 30)); // Bo tròn góc (ví dụ 12dp)
+        shape.setCornerRadius(dpToPx(30));
 
         if (isSelected) {
-            // NẾU ĐƯỢC CHỌN:
-            // TẠO MÀU PASTEL cực nhạt (Alpha thấp, ví dụ 30 hoặc 40 trên 255)
+            // Selected: Pastel Background (~15% opacity), Bold colored text
             int pastelColor = Color.argb(40, Color.red(color), Color.green(color), Color.blue(color));
 
-            shape.setColor(pastelColor); // Đặt màu nền pastel
-            shape.setStroke(0, Color.TRANSPARENT); // Không dùng viền nữa
-
-            holder.tvName.setTextColor(color); // Màu chữ đậm theo màu gốc
-            holder.tvName.setTypeface(null, android.graphics.Typeface.BOLD); // Chữ in đậm
-        } else {
-            // NẾU KHÔNG ĐƯỢC CHỌN:
-            shape.setColor(Color.TRANSPARENT); // Nền trong suốt
+            shape.setColor(pastelColor);
             shape.setStroke(0, Color.TRANSPARENT);
 
-            holder.tvName.setTextColor(ContextCompat.getColor(context, R.color.item_description)); // Màu chữ mặc định
-            holder.tvName.setTypeface(null, android.graphics.Typeface.NORMAL); // Chữ bình thường
+            holder.tvName.setTextColor(color);
+            holder.tvName.setTypeface(null, Typeface.BOLD);
+        } else {
+            // Unselected: Transparent background, Neutral normal text
+            shape.setColor(Color.TRANSPARENT);
+            shape.setStroke(0, Color.TRANSPARENT);
+
+            holder.tvName.setTextColor(ContextCompat.getColor(context, R.color.item_description));
+            holder.tvName.setTypeface(null, Typeface.NORMAL);
         }
 
-        // ĐIỂM QUAN TRỌNG: Gán background này cho itemView (toàn bộ ô), KHÔNG phải imgIcon
+        // Apply generated shape to the root container
         holder.itemView.setBackground(shape);
-
-        // Xóa background cũ của icon (nếu lúc trước item_category_picker.xml có đặt)
         holder.imgIcon.setBackground(null);
 
-
-        // 4. Click listener
+        // 4. Click Listener Delegation
         holder.itemView.setOnClickListener(v -> {
             int oldPos = selectedPosition;
             selectedPosition = holder.getAdapterPosition();
             if (selectedPosition == RecyclerView.NO_POSITION) return;
 
-            // Chỉ notify những item thay đổi trạng thái để tối ưu hiệu năng
+            // Notify only modified items to optimize render cycle
             if (oldPos != -1) {
                 notifyItemChanged(oldPos);
             }
@@ -113,8 +115,7 @@ public class CategoryPickerAdapter extends RecyclerView.Adapter<CategoryPickerAd
         });
     }
 
-    // Hàm tiện ích để đổi dp sang px cho CornerRadius
-    private int dpToPx(Context context, int dp) {
+    private int dpToPx(int dp) {
         float density = context.getResources().getDisplayMetrics().density;
         return Math.round((float) dp * density);
     }
@@ -125,9 +126,7 @@ public class CategoryPickerAdapter extends RecyclerView.Adapter<CategoryPickerAd
                 int oldPos = selectedPosition;
                 selectedPosition = i;
 
-                if (oldPos != -1) {
-                    notifyItemChanged(oldPos);
-                }
+                if (oldPos != -1) notifyItemChanged(oldPos);
                 notifyItemChanged(selectedPosition);
 
                 if (listener != null) listener.onCategoryClick(list.get(i));
@@ -136,19 +135,7 @@ public class CategoryPickerAdapter extends RecyclerView.Adapter<CategoryPickerAd
         }
     }
 
-    @Override
-    public int getItemCount() { return list.size(); }
-
-    public static class ViewHolder extends RecyclerView.ViewHolder {
-        ImageView imgIcon;
-        TextView tvName;
-        public ViewHolder(@NonNull View itemView) {
-            super(itemView);
-            imgIcon = itemView.findViewById(R.id.imgCatIcon);
-            tvName = itemView.findViewById(R.id.tvCatName);
-        }
-    }
-
+    @SuppressLint("NotifyDataSetChanged")
     public void setSelectedByFirestoreId(String firestoreId) {
         this.selectedFirestoreId = (firestoreId != null) ? firestoreId : "";
         for (int i = 0; i < list.size(); i++) {
@@ -159,10 +146,28 @@ public class CategoryPickerAdapter extends RecyclerView.Adapter<CategoryPickerAd
             }
         }
     }
+
+    @SuppressLint("NotifyDataSetChanged")
     public void setNewData(List<Category> newList) {
-        this.list = newList != null ? newList : java.util.Collections.emptyList();
-        this.selectedPosition = -1; // Reset lại lựa chọn khi đổi tab Thu/Chi
+        this.list = newList != null ? newList : new ArrayList<>();
+        this.selectedPosition = -1; // Reset selection on tab changes (Income/Expense)
         this.selectedFirestoreId = "";
         notifyDataSetChanged();
+    }
+
+    @Override
+    public int getItemCount() {
+        return list.size();
+    }
+
+    public static class ViewHolder extends RecyclerView.ViewHolder {
+        ImageView imgIcon;
+        TextView tvName;
+
+        public ViewHolder(@NonNull View itemView) {
+            super(itemView);
+            imgIcon = itemView.findViewById(R.id.imgCatIcon);
+            tvName = itemView.findViewById(R.id.tvCatName);
+        }
     }
 }

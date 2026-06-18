@@ -18,29 +18,27 @@ public interface CategoryDao {
     @Update
     void update(Category c);
 
-    //lọc danh mục theo loại 0: chi; 1: thu
-    @Query("SELECT * FROM categories WHERE type = :type AND isDeleted=0")
-    List<Category> getCategoriesByType(int type); //0=chi, 1=thu
+    // Lọc danh mục đang hoạt động theo loại (0 = Expense, 1 = Income)
+    @Query("SELECT * FROM categories WHERE type = :type AND isDeleted = 0")
+    List<Category> getCategoriesByType(int type);
 
-    //truy vấn 1 danh mục cụ thể
     @Query("SELECT * FROM categories WHERE id = :id LIMIT 1")
     Category getCategoryById(int id);
 
-    //Soft delete: đánh dấu, không xóa thật
-    @Query("UPDATE categories SET isDeleted=1 WHERE id = :id")
+    // Xóa mềm: Đánh dấu ẩn để không hiển thị lên UI, nhưng giữ lại để không làm lỗi các giao dịch lịch sử đã dùng danh mục này
+    @Query("UPDATE categories SET isDeleted = 1 WHERE id = :id")
     void softDelete(int id);
 
-    //Hard delete: dùng khi chắc chắn danh mục chưa có giao dịch nào
+    // Xóa cứng: Xóa vĩnh viễn khỏi DB, CHỈ DÙNG khi danh mục chưa từng phát sinh giao dịch nào
     @Query("DELETE FROM categories WHERE id = :id")
     void hardDelete(int id);
 
-    //kiểm tra xem danh mục có dag chứa giao dịch nào k trước khi xóa
-    @Query("SELECT COUNT(*) FROM transactions WHERE categoryId = :category_id")
-    int countTransactionsByCategory(int category_id);
+    // Kiểm tra ràng buộc dữ liệu: Đếm số giao dịch đang dùng danh mục này để quyết định cho phép xóa mềm hay xóa cứng
+    @Query("SELECT COUNT(*) FROM transactions WHERE categoryId = :categoryId")
+    int countTransactionsByCategory(int categoryId);
 
-    //lấy tất cả danh mục đang su dụng
-    @Query("SELECT * FROM categories WHERE isDeleted=0")
-    List<Category>getAllActive();
+    @Query("SELECT * FROM categories WHERE isDeleted = 0")
+    List<Category> getAllActive();
 
     @Query("DELETE FROM categories")
     void deleteAllCategories();

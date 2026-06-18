@@ -1,6 +1,7 @@
 package com.example.cashify.ui.transactions;
 
 import android.app.Application;
+
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
@@ -12,35 +13,43 @@ import com.example.cashify.data.model.Category;
 import com.example.cashify.data.local.CategoryDao;
 import com.example.cashify.data.model.Transaction;
 import com.example.cashify.data.local.TransactionDao;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class TransactionViewModel extends AndroidViewModel {
 
     private final TransactionDao transactionDao;
     private final CategoryDao categoryDao;
 
-    private String currentWorkspaceId = "PERSONAL";
+    // Thread pool to replace memory-leaking 'new Thread()' instantiations
+    private final ExecutorService databaseExecutor = Executors.newSingleThreadExecutor();
 
-    // Chỉ giữ lại Search Query, bỏ currentFilter cũ vì đã dùng LiveData Multi-Filter
+    private String currentWorkspaceId = "PERSONAL";
     private String currentSearchQuery = "";
 
+    // =========================================================================
+    // STATE LIVEDATA
+    // =========================================================================
     private final MutableLiveData<List<HistoryItem>> _historyItems = new MutableLiveData<>();
+    public LiveData<List<HistoryItem>> getGroupedTransactions() { return _historyItems; }
 
-    // --- CÁC TRẠNG THÁI MULTI-FILTER ---
+    private final MutableLiveData<List<FilterChip>> filterChips = new MutableLiveData<>();
+    public LiveData<List<FilterChip>> getFilterChips() { return filterChips; }
+
+    // Multi-Filter States
     public final MutableLiveData<long[]> selectedDateRange = new MutableLiveData<>(null);
     public final MutableLiveData<Integer> selectedType = new MutableLiveData<>(null);
     public final MutableLiveData<String> selectedMethod = new MutableLiveData<>(null);
     public final MutableLiveData<Integer> selectedCategoryId = new MutableLiveData<>(null);
-
-    private final MutableLiveData<List<FilterChip>> filterChips = new MutableLiveData<>();
-
-    public LiveData<List<FilterChip>> getFilterChips() { return filterChips; }
-    public LiveData<List<HistoryItem>> getGroupedTransactions() { return _historyItems; }
 
     public TransactionViewModel(@NonNull Application application) {
         super(application);
@@ -48,7 +57,7 @@ public class TransactionViewModel extends AndroidViewModel {
         transactionDao = db.transactionDao();
         categoryDao = db.categoryDao();
 
-        initDefaultChips(); // Khởi tạo chip mặc định ngay khi mở app
+        initDefaultChips();
     }
 
     public void initDefaultChips() {
@@ -70,23 +79,22 @@ public class TransactionViewModel extends AndroidViewModel {
     }
 
     /**
-     * Hàm fetch dữ liệu: Lấy tất cả, sau đó lọc kết hợp Search + 4 loại Filter
+     * Fetches transactions from local DB and applies search & multi-filter logic in-memory.
      */
     public void fetchHistoryData(String workspaceId, String query) {
         this.currentWorkspaceId = workspaceId != null ? workspaceId : "PERSONAL";
         this.currentSearchQuery = query != null ? query : "";
 
-        new Thread(() -> {
-            // Lấy tất cả dữ liệu từ DB (Chưa cần đổi DAO, lọc in-memory vẫn rất nhanh)
+        databaseExecutor.execute(() -> {
             List<Transaction> transactions = transactionDao.getAll(currentWorkspaceId);
-
             List<HistoryItem> uiModels = new ArrayList<>();
+
             if (transactions == null || transactions.isEmpty()) {
                 _historyItems.postValue(uiModels);
                 return;
             }
 
-            // Đọc các trạng thái filter hiện tại
+            // Read current filter states
             long[] dates = selectedDateRange.getValue();
             Integer type = selectedType.getValue();
             String method = selectedMethod.getValue();
@@ -94,32 +102,31 @@ public class TransactionViewModel extends AndroidViewModel {
 
             List<Transaction> filteredList = new ArrayList<>();
             for (Transaction t : transactions) {
-                // 1. Lọc theo Search (Bỏ qua hoa/thường)
+                // 1. Search Query Filter
                 if (!currentSearchQuery.isEmpty()) {
                     if (t.note == null || !t.note.toLowerCase().contains(currentSearchQuery.toLowerCase())) {
                         continue;
                     }
                 }
 
-                // 2. Lọc theo Loại (0: Chi, 1: Thu)
+                // 2. Type Filter (0: Expense, 1: Income)
                 if (type != null && t.type != type) continue;
 
-                // 3. Lọc theo Khoảng thời gian
+                // 3. Date Range Filter
                 if (dates != null && dates.length == 2) {
                     if (t.timestamp < dates[0] || t.timestamp > dates[1]) continue;
                 }
 
-                // 4. Lọc theo Ví thanh toán
+                // 4. Payment Method Filter
                 if (method != null && (t.paymentMethod == null || !t.paymentMethod.equals(method))) continue;
 
-                // 5. Lọc theo Danh mục
+                // 5. Category Filter
                 if (categoryId != null && t.categoryId != categoryId) continue;
 
-                // Vượt qua toàn bộ filter -> hợp lệ
                 filteredList.add(t);
             }
 
-            // Gom nhóm theo ngày để tạo Header
+            // Group filtered items by Date Header
             SimpleDateFormat sdf = new SimpleDateFormat("MMMM dd, yyyy", Locale.ENGLISH);
             String lastDate = "";
 
@@ -132,9 +139,8 @@ public class TransactionViewModel extends AndroidViewModel {
                 }
 
                 Category cat = null;
-                // Nếu có mã mây thì tìm theo mã mây (Bên Quỹ chung hoặc đồ đã đồng bộ)
+                // Cloud Sync ID Resolution
                 if (trans.firestoreCategoryId != null && !trans.firestoreCategoryId.isEmpty()) {
-                    // (Tớ tự chế logic tìm kiếm này vì categoryDao của sếp hiện tại hình như chưa có hàm getCategoryByFirestoreId)
                     List<Category> allCats = categoryDao.getAll();
                     for (Category c : allCats) {
                         if (trans.firestoreCategoryId.equals(c.firestoreId)) {
@@ -142,7 +148,8 @@ public class TransactionViewModel extends AndroidViewModel {
                         }
                     }
                 }
-                // Nếu vẫn không tìm thấy thì tìm theo ID Int truyền thống (Đồ offline chưa đồng bộ)
+
+                // Fallback to local ID
                 if (cat == null) {
                     cat = categoryDao.getCategoryById(trans.categoryId);
                 }
@@ -155,75 +162,78 @@ public class TransactionViewModel extends AndroidViewModel {
             }
 
             _historyItems.postValue(uiModels);
-        }).start();
+        });
     }
 
-    // --- OVERLOADS ---
-    public void fetchHistoryData(String workspaceId) { fetchHistoryData(workspaceId, currentSearchQuery); }
+    public void fetchHistoryData(String workspaceId) {
+        fetchHistoryData(workspaceId, currentSearchQuery);
+    }
 
-    /**
-     * Xóa nhanh (dùng cho Swipe to Delete)
-     */
+    // =========================================================================
+    // CRUD OPERATIONS (Syncing Local & Cloud)
+    // Note: Ideally, these operations should be delegated to TransactionRepository.
+    // =========================================================================
+
     public void deleteOnly(Transaction transaction) {
-        // 1. Xóa trên Firebase trước (hoặc gọi Repo của ghệ)
-        com.google.firebase.firestore.FirebaseFirestore.getInstance()
-                .collection("users")
-                .document(com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser().getUid())
-                .collection("transactions")
-                .document(transaction.id)
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) return;
+
+        FirebaseFirestore.getInstance()
+                .collection("users").document(user.getUid())
+                .collection("transactions").document(transaction.id)
                 .delete()
-                .addOnSuccessListener(aVoid -> {
-                    // 2. Firebase xóa thành công thì mới xóa dưới Local
-                    new Thread(() -> {
-                        transactionDao.delete(transaction);
-                        fetchHistoryData(currentWorkspaceId);
-                    }).start();
-                });
+                .addOnSuccessListener(aVoid -> databaseExecutor.execute(() -> {
+                    transactionDao.delete(transaction);
+                    fetchHistoryData(currentWorkspaceId);
+                }));
     }
 
-    /**
-     * Chèn lại (dùng cho nút UNDO trên Snackbar)
-     */
     public void insertOnly(Transaction transaction) {
-        String uid = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser().getUid();
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) return;
+
         String collectionPath = (transaction.workspaceId == null || transaction.workspaceId.equals("PERSONAL"))
-                ? "users/" + uid + "/transactions"
+                ? "users/" + user.getUid() + "/transactions"
                 : "workspaces/" + transaction.workspaceId + "/transactions";
 
-        // Cấp ID mới từ Firebase nếu chưa có
         if (transaction.id == null || transaction.id.isEmpty()) {
-            transaction.id = com.google.firebase.firestore.FirebaseFirestore.getInstance().collection(collectionPath).document().getId();
+            transaction.id = FirebaseFirestore.getInstance().collection(collectionPath).document().getId();
         }
 
-        com.google.firebase.firestore.FirebaseFirestore.getInstance()
-                .collection(collectionPath).document(transaction.id)
+        FirebaseFirestore.getInstance().collection(collectionPath).document(transaction.id)
                 .set(transaction)
-                .addOnSuccessListener(aVoid -> {
-                    new Thread(() -> {
-                        transactionDao.insert(transaction);
-                        fetchHistoryData(currentWorkspaceId);
-                    }).start();
-                });
+                .addOnSuccessListener(aVoid -> databaseExecutor.execute(() -> {
+                    transactionDao.insert(transaction);
+                    fetchHistoryData(currentWorkspaceId);
+                }));
     }
 
     public void updateAndRefresh(Transaction transaction) {
-        String uid = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser().getUid();
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) return;
+
         String collectionPath = (transaction.workspaceId == null || transaction.workspaceId.equals("PERSONAL"))
-                ? "users/" + uid + "/transactions"
+                ? "users/" + user.getUid() + "/transactions"
                 : "workspaces/" + transaction.workspaceId + "/transactions";
 
-        com.google.firebase.firestore.FirebaseFirestore.getInstance()
-                .collection(collectionPath).document(transaction.id)
+        FirebaseFirestore.getInstance().collection(collectionPath).document(transaction.id)
                 .set(transaction)
-                .addOnSuccessListener(aVoid -> {
-                    new Thread(() -> {
-                        transactionDao.update(transaction);
-                        fetchHistoryData(currentWorkspaceId);
-                    }).start();
-                });
+                .addOnSuccessListener(aVoid -> databaseExecutor.execute(() -> {
+                    transactionDao.update(transaction);
+                    fetchHistoryData(currentWorkspaceId);
+                }));
     }
 
-    // --- INNER CLASS CHO RECYCLERVIEW MULTI-TYPE ---
+    @Override
+    protected void onCleared() {
+        super.onCleared();
+        databaseExecutor.shutdown();
+    }
+
+    // =========================================================================
+    // INNER DATA MODEL FOR RECYCLER VIEW
+    // =========================================================================
+
     public static class HistoryItem {
         public static final int TYPE_DATE_HEADER = 0;
         public static final int TYPE_TRANSACTION = 1;

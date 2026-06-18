@@ -5,7 +5,6 @@ import android.util.Patterns;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
@@ -14,15 +13,14 @@ import com.example.cashify.R;
 import com.example.cashify.utils.ToastHelper;
 
 public class ForgotPasswordActivity extends AppCompatActivity {
+
     private AuthViewModel authViewModel;
     private EditText edtEmailReset;
     private Button btnSendReset;
-    private ImageView btnBack;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // TODO 1: setContentView(R.layout.activity_forgot_password);
         setContentView(R.layout.activity_forgot_password);
 
         initViewModel();
@@ -37,69 +35,50 @@ public class ForgotPasswordActivity extends AppCompatActivity {
     private void initViews() {
         edtEmailReset = findViewById(R.id.edtEmailReset);
         btnSendReset = findViewById(R.id.btnSendReset);
-        btnBack = findViewById(R.id.btnBack);
-
-        // ============================================================
-        // TODO 2: BẮT SỰ KIỆN NÚT "GỬI YÊU CẦU"
-        // - Lấy Email từ EditText.
-        // - Kiểm tra định dạng Email (không để trống, đúng chuẩn @...).
-        // - Nếu OK: Gọi authViewModel.resetPassword(email).
-        // ============================================================
+        ImageView btnBack = findViewById(R.id.btnBack);
 
         btnSendReset.setOnClickListener(v -> {
             String email = edtEmailReset.getText().toString().trim();
 
-            // Kiểm tra rỗng
             if (email.isEmpty()) {
                 ToastHelper.show(this, "Please enter your email address");
                 return;
             }
 
-            // Kiểm tra định dạng Email hợp lệ (có @, domain...)
             if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
                 ToastHelper.show(this, "Invalid email address");
                 return;
             }
 
-            // Nếu OK: Gọi ViewModel xử lý
             authViewModel.resetPassword(email);
         });
-
-        // ============================================================
-        // TODO 3: NÚT QUAY LẠI (BACK)
-        // - Kết thúc Activity (finish()) để quay về màn hình Login.
-        // ============================================================
 
         btnBack.setOnClickListener(v -> finish());
     }
 
     private void observeViewModel() {
-        // ============================================================
-        // TODO 4: QUAN SÁT KẾT QUẢ TỪ VIEWMODEL
-        // - isLoading: Hiện/ẩn cái xoay vòng (ProgressBar) để user biết app đang chạy.
-        // - errorMessage: Nếu Firebase chửi (Email không tồn tại...), hiện Toast báo lỗi.
-        // - isAuthSuccess: Nếu thành công, hiện thông báo: "Vui lòng kiểm tra email để đặt lại mật khẩu"
-        //   và tự động finish() Activity sau vài giây.
-        // ============================================================
-
-        // Trạng thái Loading
         authViewModel.isLoading.observe(this, isLoading -> {
-            btnSendReset.setEnabled(!isLoading);
-            btnSendReset.setText(isLoading ? "Sending..." : "Send Instructions");
-        });
-
-        // Trạng thái Lỗi
-        authViewModel.errorMessage.observe(this, error -> {
-            if (error != null && !error.isEmpty()) {
-                ToastHelper.show(this, "Error: " + error);
+            if (isLoading != null) {
+                btnSendReset.setEnabled(!isLoading);
+                btnSendReset.setText(isLoading ? "Sending..." : "Send Instructions");
             }
         });
 
-        // Trạng thái Thành công (Lưu ý: Gọi đúng biến isResetMailSent)
+        authViewModel.errorMessage.observe(this, error -> {
+            if (error != null && !error.isEmpty()) {
+                ToastHelper.show(this, "Error: " + error);
+
+                // ĐÃ BỔ SUNG: Xóa lỗi sau khi hiện để chống lỗi xoay màn hình
+                authViewModel.clearErrorMessage();
+            }
+        });
+
         authViewModel.isResetMailSent.observe(this, isSent -> {
-            if (isSent) {
+            if (isSent != null && isSent) {
                 ToastHelper.show(this, "Check your email to reset your password");
-                // Tự động đóng màn hình sau khi gửi thành công để về lại Login
+
+                // ĐÃ BỔ SUNG: Reset state trước khi thoát
+                authViewModel.clearResetMailStatus();
                 finish();
             }
         });

@@ -6,10 +6,13 @@ import android.content.Context;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.core.content.ContextCompat;
+
 public class HeartAnimation {
 
     /**
-     * Rubber band animation — dùng cho bất kỳ ImageView nào.
+     * Plays a rubber band animation on any target ImageView.
+     * Often used to draw attention to interactive icons (e.g., likes, bookmarks).
      */
     public static void playRubberBand(ImageView target) {
         target.setScaleX(1f);
@@ -28,15 +31,15 @@ public class HeartAnimation {
     }
 
     /**
-     * Toggle like — đổi màu + animation + cập nhật count.
+     * Toggles the like state, applying color changes, animations, and updating the counter.
      *
-     * @param context     context để lấy color
-     * @param icon        ImageView icon
-     * @param tvCount     TextView số lượng (null nếu không cần)
-     * @param isLiked     trạng thái hiện tại
-     * @param count       số lượng hiện tại
-     * @param activeColor color khi liked (vd: R.color.status_red)
-     * @return            trạng thái isLiked mới
+     * @param context     Context to retrieve color resources.
+     * @param icon        The ImageView representing the heart/like button.
+     * @param tvCount     The TextView displaying the like count (can be null).
+     * @param isLiked     The current like state.
+     * @param count       The current like count.
+     * @param activeColor The color resource ID when liked (e.g., R.color.status_red).
+     * @return            The new like state (boolean).
      */
     public static boolean toggleLike(Context context, ImageView icon,
                                      TextView tvCount, boolean isLiked,
@@ -44,7 +47,7 @@ public class HeartAnimation {
         boolean newState = !isLiked;
 
         if (newState) {
-            icon.setColorFilter(context.getColor(activeColor));
+            icon.setColorFilter(ContextCompat.getColor(context, activeColor));
             playRubberBand(icon);
             if (tvCount != null) tvCount.setText(String.valueOf(count + 1));
         } else {

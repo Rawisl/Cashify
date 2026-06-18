@@ -1,5 +1,6 @@
 package com.example.cashify.ui.workspace;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,10 +15,10 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.example.cashify.R;
 import com.example.cashify.data.model.User;
-import com.example.cashify.data.remote.FirebaseManager;
+import com.example.cashify.data.model.Workspace;
+import com.example.cashify.ui.main.MainActivity;
 import com.example.cashify.utils.DialogHelper;
 import com.example.cashify.utils.ToastHelper;
-import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.List;
 
@@ -32,7 +33,7 @@ public class WorkspaceSettingsFragment extends Fragment {
     public WorkspaceSettingsFragment() { }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_workspace_settings, container, false);
     }
 
@@ -40,6 +41,7 @@ public class WorkspaceSettingsFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        // Traverse fragment tree to extract workspaceId from container arguments
         Fragment parent = getParentFragment();
         while (parent != null) {
             if (parent instanceof WorkspaceContainerFragment) {
@@ -64,28 +66,36 @@ public class WorkspaceSettingsFragment extends Fragment {
     private void initViewModel() {
         workspaceViewModel = new ViewModelProvider(requireActivity()).get(WorkspaceViewModel.class);
 
-        // 1. HỨNG BẪY KICK: Nếu ViewModel báo bị Kick -> Văng ngay lập tức!
+        // 1. Kick Trap: Automatically redirect if the user leaves or is kicked
         workspaceViewModel.isKickedOut.observe(getViewLifecycleOwner(), isKicked -> {
-            if (isKicked != null && isKicked) {
+            if (Boolean.TRUE.equals(isKicked)) {
                 ToastHelper.show(requireContext(), "You are no longer in this workspace.");
                 forceQuitToPersonal();
             }
         });
 
-        // 2. THEO DÕI REAL-TIME SỐ LƯỢNG THÀNH VIÊN ĐỂ ĐỔI UI NÚT
+        // 2. Real-time UI updates based on workspace state
         workspaceViewModel.getWorkspaceLiveData().observe(getViewLifecycleOwner(), workspace -> {
             if (workspace != null) updateUI(workspace);
         });
 
+        // 3. Real-time UI updates based on member count (e.g., Leave vs Delete)
         workspaceViewModel.getMembersLiveData().observe(getViewLifecycleOwner(), users -> {
-            com.example.cashify.data.model.Workspace ws = workspaceViewModel.getWorkspaceLiveData().getValue();
-            if (ws != null) updateUI(ws); // Kích hoạt lại UI mỗi khi có người ra/vào
+            Workspace ws = workspaceViewModel.getWorkspaceLiveData().getValue();
+            if (ws != null) updateUI(ws);
+        });
+
+        // 4. Observe general network/action errors
+        workspaceViewModel.errorMessage.observe(getViewLifecycleOwner(), errorMsg -> {
+            if (errorMsg != null) {
+                DialogHelper.showAlert(requireContext(), "Error", errorMsg, null);
+            }
         });
     }
 
-    private void updateUI(com.example.cashify.data.model.Workspace workspace) {
-        String currentUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        boolean isOwner = currentUserId.equals(workspace.getOwnerId());
+    private void updateUI(Workspace workspace) {
+        String currentUserId = workspaceViewModel.getCurrentUserId();
+        boolean isOwner = currentUserId != null && currentUserId.equals(workspace.getOwnerId());
 
         List<User> members = workspaceViewModel.getMembersLiveData().getValue();
         int memberCount = (members != null) ? members.size() : 1;
@@ -93,12 +103,12 @@ public class WorkspaceSettingsFragment extends Fragment {
         if (isOwner) {
             btnManageCategories.setAlpha(1.0f);
             btnManageCategories.setOnClickListener(v -> {
-                android.content.Intent intent = new android.content.Intent(requireContext(), WorkspaceCategoryActivity.class);
+                Intent intent = new Intent(requireContext(), WorkspaceCategoryActivity.class);
                 intent.putExtra("WORKSPACE_ID", workspaceId);
                 startActivity(intent);
             });
 
-            // XỬ LÝ NÚT LEAVE/DELETE ĐỘNG MƯỢT MÀ
+            // Dynamic UI for Leave/Delete context
             if (memberCount <= 1) {
                 tvLeaveDeleteTitle.setText("Delete Workspace");
                 tvLeaveDeleteDesc.setText("Permanently delete this fund and all data");
@@ -108,7 +118,9 @@ public class WorkspaceSettingsFragment extends Fragment {
             }
         } else {
             btnManageCategories.setAlpha(0.5f);
-            btnManageCategories.setOnClickListener(v -> ToastHelper.show(requireContext(), "Access denied! Only the owner can manage categories."));
+            btnManageCategories.setOnClickListener(v ->
+                    ToastHelper.show(requireContext(), "Access denied! Only the owner can manage categories.")
+            );
 
             tvLeaveDeleteTitle.setText("Leave Workspace");
             tvLeaveDeleteDesc.setText("Remove yourself from this fund");
@@ -140,18 +152,7 @@ public class WorkspaceSettingsFragment extends Fragment {
                         "Cancel",
                         DialogHelper.DialogType.DANGER,
                         true,
-                        () -> {
-                            FirebaseManager.getInstance().leaveWorkspace(workspaceId, new FirebaseManager.DataCallback<Void>() {
-                                @Override
-                                public void onSuccess(Void data) { }
-                                @Override
-                                public void onError(String message) {
-                                    if (getActivity() != null) getActivity().runOnUiThread(() ->
-                                            DialogHelper.showAlert(requireContext(), "Error", message, null)
-                                    );
-                                }
-                            });
-                        },
+                        () -> workspaceViewModel.leaveWorkspace(workspaceId), // Delegate to ViewModel
                         null
                 );
             }
@@ -160,8 +161,8 @@ public class WorkspaceSettingsFragment extends Fragment {
 
     private void forceQuitToPersonal() {
         if (getActivity() != null) {
-            android.content.Intent intent = new android.content.Intent(requireContext(), com.example.cashify.ui.main.MainActivity.class);
-            intent.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            Intent intent = new Intent(requireContext(), MainActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
             getActivity().finish();
         }

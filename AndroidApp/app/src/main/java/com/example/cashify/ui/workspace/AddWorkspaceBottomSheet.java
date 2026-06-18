@@ -1,6 +1,9 @@
 package com.example.cashify.ui.workspace;
 
 import android.app.Dialog;
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -28,12 +31,12 @@ public class AddWorkspaceBottomSheet extends BottomSheetDialogFragment {
     private EditText etWorkspaceName;
     private Button btnCreate;
     private WorkspaceViewModel viewModel;
-    private RecyclerView rvIcons;
     private IconAdapter iconAdapter;
 
-    // =========================================================
-    // FIX BỆNH 1: ÉP BOTTOM SHEET MỞ BUNG FULL SIZE NGAY TỪ ĐẦU
-    // =========================================================
+    // =========================================================================
+    // UX FIX 1: Enforce Expanded State
+    // Forces the BottomSheet to open fully expanded instead of half-way.
+    // =========================================================================
     @NonNull
     @Override
     public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
@@ -48,9 +51,10 @@ public class AddWorkspaceBottomSheet extends BottomSheetDialogFragment {
         return dialog;
     }
 
-    // =========================================================
-    // FIX BỆNH 2: ÉP BÀN PHÍM PHẢI ĐẨY BOTTOM SHEET TRƯỢT LÊN
-    // =========================================================
+    // =========================================================================
+    // UX FIX 2: Keyboard Handling
+    // Ensures the BottomSheet is pushed up by the soft keyboard.
+    // =========================================================================
     @Override
     public void onStart() {
         super.onStart();
@@ -72,8 +76,9 @@ public class AddWorkspaceBottomSheet extends BottomSheetDialogFragment {
 
         etWorkspaceName = view.findViewById(R.id.etWorkspaceName);
         btnCreate = view.findViewById(R.id.btnCreateWorkspace);
-        rvIcons = view.findViewById(R.id.rvIcons);
+        RecyclerView rvIcons = view.findViewById(R.id.rvIcons);
 
+        // Pre-defined set of workspace icons
         List<String> myIcons = Arrays.asList(
                 "ic_house", "ic_gift", "ic_food", "ic_salary", "ic_family",
                 "ic_entertain", "ic_transport", "ic_vacation", "ic_freelance", "ic_cafe",
@@ -83,48 +88,51 @@ public class AddWorkspaceBottomSheet extends BottomSheetDialogFragment {
         iconAdapter = new IconAdapter(requireContext(), myIcons);
         rvIcons.setAdapter(iconAdapter);
 
-        // Dùng ViewModel của Activity cha
+        // Bind to Activity-scoped ViewModel
         viewModel = new ViewModelProvider(requireActivity()).get(WorkspaceViewModel.class);
 
-        // =========================================================
-        // FIX BỆNH 3: MANG OBSERVER RA KHỎI NÚT BẤM (TRÁNH TRÀN RAM)
-        // =========================================================
+        // =========================================================================
+        // UX FIX 3: Lifecycle-aware Observers
+        // Prevents memory leaks by separating state observation from click events.
+        // =========================================================================
+
         viewModel.isLoading.observe(getViewLifecycleOwner(), isLoading -> {
-            if (isLoading) {
+            if (Boolean.TRUE.equals(isLoading)) {
                 btnCreate.setEnabled(false);
-                btnCreate.setText("Creating..."); // Đổi chữ cho ngầu
+                btnCreate.setText("Creating...");
             } else {
-                btnCreate.setEnabled(true);  // Mở khóa nút
-                btnCreate.setText("Create"); // Trả lại chữ cũ
+                btnCreate.setEnabled(true);
+                btnCreate.setText("Create");
             }
         });
 
         viewModel.actionSuccess.observe(getViewLifecycleOwner(), isSuccess -> {
-            if (isSuccess) {
-                ToastHelper.show(getContext(), "Create group successfully!");
+            if (Boolean.TRUE.equals(isSuccess)) {
+                ToastHelper.show(getContext(), "Group created successfully!");
                 viewModel.resetActionStatus();
                 dismiss();
             }
         });
 
         viewModel.errorMessage.observe(getViewLifecycleOwner(), error -> {
-            if (error != null) {
+            if (error != null && !error.isEmpty()) {
                 ToastHelper.show(getContext(), error);
                 viewModel.resetActionStatus();
             }
         });
 
-        // =========================================================
-        // SỰ KIỆN CLICK CHỈ LÀM ĐÚNG NHIỆM VỤ CỦA NÓ: KIỂM TRA & GỬI
-        // =========================================================
+        // =========================================================================
+        // ACTION: CREATE WORKSPACE
+        // =========================================================================
         btnCreate.setOnClickListener(v -> {
             if (!isNetworkConnected()) {
-                ToastHelper.show(getContext(), "Please connect to the internet to create a Group Fund!!");
+                ToastHelper.show(getContext(), "Please connect to the internet to create a Group Fund!");
                 return;
             }
-            String name = etWorkspaceName.getText().toString().trim();
+
+            String name = etWorkspaceName.getText() != null ? etWorkspaceName.getText().toString().trim() : "";
             if (name.isEmpty()) {
-                etWorkspaceName.setError("Please fill Group Name!");
+                etWorkspaceName.setError("Please enter a Group Name!");
                 return;
             }
 
@@ -133,10 +141,14 @@ public class AddWorkspaceBottomSheet extends BottomSheetDialogFragment {
         });
     }
 
+    /**
+     * Checks if the device has an active network connection.
+     */
+    @SuppressWarnings("deprecation")
     private boolean isNetworkConnected() {
-        android.net.ConnectivityManager cm = (android.net.ConnectivityManager) requireContext().getSystemService(android.content.Context.CONNECTIVITY_SERVICE);
+        ConnectivityManager cm = (ConnectivityManager) requireContext().getSystemService(Context.CONNECTIVITY_SERVICE);
         if (cm != null) {
-            android.net.NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+            NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
             return activeNetwork != null && activeNetwork.isConnectedOrConnecting();
         }
         return false;

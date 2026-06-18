@@ -1,29 +1,37 @@
 package com.example.cashify.data.model;
 
-import com.google.firebase.firestore.DocumentId;
-import com.google.firebase.firestore.Exclude;
+import androidx.annotation.NonNull;
+import androidx.room.Entity;
+import androidx.room.PrimaryKey;
+import androidx.room.TypeConverter;
+import androidx.room.TypeConverters;
 
+import com.google.firebase.firestore.Exclude;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
+import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Model đại diện cho một không gian làm việc (Cá nhân hoặc Quỹ nhóm).
- */
+@Entity(tableName = "workspaces")
+@TypeConverters(Workspace.WorkspaceConverters.class)
 public class Workspace {
-    //cái ý tưởng là làm side bar bên trái ấy, xong mỗi section trong sidebar đó sẽ có đại loại như "Personal", "Quỹ A", "Quỹ B", nên là cần cái class này lưu id, tên, type (personal/group), owner ID (ID chủ quỹ,..), member (danh sách thành viên trong quỹ)
 
+    @PrimaryKey
+    @NonNull
     @Exclude
-    private String id;           // Khóa chính (Firestore Document ID)
-    private String name;         // Tên quỹ (VD: Quỹ ăn chơi, Tiền nhà...)
-    private String type;         // "PERSONAL" hoặc "GROUP"
-    private String ownerId;      // UID của người tạo (Chủ quỹ)
-    private List<String> members; // Danh sách UID các thành viên được tham gia
-    private double balance;      // Số dư hiện tại của quỹ này
-    private double totalIncome;  // Tổng tiền đã thu vào quỹ
-    private double totalExpense; // Tổng tiền quỹ đã chi ra
-    private String iconName; // Thêm dòng này
+    private String id = "";
+    private String name;
+    private String type;
+    private String ownerId;
+    private List<String> members;
+    private double balance;
+    private double totalIncome;
+    private double totalExpense;
+    private String iconName;
 
-    public Workspace() {
-    }
+    public Workspace() {}
 
     public Workspace(String name, String type, String ownerId) {
         this.name = name;
@@ -35,69 +43,45 @@ public class Workspace {
     }
 
     @Exclude
-    public String getId() {
-        return id;
-    }
+    @NonNull
+    public String getId() { return id; }
+    public void setId(@NonNull String id) { this.id = id; }
 
-    public void setId(String id) {
-        this.id = id;
-    }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-    public String getName() {
-        return name;
-    }
+    public String getType() { return type; }
+    public void setType(String type) { this.type = type; }
 
-    public void setName(String name) {
-        this.name = name;
-    }
+    public String getOwnerId() { return ownerId; }
+    public void setOwnerId(String ownerId) { this.ownerId = ownerId; }
 
-    public String getType() {
-        return type;
-    }
+    public List<String> getMembers() { return members; }
+    public void setMembers(List<String> members) { this.members = members; }
 
-    public void setType(String type) {
-        this.type = type;
-    }
+    public double getBalance() { return balance; }
+    public void setBalance(double balance) { this.balance = balance; }
 
-    public String getOwnerId() {
-        return ownerId;
-    }
+    public double getTotalIncome() { return totalIncome; }
+    public void setTotalIncome(double totalIncome) { this.totalIncome = totalIncome; }
 
-    public void setOwnerId(String ownerId) {
-        this.ownerId = ownerId;
-    }
+    public double getTotalExpense() { return totalExpense; }
+    public void setTotalExpense(double totalExpense) { this.totalExpense = totalExpense; }
 
-    public List<String> getMembers() {
-        return members;
-    }
-
-    public void setMembers(List<String> members) {
-        this.members = members;
-    }
-
-    public double getBalance() {
-        return balance;
-    }
-
-    public void setBalance(double balance) {
-        this.balance = balance;
-    }
-
-    public double getTotalIncome() {
-        return totalIncome;
-    }
-
-    public void setTotalIncome(double totalIncome) {
-        this.totalIncome = totalIncome;
-    }
-
-    public double getTotalExpense() {
-        return totalExpense;
-    }
-
-    public void setTotalExpense(double totalExpense) {
-        this.totalExpense = totalExpense;
-    }
     public String getIconName() { return iconName; }
     public void setIconName(String iconName) { this.iconName = iconName; }
+
+    // Xử lý chuyển đổi List<String> sang JSON String cho SQLite
+    public static class WorkspaceConverters {
+        @TypeConverter
+        public static List<String> fromString(String value) {
+            Type listType = new TypeToken<ArrayList<String>>() {}.getType();
+            return value == null ? new ArrayList<>() : new Gson().fromJson(value, listType);
+        }
+
+        @TypeConverter
+        public static String fromList(List<String> list) {
+            return list == null ? "[]" : new Gson().toJson(list);
+        }
+    }
 }

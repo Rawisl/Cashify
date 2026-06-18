@@ -1,5 +1,6 @@
 package com.example.cashify.ui.FriendsActivity;
 
+import android.annotation.SuppressLint;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,6 +19,7 @@ import java.util.Date;
 import java.util.List;
 
 public class ConversationAdapter extends RecyclerView.Adapter<ConversationAdapter.ViewHolder> {
+
     public interface OnConversationClickListener {
         void onConversationClick(DirectConversation conversation);
     }
@@ -40,16 +42,20 @@ public class ConversationAdapter extends RecyclerView.Adapter<ConversationAdapte
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         DirectConversation conversation = conversations.get(position);
+
         holder.tvName.setText(conversation.getNameToShow());
         holder.tvEmail.setText(conversation.getFriendEmail() != null ? conversation.getFriendEmail() : "");
         holder.tvPreview.setText(conversation.getLatestMessageText() != null ? conversation.getLatestMessageText() : "");
+
         holder.tvTimestamp.setText(conversation.getLatestMessageTimestamp() > 0
                 ? DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(new Date(conversation.getLatestMessageTimestamp()))
                 : "");
+
         holder.tvUnread.setVisibility(conversation.getUnreadCount() > 0 ? View.VISIBLE : View.GONE);
         holder.tvUnread.setText(String.valueOf(conversation.getUnreadCount()));
 
         ImageHelper.loadAvatar(conversation.getFriendAvatarUrl(), holder.imgAvatar, conversation.getNameToShow());
+
         holder.itemView.setOnClickListener(v -> listener.onConversationClick(conversation));
     }
 
@@ -58,6 +64,7 @@ public class ConversationAdapter extends RecyclerView.Adapter<ConversationAdapte
         return conversations != null ? conversations.size() : 0;
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     public void updateList(List<DirectConversation> newList) {
         conversations = newList;
         notifyDataSetChanged();

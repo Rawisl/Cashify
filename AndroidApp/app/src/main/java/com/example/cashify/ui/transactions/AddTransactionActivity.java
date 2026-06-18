@@ -22,6 +22,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.cashify.R;
 import com.example.cashify.data.model.Category;
 import com.example.cashify.data.model.Transaction;
+import com.example.cashify.data.remote.ApiDto;
 import com.example.cashify.utils.ApiClient;
 import com.example.cashify.utils.ApiService;
 import com.example.cashify.utils.DialogHelper;
@@ -407,7 +408,7 @@ public class AddTransactionActivity extends AppCompatActivity {
         btnConfirm.setEnabled(false); // Chống spam click
 
         // 1. Nhồi data vào Model thay vì gõ JSON thuần bằng tay dễ lỗi
-        ApiService.TransactionRequest requestData = new ApiService.TransactionRequest();
+        ApiDto.TransactionRequest requestData = new ApiDto.TransactionRequest();
         requestData.Id = isEditMode ? editTransactionId : null;
         requestData.Amount = (long) amount;
         requestData.Note = note;
@@ -494,7 +495,7 @@ public class AddTransactionActivity extends AppCompatActivity {
                                     String token = "Bearer " + getTokenResult.getToken();
 
                                     // Nhồi tham số cho API
-                                    ApiService.WorkspaceActionRequest req = new ApiService.WorkspaceActionRequest();
+                                    ApiDto.WorkspaceActionRequest req = new ApiDto.WorkspaceActionRequest();
                                     req.WorkspaceId = workspaceId;
                                     req.TransactionId = editTransactionId;
 

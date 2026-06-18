@@ -4,7 +4,6 @@ import android.Manifest;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Build;
@@ -33,20 +32,22 @@ import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.NavigationUI;
 
 import com.example.cashify.R;
-import com.example.cashify.data.local.AppDatabase;
+import com.example.cashify.data.repository.AuthRepositoryImpl;
+import com.example.cashify.data.repository.IAuthRepository;
 import com.example.cashify.ui.auth.LoginActivity;
 import com.example.cashify.ui.transactions.AddTransactionActivity;
 import com.example.cashify.ui.transactions.TransactionViewModel;
 import com.example.cashify.utils.ToastHelper;
 import com.example.cashify.utils.WorkScheduler;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 
 public class MainActivity extends BaseActivity {
     private boolean keepSplash = true;
     private TransactionViewModel transactionViewModel;
     private String currentWorkspaceId = "PERSONAL";
+
+    // Tách Auth logic ra Repository cho chuẩn Clean Architecture
+    private final IAuthRepository authRepository = new AuthRepositoryImpl();
 
     private final ActivityResultLauncher<String> requestPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
@@ -62,12 +63,16 @@ public class MainActivity extends BaseActivity {
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
 
         SplashScreen splashScreen = SplashScreen.installSplashScreen(this);
-        transactionViewModel = new ViewModelProvider(this).get(TransactionViewModel.class);
         super.onCreate(savedInstanceState);
+
+        // Cấp phát ViewModels
+        transactionViewModel = new ViewModelProvider(this).get(TransactionViewModel.class);
+        mainViewModel = new ViewModelProvider(this).get(MainViewModel.class);
+
         setupPersonalWorkspaceSystemBars();
 
-        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
-        if (currentUser == null) {
+        // Kiểm tra Auth qua Repository
+        if (!authRepository.isLoggedIn()) {
             startActivity(new Intent(this, LoginActivity.class));
             finish();
             return;
@@ -76,13 +81,19 @@ public class MainActivity extends BaseActivity {
         setContentView(R.layout.activity_main);
         setupBaseSidebar();
 
-        String currentUserId = currentUser.getUid();
+        String currentUserId = authRepository.getCurrentUserId();
         Log.d("AUTH_FLOW", "Signed in successfully! UID: " + currentUserId);
 
         setupDeferredNavigationFromIntent();
-        seedAndSyncLocalData(currentUserId);
 
-        new Handler(Looper.getMainLooper()).postDelayed(() -> keepSplash = false, 2000);
+        // ĐÃ SỬA: Đẩy trách nhiệm dọn dẹp Database về cho ViewModel
+        mainViewModel.checkAndSeedLocalData(currentUserId, () -> {
+            Log.d("AUTH_FLOW", "Data ready. Fetching history for UI.");
+            transactionViewModel.fetchHistoryData(currentWorkspaceId);
+        });
+
+        // Tự động tắt Splash Screen
+        new Handler(Looper.getMainLooper()).postDelayed(() -> keepSplash = false, 1400);
         splashScreen.setKeepOnScreenCondition(() -> keepSplash);
 
         setupNavigationAndFab();
@@ -120,8 +131,8 @@ public class MainActivity extends BaseActivity {
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
-        setIntent(intent); // Cập nhật lại Intent mới nhất
-        setupDeferredNavigationFromIntent(); // Chạy lại logic kiểm tra bưu kiện
+        setIntent(intent);
+        setupDeferredNavigationFromIntent();
     }
 
     private void setupDeferredNavigationFromIntent() {
@@ -131,7 +142,6 @@ public class MainActivity extends BaseActivity {
                 Bundle bundle = new Bundle();
                 bundle.putString("WORKSPACE_ID", currentWorkspaceId);
                 controller.navigate(R.id.nav_workspace_container, bundle);
-                // Xóa cờ để chống mở lại khi xoay màn hình
                 getIntent().removeExtra("OPEN_WORKSPACE_ID");
             });
         }
@@ -153,21 +163,14 @@ public class MainActivity extends BaseActivity {
                     bundle.putString("edit_milestone_data", getIntent().getStringExtra("edit_milestone_data"));
                 }
 
-                // ==========================================
-                // 🌟 FIX BACKSTACK CHUẨN Ở ĐÂY:
-                // Nhét Social Container vào trước, rồi mới mở Post Feed đè lên.
-                // Lúc back ra, nó sẽ hạ cánh xuống Social.
-                // ==========================================
                 controller.navigate(R.id.nav_social_container);
                 controller.navigate(R.id.nav_post_feed, bundle);
-
                 getIntent().removeExtra("ACTION_EDIT_POST");
             });
         }
 
         if (getIntent().getBooleanExtra("OPEN_POST_FEED", false)) {
             navigateWhenHome(controller -> {
-                // Fix tương tự cho thao tác mở bảng Đăng bài mới từ Intent
                 controller.navigate(R.id.nav_social_container);
                 controller.navigate(R.id.nav_post_feed);
                 getIntent().removeExtra("OPEN_POST_FEED");
@@ -178,9 +181,7 @@ public class MainActivity extends BaseActivity {
     private void navigateWhenHome(NavAction action) {
         NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.nav_host_fragment);
-        if (navHostFragment == null) {
-            return;
-        }
+        if (navHostFragment == null) return;
 
         NavController navController = navHostFragment.getNavController();
         navController.addOnDestinationChangedListener(new NavController.OnDestinationChangedListener() {
@@ -194,38 +195,6 @@ public class MainActivity extends BaseActivity {
                 }
             }
         });
-    }
-
-    private void seedAndSyncLocalData(String currentUserId) {
-        new Thread(() -> {
-            try {
-                AppDatabase db = AppDatabase.getInstance(MainActivity.this);
-
-                SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
-                String lastUserId = prefs.getString("last_uid", "");
-
-                if (!lastUserId.equals(currentUserId)) {
-                    db.clearAllTables();
-                    prefs.edit().putString("last_uid", currentUserId).apply();
-                    Log.d("AUTH_FLOW", "New user detected! Destroying old data");
-                }
-
-                com.example.cashify.data.local.DatabaseSeeder.seedIfEmpty(MainActivity.this);
-
-                int count = db.transactionDao().countTransactions("PERSONAL");
-                if (count == 0) {
-                    Log.d("AUTH_FLOW", "Database is empty. Fetching data from server...");
-                    mainViewModel.syncAllDataFromServer(MainActivity.this);
-                } else {
-                    Log.d("AUTH_FLOW", "Data already exists.");
-                    transactionViewModel.fetchHistoryData(currentWorkspaceId);
-                }
-
-                mainViewModel.startRealTimeSync(MainActivity.this);
-            } catch (Exception e) {
-                Log.e("AUTH_FLOW", "Database error: " + e.getMessage());
-            }
-        }).start();
     }
 
     @Override
@@ -280,13 +249,12 @@ public class MainActivity extends BaseActivity {
 
         NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.nav_host_fragment);
-        if (navHostFragment == null) {
-            return;
-        }
+        if (navHostFragment == null) return;
 
         NavController navController = navHostFragment.getNavController();
         NavigationUI.setupWithNavController(bottomNav, navController);
         bottomNav.getMenu().findItem(R.id.nav_center_cta_space).setEnabled(false);
+
         int currentDestinationId = navController.getCurrentDestination() == null
                 ? bottomNav.getSelectedItemId()
                 : navController.getCurrentDestination().getId();
@@ -328,34 +296,20 @@ public class MainActivity extends BaseActivity {
             switch (event.getActionMasked()) {
                 case MotionEvent.ACTION_DOWN:
                     v.animate().cancel();
-                    v.animate()
-                            .scaleX(scaleUp)
-                            .scaleY(scaleUp)
-                            .setDuration(scaleUpDuration)
-                            .setInterpolator(new android.view.animation.DecelerateInterpolator())
-                            .start();
+                    v.animate().scaleX(scaleUp).scaleY(scaleUp).setDuration(scaleUpDuration)
+                            .setInterpolator(new android.view.animation.DecelerateInterpolator()).start();
                     break;
                 case MotionEvent.ACTION_UP:
                     v.setElevation(normalElevation);
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                        v.setTranslationZ(normalTranslationZ);
-                    }
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) v.setTranslationZ(normalTranslationZ);
                     playAddButtonSpring(v, scaleDown, scaleDownDuration, settleDuration);
                     break;
                 case MotionEvent.ACTION_CANCEL:
                     v.setElevation(normalElevation);
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                        v.setTranslationZ(normalTranslationZ);
-                    }
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) v.setTranslationZ(normalTranslationZ);
                     v.animate().cancel();
-                    v.animate()
-                            .scaleX(1f)
-                            .scaleY(1f)
-                            .setDuration(settleDuration)
-                            .setInterpolator(new android.view.animation.DecelerateInterpolator())
-                            .start();
-                    break;
-                default:
+                    v.animate().scaleX(1f).scaleY(1f).setDuration(settleDuration)
+                            .setInterpolator(new android.view.animation.DecelerateInterpolator()).start();
                     break;
             }
             return false;
@@ -390,21 +344,15 @@ public class MainActivity extends BaseActivity {
             int floatDuration = getResources().getInteger(R.integer.bottom_nav_icon_float_duration);
             for (int i = 0; i < bottomNav.getMenu().size(); i++) {
                 int itemId = bottomNav.getMenu().getItem(i).getItemId();
-                if (itemId == R.id.nav_center_cta_space) {
-                    continue;
-                }
+                if (itemId == R.id.nav_center_cta_space) continue;
 
                 View itemView = bottomNav.findViewById(itemId);
                 if (itemView != null) {
                     float targetOffset = itemId == destinationId
-                            ? itemVerticalOffset - selectedFloatOffset
-                            : itemVerticalOffset;
+                            ? itemVerticalOffset - selectedFloatOffset : itemVerticalOffset;
                     if (animate) {
-                        itemView.animate()
-                                .translationY(targetOffset)
-                                .setDuration(floatDuration)
-                                .setInterpolator(new android.view.animation.DecelerateInterpolator())
-                                .start();
+                        itemView.animate().translationY(targetOffset).setDuration(floatDuration)
+                                .setInterpolator(new android.view.animation.DecelerateInterpolator()).start();
                     } else {
                         itemView.setTranslationY(targetOffset);
                     }
@@ -425,12 +373,9 @@ public class MainActivity extends BaseActivity {
         NavController navController = androidx.navigation.Navigation.findNavController(this, R.id.nav_host_fragment);
 
         if (navController.getCurrentDestination() != null
-                && navController.getCurrentDestination().getId() == R.id.nav_post_feed) {
-            return;
-        }
+                && navController.getCurrentDestination().getId() == R.id.nav_post_feed) return;
 
         if (navController.getGraph().findNode(R.id.nav_post_feed) == null) {
-            Log.e("NAV_DRAWER", "Post feed destination is missing from nav_graph.");
             ToastHelper.show(this, "Post screen is unavailable.");
             return;
         }
@@ -443,15 +388,12 @@ public class MainActivity extends BaseActivity {
             }
             navController.navigate(R.id.nav_post_feed, args);
         } catch (IllegalArgumentException e) {
-            Log.e("NAV_DRAWER", "Failed to navigate to Post feed from drawer.", e);
             ToastHelper.show(this, "Could not open Post screen.");
         }
     }
 
     private void syncSidebarSelection(int destinationId) {
-        if (navigationView == null) {
-            return;
-        }
+        if (navigationView == null) return;
 
         android.view.Menu menu = navigationView.getMenu();
         if (destinationId == R.id.nav_social_container) {
@@ -466,9 +408,7 @@ public class MainActivity extends BaseActivity {
 
     private void setSidebarItemChecked(android.view.Menu menu, int itemId) {
         android.view.MenuItem item = menu.findItem(itemId);
-        if (item != null) {
-            item.setChecked(true);
-        }
+        if (item != null) item.setChecked(true);
     }
 
     private void maybeOpenCreateWorkspaceSheet() {
@@ -493,16 +433,7 @@ public class MainActivity extends BaseActivity {
 
     private void setupNotifications() {
         WorkScheduler.scheduleDailyReminder(this);
-        com.example.cashify.data.remote.FirebaseManager.getInstance().getFcmToken(
-                new com.example.cashify.data.remote.FirebaseManager.DataCallback<String>() {
-                    @Override
-                    public void onSuccess(String token) {
-                    }
-
-                    @Override
-                    public void onError(String message) {
-                    }
-                });
+        mainViewModel.registerFcmToken();
     }
 
     private interface NavAction {

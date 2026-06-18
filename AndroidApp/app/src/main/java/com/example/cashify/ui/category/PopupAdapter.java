@@ -12,7 +12,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 public class PopupAdapter {
 
-    // --- 1. ADAPTER CHO ICON ---
+    // =========================================================================
+    // ICON ADAPTER
+    // =========================================================================
     public static class IconAdapter extends RecyclerView.Adapter<IconAdapter.ViewHolder> {
         private final Context context;
         private final int[] icons;
@@ -31,9 +33,10 @@ public class PopupAdapter {
         @NonNull
         @Override
         public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            // Programmatically generating views avoids XML inflation overhead
             ImageView imageView = new ImageView(context);
 
-            // Quy đổi sang DP cho chuẩn màn hình (Khoảng 45dp)
+            // Convert DP to Pixels for consistent cross-device sizing (~45dp)
             int size = (int) (45 * context.getResources().getDisplayMetrics().density);
             int margin = (int) (8 * context.getResources().getDisplayMetrics().density);
 
@@ -41,7 +44,7 @@ public class PopupAdapter {
             params.setMargins(margin, margin, margin, margin);
             imageView.setLayoutParams(params);
 
-            // Padding cho icon khỏi chạm viền
+            // Add inner padding to prevent the icon from touching the borders
             imageView.setPadding(margin, margin, margin, margin);
             return new ViewHolder(imageView);
         }
@@ -67,7 +70,9 @@ public class PopupAdapter {
         }
     }
 
-    // --- 2. ADAPTER CHO MÀU SẮC ---
+    // =========================================================================
+    // COLOR ADAPTER
+    // =========================================================================
     public static class ColorAdapter extends RecyclerView.Adapter<ColorAdapter.ViewHolder> {
         private final Context context;
         private final String[] colors;
@@ -88,7 +93,7 @@ public class PopupAdapter {
         public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
             View colorView = new View(context);
 
-            // Quy đổi kích thước màu (Khoảng 35dp)
+            // Convert DP to Pixels for consistent cross-device sizing (~35dp)
             int size = (int) (35 * context.getResources().getDisplayMetrics().density);
             int margin = (int) (8 * context.getResources().getDisplayMetrics().density);
 
@@ -102,14 +107,15 @@ public class PopupAdapter {
         @Override
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
             GradientDrawable shape = new GradientDrawable();
-            shape.setShape(GradientDrawable.OVAL); // Vẫn dùng hình tròn cho tinh tế
+            shape.setShape(GradientDrawable.OVAL); // Oval shape provides a refined aesthetic
+
             try {
                 shape.setColor(Color.parseColor(colors[position]));
             } catch (Exception e) {
-                shape.setColor(Color.GRAY);
+                shape.setColor(Color.GRAY); // Fallback color to prevent crashes on malformed hex strings
             }
-            holder.colorView.setBackground(shape);
 
+            holder.colorView.setBackground(shape);
             holder.itemView.setOnClickListener(v -> listener.onClick(position));
         }
 

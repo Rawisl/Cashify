@@ -129,8 +129,8 @@ public static class SocialEndpoints
                 var decodedToken = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token);
                 var uid = decodedToken.Uid;
 
-                if (string.IsNullOrEmpty(body.Content) && string.IsNullOrEmpty(body.ImageUrl) && string.IsNullOrEmpty(body.MilestoneData))
-                    return Results.BadRequest("Nội dung không được để trống");
+                if (string.IsNullOrEmpty(body.Title) && string.IsNullOrEmpty(body.Content) && string.IsNullOrEmpty(body.ImageUrl) && string.IsNullOrEmpty(body.MilestoneData))
+                    return Results.BadRequest("Nội dung hoặc tiêu đề không được để trống");
 
                 var userSnap = await db.Collection("users").Document(uid).GetSnapshotAsync();
                 var authorName = userSnap.Exists && userSnap.ContainsField("displayName")
@@ -144,21 +144,23 @@ public static class SocialEndpoints
                 var postRef = db.Collection("posts").Document(postId);
 
                 var postData = new Dictionary<string, object>
-                {
-                    { "postId", postId },
-                    { "userId", uid },
-                    { "authorName", authorName },
-                    { "authorAvatarUrl", authorAvatarUrl },
-                    { "type", body.Type ?? "USER_POST" },
-                    { "audience", body.Audience ?? "FRIENDS" }, // HỨNG Audience TỪ ANDROID
-                    { "content", body.Content ?? "" },
-                    { "imageUrl", body.ImageUrl ?? "" },
-                    { "milestoneData", body.MilestoneData },
-                    { "likeCount", 0 },
-                    { "commentCount", 0 },
-                    { "timestamp", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() },
-                    { "isEdited", false }
-                };
+         {
+             { "postId", postId },
+             { "userId", uid },
+             { "authorName", authorName },
+             { "authorAvatarUrl", authorAvatarUrl },
+             { "type", body.Type ?? "USER_POST" },
+             { "audience", body.Audience ?? "FRIENDS" },
+             { "title", body.Title ?? "" },
+             { "content", body.Content ?? "" },
+             { "imageUrl", body.ImageUrl ?? "" },
+             { "milestoneData", body.MilestoneData },
+             { "likeCount", 0 },
+             { "commentCount", 0 },
+             { "timestamp", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() },
+             { "isEdited", false }
+         };
+
                 // Bắt sự kiện: Nếu là bài đăng MILESTONE, lưu cờ vào shared_achievements
                 if (body.Type == "MILESTONE_POST" && !string.IsNullOrEmpty(body.MilestoneData))
                 {
@@ -174,6 +176,7 @@ public static class SocialEndpoints
                     }
                     catch (Exception) { /* Bỏ qua nếu parse JSON lỗi */ }
                 }
+
                 await postRef.SetAsync(postData);
                 return Results.Ok(new { message = "Đăng bài thành công", postId });
             }
@@ -280,7 +283,7 @@ public static class SocialEndpoints
                             IconText = "🦉",
                             MonthLabel = "Lifetime",
                             AmountLabel = "Night Owl",
-                            Progress = 100
+                            Progress = 0
                         });
                     }
 
@@ -296,7 +299,7 @@ public static class SocialEndpoints
                             IconText = "🐋",
                             MonthLabel = "Lifetime",
                             AmountLabel = "> 10M VND",
-                            Progress = 100
+                            Progress = 0
                         });
                     }
                 }
@@ -306,15 +309,22 @@ public static class SocialEndpoints
                 string surplusAchId = $"recap_surplus_{now.Year}_{now.Month}";
                 if (surplus > 0 && !sharedIds.Contains(surplusAchId))
                 {
+                    // Tính % tiền giữ lại được so với tổng thu nhập (Insight cực xịn cho user)
+                    int savedPercent = 0;
+                    if (totalIncomeThisMonth > 0)
+                    {
+                        savedPercent = (int)((surplus * 100.0) / totalIncomeThisMonth);
+                    }
+
                     availableList.Add(new AchievementSuggestion
                     {
                         Id = surplusAchId,
                         Title = "Healthy Finances",
-                        Description = "You earned more than you spent this month. Keep it up!",
+                        Description = $"You saved {savedPercent}% of your income this month. Keep it up!",
                         IconText = "💰",
                         MonthLabel = $"{now.Month}/{now.Year}",
                         AmountLabel = $"Surplus: {surplus:N0}đ",
-                        Progress = 100
+                        Progress = savedPercent > 0 ? savedPercent : 0
                     });
                 }
 
@@ -345,9 +355,9 @@ public static class SocialEndpoints
                                 Title = "The Carry",
                                 Description = "You are the MVP! The largest single contributor.",
                                 IconText = "🦸‍♂️",
-                                MonthLabel = wsName, 
+                                MonthLabel = wsName,
                                 AmountLabel = $"{maxIncome:N0}đ",
-                                Progress = 100
+                                Progress = 0
                             });
                         }
 
@@ -366,7 +376,7 @@ public static class SocialEndpoints
                                 IconText = "🛍️",
                                 MonthLabel = wsName,
                                 AmountLabel = $"{maxSpend:N0}đ",
-                                Progress = 100
+                                Progress = 0
                             });
                         }
                     }
@@ -421,7 +431,7 @@ public static class SocialEndpoints
         });
 
         // ---------------------------------------------------------
-        // 6. SỬA BÀI VIẾT (Đã fix Update Audience)
+        // 6. SỬA BÀI VIẾT
         // ---------------------------------------------------------
         group.MapPost("/post/edit", async (HttpRequest request, EditPostRequest body, FirestoreDb db) =>
         {
@@ -448,7 +458,8 @@ public static class SocialEndpoints
 
                 var updates = new Dictionary<string, object>
                 {
-                    { "content", body.NewContent },
+                    { "title", body.Title ?? "" },
+                    { "content", body.NewContent ?? "" },
                     { "isEdited", true }
                 };
                 if (body.NewImageUrl != null)
@@ -587,7 +598,7 @@ public static class SocialEndpoints
 
                 await commentRef.UpdateAsync(new Dictionary<string, object>
                 {
-                    { "content", body.NewContent },
+                    { "content", body.NewContent ?? "" },
                     { "isEdited", true }
                 });
 

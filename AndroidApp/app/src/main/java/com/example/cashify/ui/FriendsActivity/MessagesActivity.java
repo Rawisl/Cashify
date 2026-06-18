@@ -19,6 +19,7 @@ import com.google.android.material.appbar.MaterialToolbar;
 import java.util.ArrayList;
 
 public class MessagesActivity extends AppCompatActivity {
+
     private ConversationAdapter adapter;
     private RecyclerView rvConversations;
     private ProgressBar progressLoading;
@@ -31,35 +32,60 @@ public class MessagesActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_messages);
 
+        initViews();
+        setupRecyclerView();
+
+        viewModel = new ViewModelProvider(this).get(MessagesViewModel.class);
+        observeViewModel();
+
+        viewModel.startListening();
+    }
+
+    private void initViews() {
         rvConversations = findViewById(R.id.rvConversations);
         progressLoading = findViewById(R.id.progressLoading);
         tvEmptyState = findViewById(R.id.tvEmptyState);
         tvErrorState = findViewById(R.id.tvErrorState);
-        MaterialToolbar toolbar = findViewById(R.id.toolbarMessages);
-        toolbar.setNavigationOnClickListener(v -> finish());
 
+        MaterialToolbar toolbar = findViewById(R.id.toolbarMessages);
+        if (toolbar != null) {
+            toolbar.setNavigationOnClickListener(v -> finish());
+        }
+    }
+
+    private void setupRecyclerView() {
         adapter = new ConversationAdapter(new ArrayList<>(), this::openConversation);
         rvConversations.setLayoutManager(new LinearLayoutManager(this));
         rvConversations.setAdapter(adapter);
+    }
 
-        viewModel = new ViewModelProvider(this).get(MessagesViewModel.class);
+    private void observeViewModel() {
         viewModel.getConversations().observe(this, conversations -> {
             adapter.updateList(conversations);
-            boolean isEmpty = conversations == null || conversations.isEmpty();
+
+            boolean isEmpty = (conversations == null || conversations.isEmpty());
             boolean isLoading = Boolean.TRUE.equals(viewModel.getLoading().getValue());
-            tvEmptyState.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
+
+            tvEmptyState.setVisibility(isEmpty && !isLoading ? View.VISIBLE : View.GONE);
             rvConversations.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
-            if (isLoading) tvEmptyState.setVisibility(View.GONE);
+
             if (!isEmpty) tvErrorState.setVisibility(View.GONE);
         });
-        viewModel.getLoading().observe(this, isLoading -> progressLoading.setVisibility(Boolean.TRUE.equals(isLoading) ? View.VISIBLE : View.GONE));
+
+        viewModel.getLoading().observe(this, isLoading -> {
+            progressLoading.setVisibility(Boolean.TRUE.equals(isLoading) ? View.VISIBLE : View.GONE);
+            if (Boolean.TRUE.equals(isLoading)) {
+                tvEmptyState.setVisibility(View.GONE);
+                tvErrorState.setVisibility(View.GONE);
+            }
+        });
+
         viewModel.getError().observe(this, message -> {
             if (message != null && !message.isEmpty()) {
                 tvErrorState.setVisibility(View.VISIBLE);
-                ToastHelper.show(this, "Load message list failed");
+                ToastHelper.show(this, "Failed to load message list.");
             }
         });
-        viewModel.startListening();
     }
 
     private void openConversation(DirectConversation conversation) {
@@ -69,5 +95,4 @@ public class MessagesActivity extends AppCompatActivity {
         intent.putExtra(FriendChatActivity.EXTRA_FRIEND_AVATAR, conversation.getFriendAvatarUrl());
         startActivity(intent);
     }
-
 }

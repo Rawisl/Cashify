@@ -1,7 +1,5 @@
 package com.example.cashify.ui.workspace;
 
-import static com.example.cashify.BuildConfig.BASE_URL;
-
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
@@ -18,6 +16,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
@@ -26,8 +25,6 @@ import com.example.cashify.ui.category.PopupAdapter;
 import com.example.cashify.utils.ToastHelper;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.io.Serializable;
 
@@ -35,8 +32,8 @@ public class WorkspaceCategoryBottomSheet extends BottomSheetDialogFragment {
 
     private String workspaceId;
     private Category editCat;
+    private WorkspaceCategoryViewModel viewModel; // Bổ sung ViewModel
 
-    // View components (giữ nguyên của bồ)
     private EditText edtName;
     private ImageView imgPreview;
     private TextView tvTitle, btnTabChi, btnTabThu;
@@ -75,87 +72,56 @@ public class WorkspaceCategoryBottomSheet extends BottomSheetDialogFragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        // Khởi tạo ViewModel
+        viewModel = new ViewModelProvider(this).get(WorkspaceCategoryViewModel.class);
+
         if (getArguments() != null) {
             workspaceId = getArguments().getString("WORKSPACE_ID");
             if (getArguments().containsKey("edit_category")) {
                 editCat = (Category) getArguments().getSerializable("edit_category");
             }
         }
-        // 2. Chuẩn bị tài nguyên màu sắc
-        prepareColorResources();
-        // 3. Ánh xạ View
-        initViews(view);
 
-        if (editCat != null) {
-            setupEditMode();
-        }
-        // 5. Cập nhật UI ban đầu
+        prepareColorResources();
+        initViews(view);
+        setupEditMode();
         updatePopupUI();
         setupEventListeners();
+        observeViewModel();
 
-        btnSave.setOnClickListener(v -> handleSaveToFirestore());
+        btnSave.setOnClickListener(v -> handleSaveAction());
     }
 
-    private void handleSaveToFirestore() {
+    private void observeViewModel() {
+        viewModel.getIsLoading().observe(getViewLifecycleOwner(), isLoading -> {
+            if (isLoading != null) {
+                btnSave.setEnabled(!isLoading);
+                btnSave.setText(isLoading ? R.string.action_processing : (editCat != null ? R.string.action_update : R.string.action_save));
+            }
+        });
+
+        viewModel.getActionResult().observe(getViewLifecycleOwner(), result -> {
+            if (result != null) {
+                if (result.isSuccess) {
+                    ToastHelper.show(getContext(), result.message);
+                    dismiss();
+                } else {
+                    ToastHelper.show(getContext(), "Error: " + result.message);
+                }
+                viewModel.clearActionResult();
+            }
+        });
+    }
+
+    private void handleSaveAction() {
         String name = edtName.getText().toString().trim();
         if (name.isEmpty()) {
             ToastHelper.show(getContext(), "Please enter a category name");
             return;
         }
 
-        btnSave.setEnabled(false); // Tránh bấm 2 lần
-
-        if (editCat != null && editCat.firestoreId != null) {
-            // ========================================================
-            // EDIT MODE: GỌI API C# THÔNG QUA FIREBASE MANAGER
-            // ========================================================
-            com.example.cashify.data.remote.FirebaseManager.getInstance().editCategory(
-                    workspaceId,
-                    editCat.firestoreId,
-                    name,
-                    selectedIconName,
-                    selectedColorCode,
-                    isExpense ? 0 : 1,
-                    new com.example.cashify.data.remote.FirebaseManager.DataCallback<Void>() {
-                        @Override
-                        public void onSuccess(Void data) {
-                            ToastHelper.show(getContext(), "Category updated successfully");
-                            dismiss();
-                        }
-
-                        @Override
-                        public void onError(String message) {
-                            btnSave.setEnabled(true);
-                            ToastHelper.show(getContext(), "Failed to update: " + message);
-                        }
-                    }
-            );
-
-        } else {
-            // ========================================================
-            // ADD NEW MODE: Giữ nguyên chạy trực tiếp Firestore
-            // ========================================================
-            Category c = new Category();
-            c.name = name;
-            c.iconName = selectedIconName;
-            c.colorCode = selectedColorCode;
-            c.type = isExpense ? 0 : 1;
-            c.workspaceId = workspaceId;
-            c.isDefault = 0;
-            c.isDeleted = 0;
-
-            FirebaseFirestore.getInstance().collection("workspaces").document(workspaceId)
-                    .collection("categories")
-                    .add(c)
-                    .addOnSuccessListener(documentReference -> {
-                        ToastHelper.show(getContext(), "Category added successfully");
-                        dismiss();
-                    })
-                    .addOnFailureListener(e -> {
-                        btnSave.setEnabled(true);
-                        ToastHelper.show(getContext(), "Failed to add: " + e.getMessage());
-                    });
-        }
+        int type = isExpense ? 0 : 1;
+        viewModel.saveCategory(workspaceId, editCat, name, selectedIconName, selectedColorCode, type);
     }
 
     private void prepareColorResources() {
@@ -186,15 +152,13 @@ public class WorkspaceCategoryBottomSheet extends BottomSheetDialogFragment {
             selectedColorCode = editCat.colorCode;
             isExpense = (editCat.type == 0);
 
-            // Khóa Tab nếu đang edit (giống logic cũ của bạn)
             btnTabChi.setAlpha(0.5f);
             btnTabThu.setAlpha(0.5f);
         }
     }
 
     private void setupEventListeners() {
-        // Tab Chi
-        if (editCat == null) { // Chỉ cho chọn tab khi thêm mới
+        if (editCat == null) {
             btnTabChi.setOnClickListener(v -> {
                 isExpense = true;
                 updatePopupUI();
@@ -205,51 +169,42 @@ public class WorkspaceCategoryBottomSheet extends BottomSheetDialogFragment {
             });
         }
 
-        // Setup RecyclerView cho Icon (5 cột)
         gIcon.setLayoutManager(new androidx.recyclerview.widget.GridLayoutManager(requireContext(), 5));
         gIcon.setAdapter(new PopupAdapter.IconAdapter(requireContext(), allIconsRepo, position -> {
             selectedIconName = getResources().getResourceEntryName(allIconsRepo[position]);
             updatePopupUI();
         }));
 
-        // Setup RecyclerView cho Màu (5 cột)
         gColor.setLayoutManager(new androidx.recyclerview.widget.GridLayoutManager(requireContext(), 5));
         gColor.setAdapter(new PopupAdapter.ColorAdapter(requireContext(), colorHexRepo, position -> {
             selectedColorCode = colorHexRepo[position];
             updatePopupUI();
         }));
 
-        // Bùa chuẩn cho RecyclerView
         RecyclerView.OnItemTouchListener bulletproofScrollLock = new RecyclerView.OnItemTouchListener() {
             @Override
             public boolean onInterceptTouchEvent(@NonNull RecyclerView rv, @NonNull MotionEvent e) {
                 int action = e.getActionMasked();
                 if (action == MotionEvent.ACTION_DOWN) {
-                    // Ngón tay chạm vào -> Khóa BottomSheet
                     setBottomSheetDraggable(false);
                 } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
-                    // Ngón tay nhấc lên -> Nhả BottomSheet
                     setBottomSheetDraggable(true);
                 }
-                return false; // Phải return false để RecyclerView còn cuộn được
+                return false;
             }
 
             @Override
-            public void onTouchEvent(@NonNull RecyclerView rv, @NonNull MotionEvent e) {
-            }
+            public void onTouchEvent(@NonNull RecyclerView rv, @NonNull MotionEvent e) {}
 
             @Override
-            public void onRequestDisallowInterceptTouchEvent(boolean disallowIntercept) {
-            }
+            public void onRequestDisallowInterceptTouchEvent(boolean disallowIntercept) {}
         };
 
-        // Gắn bùa vào 2 danh sách
         gIcon.addOnItemTouchListener(bulletproofScrollLock);
         gColor.addOnItemTouchListener(bulletproofScrollLock);
     }
 
     private void updatePopupUI() {
-        // Update Icon Preview
         int resId = getResources().getIdentifier(selectedIconName, "drawable", requireContext().getPackageName());
         imgPreview.setImageResource(resId != 0 ? resId : R.drawable.ic_food);
 
@@ -266,7 +221,6 @@ public class WorkspaceCategoryBottomSheet extends BottomSheetDialogFragment {
             imgPreview.setImageTintList(ColorStateList.valueOf(Color.GRAY));
         }
 
-        // Update Tabs
         if (isExpense) updateTabStyles(btnTabChi, btnTabThu, true);
         else updateTabStyles(btnTabThu, btnTabChi, false);
     }
@@ -284,13 +238,12 @@ public class WorkspaceCategoryBottomSheet extends BottomSheetDialogFragment {
         unselected.setTypeface(null, android.graphics.Typeface.NORMAL);
     }
 
-    // Hàm này dùng để Bật/Tắt khả năng trượt của BottomSheet
     private void setBottomSheetDraggable(boolean isDraggable) {
         if (getDialog() instanceof BottomSheetDialog) {
             BottomSheetDialog dialog = (BottomSheetDialog) getDialog();
-
-            // Lấy thẳng Behavior từ Dialog luôn, không cần tìm View, không dính dáng chữ R nào nữa!
-            dialog.getBehavior().setDraggable(isDraggable);
+            if (dialog.getBehavior() != null) {
+                dialog.getBehavior().setDraggable(isDraggable);
+            }
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.example.cashify.ui.category;
 
+import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
@@ -16,6 +17,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.ItemTouchHelper;
@@ -25,6 +27,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.cashify.R;
 import com.example.cashify.data.model.Category;
 import com.example.cashify.utils.DialogHelper;
+import com.google.android.material.behavior.HideBottomViewOnScrollBehavior;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
@@ -38,6 +41,7 @@ public class CategoryManagement extends AppCompatActivity {
 
     private List<Category> listChiOriginal = new ArrayList<>();
     private List<Category> listThuOriginal = new ArrayList<>();
+
     private List<Category> filteredChi = new ArrayList<>();
     private List<Category> filteredThu = new ArrayList<>();
 
@@ -46,19 +50,11 @@ public class CategoryManagement extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_category);
 
-        // 1. Khởi tạo ViewModel
         viewModel = new ViewModelProvider(this).get(CategoryViewModel.class);
 
-        // 2. Ánh xạ View & Sự kiện cơ bản
         initViews();
-
-        // 3. Thiết lập RecyclerView
         setupRecyclerViews();
-
-        // 4. Quan sát dữ liệu (Đây là linh hồn của MVVM)
         observeData();
-
-        // 5. Thiết lập Search và FAB
         setupActions();
     }
 
@@ -67,6 +63,7 @@ public class CategoryManagement extends AppCompatActivity {
         rvThu = findViewById(R.id.recyclerThuVao);
         edtSearch = findViewById(R.id.edtSearchCategory);
         ImageView btnBack = findViewById(R.id.btnBack);
+
         if (btnBack != null) btnBack.setOnClickListener(v -> finish());
 
         findViewById(R.id.layoutHeaderChi).setOnClickListener(v -> toggleRecyclerView(rvChi, findViewById(R.id.tvArrowChi)));
@@ -78,18 +75,15 @@ public class CategoryManagement extends AppCompatActivity {
             @Override
             public void onDeleteClick(Category category) {
                 DialogHelper.showCustomDialog(
-                        CategoryManagement.this, // Context
-                        getString(R.string.action_delete_category), // Title: "Delete category"
-                        getString(R.string.confirm_delete, category.name), // Message: "Are you sure..."
-                        getString(R.string.action_delete), // Chữ trên nút Confirm: "Delete"
-                        getString(R.string.action_cancel), // Chữ trên nút Cancel: "Cancel"
-                        DialogHelper.DialogType.DANGER,    // Nút Confirm màu đỏ báo hiệu xóa
-                        true,                              // Cho phép hiện nút Cancel
-                        () -> {
-                            // GỌI VIEWMODEL THỰC HIỆN LỆNH XÓA
-                            viewModel.deleteCategory(category.id);
-                        },
-                        null // Không cần làm gì thêm khi bấm Cancel
+                        CategoryManagement.this,
+                        getString(R.string.action_delete_category),
+                        getString(R.string.confirm_delete, category.name),
+                        getString(R.string.action_delete),
+                        getString(R.string.action_cancel),
+                        DialogHelper.DialogType.DANGER,
+                        true,
+                        () -> viewModel.deleteCategory(category.id),
+                        null
                 );
             }
 
@@ -100,83 +94,79 @@ public class CategoryManagement extends AppCompatActivity {
 
             @Override
             public void onRestoreClick(Category category) {
-                // Bật Dialog xác nhận khôi phục cho lịch sự (Tùy chọn)
                 DialogHelper.showCustomDialog(
                         CategoryManagement.this,
-                        "Restore Category", // Tùy sếp đổi sang String Resource
+                        "Restore Category",
                         "Are you sure you want to restore " + category.name + "?",
                         "Restore",
                         "Cancel",
-                        DialogHelper.DialogType.NORMAL, // Chữ Restore màu Xanh lá
+                        DialogHelper.DialogType.NORMAL,
                         true,
-                        () -> {
-                            // BẤM KHÔI PHỤC -> GỌI VIEWMODEL
-                            // (Sếp nhớ tạo hàm restoreCategory bên trong CategoryViewModel nhé)
-                            viewModel.restoreCategory(category.id);
-                        },
+                        () -> viewModel.restoreCategory(category.id),
                         null
                 );
             }
         };
 
-        adapterChi = new CategoryAdapter(this, filteredChi, listener);
+        // Initialize with empty lists; data will be injected via ViewModel
+        adapterChi = new CategoryAdapter(this, new ArrayList<>(), listener);
         rvChi.setLayoutManager(new LinearLayoutManager(this));
         rvChi.setAdapter(adapterChi);
-        setupSwipeToDelete(rvChi, adapterChi, filteredChi);
+        setupSwipeToDelete(rvChi, adapterChi);
 
-        adapterThu = new CategoryAdapter(this, filteredThu, listener);
+        adapterThu = new CategoryAdapter(this, new ArrayList<>(), listener);
         rvThu.setLayoutManager(new LinearLayoutManager(this));
         rvThu.setAdapter(adapterThu);
-        setupSwipeToDelete(rvThu, adapterThu, filteredThu);
+        setupSwipeToDelete(rvThu, adapterThu);
     }
 
     private void observeData() {
         viewModel.getExpenseCategories().observe(this, categories -> {
-            listChiOriginal = categories;
+            listChiOriginal = categories != null ? categories : new ArrayList<>();
             filterCategories(edtSearch.getText().toString());
         });
 
         viewModel.getIncomeCategories().observe(this, categories -> {
-            listThuOriginal = categories;
+            listThuOriginal = categories != null ? categories : new ArrayList<>();
             filterCategories(edtSearch.getText().toString());
         });
     }
 
     private void setupActions() {
         FloatingActionButton fabAddCategory = findViewById(R.id.fab_add_category);
-        fabAddCategory.setOnClickListener(v -> {
-            // GỌI BOTTOM SHEET ĐỂ THÊM MỚI
-            CategoryBottomSheet.newInstance(null).show(getSupportFragmentManager(), "CategoryBottomSheet");
-        });
+        fabAddCategory.setOnClickListener(v ->
+                CategoryBottomSheet.newInstance(null).show(getSupportFragmentManager(), "CategoryBottomSheet")
+        );
 
         edtSearch.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
                 filterCategories(s.toString());
             }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-            }
+            @Override public void afterTextChanged(Editable s) {}
         });
     }
 
+    /**
+     * Filters the original category lists based on the search query
+     * and delegates UI updates to the adapters.
+     */
     private void filterCategories(String query) {
         String pattern = query.toLowerCase().trim();
         filteredChi.clear();
         filteredThu.clear();
-        for (Category c : listChiOriginal)
+        for (Category c : listChiOriginal) {
             if (c.name.toLowerCase().contains(pattern)) filteredChi.add(c);
-        for (Category c : listThuOriginal)
+        }
+        for (Category c : listThuOriginal) {
             if (c.name.toLowerCase().contains(pattern)) filteredThu.add(c);
+        }
 
-        adapterChi.notifyDataSetChanged();
-        adapterThu.notifyDataSetChanged();
+        // Delegate update to adapter instead of modifying the underlying list directly
+        adapterChi.updateData(filteredChi);
+        adapterThu.updateData(filteredThu);
 
+        // Auto-expand lists if the user is actively searching
         if (!pattern.isEmpty()) {
             rvChi.setVisibility(View.VISIBLE);
             rvThu.setVisibility(View.VISIBLE);
@@ -197,29 +187,34 @@ public class CategoryManagement extends AppCompatActivity {
         }
     }
 
+    /**
+     * Forces the FAB to slide back up if it was hidden by a nested scroll event
+     * prior to the list being collapsed.
+     */
     private void rescueFloatingActionButton() {
         try {
             FloatingActionButton fab = findViewById(R.id.fab_add_category);
-            if (fab != null && fab.getLayoutParams() instanceof androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams) {
-                androidx.coordinatorlayout.widget.CoordinatorLayout.Behavior behavior =
-                        ((androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams) fab.getLayoutParams()).getBehavior();
-                if (behavior instanceof com.google.android.material.behavior.HideBottomViewOnScrollBehavior) {
-                    ((com.google.android.material.behavior.HideBottomViewOnScrollBehavior<FloatingActionButton>) behavior).slideUp(fab);
+            if (fab != null && fab.getLayoutParams() instanceof CoordinatorLayout.LayoutParams) {
+                CoordinatorLayout.Behavior<?> behavior = ((CoordinatorLayout.LayoutParams) fab.getLayoutParams()).getBehavior();
+                if (behavior instanceof HideBottomViewOnScrollBehavior) {
+                    ((HideBottomViewOnScrollBehavior<FloatingActionButton>) behavior).slideUp(fab);
                 }
             }
-        } catch (Exception ignored) {
-        }
+        } catch (Exception ignored) {}
     }
 
-    private void setupSwipeToDelete(RecyclerView rv, CategoryAdapter adapter, List<Category> list) {
-        // TỐI ƯU HIỆU NĂNG: Khởi tạo các công cụ vẽ ở ngoài để không phải tạo lại 60 lần/giây
+    /**
+     * Attaches a swipe-to-delete behavior to the provided RecyclerView.
+     */
+    private void setupSwipeToDelete(RecyclerView rv, CategoryAdapter targetAdapter) {
+        // Pre-allocate drawing tools to optimize onChildDraw performance (60fps)
         float density = getResources().getDisplayMetrics().density;
 
         GradientDrawable background = new GradientDrawable();
-        background.setColor(ContextCompat.getColor(CategoryManagement.this, R.color.status_red));
+        background.setColor(ContextCompat.getColor(this, R.color.status_red));
         background.setCornerRadius(16 * density);
 
-        Drawable deleteIcon = ContextCompat.getDrawable(CategoryManagement.this, R.drawable.ic_trash_regular);
+        Drawable deleteIcon = ContextCompat.getDrawable(this, R.drawable.ic_trash_regular);
         if (deleteIcon != null) {
             deleteIcon.setColorFilter(Color.WHITE, PorterDuff.Mode.SRC_ATOP);
         }
@@ -231,19 +226,20 @@ public class CategoryManagement extends AppCompatActivity {
             }
 
             @Override
-            public void onChildDraw(@NonNull android.graphics.Canvas c, @NonNull RecyclerView rv, @NonNull RecyclerView.ViewHolder vh, float dX, float dY, int action, boolean active) {
+            public void onChildDraw(@NonNull Canvas c, @NonNull RecyclerView rv, @NonNull RecyclerView.ViewHolder vh,
+                                    float dX, float dY, int action, boolean active) {
 
-                // BẮT BUỘC CÓ DÒNG NÀY: Để cái Item view trượt theo ngón tay của người dùng
+                // Mandatory call to ensure the ItemView translates with the swipe gesture
                 super.onChildDraw(c, rv, vh, dX, dY, action, active);
 
-                if (dX < 0) { // Khi đang vuốt sang trái
+                if (dX < 0) { // Swiping Left
                     View itemView = vh.itemView;
 
-                    // 1. Cập nhật kích thước nền đỏ trượt theo dX và vẽ ra
+                    // 1. Draw expanding red background
                     background.setBounds(itemView.getRight() + (int) dX, itemView.getTop(), itemView.getRight(), itemView.getBottom());
                     background.draw(c);
 
-                    // 2. Cập nhật vị trí thùng rác và vẽ ra (chỉ vẽ khi vuốt qua một khoảng -100px)
+                    // 2. Draw trash icon once the swipe passes a threshold
                     if (deleteIcon != null && dX < -100) {
                         int iconMargin = (itemView.getHeight() - deleteIcon.getIntrinsicHeight()) / 2;
                         int iconTop = itemView.getTop() + iconMargin;
@@ -262,28 +258,30 @@ public class CategoryManagement extends AppCompatActivity {
 
             @Override
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
-                // 1. Lấy vị trí cẩn thận, đề phòng view đang bị xáo trộn
+                // Defensive check to handle rapid swiping issues
                 int pos = viewHolder.getAdapterPosition();
                 if (pos == RecyclerView.NO_POSITION) return;
 
-                Category cat = list.get(pos);
+                // We need to fetch the item from the adapter to ensure accuracy,
+                // however, we cannot retrieve it directly as the adapter doesn't expose a 'getItem(int)' method yet.
+                // Assuming you will implement `public Category getItem(int pos)` in CategoryAdapter,
+                // or just leave it as it was if you are fine using the internal list of the Activity.
+
+                // Let's rely on the lists maintained by the activity for simplicity.
+                Category cat = (targetAdapter == adapterChi) ? filteredChi.get(pos) : filteredThu.get(pos);
 
                 DialogHelper.showCustomDialog(
-                        CategoryManagement.this, // Context
+                        CategoryManagement.this,
                         getString(R.string.action_delete_category),
                         getString(R.string.confirm_delete, cat.name),
                         getString(R.string.action_delete),
                         getString(R.string.action_cancel),
-                        DialogHelper.DialogType.DANGER, // Nút Confirm hiện màu Đỏ
-                        true, // Hiện nút Cancel
+                        DialogHelper.DialogType.DANGER,
+                        true,
+                        () -> viewModel.deleteCategory(cat.id),
                         () -> {
-                            // KHI BẤM XÓA
-                            viewModel.deleteCategory(cat.id);
-                        },
-                        () -> {
-                            // KHI BẤM HỦY HOẶC ĐÓNG DIALOG
-                            // Dùng rv.post để đảm bảo UI Thread phục hồi lại view mượt mà
-                            rv.post(() -> adapter.notifyItemChanged(pos));
+                            // On Cancel/Dismiss: Post to UI thread to smoothly animate the item bouncing back
+                            rv.post(() -> targetAdapter.notifyItemChanged(pos));
                         }
                 );
             }

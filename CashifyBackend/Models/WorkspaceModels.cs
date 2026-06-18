@@ -8,6 +8,7 @@ public record WorkspaceTransferRequest(string? WorkspaceId, string? NewOwnerId);
 public record TransactionDeleteRequest(string? WorkspaceId, string? TransactionId);
 public record CategoryDeleteRequest(string? WorkspaceId, string? CategoryId);
 public record MessageRecallRequest(string? WorkspaceId, string? MessageId);
+public record AddCategoryRequest(string WorkspaceId, string Name, string IconName, string ColorCode, int Type);
 public record EditCategoryRequest(string WorkspaceId, string CategoryId, string Name, string IconName, string ColorCode, int Type);
 public record RestoreCategoryRequest(string WorkspaceId, string CategoryId);
 public record WorkspaceInviteSendRequest(string? WorkspaceId, string? WorkspaceName, List<string>? TargetUids);

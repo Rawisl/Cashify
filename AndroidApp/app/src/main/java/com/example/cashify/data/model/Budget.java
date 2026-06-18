@@ -8,12 +8,12 @@ public class Budget {
     @PrimaryKey(autoGenerate = true)
     public int id;
 
-    public int categoryId; // Ngân sách cho mục nào?; -1=ngân sách tổng toàn app
-    public long limitAmount; // Hạn mức (Ví dụ: 2.000.000đ)
-    public String periodType; //week, month, year
-    public long startDate; //timestamp
-    public long endDate;//timestamp : mấy má coi cách sử dụng cái mốc tgian này nah
-    public String workspaceId;
+    public int categoryId; // Danh mục áp dụng ngân sách; -1 = Ngân sách tổng (Master Budget)
+    public long limitAmount; // Hạn mức tối đa
+    public String periodType; // Chu kỳ: "week", "month", "year"
+    public long startDate; // Mốc thời gian bắt đầu (Timestamp)
+    public long endDate; // Mốc thời gian kết thúc (Timestamp)
+    public String workspaceId; // ID của quỹ (Cá nhân hoặc Nhóm)
 
     public Budget() {
     }
