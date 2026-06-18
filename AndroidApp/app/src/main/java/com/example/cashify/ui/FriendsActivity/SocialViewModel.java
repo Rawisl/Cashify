@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SocialViewModel extends ViewModel {
-    private static final String TAG = "SocialViewModel";
+    private static final String TAG = "SocialNewsfeedViewModel";
 
     // ============================================================
     // 1. STATE LIVEDATA (Internal Mutable, External Immutable)

@@ -1,4 +1,4 @@
-package com.example.cashify.ui.feed;
+package com.example.cashify.ui.social;
 
 import java.util.Objects;
 
@@ -34,7 +34,7 @@ public abstract class FeedItem {
     public abstract int getType();
 
     // =========================================================================
-    // EQUALS & HASHCODE (Dùng cho DiffUtil của RecyclerView)
+    // EQUALS & HASHCODE
     // =========================================================================
     @Override
     public boolean equals(Object o) {
@@ -50,20 +50,19 @@ public abstract class FeedItem {
     }
 
     // =========================================================================
-    // NORMAL POST (Đã nâng cấp có thêm Title và đổi text -> description)
+    // NORMAL POST
     // =========================================================================
     public static class NormalPost extends FeedItem {
         public String userName;
         public String time;
-        public String title;       // <-- MỚI THÊM
-        public String description; // <-- ĐỔI TÊN TỪ 'text' CHO ĐỒNG BỘ
+        public String title;
+        public String description;
         public boolean hasImage;
         public String imageUrl;
         public String avatarUrl;
         public String initials;
         public boolean expandable;
 
-        // Constructor rỗng
         public NormalPost() { super("", ""); }
 
         public NormalPost(String id, String userId, String userName, String time, String title, String description, boolean hasImage, String imageUrl, String initials, boolean expandable, String avatarUrl) {
@@ -84,7 +83,7 @@ public abstract class FeedItem {
     }
 
     // =========================================================================
-    // MILESTONE POST (Đã sửa lỗi Cú pháp)
+    // MILESTONE POST
     // =========================================================================
     public static class MilestonePost extends FeedItem {
         public String userName;
@@ -96,11 +95,10 @@ public abstract class FeedItem {
         public String iconText;
         public int progress;
         public boolean expandable;
-        public String milestoneJson; // <-- JSON ĐỂ MANG ĐI EDIT
+        public String milestoneJson;
         public String avatarUrl;
         public String initials;
 
-        // Constructor rỗng
         public MilestonePost() { super("", ""); }
 
         public MilestonePost(String id, String userId, String userName, String time, String title, String description, String month, String amount, String iconText, int progress, boolean expandable, String milestoneJson, String avatarUrl, String initials) {

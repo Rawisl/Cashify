@@ -11,9 +11,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.ConcatAdapter;
@@ -22,9 +20,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.SimpleItemAnimator;
 
 import com.example.cashify.R;
-import com.example.cashify.data.remote.ApiDto;
-import com.example.cashify.ui.feed.CommunityFeedAdapter;
-import com.example.cashify.ui.feed.FeedItem;
 import com.example.cashify.ui.main.MainActivity;
 import com.example.cashify.utils.ImageHelper;
 import com.example.cashify.utils.TimeFormatter;
@@ -49,7 +44,7 @@ public class PostDetailActivity extends AppCompatActivity {
     private ImageView imgSendComment;
     private ImageView imgCurrentUserAvatar;
 
-    private CommunityFeedAdapter postAdapter;
+    private SocialNewsfeedAdapter postAdapter;
     private CommentAdapter commentAdapter;
     private final List<Comment> commentList = new ArrayList<>();
 
@@ -122,7 +117,7 @@ public class PostDetailActivity extends AppCompatActivity {
     }
 
     private void setupCombinedRecyclerView() {
-        postAdapter = new CommunityFeedAdapter(item -> showPostBottomSheet());
+        postAdapter = new SocialNewsfeedAdapter(item -> showPostBottomSheet());
 
         postAdapter.setOnLikeClickListener((pId, isLiked, callback) ->
                 viewModel.toggleLike(pId, authHeader, isLiked)

@@ -1,6 +1,5 @@
-package com.example.cashify.ui.feed;
+package com.example.cashify.ui.social;
 
-import android.content.res.ColorStateList;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -27,7 +26,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-public class CommunityFeedAdapter extends ListAdapter<FeedItem, RecyclerView.ViewHolder> {
+public class SocialNewsfeedAdapter extends ListAdapter<FeedItem, RecyclerView.ViewHolder> {
 
     private final Set<String> expandedItemIds = new HashSet<>();
     private final Set<String> likedItemIds = new HashSet<>();
@@ -53,7 +52,7 @@ public class CommunityFeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vie
     }
 
     // Constructor dùng ngoài Newsfeed (Mặc định cắt chữ, có click)
-    public CommunityFeedAdapter(OnPostClickListener postClickListener, OnPostMenuClickListener menuClickListener) {
+    public SocialNewsfeedAdapter(OnPostClickListener postClickListener, OnPostMenuClickListener menuClickListener) {
         super(DIFF_CALLBACK);
         this.postClickListener = postClickListener;
         this.menuClickListener = menuClickListener;
@@ -61,7 +60,7 @@ public class CommunityFeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vie
     }
 
     // Constructor chuyên dụng dùng trong màn PostDetailActivity
-    public CommunityFeedAdapter(OnPostMenuClickListener menuClickListener) {
+    public SocialNewsfeedAdapter(OnPostMenuClickListener menuClickListener) {
         super(DIFF_CALLBACK);
         this.postClickListener = null;
         this.menuClickListener = menuClickListener;

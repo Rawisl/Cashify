@@ -1,6 +1,5 @@
-package com.example.cashify.ui.feed;
+package com.example.cashify.ui.social;
 
-import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
@@ -15,7 +14,6 @@ import android.text.style.ForegroundColorSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -39,7 +37,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
-import com.example.cashify.ui.social.AchievementAdapter;
 import com.example.cashify.utils.CurrencyFormatter;
 import com.example.cashify.utils.DialogHelper;
 import com.example.cashify.utils.ImageHelper;
@@ -61,11 +58,10 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class CommunityFeedFragment extends Fragment {
+public class SocialComposerFragment extends Fragment {
 
     private final Handler handler = new Handler(Looper.getMainLooper());
-    private CommunityFeedViewModel viewModel;
-
+    private SocialComposerViewModel viewModel;
     private EditText editPostContent;
     private EditText editPostTitle;
     private TextView txtComposerCount, txtComposerHint, btnAudience;
@@ -129,8 +125,7 @@ public class CommunityFeedFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        viewModel = new ViewModelProvider(this).get(CommunityFeedViewModel.class);
-
+        viewModel = new ViewModelProvider(this).get(SocialComposerViewModel.class);
         bindViews(view);
         setupToolbar(view);
         setupComposer(view);
@@ -142,7 +137,8 @@ public class CommunityFeedFragment extends Fragment {
             milestoneMode = false;
             generatedMilestoneJson = null;
             actionPhoto.setVisibility(View.VISIBLE);
-            actionMilestone.setVisibility(View.VISIBLE);
+
+            // ĐÃ XÓA: Lệnh gọi un-hide actionMilestone dư thừa
             txtComposerHint.setText("What financial story would you like to share today?");
             updateSubmitState();
         });
@@ -203,8 +199,6 @@ public class CommunityFeedFragment extends Fragment {
             String composerName = cleanDisplayName(user.getDisplayName());
             txtComposerName.setText(composerName);
             ImageHelper.loadAvatar(user.getPhotoUrl(), imgComposerAvatar, firstNonEmpty(composerName, user.getEmail(), user.getUid()));
-
-            // Delegate Firestore Profile Fetching to ViewModel
             viewModel.loadUserProfile();
         }
 
@@ -234,11 +228,13 @@ public class CommunityFeedFragment extends Fragment {
         btnAudience.setOnClickListener(v -> showAudienceMenu(v));
         btnAudienceFriends.setOnClickListener(v -> selectAudience("Friends"));
         btnAudiencePrivate.setOnClickListener(v -> selectAudience("Private"));
+
         actionPhoto.setOnClickListener(v -> pickImageLauncher.launch("image/*"));
         actionMilestone.setOnClickListener(v -> {
             selectCategory("Milestone", "milestone", true, R.id.chipSaving);
             showAchievementBottomSheet();
         });
+
         actionThoughts.setOnClickListener(v -> selectCategory("Thoughts", "thoughts", false, R.id.chipBudgeting));
         actionAnalysis.setOnClickListener(v -> selectCategory("Analysis", "analysis", false, R.id.chipInvesting));
         actionShare.setOnClickListener(v -> selectCategory("Share", "share", false, R.id.chipDebt));
@@ -284,7 +280,7 @@ public class CommunityFeedFragment extends Fragment {
             pbPreviewProgress.setProgress(uiProgress);
 
             actionPhoto.setVisibility(View.GONE);
-            actionMilestone.setVisibility(View.GONE);
+
             txtComposerHint.setText("Your milestone is ready! Post your thoughts above.");
 
             // ẨN Ô TIÊU ĐỀ
@@ -336,7 +332,6 @@ public class CommunityFeedFragment extends Fragment {
                     pbPreviewProgress.setProgress(json.optInt("progress", 0));
 
                     actionPhoto.setVisibility(View.GONE);
-                    actionMilestone.setVisibility(View.GONE);
                 } catch (Exception ignored) {}
             }
         }
@@ -344,7 +339,9 @@ public class CommunityFeedFragment extends Fragment {
 
     private void setupObservers() {
         TextView txtComposerName = getView().findViewById(R.id.txtComposerName);
+
         viewModel.getUserProfile().observe(getViewLifecycleOwner(), doc -> bindCurrentUserProfile(doc, txtComposerName));
+        viewModel.loadUserProfile();
 
         viewModel.getIsLoading().observe(getViewLifecycleOwner(), this::setPosting);
 
@@ -360,7 +357,7 @@ public class CommunityFeedFragment extends Fragment {
         viewModel.getErrorEvent().observe(getViewLifecycleOwner(), errorMsg -> {
             if (errorMsg != null) {
                 Toast.makeText(requireContext(), errorMsg, Toast.LENGTH_LONG).show();
-                viewModel.clearErrorEvent();
+                viewModel.getErrorEvent();
             }
         });
     }
@@ -369,11 +366,16 @@ public class CommunityFeedFragment extends Fragment {
         Bundle args = getArguments();
         if (args == null) return;
 
-        if (args.containsKey("edit_post_id")) {
-            return;
-        }
 
         String categoryKey = args.getString("categoryKey", "");
+
+        //Nếu Intent không truyền categoryKey nhưng có data Milestone, tự hiểu là Milestone
+        if (categoryKey.isEmpty()) {
+            if (args.containsKey("edit_milestone_data") || args.containsKey("milestone_limit")) {
+                categoryKey = "milestone";
+            }
+        }
+
         switch (categoryKey) {
             case "milestone": selectCategory("Milestone", "milestone", true, R.id.chipSaving); break;
             case "analysis": selectCategory("Analysis", "analysis", false, R.id.chipInvesting); break;
@@ -506,7 +508,8 @@ public class CommunityFeedFragment extends Fragment {
                 : "What financial story would you like to share today?");
         if (editPostTitle != null) {
             editPostTitle.setVisibility(enabled ? View.GONE : View.VISIBLE);
-            getView().findViewById(R.id.dividerTitle).setVisibility(enabled ? View.GONE : View.VISIBLE);
+            View divider = getView() != null ? getView().findViewById(R.id.dividerTitle) : null;
+            if (divider != null) divider.setVisibility(enabled ? View.GONE : View.VISIBLE);
         }
         updateCategoryTiles();
         updateCategoryDesign();
@@ -747,7 +750,6 @@ public class CommunityFeedFragment extends Fragment {
                     pbPreviewProgress.setProgress(achievement.progress);
 
                     actionPhoto.setVisibility(View.GONE);
-                    actionMilestone.setVisibility(View.GONE);
                     txtComposerHint.setText("Your milestone is ready! Add some thoughts to share.");
 
                     try {

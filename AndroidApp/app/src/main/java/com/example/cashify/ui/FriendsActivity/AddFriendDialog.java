@@ -1,4 +1,4 @@
-package com.example.cashify.ui.friends;
+package com.example.cashify.ui.FriendsActivity;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;

@@ -1,4 +1,4 @@
-package com.example.cashify.ui.feed;
+package com.example.cashify.ui.social;
 
 import android.app.Application;
 import android.content.Context;
@@ -28,7 +28,7 @@ import java.io.OutputStream;
 import java.util.List;
 import java.util.concurrent.Executors;
 
-public class CommunityFeedViewModel extends AndroidViewModel {
+public class SocialComposerViewModel extends AndroidViewModel {
 
     private final MediaRepository mediaRepository = new MediaRepository();
 
@@ -44,7 +44,7 @@ public class CommunityFeedViewModel extends AndroidViewModel {
     public LiveData<List<ApiDto.AchievementSuggestion>> getAchievements() { return achievements; }
     public LiveData<DocumentSnapshot> getUserProfile() { return userProfile; }
 
-    public CommunityFeedViewModel(@NonNull Application application) {
+    public SocialComposerViewModel(@NonNull Application application) {
         super(application);
     }
 

@@ -1,10 +1,7 @@
 package com.example.cashify.ui.social;
 
 import android.content.Intent;
-import android.content.res.ColorStateList;
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,11 +13,11 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
-import androidx.core.graphics.drawable.DrawableCompat;
 import androidx.core.widget.NestedScrollView;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
@@ -29,99 +26,66 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.cashify.R;
-import com.example.cashify.ui.feed.CommunityFeedAdapter;
-import com.example.cashify.ui.feed.FeedItem;
+
 import com.example.cashify.ui.main.MainActivity;
 import com.example.cashify.utils.ImageHelper;
-import com.example.cashify.utils.TimeFormatter;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.Query;
-
-import org.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
 
 public class SocialNewsfeedFragment extends Fragment {
 
-    private static final String TAG = "SocialNewsfeedFragment";
-    private static final int FEED_PAGE_SIZE = 10;
-
-    private SocialViewModel socialViewModel;
+    private SocialNewsfeedViewModel viewModel;
 
     private RecyclerView rvFeed;
-    private CommunityFeedAdapter feedAdapter;
-    private View layoutFeedEmpty;
-    private View layoutFeedEnd;
-    private View layoutFeedSkeleton;
+    private SocialNewsfeedAdapter feedAdapter; // Dùng đúng tên Adapter sếp đã đổi
+    private View layoutFeedEmpty, layoutFeedEnd, layoutFeedSkeleton;
     private TextView layoutFeedError;
-    private ProgressBar progressFeed;
     private ProgressBar progressFeedMore;
     private SwipeRefreshLayout swipeRefreshNewsfeed;
     private NestedScrollView scrollNewsfeed;
 
-    private final boolean[] likedPosts = new boolean[5];
-    private final List<FeedItem> feedItems = new ArrayList<>();
-    private final Set<String> loadedPostIds = new HashSet<>();
-
-    private boolean isAdmin = false;
-    private boolean isLoadingFeed = false;
-    private boolean isRefreshingFeed = false;
-    private boolean isLastFeedPage = false;
     public static boolean needRefreshFeed = false;
-
-    private DocumentSnapshot lastVisibleFeedDoc = null;
-    private final List<String> cachedFriendIds = new ArrayList<>();
+    public static String syncedPostId = null; // CHỐT CHẶN: Lưu ID bài viết cần update Like/Comment
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater,
-                             @Nullable ViewGroup container,
-                             @Nullable Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_social_newsfeed, container, false);
     }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        initViewModel();
+
+        viewModel = new ViewModelProvider(requireActivity()).get(SocialNewsfeedViewModel.class);
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user != null) viewModel.loadProfile(user.getUid());
+
         initViews(view);
-        refreshFeed(false);
+        setupObservers();
+
+        viewModel.refreshFeed();
     }
 
     @Override
     public void onResume() {
         super.onResume();
+        // NẾU VỪA TỪ MÀN DETAIL RA -> CHỈ ĐỒNG BỘ 1 BÀI VÀ GIỮ NGUYÊN VỊ TRÍ CUỘN
+        if (syncedPostId != null) {
+            viewModel.syncSinglePost(syncedPostId);
+            syncedPostId = null;
+        }
+
         if (needRefreshFeed) {
-            refreshFeed(false);
+            viewModel.refreshFeed();
             needRefreshFeed = false;
         }
-    }
-
-    private void initViewModel() {
-        socialViewModel = new ViewModelProvider(requireActivity()).get(SocialViewModel.class);
-
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user != null) {
-            socialViewModel.loadProfile(user.getUid());
-        }
-
-        socialViewModel.getIsDeleteSuccess().observe(getViewLifecycleOwner(), success -> {
-            if (Boolean.TRUE.equals(success)) {
-                Toast.makeText(requireContext(), "Post deleted", Toast.LENGTH_SHORT).show();
-                refreshFeed(false);
-                ((androidx.lifecycle.MutableLiveData<Boolean>) socialViewModel.getIsDeleteSuccess()).setValue(false);
-            }
-        });
     }
 
     private void initViews(View view) {
@@ -134,33 +98,30 @@ public class SocialNewsfeedFragment extends Fragment {
         layoutFeedEnd = view.findViewById(R.id.layoutNewsfeedEnd);
         layoutFeedSkeleton = view.findViewById(R.id.layoutNewsfeedSkeleton);
         layoutFeedError = view.findViewById(R.id.layoutNewsfeedError);
-        progressFeed = view.findViewById(R.id.progressNewsfeed);
         progressFeedMore = view.findViewById(R.id.progressNewsfeedMore);
         swipeRefreshNewsfeed = view.findViewById(R.id.swipeRefreshNewsfeed);
         scrollNewsfeed = view.findViewById(R.id.scrollNewsfeed);
 
         if (rvFeed != null) {
-            feedAdapter = new CommunityFeedAdapter(
+            feedAdapter = new SocialNewsfeedAdapter(
                     item -> {
                         Intent intent = new Intent(requireContext(), PostDetailActivity.class);
                         intent.putExtra(PostDetailActivity.EXTRA_POST_ID, item.getId());
                         startActivity(intent);
+                        // Đánh dấu ID khi bấm vào xem chi tiết
+                        syncedPostId = item.getId();
                     },
                     this::showPostBottomSheet
             );
 
-            // TÁCH LOGIC GỌI API LIKE Ở ĐÂY CHO MƯỢT
             feedAdapter.setOnLikeClickListener((postId, isLiked, callback) -> {
                 FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
                 if (user != null) {
                     user.getIdToken(true).addOnSuccessListener(result -> {
-                        String token = "Bearer " + result.getToken();
-                        socialViewModel.toggleLike(postId, token, isLiked);
+                        viewModel.toggleLike(postId, "Bearer " + result.getToken(), isLiked);
                         callback.onResult(true);
                     }).addOnFailureListener(e -> callback.onResult(false));
-                } else {
-                    callback.onResult(false);
-                }
+                } else callback.onResult(false);
             });
 
             rvFeed.setLayoutManager(new LinearLayoutManager(requireContext()));
@@ -170,7 +131,7 @@ public class SocialNewsfeedFragment extends Fragment {
 
         if (swipeRefreshNewsfeed != null) {
             swipeRefreshNewsfeed.setColorSchemeColors(ContextCompat.getColor(requireContext(), R.color.brand_primary));
-            swipeRefreshNewsfeed.setOnRefreshListener(() -> refreshFeed(true));
+            swipeRefreshNewsfeed.setOnRefreshListener(() -> viewModel.refreshFeed());
         }
 
         if (scrollNewsfeed != null) {
@@ -179,15 +140,13 @@ public class SocialNewsfeedFragment extends Fragment {
                         View child = v.getChildAt(0);
                         if (child == null) return;
                         int distanceToBottom = child.getMeasuredHeight() - (scrollY + v.getHeight());
-                        if (distanceToBottom <= dp(320)) {
-                            loadNextFeedPage();
+                        if (distanceToBottom <= Math.round(320 * getResources().getDisplayMetrics().density)) {
+                            viewModel.loadNextPage();
                         }
                     });
         }
 
-        if (layoutFeedError != null) {
-            layoutFeedError.setOnClickListener(v -> refreshFeed(false));
-        }
+        if (layoutFeedError != null) layoutFeedError.setOnClickListener(v -> viewModel.refreshFeed());
 
         toolbar.setNavigationOnClickListener(v -> {
             if (getActivity() != null) {
@@ -196,455 +155,67 @@ public class SocialNewsfeedFragment extends Fragment {
             }
         });
 
-        createPostPrompt.setOnClickListener(v -> runPressAnimation(
-                createPostPromptButton != null ? createPostPromptButton : v,
-                this::openCreatePost
-        ));
-
-        if (createPostPromptButton != null) {
-            createPostPromptButton.setOnClickListener(v -> runPressAnimation(v, this::openCreatePost));
-        }
+        createPostPrompt.setOnClickListener(v -> runPressAnimation(createPostPromptButton != null ? createPostPromptButton : v, this::openCreatePost));
+        if (createPostPromptButton != null) createPostPromptButton.setOnClickListener(v -> runPressAnimation(v, this::openCreatePost));
 
         setupProfileSurfaces(view);
+    }
 
-        socialViewModel.getProfile().observe(getViewLifecycleOwner(), doc -> {
-            if (doc != null && doc.contains("role")) {
-                boolean isUserAdmin = "ADMIN".equals(doc.getString("role"));
-                if (isUserAdmin && !isAdmin) {
-                    isAdmin = true;
-                    isLoadingFeed = false;
-                    refreshFeed(false);
-                }
+    private void setupObservers() {
+        viewModel.getFeedItems().observe(getViewLifecycleOwner(), items -> {
+            feedAdapter.submitList(new ArrayList<>(items));
+        });
+
+        viewModel.isLoading.observe(getViewLifecycleOwner(), isLoading -> {
+            if (swipeRefreshNewsfeed != null) swipeRefreshNewsfeed.setRefreshing(isLoading);
+            if (isLoading && feedAdapter.getCurrentList().isEmpty()) {
+                layoutFeedSkeleton.setVisibility(View.VISIBLE);
+                rvFeed.setVisibility(View.GONE);
+                layoutFeedEmpty.setVisibility(View.GONE);
+                layoutFeedError.setVisibility(View.GONE);
+            } else {
+                layoutFeedSkeleton.setVisibility(View.GONE);
+                rvFeed.setVisibility(View.VISIBLE);
+            }
+        });
+
+        viewModel.getIsLoadingMore().observe(getViewLifecycleOwner(), isMore -> {
+            if (progressFeedMore != null) progressFeedMore.setVisibility(isMore ? View.VISIBLE : View.GONE);
+        });
+
+        viewModel.getIsFeedEmpty().observe(getViewLifecycleOwner(), isEmpty -> {
+            layoutFeedEmpty.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
+            if (isEmpty) {
+                rvFeed.setVisibility(View.GONE);
+                layoutFeedSkeleton.setVisibility(View.GONE);
+            }
+        });
+
+        viewModel.getIsLastPage().observe(getViewLifecycleOwner(), isLast -> {
+            boolean showEnd = isLast && !feedAdapter.getCurrentList().isEmpty() && !Boolean.TRUE.equals(viewModel.isLoading.getValue());
+            if (layoutFeedEnd != null) layoutFeedEnd.setVisibility(showEnd ? View.VISIBLE : View.GONE);
+        });
+
+        viewModel.getIsDeleteSuccess().observe(getViewLifecycleOwner(), success -> {
+            if (Boolean.TRUE.equals(success)) {
+                Toast.makeText(requireContext(), "Post deleted", Toast.LENGTH_SHORT).show();
+                ((MutableLiveData<Boolean>) viewModel.getIsDeleteSuccess()).setValue(false);
+            }
+        });
+
+        viewModel.getErrorMessage().observe(getViewLifecycleOwner(), error -> {
+            if (error != null) {
+                Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    private void refreshFeed(boolean fromSwipe) {
-        if (isLoadingFeed) {
-            if (swipeRefreshNewsfeed != null) swipeRefreshNewsfeed.setRefreshing(false);
-            return;
-        }
-        isRefreshingFeed = fromSwipe;
-        isLastFeedPage = false;
-        lastVisibleFeedDoc = null;
-        cachedFriendIds.clear();
-        loadedPostIds.clear();
-        feedItems.clear();
-
-        if (feedAdapter != null) {
-            feedAdapter.clearLikedIds();
-            feedAdapter.submitList(new ArrayList<>());
-        }
-
-        showFeedEmpty(false);
-        showFeedError(false);
-        showFeedSkeleton(false);
-        loadFriendListAndFeed();
-    }
-
-    private void loadNextFeedPage() {
-        if (isLoadingFeed || isRefreshingFeed || isLastFeedPage || feedItems.isEmpty()) return;
-        loadFeedPageFromFirebase(cachedFriendIds, false);
-    }
-
-    private void loadFriendListAndFeed() {
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user == null) {
-            finishFeedLoading();
-            showFeedError(true);
-            return;
-        }
-
-        isLoadingFeed = true;
-        showFeedSkeleton(true);
-
-        FirebaseFirestore.getInstance().collection("users").document(user.getUid())
-                .get()
-                .addOnSuccessListener(userDoc -> {
-                    if (userDoc != null && userDoc.exists()) {
-                        isAdmin = "ADMIN".equals(userDoc.getString("role"));
-                    }
-
-                    if (isAdmin) {
-                        cachedFriendIds.clear();
-                        loadFeedPageFromFirebase(cachedFriendIds, true);
-                    } else {
-                        FirebaseFirestore.getInstance().collection("users").document(user.getUid()).collection("friends")
-                                .get()
-                                .addOnSuccessListener(snapshots -> {
-                                    cachedFriendIds.clear();
-                                    for (DocumentSnapshot doc : snapshots.getDocuments()) {
-                                        cachedFriendIds.add(doc.getId());
-                                    }
-                                    loadFeedPageFromFirebase(cachedFriendIds, true);
-                                })
-                                .addOnFailureListener(e -> {
-                                    finishFeedLoading();
-                                    Log.e(TAG, "Failed to load friends list: " + e.getMessage());
-                                    showFeedError(true);
-                                });
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    finishFeedLoading();
-                    Log.e(TAG, "Failed to retrieve user info: " + e.getMessage());
-                    showFeedError(true);
-                });
-    }
-
-    private void loadFeedPageFromFirebase(List<String> friendIds, boolean firstPage) {
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user == null) return;
-
-        Query query = FirebaseFirestore.getInstance().collection("posts");
-
-        if (!isAdmin) {
-            List<String> allUserIds = new ArrayList<>(friendIds);
-            allUserIds.add(user.getUid());
-            if (allUserIds.size() > 30) {
-                allUserIds = allUserIds.subList(0, 30);
-            }
-            query = query.whereIn("userId", allUserIds);
-        }
-
-        query = query.orderBy("timestamp", Query.Direction.DESCENDING).limit(FEED_PAGE_SIZE);
-
-        if (!firstPage && lastVisibleFeedDoc != null) {
-            query = query.startAfter(lastVisibleFeedDoc);
-        }
-
-        if (!firstPage && progressFeedMore != null) {
-            progressFeedMore.setVisibility(View.VISIBLE);
-        }
-
-        query.get()
-                .addOnSuccessListener(snapshots -> {
-                    if (!isAdded()) return;
-                    finishFeedLoading();
-
-                    if (!snapshots.isEmpty()) {
-                        lastVisibleFeedDoc = snapshots.getDocuments().get(snapshots.size() - 1);
-                    }
-
-                    List<FeedItem> newItems = new ArrayList<>();
-                    for (DocumentSnapshot doc : snapshots.getDocuments()) {
-                        FeedItem item = mapFirebaseDocToFeedItem(doc);
-                        if (item != null) {
-                            newItems.add(item);
-                        }
-                    }
-
-                    appendFeedItems(newItems);
-                    isLastFeedPage = snapshots.size() < FEED_PAGE_SIZE;
-
-                    if (feedItems.isEmpty()) {
-                        showFeedEmpty(true);
-                        showNoFriendsEmptyState(!isAdmin && friendIds.isEmpty());
-                    } else {
-                        showFeedEmpty(false);
-                        showNoFriendsEmptyState(false);
-                    }
-
-                    showFeedError(false);
-                    updateFeedEndState();
-                })
-                .addOnFailureListener(e -> {
-                    if (!isAdded()) return;
-                    finishFeedLoading();
-                    Log.e(TAG, "Firebase query error: " + e.getMessage());
-                    if (feedItems.isEmpty()) {
-                        showFeedError(true);
-                    } else {
-                        Toast.makeText(requireContext(), "Failed to load more posts", Toast.LENGTH_SHORT).show();
-                    }
-                });
-    }
-
-    private FeedItem mapFirebaseDocToFeedItem(DocumentSnapshot doc) {
-        String id = doc.getId();
-        // CẬP NHẬT: LẤY TRƯỜNG `title` TỪ FIREBASE
-        String title = doc.getString("title") != null ? doc.getString("title") : "";
-        String content = doc.getString("content") != null ? doc.getString("content") : "";
-        String imageUrl = doc.getString("imageUrl") != null ? doc.getString("imageUrl") : "";
-        String type = doc.getString("type") != null ? doc.getString("type") : "normal";
-        Long timestamp = doc.getLong("timestamp");
-        String userId = doc.getString("userId");
-        String authorName = doc.getString("authorName");
-        String authorAvatarUrl = doc.getString("authorAvatarUrl") != null ? doc.getString("authorAvatarUrl") : "";
-        Long likeCount = doc.getLong("likeCount");
-        Long commentCount = doc.getLong("commentCount");
-
-        if (timestamp == null) timestamp = 0L;
-        if (authorName == null) authorName = "Cashify User";
-
-        boolean hasImage = !imageUrl.isEmpty();
-        boolean expandable = content.length() > 120;
-
-        FeedItem item = null;
-
-        if (type.toLowerCase().contains("milestone")) {
-            String milestoneData = doc.getString("milestoneData") != null ? doc.getString("milestoneData") : "";
-
-            String milestoneTitle = "New Milestone";
-            String milestoneDescription = "";
-            String amountText = "";
-            String iconText = "🏆";
-            int progressValue = 0;
-
-            if (!milestoneData.trim().isEmpty()) {
-                try {
-                    JSONObject json = new JSONObject(milestoneData);
-                    iconText = json.optString("iconText", "🏆");
-                    milestoneTitle = json.optString("title", "New Milestone");
-                    milestoneDescription = json.optString("description", "");
-                    amountText = json.optString("amount", "");
-                    progressValue = json.optInt("progress", 0);
-                } catch (Exception e) {
-                    Log.e(TAG, "JSON parsing error: " + e.getMessage());
-                }
-            }
-
-            item = new FeedItem.MilestonePost(
-                    id,
-                    userId,
-                    authorName,
-                    TimeFormatter.format(timestamp),
-                    milestoneTitle,
-                    !content.isEmpty() ? content : milestoneDescription,
-                    "Milestone",
-                    amountText,
-                    iconText,
-                    progressValue,
-                    (!content.isEmpty() ? content : milestoneDescription).length() > 120,
-                    milestoneData,
-                    authorAvatarUrl,
-                    initials(authorName)
-            );
-        } else {
-            // CẬP NHẬT: NHÉT BIẾN `title` VÀO TRONG CONSTRUCTOR
-            item = new FeedItem.NormalPost(
-                    id,
-                    userId,
-                    authorName,
-                    TimeFormatter.format(timestamp),
-                    title,
-                    content,
-                    hasImage,
-                    imageUrl,
-                    initials(authorName),
-                    expandable,
-                    authorAvatarUrl
-            );
-        }
-
-        if (item != null) {
-            item.setLikeCount(likeCount != null ? likeCount.intValue() : 0);
-            item.setCommentCount(commentCount != null ? commentCount.intValue() : 0);
-        }
-
-        return item;
-    }
-
-    private void appendFeedItems(List<FeedItem> newItems) {
-        for (FeedItem item : newItems) {
-            if (item == null || item.getId() == null || item.getId().isEmpty()) continue;
-            if (loadedPostIds.add(item.getId())) {
-                feedItems.add(item);
-            }
-        }
-        if (feedAdapter != null) {
-            feedAdapter.submitList(new ArrayList<>(feedItems));
-        }
-        if (!feedItems.isEmpty()) {
-            showFeedSkeleton(false);
-            if (rvFeed != null) rvFeed.setVisibility(View.VISIBLE);
-        }
-    }
-
-    private void finishFeedLoading() {
-        isLoadingFeed = false;
-        isRefreshingFeed = false;
-        if (progressFeed != null) progressFeed.setVisibility(View.GONE);
-        if (progressFeedMore != null) progressFeedMore.setVisibility(View.GONE);
-        if (swipeRefreshNewsfeed != null) swipeRefreshNewsfeed.setRefreshing(false);
-        showFeedSkeleton(false);
-    }
-
-    private void showFeedEmpty(boolean show) {
-        if (show) showFeedSkeleton(false);
-        if (layoutFeedEmpty != null) layoutFeedEmpty.setVisibility(show ? View.VISIBLE : View.GONE);
-        if (rvFeed != null) rvFeed.setVisibility(show ? View.GONE : View.VISIBLE);
-        if (show) showFeedEnd(false);
-    }
-
-    private void showFeedError(boolean show) {
-        if (layoutFeedError != null) layoutFeedError.setVisibility(show ? View.VISIBLE : View.GONE);
-        if (show) {
-            showFeedSkeleton(false);
-            showFeedEmpty(false);
-            showNoFriendsEmptyState(false);
-            showFeedEnd(false);
-            if (rvFeed != null) rvFeed.setVisibility(View.GONE);
-        }
-    }
-
-    private void updateFeedEndState() {
-        boolean show = isLastFeedPage
-                && !feedItems.isEmpty()
-                && !isLoadingFeed
-                && !isRefreshingFeed
-                && layoutFeedError != null
-                && layoutFeedError.getVisibility() != View.VISIBLE;
-        showFeedEnd(show);
-    }
-
-    private void showFeedEnd(boolean show) {
-        if (layoutFeedEnd != null) layoutFeedEnd.setVisibility(show ? View.VISIBLE : View.GONE);
-    }
-
-    private void showFeedSkeleton(boolean show) {
-        if (layoutFeedSkeleton != null) layoutFeedSkeleton.setVisibility(show ? View.VISIBLE : View.GONE);
-        if (show) {
-            if (rvFeed != null) rvFeed.setVisibility(View.GONE);
-            if (layoutFeedEmpty != null) layoutFeedEmpty.setVisibility(View.GONE);
-            if (layoutFeedError != null) layoutFeedError.setVisibility(View.GONE);
-            showNoFriendsEmptyState(false);
-            showFeedEnd(false);
-        }
-    }
-
-    private void showNoFriendsEmptyState(boolean show) {
-        View layoutNoFriends = getView() != null ? getView().findViewById(R.id.layoutNoFriendsEmpty) : null;
-        if (layoutNoFriends != null) layoutNoFriends.setVisibility(show ? View.VISIBLE : View.GONE);
-
-        if (show) {
-            if (rvFeed != null) rvFeed.setVisibility(View.GONE);
-            if (layoutFeedEmpty != null) layoutFeedEmpty.setVisibility(View.GONE);
-            if (layoutFeedError != null) layoutFeedError.setVisibility(View.GONE);
-            showFeedEnd(false);
-
-            View btnFindFriends = layoutNoFriends != null ? layoutNoFriends.findViewById(R.id.btnFindFriends) : null;
-            if (btnFindFriends != null) {
-                btnFindFriends.setOnClickListener(v -> {
-                    Intent intent = new Intent(requireContext(), com.example.cashify.ui.FriendsActivity.FriendsActivity.class);
-                    startActivity(intent);
-                });
-            }
-        }
-    }
-
-    private String initials(String name) {
-        if (name == null || name.trim().isEmpty()) return "CF";
-        String[] parts = name.trim().split("\\s+");
-        String f = parts[0].substring(0, 1);
-        String s = parts.length > 1 ? parts[parts.length - 1].substring(0, 1) : "";
-        return (f + s).toUpperCase(Locale.getDefault());
-    }
-
-    private String firstNonEmpty(String... values) {
-        if (values == null) return "";
-        for (String value : values) {
-            if (value != null && !value.trim().isEmpty()) return value.trim();
-        }
-        return "";
-    }
-
-    private int dp(int value) {
-        return Math.round(value * getResources().getDisplayMetrics().density);
-    }
-
-    private void setupProfileSurfaces(View root) {
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        ImageView createAvatar = root.findViewById(R.id.imgCreatePromptAvatar);
-
-        if (user != null) {
-            ImageHelper.loadAvatar(user.getPhotoUrl(), createAvatar,
-                    firstNonEmpty(user.getDisplayName(), user.getEmail(), user.getUid()));
-        }
-
-        FirebaseFirestore.getInstance().collection("users").limit(5).get()
-                .addOnSuccessListener(snapshot -> {
-                    if (!isAdded() || snapshot == null || snapshot.isEmpty()) return;
-
-                    int index = 1;
-                    for (DocumentSnapshot doc : snapshot.getDocuments()) {
-                        bindPostProfile(root, index, doc);
-                        index++;
-                        if (index > 5) break;
-                    }
-                });
-
-        if (user != null) {
-            FirebaseFirestore.getInstance().collection("users").document(user.getUid()).get()
-                    .addOnSuccessListener(doc -> {
-                        if (!isAdded() || doc == null || !doc.exists()) return;
-
-                        String avatarUrl = doc.getString("avatarUrl");
-                        ImageHelper.loadAvatar(avatarUrl, createAvatar,
-                                firstNonEmpty(displayNameFromProfile(doc), user.getEmail(), user.getUid()));
-                    });
-        }
-    }
-
-    private void bindPostProfile(View root, int index, DocumentSnapshot doc) {
-        TextView nameView = root.findViewById(getResources().getIdentifier(
-                "txtPostName" + index, "id", requireContext().getPackageName()));
-        ImageView avatarView = root.findViewById(getResources().getIdentifier(
-                "imgPostAvatar" + index, "id", requireContext().getPackageName()));
-
-        String name = displayNameFromProfile(doc);
-        if (nameView != null && !name.isEmpty()) nameView.setText(name);
-
-        String avatarUrl = doc.getString("avatarUrl");
-        if (avatarView != null) ImageHelper.loadAvatar(avatarUrl, avatarView, name);
-    }
-
-    private String displayNameFromProfile(DocumentSnapshot doc) {
-        String displayName = doc.getString("displayName");
-        if (displayName != null && !displayName.trim().isEmpty()) return displayName.trim();
-
-        String username = doc.getString("username");
-        if (username != null && !username.trim().isEmpty()) return username.trim();
-
-        return "Cashify User";
-    }
-
-    private void applyReactionState(TextView button, boolean active) {
-        int textColor = ContextCompat.getColor(requireContext(),
-                active ? R.color.status_red : R.color.item_description);
-        int iconColor = ContextCompat.getColor(requireContext(),
-                active ? R.color.status_red : R.color.icon_inactive);
-
-        button.setTextColor(textColor);
-        button.setBackgroundResource(active
-                ? R.drawable.bg_social_reaction_chip_active
-                : R.drawable.bg_action_button);
-
-        for (Drawable drawable : button.getCompoundDrawablesRelative()) {
-            if (drawable != null) {
-                Drawable wrapped = DrawableCompat.wrap(drawable.mutate());
-                DrawableCompat.setTint(wrapped, iconColor);
-            }
-        }
-        button.setCompoundDrawableTintList(ColorStateList.valueOf(iconColor));
-    }
-
-    private void openPostDetail(String postId) {
-        if (getActivity() == null) return;
-
-        Intent intent = new Intent(getActivity(), PostDetailActivity.class);
-        intent.putExtra(PostDetailActivity.EXTRA_POST_ID, postId);
-        startActivity(intent);
-    }
-
     private void openCreatePost() {
         if (getActivity() == null) return;
-
         if (requireActivity() instanceof MainActivity) {
             ((MainActivity) requireActivity()).openCreatePostScreen();
             return;
         }
-
         NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment);
         if (navController.getGraph().findNode(R.id.nav_post_feed) != null) {
             navController.navigate(R.id.nav_post_feed);
@@ -652,17 +223,8 @@ public class SocialNewsfeedFragment extends Fragment {
     }
 
     private void runPressAnimation(View view, Runnable action) {
-        view.animate()
-                .scaleX(0.98f)
-                .scaleY(0.98f)
-                .setDuration(70)
-                .withEndAction(() -> view.animate()
-                        .scaleX(1f)
-                        .scaleY(1f)
-                        .setDuration(90)
-                        .withEndAction(action)
-                        .start())
-                .start();
+        view.animate().scaleX(0.98f).scaleY(0.98f).setDuration(70)
+                .withEndAction(() -> view.animate().scaleX(1f).scaleY(1f).setDuration(90).withEndAction(action).start()).start();
     }
 
     private void showPostBottomSheet(FeedItem item) {
@@ -674,7 +236,8 @@ public class SocialNewsfeedFragment extends Fragment {
 
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         String currentUserId = user != null ? user.getUid() : "";
-
+        DocumentSnapshot userProfile = viewModel.getProfile().getValue();
+        boolean isAdmin = userProfile != null && "ADMIN".equals(userProfile.getString("role"));
         boolean canEditOrDelete = (!currentUserId.isEmpty() && currentUserId.equals(item.getUserId())) || isAdmin;
 
         View btnEditPost = sheetView.findViewById(R.id.btnEditPost);
@@ -690,11 +253,8 @@ public class SocialNewsfeedFragment extends Fragment {
                 dialog.dismiss();
                 if (user == null) return;
                 user.getIdToken(true).addOnSuccessListener(result -> {
-                    String token = "Bearer " + result.getToken();
-                    socialViewModel.deletePost(item.getId(), token);
-                }).addOnFailureListener(e ->
-                        Toast.makeText(requireContext(), "Authentication failed", Toast.LENGTH_SHORT).show()
-                );
+                    viewModel.deletePost(item.getId(), "Bearer " + result.getToken());
+                });
             });
 
             if (btnEditPost != null) {
@@ -703,13 +263,10 @@ public class SocialNewsfeedFragment extends Fragment {
                     Intent intent = new Intent(requireContext(), MainActivity.class);
                     intent.putExtra("ACTION_EDIT_POST", true);
                     intent.putExtra("edit_post_id", item.getId());
-
-                    // CẬP NHẬT: Gửi Title và Content để sửa
                     if (item instanceof FeedItem.NormalPost) {
                         intent.putExtra("edit_post_title", ((FeedItem.NormalPost) item).title);
                         intent.putExtra("edit_post_content", ((FeedItem.NormalPost) item).description);
                     } else if (item instanceof FeedItem.MilestonePost) {
-                        // Milestone không có ô nhập Title riêng, nên chỉ gửi description và cục JSON mạ vàng
                         intent.putExtra("edit_post_content", ((FeedItem.MilestonePost) item).description);
                         intent.putExtra("edit_milestone_data", ((FeedItem.MilestonePost) item).milestoneJson);
                     }
@@ -726,7 +283,6 @@ public class SocialNewsfeedFragment extends Fragment {
                 dialog.dismiss();
                 Toast.makeText(requireContext(), "Post hidden", Toast.LENGTH_SHORT).show();
             });
-
             sheetView.findViewById(R.id.btnReportPost).setOnClickListener(v -> {
                 dialog.dismiss();
                 Toast.makeText(requireContext(), "Post reported", Toast.LENGTH_SHORT).show();
@@ -736,5 +292,33 @@ public class SocialNewsfeedFragment extends Fragment {
         sheetView.findViewById(R.id.btnCancelComment).setOnClickListener(v -> dialog.dismiss());
         dialog.setContentView(sheetView);
         dialog.show();
+    }
+
+    // Decorate Header
+    private void setupProfileSurfaces(View root) {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        ImageView createAvatar = root.findViewById(R.id.imgCreatePromptAvatar);
+        if (user != null) ImageHelper.loadAvatar(user.getPhotoUrl(), createAvatar, user.getDisplayName());
+
+        FirebaseFirestore.getInstance().collection("users").limit(5).get()
+                .addOnSuccessListener(snapshot -> {
+                    if (!isAdded() || snapshot == null || snapshot.isEmpty()) return;
+                    int index = 1;
+                    for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                        bindPostProfile(root, index, doc);
+                        index++;
+                        if (index > 5) break;
+                    }
+                });
+    }
+
+    private void bindPostProfile(View root, int index, DocumentSnapshot doc) {
+        TextView nameView = root.findViewById(getResources().getIdentifier("txtPostName" + index, "id", requireContext().getPackageName()));
+        ImageView avatarView = root.findViewById(getResources().getIdentifier("imgPostAvatar" + index, "id", requireContext().getPackageName()));
+        String name = doc.getString("displayName");
+        if (name == null || name.isEmpty()) name = doc.getString("username");
+        if (name == null) name = "Cashify User";
+        if (nameView != null) nameView.setText(name);
+        if (avatarView != null) ImageHelper.loadAvatar(doc.getString("avatarUrl"), avatarView, name);
     }
 }
