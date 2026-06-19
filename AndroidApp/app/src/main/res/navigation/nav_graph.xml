@@ -29,7 +29,7 @@
         android:id="@+id/nav_post_feed"
         android:name="com.example.cashify.ui.social.SocialComposerFragment"
         android:label="Community Feed"
-        tools:layout="@layout/fragment_post_feed" />
+        tools:layout="@layout/fragment_post_create" />
 
     <fragment
         android:id="@+id/nav_workspace_container"

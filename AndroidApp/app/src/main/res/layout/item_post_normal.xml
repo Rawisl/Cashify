@@ -20,50 +20,6 @@
         android:paddingEnd="16dp"
         android:paddingBottom="14dp">
 
-        <FrameLayout
-            android:id="@+id/postImagePlaceholder"
-            android:layout_width="match_parent"
-            android:layout_height="210dp"
-            android:layout_marginBottom="14dp"
-            android:background="@drawable/bg_social_story_image"
-            android:visibility="gone"
-            tools:visibility="visible">
-
-            <ImageView
-                android:id="@+id/imgPostImage"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:contentDescription="@null"
-                android:scaleType="centerCrop"
-                android:visibility="gone" />
-
-            <ImageView
-                android:id="@+id/decorIcon"
-                android:layout_width="58dp"
-                android:layout_height="58dp"
-                android:layout_gravity="center"
-                android:background="@drawable/bg_social_warm_chip"
-                android:contentDescription="@null"
-                android:padding="15dp"
-                android:src="@drawable/ic_post_image"
-                app:tint="#1A237E" />
-
-            <TextView
-                android:id="@+id/decorCaption"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="bottom|start"
-                android:layout_marginStart="14dp"
-                android:layout_marginBottom="14dp"
-                android:background="@drawable/bg_social_peach_chip"
-                android:fontFamily="@font/inter_bold"
-                android:paddingHorizontal="12dp"
-                android:paddingVertical="7dp"
-                android:text="@string/cashify_story"
-                android:textColor="#1A237E"
-                android:textSize="11sp" />
-        </FrameLayout>
-
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -190,6 +146,52 @@
             android:visibility="gone"
             tools:text="@string/see_more"
             tools:visibility="visible" />
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/postImagePlaceholder"
+            android:layout_width="match_parent"
+            android:layout_height="210dp"
+            android:layout_marginTop="14dp"
+            android:visibility="gone"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp"
+            tools:visibility="visible">
+
+            <ImageView
+                android:id="@+id/imgPostImage"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_social_story_image"
+                android:contentDescription="@null"
+                android:scaleType="centerCrop"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/decorIcon"
+                android:layout_width="58dp"
+                android:layout_height="58dp"
+                android:layout_gravity="center"
+                android:background="@drawable/bg_social_warm_chip"
+                android:contentDescription="@null"
+                android:padding="15dp"
+                android:src="@drawable/ic_post_image"
+                app:tint="#1A237E" />
+
+            <TextView
+                android:id="@+id/decorCaption"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|start"
+                android:layout_marginStart="14dp"
+                android:layout_marginBottom="14dp"
+                android:background="@drawable/bg_social_peach_chip"
+                android:fontFamily="@font/inter_bold"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="7dp"
+                android:text="@string/cashify_story"
+                android:textColor="#1A237E"
+                android:textSize="11sp" />
+        </com.google.android.material.card.MaterialCardView>
 
         <LinearLayout
             android:layout_width="match_parent"

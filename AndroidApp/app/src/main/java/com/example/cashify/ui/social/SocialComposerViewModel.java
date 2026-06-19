@@ -82,22 +82,42 @@ public class SocialComposerViewModel extends AndroidViewModel {
 
     // ĐÃ THÊM THAM SỐ `title` VÀO ĐÂY ĐỂ ĐỒNG BỘ VỚI FRAGMENT
     public void submitPost(String editPostId, String title, String content, String type,
-                           Uri imageUri, String milestoneData, String audienceParam) {
+                           Uri imageUri, String existingImageUrl, String milestoneData, String audienceParam) {
 
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user == null) {
-            errorEvent.setValue("Authentication required!");
-            return;
-        }
-
+        if (user == null) { errorEvent.setValue("Authentication required!"); return; }
         isLoading.setValue(true);
 
         user.getIdToken(true).addOnSuccessListener(tokenResult -> {
             String token = "Bearer " + tokenResult.getToken();
 
-            // 1. Edit existing post
+            //1 edit post
             if (editPostId != null) {
-                editExistingPost(token, editPostId, title, content, audienceParam);
+                if (imageUri != null) {
+                    //xóa ảnh cũ và up 1 cái ảnh MỚI TỪ ĐIỆN THOẠI
+                    Executors.newSingleThreadExecutor().execute(() -> {
+                        File imageFile = getFileFromUri(getApplication(), imageUri);
+                        if (imageFile == null) { isLoading.postValue(false); return; }
+                        new Handler(Looper.getMainLooper()).post(() -> {
+                            mediaRepository.uploadImage(imageFile, new MediaRepository.UploadCallback() {
+                                @Override public void onProgress(int percent) {}
+                                @Override public void onSuccess(String newImageUrl) {
+                                    // Up thành công ảnh mới -> Gửi link mới cho C#
+                                    editExistingPost(token, editPostId, title, content, newImageUrl, audienceParam);
+                                    imageFile.delete();
+                                }
+                                @Override public void onFailure(String error) {
+                                    isLoading.postValue(false);
+                                    errorEvent.postValue("Media upload failed: " + error);
+                                }
+                            });
+                        });
+                    });
+                } else {
+                    // Trường hợp 2: Giữ nguyên ảnh cũ, hoặc đã xóa trắng ảnh (existingImageUrl = null)
+                    String finalImageUrl = (existingImageUrl != null) ? existingImageUrl : "";
+                    editExistingPost(token, editPostId, title, content, finalImageUrl, audienceParam);
+                }
                 return;
             }
 
@@ -148,12 +168,13 @@ public class SocialComposerViewModel extends AndroidViewModel {
         });
     }
 
-    private void editExistingPost(String token, String postId, String title, String content, String audience) {
+    private void editExistingPost(String token, String postId, String title, String content, String imageUrl, String audience) {
         ApiDto.EditPostRequest req = new ApiDto.EditPostRequest();
         req.PostId = postId;
         req.Title = title;
         req.NewContent = content;
         req.Audience = audience;
+        req.NewImageUrl = imageUrl;
 
         ApiClient.getClient().create(ApiService.class).editPost(token, req).enqueue(new retrofit2.Callback<Object>() {
             @Override

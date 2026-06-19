@@ -81,6 +81,7 @@ public class SocialComposerFragment extends Fragment {
     private ProgressBar pbPreviewProgress;
 
     private Uri selectedImageUri;
+    private String existingImageUrl = null;
     private boolean milestoneMode;
     private String selectedAudience = "Public";
     private String selectedCategory = "Thoughts";
@@ -119,7 +120,7 @@ public class SocialComposerFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_post_feed, container, false);
+        return inflater.inflate(R.layout.fragment_post_create, container, false);
     }
 
     @Override
@@ -279,11 +280,10 @@ public class SocialComposerFragment extends Fragment {
             tvPreviewAmount.setText(amountLabel);
             pbPreviewProgress.setProgress(uiProgress);
 
-            actionPhoto.setVisibility(View.GONE);
+            if (actionPhoto != null) actionPhoto.setVisibility(View.GONE);
 
             txtComposerHint.setText("Your milestone is ready! Post your thoughts above.");
 
-            // ẨN Ô TIÊU ĐỀ
             if (editPostTitle != null) {
                 editPostTitle.setVisibility(View.GONE);
                 View divider = getView() != null ? getView().findViewById(R.id.dividerTitle) : null;
@@ -307,21 +307,28 @@ public class SocialComposerFragment extends Fragment {
             String oldTitle = getArguments().getString("edit_post_title");
             String oldContent = getArguments().getString("edit_post_content");
             String oldMilestone = getArguments().getString("edit_milestone_data");
+            String oldImage = getArguments().getString("edit_post_image");
 
-            if (oldTitle != null && editPostTitle != null) {
-                editPostTitle.setText(oldTitle);
+            if (oldMilestone != null && !oldMilestone.trim().isEmpty()) {
+                // Có achievement -> Cứng ngắc là Milestone (Tự ẩn Title, tự ẩn Image)
+                selectCategory("Milestone", "milestone", true, R.id.chipSaving);
+            } else {
+                // Không có achievement -> Quy hết về Thoughts (Được hiện Title, được up Image)
+                selectCategory("Thoughts", "thoughts", false, R.id.chipBudgeting);
             }
 
-            editPostContent.setText(oldContent);
-            btnSubmitPost.setText("Save changes");
-            txtComposerHint.setText("What's on your mind? Edit your post here...");
+            if (oldTitle != null && editPostTitle != null) editPostTitle.setText(oldTitle);
+            if (editPostContent != null) editPostContent.setText(oldContent);
 
-            if (oldMilestone != null && !oldMilestone.isEmpty()) {
-                selectedCategoryKey = "milestone";
-                selectedCategory = "Milestone";
-                setMilestoneMode(true);
+            if (oldImage != null && !oldImage.trim().isEmpty()) {
+                existingImageUrl = oldImage;
+                com.bumptech.glide.Glide.with(requireContext()).load(existingImageUrl).into(imgPostPreview);
+                imagePreviewContainer.setVisibility(View.VISIBLE);
+                if (actionPhoto != null) actionPhoto.setVisibility(View.GONE);
+            }
+
+            if (oldMilestone != null && !oldMilestone.trim().isEmpty()) {
                 generatedMilestoneJson = oldMilestone;
-
                 try {
                     JSONObject json = new JSONObject(oldMilestone);
                     milestonePreviewContainer.setVisibility(View.VISIBLE);
@@ -331,9 +338,12 @@ public class SocialComposerFragment extends Fragment {
                     tvPreviewAmount.setText(json.optString("amount", ""));
                     pbPreviewProgress.setProgress(json.optInt("progress", 0));
 
-                    actionPhoto.setVisibility(View.GONE);
+                    if (actionPhoto != null) actionPhoto.setVisibility(View.GONE);
                 } catch (Exception ignored) {}
             }
+
+            btnSubmitPost.setText("Save changes");
+            txtComposerHint.setText("What's on your mind? Edit your post here...");
         }
     }
 
@@ -511,6 +521,14 @@ public class SocialComposerFragment extends Fragment {
             View divider = getView() != null ? getView().findViewById(R.id.dividerTitle) : null;
             if (divider != null) divider.setVisibility(enabled ? View.GONE : View.VISIBLE);
         }
+
+        if (actionPhoto != null) {
+            actionPhoto.setVisibility(enabled ? View.GONE : View.VISIBLE);
+        }
+        // Nếu đang ở chế độ Milestone mà lỡ chọn ảnh trước đó rồi thì xóa luôn ảnh đó đi
+        if (enabled && selectedImageUri != null) {
+            clearSelectedImage();
+        }
         updateCategoryTiles();
         updateCategoryDesign();
         updateSubmitState();
@@ -676,8 +694,10 @@ public class SocialComposerFragment extends Fragment {
 
     private void clearSelectedImage() {
         selectedImageUri = null;
+        existingImageUrl = null;
         imgPostPreview.setImageDrawable(null);
         imagePreviewContainer.setVisibility(View.GONE);
+        if (!milestoneMode) actionPhoto.setVisibility(View.VISIBLE);
         txtComposerHint.setText("Image removed.");
         updateSubmitState();
     }
@@ -697,7 +717,7 @@ public class SocialComposerFragment extends Fragment {
 
         String audienceParam = "Public".equals(selectedAudience) ? "PUBLIC" : "Only Me".equals(selectedAudience) ? "PRIVATE" : "FRIENDS";
 
-        viewModel.submitPost(editPostId, title, content, type, selectedImageUri, generatedMilestoneJson, audienceParam);
+        viewModel.submitPost(editPostId, title, content, type, selectedImageUri, existingImageUrl, generatedMilestoneJson, audienceParam);
     }
 
     private long getFileSizeFromUri(Uri uri) {
@@ -791,9 +811,13 @@ public class SocialComposerFragment extends Fragment {
 
     private void updateSubmitState() {
         boolean hasText = editPostContent != null && editPostContent.getText().toString().trim().length() > 0;
-        boolean hasImage = selectedImageUri != null;
+
+        boolean hasTitle = editPostTitle != null && editPostTitle.getVisibility() == View.VISIBLE && editPostTitle.getText().toString().trim().length() > 0;
+        boolean hasImage = selectedImageUri != null || (existingImageUrl != null && !existingImageUrl.isEmpty());
+
         boolean hasMilestone = generatedMilestoneJson != null;
-        boolean canSubmit = hasText || hasImage || hasMilestone;
+
+        boolean canSubmit = hasText || hasTitle || hasImage || hasMilestone;
 
         btnSubmitPost.setEnabled(canSubmit);
         btnSubmitPost.setAlpha(canSubmit ? 1f : 0.55f);

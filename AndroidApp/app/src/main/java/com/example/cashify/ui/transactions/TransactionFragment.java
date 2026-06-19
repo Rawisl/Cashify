@@ -23,7 +23,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
-import com.example.cashify.data.local.AppDatabase;
 import com.example.cashify.data.model.Category;
 import com.example.cashify.data.model.Transaction;
 import com.example.cashify.ui.main.MainViewModel;
@@ -33,6 +32,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.datepicker.MaterialDatePicker;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -47,6 +47,7 @@ public class TransactionFragment extends Fragment {
     private EditText etSearch;
 
     private String currentWorkspaceId = "PERSONAL";
+    private List<Category> availableCategories = new ArrayList<>(); // CACHE DANH MỤC CHO FILTER
 
     public TransactionFragment() {}
 
@@ -75,14 +76,12 @@ public class TransactionFragment extends Fragment {
     }
 
     private void setupRecyclerViews() {
-        // 1. Setup History List
         historyAdapter = new HistoryAdapter();
         rvHistory.setLayoutManager(new LinearLayoutManager(getContext()));
         rvHistory.setAdapter(historyAdapter);
 
         historyAdapter.setOnTransactionClickListener(transaction -> openEditScreen(transaction.id));
 
-        // 2. Setup Filter Chips
         chipAdapter = new FilterChipAdapter(new FilterChipAdapter.OnChipClickListener() {
             @Override
             public void onChipClick(FilterChip chip, int position, View anchorView) {
@@ -96,7 +95,6 @@ public class TransactionFragment extends Fragment {
 
             @Override
             public void onChipClearClick(FilterChip chip, int position) {
-                // Remove filter state from ViewModel
                 switch (chip.getType()) {
                     case DATE: viewModel.selectedDateRange.setValue(null); break;
                     case TYPE: viewModel.selectedType.setValue(null); break;
@@ -104,12 +102,10 @@ public class TransactionFragment extends Fragment {
                     case CATEGORY: viewModel.selectedCategoryId.setValue(null); break;
                 }
 
-                // Reset Chip UI to default inactive state
                 chip.setActive(false);
                 chip.setActiveLabel(chip.getFilLabel());
                 chipAdapter.notifyItemChanged(position);
 
-                // Fetch data with current search query applied
                 String query = (etSearch != null) ? etSearch.getText().toString().trim() : "";
                 viewModel.fetchHistoryData(currentWorkspaceId, query);
             }
@@ -122,7 +118,14 @@ public class TransactionFragment extends Fragment {
     private void setupObservers() {
         viewModel = new ViewModelProvider(requireActivity()).get(TransactionViewModel.class);
 
-        // Observe Grouped Transaction Data
+        // Nạp sẵn danh mục từ DB vào Cache khi Fragment vừa mở
+        viewModel.loadCategoriesForFilter();
+        viewModel.getFilterCategories().observe(getViewLifecycleOwner(), categories -> {
+            if (categories != null) {
+                availableCategories = categories;
+            }
+        });
+
         viewModel.getGroupedTransactions().observe(getViewLifecycleOwner(), items -> {
             if (items != null && !items.isEmpty()) {
                 historyAdapter.setHistoryData(items);
@@ -135,10 +138,8 @@ public class TransactionFragment extends Fragment {
             }
         });
 
-        // Observe Chip Configurations
         viewModel.getFilterChips().observe(getViewLifecycleOwner(), chips -> chipAdapter.setChips(chips));
 
-        // Sync observation
         MainViewModel mainViewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
         mainViewModel.syncCompleted.observe(getViewLifecycleOwner(), isDone -> {
             if (Boolean.TRUE.equals(isDone)) {
@@ -199,7 +200,7 @@ public class TransactionFragment extends Fragment {
         popup.getMenu().add(0, 0, 0, R.string.expense_chip);
 
         popup.setOnMenuItemClickListener(item -> {
-            int typeId = item.getItemId(); // 1 = Income, 0 = Expense
+            int typeId = item.getItemId();
 
             chip.setActive(true);
             chip.setActiveLabel(item.getTitle().toString());
@@ -239,44 +240,35 @@ public class TransactionFragment extends Fragment {
     }
 
     private void showCategoryBottomSheet(FilterChip chip, int position) {
-        BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(requireContext());
-        Context appContext = requireContext().getApplicationContext();
+        if (availableCategories == null || availableCategories.isEmpty()) {
+            DialogHelper.showCustomDialog(requireContext(), "Info", "No categories available for filtering.", "OK", null, DialogHelper.DialogType.NORMAL, true, null, null);
+            return;
+        }
 
+        BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(requireContext());
         View bottomSheetView = getLayoutInflater().inflate(R.layout.bottom_sheet_filter, null);
         RecyclerView rvCategories = bottomSheetView.findViewById(R.id.rvCategoryFilter);
         rvCategories.setLayoutManager(new GridLayoutManager(requireContext(), 4));
 
-        // Note: Ideally, this DB call should be delegated to the ViewModel.
-        // Kept here to preserve existing application flow.
-        new Thread(() -> {
-            AppDatabase db = AppDatabase.getInstance(appContext);
-            List<Category> categories = db.categoryDao().getAll();
+        CategoryPickerAdapter adapter = new CategoryPickerAdapter(requireContext(), availableCategories, selectedCat -> {
+            chip.setActive(true);
+            chip.setActiveLabel(selectedCat.name);
 
-            if (!isAdded()) return;
-            requireActivity().runOnUiThread(() -> {
-                if (!isAdded() || getContext() == null || categories == null || categories.isEmpty()) return;
+            String iconName = selectedCat.iconName != null ? selectedCat.iconName : "";
+            int resId = requireContext().getResources().getIdentifier(iconName, "drawable", requireContext().getPackageName());
+            if (resId != 0) chip.setIconRes(resId);
 
-                CategoryPickerAdapter adapter = new CategoryPickerAdapter(requireContext(), categories, selectedCat -> {
-                    chip.setActive(true);
-                    chip.setActiveLabel(selectedCat.name);
+            chipAdapter.notifyItemChanged(position);
 
-                    String iconName = selectedCat.iconName != null ? selectedCat.iconName : "";
-                    int resId = requireContext().getResources().getIdentifier(iconName, "drawable", requireContext().getPackageName());
-                    if (resId != 0) chip.setIconRes(resId);
+            viewModel.selectedCategoryId.setValue(selectedCat.id);
+            viewModel.fetchHistoryData(currentWorkspaceId);
 
-                    chipAdapter.notifyItemChanged(position);
+            bottomSheetDialog.dismiss();
+        });
 
-                    viewModel.selectedCategoryId.setValue(selectedCat.id);
-                    viewModel.fetchHistoryData(currentWorkspaceId);
-
-                    bottomSheetDialog.dismiss();
-                });
-
-                rvCategories.setAdapter(adapter);
-                bottomSheetDialog.setContentView(bottomSheetView);
-                bottomSheetDialog.show();
-            });
-        }).start();
+        rvCategories.setAdapter(adapter);
+        bottomSheetDialog.setContentView(bottomSheetView);
+        bottomSheetDialog.show();
     }
 
     // =========================================================================
@@ -291,8 +283,6 @@ public class TransactionFragment extends Fragment {
                 if (position == RecyclerView.NO_POSITION) return makeMovementFlags(0, 0);
 
                 TransactionViewModel.HistoryItem item = historyAdapter.getItemAt(position);
-
-                // Prevent swiping the Date Header
                 if (item.getType() == TransactionViewModel.HistoryItem.TYPE_DATE_HEADER) {
                     return makeMovementFlags(0, 0);
                 }
@@ -323,7 +313,6 @@ public class TransactionFragment extends Fragment {
                             DialogHelper.DialogType.DANGER,
                             true,
                             () -> {
-                                // ACTION: DELETE
                                 viewModel.deleteOnly(deletedTrans);
                                 DialogHelper.showSuccess(
                                         requireContext(),
@@ -332,10 +321,7 @@ public class TransactionFragment extends Fragment {
                                         null
                                 );
                             },
-                            () -> {
-                                // ACTION: CANCEL (Restore item position)
-                                historyAdapter.notifyItemChanged(position);
-                            }
+                            () -> historyAdapter.notifyItemChanged(position)
                     );
                 } else {
                     historyAdapter.notifyItemChanged(position);

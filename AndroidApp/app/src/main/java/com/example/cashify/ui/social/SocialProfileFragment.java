@@ -257,6 +257,8 @@ public class SocialProfileFragment extends Fragment {
                 if (item instanceof FeedItem.NormalPost) {
                     intent.putExtra("edit_post_title", ((FeedItem.NormalPost) item).title);
                     intent.putExtra("edit_post_content", ((FeedItem.NormalPost) item).description);
+                    intent.putExtra("edit_post_image", ((FeedItem.NormalPost) item).imageUrl);
+
                 } else if (item instanceof FeedItem.MilestonePost) {
                     intent.putExtra("edit_post_content", ((FeedItem.MilestonePost) item).description);
                     intent.putExtra("edit_milestone_data", ((FeedItem.MilestonePost) item).milestoneJson);

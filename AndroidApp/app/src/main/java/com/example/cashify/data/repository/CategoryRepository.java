@@ -66,7 +66,12 @@ public class CategoryRepository {
         String currentWorkspaceId = (category.workspaceId != null) ? category.workspaceId : "PERSONAL";
         data.put("workspaceId", currentWorkspaceId);
 
-        firebaseManager.syncLocalToCloud(currentWorkspaceId, "categories", String.valueOf(category.id), data, new FirebaseManager.DataCallback<Void>() {
+        //Ưu tiên dùng firestoreId
+        String targetDocId = (category.firestoreId != null && !category.firestoreId.trim().isEmpty())
+                ? category.firestoreId
+                : String.valueOf(category.id);
+
+        firebaseManager.syncLocalToCloud(currentWorkspaceId, "categories", targetDocId, data, new FirebaseManager.DataCallback<Void>() {
             @Override
             public void onSuccess(Void result) {
                 Log.d("FIREBASE_SYNC", "Category synced successfully: " + category.name);
@@ -87,17 +92,23 @@ public class CategoryRepository {
                 String currentWorkspaceId = (category.workspaceId != null) ? category.workspaceId : "PERSONAL";
 
                 if (count > 0) {
-                    // Logic Xóa mềm (Soft Delete): Ẩn danh mục nếu đã có giao dịch phát sinh để bảo toàn lịch sử
+                    // Logic Xóa mềm
                     categoryDao.softDelete(categoryId);
                     if (category.isDefault == 0) {
                         category.isDeleted = 1;
                         syncCategoryToCloud(category);
                     }
                 } else {
-                    // Logic Xóa cứng (Hard Delete): Xóa vĩnh viễn nếu danh mục chưa từng được sử dụng
+                    // Logic Xóa cứng
                     categoryDao.hardDelete(categoryId);
                     if (category.isDefault == 0) {
-                        firebaseManager.deleteDocumentFromCloud(currentWorkspaceId, "categories", String.valueOf(category.id), new FirebaseManager.DataCallback<Void>() {
+
+                        // Chỗ này cũng phải xóa bằng firestoreId
+                        String targetDocId = (category.firestoreId != null && !category.firestoreId.trim().isEmpty())
+                                ? category.firestoreId
+                                : String.valueOf(category.id);
+
+                        firebaseManager.deleteDocumentFromCloud(currentWorkspaceId, "categories", targetDocId, new FirebaseManager.DataCallback<Void>() {
                             @Override
                             public void onSuccess(Void result) {
                                 Log.d("FIREBASE_SYNC", "Hard delete success on Cloud!");

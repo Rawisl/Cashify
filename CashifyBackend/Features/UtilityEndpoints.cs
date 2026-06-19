@@ -34,12 +34,9 @@ public static class UtilityEndpoints
                 client.Timeout = TimeSpan.FromSeconds(60);
                 var openRouterUrl = "https://openrouter.ai/api/v1/chat/completions";
 
-                var categories = "Ăn uống, Cafe, Mua sắm, Di chuyển, Xăng xe, Hóa đơn, Giải trí, Tiền trọ, Sức khỏe, Giáo dục, Khác";
-
                 // 1. ULTRA-LEAN PROMPT (Tối giản tối đa để né Token Limit)
                 var systemPrompt = $"Extract receipt info to JSON. NO markdown. NO extra text.\n" +
                                    $"Schema:\n{{\"amount\":0,\"description\":\"\",\"category\":\"Khác\",\"paymentMethod\":\"Cash\"}}\n" +
-                                   $"Valid Categories: {categories}.\n" +
                                    $"Valid Payment: Cash, Card, Bank.";
                 var userPrompt = req.OcrText; // Truyền chay vào luôn cho nhẹ
 
@@ -47,8 +44,8 @@ public static class UtilityEndpoints
                 var payload = new
                 {
                     //tham khảo thử mấy model khác con nào ngon thì vứt vào chứ openrouter/free hơi hên xui
-                    //baidu/cobuddy:free
-                    model = "baidu/cobuddy:free",
+                    //nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free
+                    model = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
                     messages = new[]
                     {
                 new { role = "system", content = systemPrompt },

@@ -44,6 +44,8 @@ public class TransactionViewModel extends AndroidViewModel {
 
     private final MutableLiveData<List<FilterChip>> filterChips = new MutableLiveData<>();
     public LiveData<List<FilterChip>> getFilterChips() { return filterChips; }
+    private final MutableLiveData<List<Category>> _filterCategories = new MutableLiveData<>();
+    public LiveData<List<Category>> getFilterCategories() { return _filterCategories; }
 
     // Multi-Filter States
     public final MutableLiveData<long[]> selectedDateRange = new MutableLiveData<>(null);
@@ -67,6 +69,7 @@ public class TransactionViewModel extends AndroidViewModel {
         list.add(new FilterChip(getApplication().getString(R.string.payment_chip), FilterChip.FilterType.METHOD));
         list.add(new FilterChip(getApplication().getString(R.string.category_chip), FilterChip.FilterType.CATEGORY));
         filterChips.setValue(list);
+        loadCategoriesForFilter();
     }
 
     public void resetFilters() {
@@ -171,21 +174,21 @@ public class TransactionViewModel extends AndroidViewModel {
 
     // =========================================================================
     // CRUD OPERATIONS (Syncing Local & Cloud)
-    // Note: Ideally, these operations should be delegated to TransactionRepository.
     // =========================================================================
 
     public void deleteOnly(Transaction transaction) {
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user == null) return;
 
+        databaseExecutor.execute(() -> {
+            transactionDao.delete(transaction);
+            fetchHistoryData(currentWorkspaceId);
+        });
+
         FirebaseFirestore.getInstance()
                 .collection("users").document(user.getUid())
                 .collection("transactions").document(transaction.id)
-                .delete()
-                .addOnSuccessListener(aVoid -> databaseExecutor.execute(() -> {
-                    transactionDao.delete(transaction);
-                    fetchHistoryData(currentWorkspaceId);
-                }));
+                .delete();
     }
 
     public void insertOnly(Transaction transaction) {
@@ -200,12 +203,12 @@ public class TransactionViewModel extends AndroidViewModel {
             transaction.id = FirebaseFirestore.getInstance().collection(collectionPath).document().getId();
         }
 
-        FirebaseFirestore.getInstance().collection(collectionPath).document(transaction.id)
-                .set(transaction)
-                .addOnSuccessListener(aVoid -> databaseExecutor.execute(() -> {
-                    transactionDao.insert(transaction);
-                    fetchHistoryData(currentWorkspaceId);
-                }));
+        databaseExecutor.execute(() -> {
+            transactionDao.insert(transaction);
+            fetchHistoryData(currentWorkspaceId);
+        });
+
+        FirebaseFirestore.getInstance().collection(collectionPath).document(transaction.id).set(transaction);
     }
 
     public void updateAndRefresh(Transaction transaction) {
@@ -216,14 +219,18 @@ public class TransactionViewModel extends AndroidViewModel {
                 ? "users/" + user.getUid() + "/transactions"
                 : "workspaces/" + transaction.workspaceId + "/transactions";
 
-        FirebaseFirestore.getInstance().collection(collectionPath).document(transaction.id)
-                .set(transaction)
-                .addOnSuccessListener(aVoid -> databaseExecutor.execute(() -> {
-                    transactionDao.update(transaction);
-                    fetchHistoryData(currentWorkspaceId);
-                }));
-    }
+        databaseExecutor.execute(() -> {
+            transactionDao.update(transaction);
+            fetchHistoryData(currentWorkspaceId);
+        });
 
+        FirebaseFirestore.getInstance().collection(collectionPath).document(transaction.id).set(transaction);
+    }
+    public void loadCategoriesForFilter() {
+        databaseExecutor.execute(() -> {
+            _filterCategories.postValue(categoryDao.getAll());
+        });
+    }
     @Override
     protected void onCleared() {
         super.onCleared();

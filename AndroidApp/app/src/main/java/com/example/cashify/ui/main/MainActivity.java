@@ -86,7 +86,7 @@ public class MainActivity extends BaseActivity {
 
         setupDeferredNavigationFromIntent();
 
-        // ĐÃ SỬA: Đẩy trách nhiệm dọn dẹp Database về cho ViewModel
+        //Đẩy trách nhiệm dọn dẹp Database về cho ViewModel
         mainViewModel.checkAndSeedLocalData(currentUserId, () -> {
             Log.d("AUTH_FLOW", "Data ready. Fetching history for UI.");
             transactionViewModel.fetchHistoryData(currentWorkspaceId);
@@ -158,6 +158,8 @@ public class MainActivity extends BaseActivity {
                 Bundle bundle = new Bundle();
                 bundle.putString("edit_post_id", getIntent().getStringExtra("edit_post_id"));
                 bundle.putString("edit_post_content", getIntent().getStringExtra("edit_post_content"));
+                bundle.putString("edit_post_title", getIntent().getStringExtra("edit_post_title"));
+                bundle.putString("edit_post_image", getIntent().getStringExtra("edit_post_image"));
 
                 if (getIntent().hasExtra("edit_milestone_data")) {
                     bundle.putString("edit_milestone_data", getIntent().getStringExtra("edit_milestone_data"));
@@ -174,6 +176,24 @@ public class MainActivity extends BaseActivity {
                 controller.navigate(R.id.nav_social_container);
                 controller.navigate(R.id.nav_post_feed);
                 getIntent().removeExtra("OPEN_POST_FEED");
+            });
+        }
+
+        //Xử lý khi mở màn tạo bài kèm data Milestone (Từ Budget/Goals)
+        if (getIntent().getBooleanExtra("ACTION_CREATE_MILESTONE", false)) {
+            navigateWhenHome(controller -> {
+                Bundle bundle = new Bundle();
+                if (getIntent().hasExtra("milestone_limit")) {
+                    bundle.putLong("milestone_limit", getIntent().getLongExtra("milestone_limit", 0));
+                    bundle.putLong("milestone_spent", getIntent().getLongExtra("milestone_spent", 0));
+                    bundle.putString("milestone_period", getIntent().getStringExtra("milestone_period"));
+                    bundle.putString("milestone_label", getIntent().getStringExtra("milestone_label"));
+                }
+
+                controller.navigate(R.id.nav_social_container);
+                controller.navigate(R.id.nav_post_feed, bundle);
+
+                getIntent().removeExtra("ACTION_CREATE_MILESTONE");
             });
         }
     }

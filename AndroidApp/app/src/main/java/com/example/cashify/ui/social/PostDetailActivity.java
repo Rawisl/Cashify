@@ -100,7 +100,7 @@ public class PostDetailActivity extends AppCompatActivity {
     private void initViews() {
         tvPostDetailMessage = findViewById(R.id.tvPostDetailMessage);
         progressPostDetail = findViewById(R.id.progressPostDetail);
-        recyclerViewMain = findViewById(R.id.recyclerViewMainHợpNhất);
+        recyclerViewMain = findViewById(R.id.recyclerViewMain);
         etCommentInput = findViewById(R.id.etCommentInput);
         imgSendComment = findViewById(R.id.imgSendComment);
         imgCurrentUserAvatar = findViewById(R.id.imgCurrentUserAvatar);
@@ -149,7 +149,7 @@ public class PostDetailActivity extends AppCompatActivity {
                 postOwnerId = post.authorId == null ? "" : post.authorId;
                 commentAdapter.updatePostOwnerId(postOwnerId);
 
-                if (post.milestoneData != null && !post.milestoneData.trim().isEmpty()) {
+                if ("MILESTONE_POST".equals(post.type)) {
                     FeedItem.MilestonePost milestone = new FeedItem.MilestonePost();
                     milestone.setId(postId);
                     milestone.setUserId(post.authorId);
@@ -159,17 +159,21 @@ public class PostDetailActivity extends AppCompatActivity {
                     milestone.setLikeCount(post.likeCount);
                     milestone.setCommentCount(post.commentCount);
                     milestone.milestoneJson = post.milestoneData;
-
-                    try {
-                        org.json.JSONObject json = new org.json.JSONObject(post.milestoneData);
-                        milestone.iconText = json.optString("iconText", "🏆");
-                        milestone.title = json.optString("title", "");
-                        milestone.month = json.optString("month", "");
-                        milestone.amount = json.optString("amount", "");
-                        milestone.progress = json.optInt("progress", 0);
+                    if (post.milestoneData != null && !post.milestoneData.trim().isEmpty()) {
+                        try {
+                            org.json.JSONObject json = new org.json.JSONObject(post.milestoneData);
+                            milestone.iconText = json.optString("iconText", "🏆");
+                            milestone.title = json.optString("title", "");
+                            milestone.month = json.optString("month", "");
+                            milestone.amount = json.optString("amount", "");
+                            milestone.progress = json.optInt("progress", 0);
+                            milestone.description = nonEmpty(post.content, "");
+                        } catch (Exception ignored) {}
+                    } else {
+                        milestone.iconText = "🏆";
+                        milestone.title = "Milestone";
                         milestone.description = nonEmpty(post.content, "");
-                    } catch (Exception ignored) {}
-
+                    }
                     currentFeedItem = milestone;
                 } else {
                     FeedItem.NormalPost normal = new FeedItem.NormalPost();
@@ -239,9 +243,14 @@ public class PostDetailActivity extends AppCompatActivity {
     private void showPostBottomSheet() {
         BottomSheetDialog dialog = new BottomSheetDialog(this);
         View sheetView = LayoutInflater.from(this).inflate(R.layout.bottom_sheet_option, null);
-        sheetView.findViewById(R.id.btnEditComment).setVisibility(View.GONE);
+
+        // Ẩn nút Edit Comment vì đây là menu của Post
+        if (sheetView.findViewById(R.id.btnEditComment) != null) {
+            sheetView.findViewById(R.id.btnEditComment).setVisibility(View.GONE);
+        }
 
         boolean isOwner = !currentUserId.isEmpty() && currentUserId.equals(postOwnerId);
+
         if (isOwner || isAdmin) {
             View btnEditPost = sheetView.findViewById(R.id.btnEditPost);
             if (btnEditPost != null) {
@@ -252,7 +261,9 @@ public class PostDetailActivity extends AppCompatActivity {
                     intent.putExtra("ACTION_EDIT_POST", true);
                     intent.putExtra("edit_post_id", postId);
                     if (currentFeedItem instanceof FeedItem.NormalPost) {
-                        intent.putExtra("edit_post_content", ((FeedItem.NormalPost) currentFeedItem).description); // FIX: text -> description
+                        intent.putExtra("edit_post_title", ((FeedItem.NormalPost) currentFeedItem).title);
+                        intent.putExtra("edit_post_content", ((FeedItem.NormalPost) currentFeedItem).description);
+                        intent.putExtra("edit_post_image", ((FeedItem.NormalPost) currentFeedItem).imageUrl);
                     } else if (currentFeedItem instanceof FeedItem.MilestonePost) {
                         intent.putExtra("edit_post_content", ((FeedItem.MilestonePost) currentFeedItem).description);
                         intent.putExtra("edit_milestone_data", ((FeedItem.MilestonePost) currentFeedItem).milestoneJson);
@@ -260,11 +271,34 @@ public class PostDetailActivity extends AppCompatActivity {
                     startActivity(intent);
                 });
             }
-            sheetView.findViewById(R.id.btnDeleteComment).setOnClickListener(v -> { dialog.dismiss(); viewModel.deletePost(postId, authHeader); });
+
+            View btnDelete = sheetView.findViewById(R.id.btnDeleteComment);
+            if (btnDelete != null) {
+                btnDelete.setVisibility(View.VISIBLE);
+                btnDelete.setOnClickListener(v -> {
+                    dialog.dismiss();
+                    viewModel.deletePost(postId, authHeader);
+                });
+            }
+
         } else {
-            sheetView.findViewById(R.id.btnHideComment).setOnClickListener(v -> { dialog.dismiss(); finish(); });
+            View btnHide = sheetView.findViewById(R.id.btnHideComment);
+            if (btnHide != null) {
+                btnHide.setVisibility(View.VISIBLE);
+                btnHide.setOnClickListener(v -> { dialog.dismiss(); finish(); });
+            }
+
+            View btnReport = sheetView.findViewById(R.id.btnReportPost);
+            if (btnReport != null) {
+                btnReport.setVisibility(View.VISIBLE);
+                btnReport.setOnClickListener(v -> dialog.dismiss());
+            }
         }
-        sheetView.findViewById(R.id.btnCancelComment).setOnClickListener(v -> dialog.dismiss());
+
+        // Nút Cancel chung
+        View btnCancel = sheetView.findViewById(R.id.btnCancelComment);
+        if (btnCancel != null) btnCancel.setOnClickListener(v -> dialog.dismiss());
+
         dialog.setContentView(sheetView);
         dialog.show();
     }

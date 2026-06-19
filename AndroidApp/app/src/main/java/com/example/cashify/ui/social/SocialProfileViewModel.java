@@ -74,7 +74,7 @@ public class SocialProfileViewModel extends ViewModel {
                 });
     }
 
-    // CHUYỂN TỪ FRAGMENT SANG: Lắng nghe Achievements
+    //Lắng nghe Achievements
     public void loadAchievements(String uid) {
         if (uid == null || uid.isEmpty()) return;
 
