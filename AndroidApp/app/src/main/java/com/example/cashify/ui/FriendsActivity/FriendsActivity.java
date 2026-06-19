@@ -27,7 +27,7 @@ import java.util.ArrayList;
 
 public class FriendsActivity extends BaseActivity {
 
-    private SocialViewModel socialViewModel;
+    private FriendsViewModel socialViewModel;
 
     // UI Components
     private FloatingActionButton fabAddFriend;
@@ -52,7 +52,7 @@ public class FriendsActivity extends BaseActivity {
         setContentView(R.layout.activity_friends);
         setupBaseSidebar();
 
-        socialViewModel = new ViewModelProvider(this).get(SocialViewModel.class);
+        socialViewModel = new ViewModelProvider(this).get(FriendsViewModel.class);
 
         bindViews();
         setupAdapters();
@@ -138,6 +138,11 @@ public class FriendsActivity extends BaseActivity {
 
     private void setupActions() {
         MaterialToolbar toolbarFriends = findViewById(R.id.toolbarFriends);
+        View bellIcon = findViewById(R.id.imgBellIcon);
+        TextView bellBadge = findViewById(R.id.tvBellBadge);
+
+        setupCommonHeader(toolbarFriends, bellIcon, bellBadge);
+
         if (toolbarFriends != null) {
             toolbarFriends.setNavigationOnClickListener(v -> {
                 if (drawerLayout != null) drawerLayout.openDrawer(GravityCompat.START);

@@ -1,6 +1,5 @@
 package com.example.cashify.ui.transactions;
 
-import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
@@ -11,6 +10,7 @@ import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.PopupMenu;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -25,9 +25,10 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.cashify.R;
 import com.example.cashify.data.model.Category;
 import com.example.cashify.data.model.Transaction;
+import com.example.cashify.ui.main.BaseActivity;
 import com.example.cashify.ui.main.MainViewModel;
-import com.example.cashify.ui.main.PersonalWorkspaceHeader;
 import com.example.cashify.utils.DialogHelper;
+import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.datepicker.MaterialDatePicker;
 
@@ -49,11 +50,13 @@ public class TransactionFragment extends Fragment {
     private String currentWorkspaceId = "PERSONAL";
     private List<Category> availableCategories = new ArrayList<>(); // CACHE DANH MỤC CHO FILTER
 
-    public TransactionFragment() {}
+    public TransactionFragment() {
+    }
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_transaction, container, false);
+
     }
 
     @Override
@@ -65,7 +68,6 @@ public class TransactionFragment extends Fragment {
         setupObservers();
         setupListeners();
         setupSwipeToDelete();
-        PersonalWorkspaceHeader.bind(this, view);
     }
 
     private void initViews(View view) {
@@ -73,6 +75,18 @@ public class TransactionFragment extends Fragment {
         layoutEmpty = view.findViewById(R.id.layoutEmpty);
         etSearch = view.findViewById(R.id.etSearch);
         rvFilterChips = view.findViewById(R.id.rvFilterChips);
+
+        // Sidebar Navigation
+        MaterialToolbar toolbarPersonal = view.findViewById(R.id.toolbarPersonal);
+        View bellIcon = view.findViewById(R.id.imgBellIcon);
+        TextView bellBadge = view.findViewById(R.id.tvNotificationBadge);
+        TextView tvTitle = view.findViewById(R.id.tvToolbarTitle);
+        if (tvTitle != null) {
+            tvTitle.setText("Transaction History");
+        }
+        if (getActivity() instanceof BaseActivity) {
+            ((BaseActivity) getActivity()).setupCommonHeader(toolbarPersonal, bellIcon, bellBadge);
+        }
     }
 
     private void setupRecyclerViews() {
@@ -86,20 +100,36 @@ public class TransactionFragment extends Fragment {
             @Override
             public void onChipClick(FilterChip chip, int position, View anchorView) {
                 switch (chip.getType()) {
-                    case DATE: showDatePicker(chip, position); break;
-                    case TYPE: showTypeFilterPopup(anchorView, chip, position); break;
-                    case METHOD: showMethodFilterPopup(anchorView, chip, position); break;
-                    case CATEGORY: showCategoryBottomSheet(chip, position); break;
+                    case DATE:
+                        showDatePicker(chip, position);
+                        break;
+                    case TYPE:
+                        showTypeFilterPopup(anchorView, chip, position);
+                        break;
+                    case METHOD:
+                        showMethodFilterPopup(anchorView, chip, position);
+                        break;
+                    case CATEGORY:
+                        showCategoryBottomSheet(chip, position);
+                        break;
                 }
             }
 
             @Override
             public void onChipClearClick(FilterChip chip, int position) {
                 switch (chip.getType()) {
-                    case DATE: viewModel.selectedDateRange.setValue(null); break;
-                    case TYPE: viewModel.selectedType.setValue(null); break;
-                    case METHOD: viewModel.selectedMethod.setValue(null); break;
-                    case CATEGORY: viewModel.selectedCategoryId.setValue(null); break;
+                    case DATE:
+                        viewModel.selectedDateRange.setValue(null);
+                        break;
+                    case TYPE:
+                        viewModel.selectedType.setValue(null);
+                        break;
+                    case METHOD:
+                        viewModel.selectedMethod.setValue(null);
+                        break;
+                    case CATEGORY:
+                        viewModel.selectedCategoryId.setValue(null);
+                        break;
                 }
 
                 chip.setActive(false);
@@ -153,7 +183,8 @@ public class TransactionFragment extends Fragment {
         if (etSearch == null) return;
         etSearch.addTextChangedListener(new TextWatcher() {
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
@@ -161,7 +192,8 @@ public class TransactionFragment extends Fragment {
             }
 
             @Override
-            public void afterTextChanged(Editable s) {}
+            public void afterTextChanged(Editable s) {
+            }
         });
     }
 
@@ -223,9 +255,15 @@ public class TransactionFragment extends Fragment {
             String displayLabel = item.getTitle().toString();
             String filterValue = "";
             switch (item.getItemId()) {
-                case 0: filterValue = "Cash"; break;
-                case 1: filterValue = "Card"; break;
-                case 2: filterValue = "Bank"; break;
+                case 0:
+                    filterValue = "Cash";
+                    break;
+                case 1:
+                    filterValue = "Card";
+                    break;
+                case 2:
+                    filterValue = "Bank";
+                    break;
             }
 
             chip.setActive(true);

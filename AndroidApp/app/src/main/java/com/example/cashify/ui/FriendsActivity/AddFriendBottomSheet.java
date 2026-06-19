@@ -18,7 +18,7 @@ public class AddFriendBottomSheet extends BottomSheetDialogFragment {
 
     private TextInputEditText edtEmailInput;
     private MaterialButton btnSendRequest;
-    private SocialViewModel socialViewModel;
+    private FriendsViewModel friendsViewModel;
 
     @Nullable
     @Override
@@ -34,7 +34,7 @@ public class AddFriendBottomSheet extends BottomSheetDialogFragment {
         btnSendRequest = view.findViewById(R.id.btnSendRequest);
 
         // Bind to Activity-scoped ViewModel to share data/state with the parent Activity
-        socialViewModel = new ViewModelProvider(requireActivity()).get(SocialViewModel.class);
+        friendsViewModel = new ViewModelProvider(requireActivity()).get(FriendsViewModel.class);
 
         btnSendRequest.setOnClickListener(v -> {
             String email = edtEmailInput.getText() != null ? edtEmailInput.getText().toString().trim() : "";
@@ -45,7 +45,7 @@ public class AddFriendBottomSheet extends BottomSheetDialogFragment {
             }
 
             // Delegate network request and validation to the ViewModel
-            socialViewModel.searchAndSendRequestByEmail(email);
+            friendsViewModel.searchAndSendRequestByEmail(email);
 
             // Dismiss the BottomSheet immediately for a snappy UX
             dismiss();

@@ -25,36 +25,30 @@
             android:paddingBottom="5dp"/>
 
         <FrameLayout
-            android:layout_width="38dp"
-            android:layout_height="38dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_gravity="end|center_vertical"
-            android:layout_marginEnd="12dp">
+            android:layout_marginEnd="16dp">
 
-            <ImageButton
-                android:id="@+id/btnHomeNotifications"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="@string/notifications"
-                android:padding="11dp"
-                android:scaleType="center"
+            <ImageView
+                android:id="@+id/imgBellIcon"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
                 android:src="@drawable/ic_notification_regular"
-                app:tint="@color/brand_primary" />
+                android:padding="2dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                app:tint="@color/brand_primary"/>
 
             <TextView
                 android:id="@+id/tvNotificationBadge"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="top|end"
-                android:layout_marginTop="8dp"
-                android:layout_marginEnd="8dp"
                 android:background="@drawable/bg_badge_red"
-                android:fontFamily="@font/inter_bold"
-                android:gravity="center"
-                android:paddingBottom="5dp"
-                android:text="1"
                 android:textColor="@color/white"
                 android:textSize="10sp"
+                android:paddingHorizontal="4dp"
+                android:text="1"
                 android:visibility="gone" />
         </FrameLayout>
     </com.google.android.material.appbar.MaterialToolbar>

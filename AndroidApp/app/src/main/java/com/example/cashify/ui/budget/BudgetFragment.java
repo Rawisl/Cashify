@@ -28,12 +28,13 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.cashify.R;
 import com.example.cashify.data.local.BudgetWithSpent;
 import com.example.cashify.data.model.Budget;
+import com.example.cashify.ui.main.BaseActivity;
 import com.example.cashify.ui.main.MainViewModel;
-import com.example.cashify.ui.main.PersonalWorkspaceHeader;
 import com.example.cashify.utils.CurrencyFormatter;
 import com.example.cashify.utils.DialogHelper;
 import com.example.cashify.utils.NumpadBottomSheet;
 import com.example.cashify.utils.ToastHelper;
+import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.materialswitch.MaterialSwitch;
@@ -78,7 +79,6 @@ public class BudgetFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        PersonalWorkspaceHeader.bind(this, view);
         budgetViewModel = new ViewModelProvider(this).get(BudgetViewModel.class);
 
         initViews(view);
@@ -122,6 +122,18 @@ public class BudgetFragment extends Fragment {
         cardWeekSelector = view.findViewById(R.id.cardWeekSelector);
         tvMonth = view.findViewById(R.id.tvMonth);
         tvWeek = view.findViewById(R.id.tvWeek);
+
+        // Sidebar Navigation
+        MaterialToolbar toolbarPersonal = view.findViewById(R.id.toolbarPersonal);
+        View bellIcon = view.findViewById(R.id.imgBellIcon);
+        TextView bellBadge = view.findViewById(R.id.tvNotificationBadge);
+        TextView tvTitle = view.findViewById(R.id.tvToolbarTitle);
+        if (tvTitle != null) {
+            tvTitle.setText("Budget");
+        }
+        if (getActivity() instanceof BaseActivity) {
+            ((BaseActivity) getActivity()).setupCommonHeader(toolbarPersonal, bellIcon, bellBadge);
+        }
     }
 
     private void setupLinkedMode() {

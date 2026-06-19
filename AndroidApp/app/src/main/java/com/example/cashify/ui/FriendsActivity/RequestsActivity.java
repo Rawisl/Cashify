@@ -20,7 +20,7 @@ import java.util.List;
 
 public class RequestsActivity extends AppCompatActivity {
 
-    private SocialViewModel socialViewModel;
+    private FriendsViewModel friendsViewModel;
     private TabLayout tabLayout;
     private RecyclerView rvRequests;
     private LinearLayout layoutEmpty;
@@ -34,14 +34,14 @@ public class RequestsActivity extends AppCompatActivity {
         setContentView(R.layout.activity_requests);
 
         initViews();
-        socialViewModel = new ViewModelProvider(this).get(SocialViewModel.class);
+        friendsViewModel = new ViewModelProvider(this).get(FriendsViewModel.class);
 
         setupTabs();
         setupRecyclerView();
         observeViewModel();
 
         // Trigger initial data fetch
-        socialViewModel.fetchRequests();
+        friendsViewModel.fetchRequests();
     }
 
     private void initViews() {
@@ -88,17 +88,17 @@ public class RequestsActivity extends AppCompatActivity {
         adapter = new RequestAdapter(new ArrayList<>(), isShowingIncoming, new RequestAdapter.RequestActionListener() {
             @Override
             public void onAccept(User user) {
-                socialViewModel.acceptFriendRequest(user);
+                friendsViewModel.acceptFriendRequest(user);
             }
 
             @Override
             public void onDecline(User user) {
-                socialViewModel.declineFriendRequest(user);
+                friendsViewModel.declineFriendRequest(user);
             }
 
             @Override
             public void onCancel(User user) {
-                socialViewModel.cancelFriendRequest(user);
+                friendsViewModel.cancelFriendRequest(user);
             }
         });
         rvRequests.setAdapter(adapter);
@@ -108,19 +108,19 @@ public class RequestsActivity extends AppCompatActivity {
     }
 
     private void observeViewModel() {
-        socialViewModel.incomingList.observe(this, users -> {
+        friendsViewModel.incomingList.observe(this, users -> {
             if (isShowingIncoming) {
                 updateAdapterData(users);
             }
         });
 
-        socialViewModel.sentList.observe(this, users -> {
+        friendsViewModel.sentList.observe(this, users -> {
             if (!isShowingIncoming) {
                 updateAdapterData(users);
             }
         });
 
-        socialViewModel.toast.observe(this, msg -> {
+        friendsViewModel.toast.observe(this, msg -> {
             if (msg != null && !msg.isEmpty()) {
                 ToastHelper.show(this, msg);
             }
@@ -132,10 +132,10 @@ public class RequestsActivity extends AppCompatActivity {
      */
     private void refreshCurrentData() {
         List<User> displayList = new ArrayList<>();
-        if (isShowingIncoming && socialViewModel.incomingList.getValue() != null) {
-            displayList = socialViewModel.incomingList.getValue();
-        } else if (!isShowingIncoming && socialViewModel.sentList.getValue() != null) {
-            displayList = socialViewModel.sentList.getValue();
+        if (isShowingIncoming && friendsViewModel.incomingList.getValue() != null) {
+            displayList = friendsViewModel.incomingList.getValue();
+        } else if (!isShowingIncoming && friendsViewModel.sentList.getValue() != null) {
+            displayList = friendsViewModel.sentList.getValue();
         }
         updateAdapterData(displayList);
     }

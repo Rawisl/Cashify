@@ -22,6 +22,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.cashify.R;
 import com.example.cashify.data.local.CategorySum;
 import com.example.cashify.data.local.TransactionWithCategory;
+import com.example.cashify.ui.common.BaseFragment;
+import com.example.cashify.ui.main.BaseActivity;
 import com.example.cashify.ui.main.MainViewModel;
 import com.example.cashify.ui.notifications.NotificationBottomSheet;
 import com.example.cashify.ui.transactions.TransactionViewModel;
@@ -43,7 +45,7 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 
-public class HomeFragment extends Fragment {
+public class HomeFragment extends BaseFragment {
 
     private HomeViewModel viewModel;
     private MainViewModel mainViewModel;
@@ -82,8 +84,6 @@ public class HomeFragment extends Fragment {
         setupListeners(view);
         setupObservers();
 
-        // Trigger notification listener in ViewModel instead of direct Firebase call
-        viewModel.listenToUnreadNotifications();
     }
 
     @Override
@@ -139,17 +139,17 @@ public class HomeFragment extends Fragment {
 
         // Sidebar Navigation
         MaterialToolbar toolbarPersonal = view.findViewById(R.id.toolbarPersonal);
-        toolbarPersonal.setNavigationOnClickListener(v -> {
-            DrawerLayout drawer = requireActivity().findViewById(R.id.drawerLayout);
-            if (drawer != null) {
-                drawer.openDrawer(GravityCompat.START);
-            }
-        });
+        View bellIcon = view.findViewById(R.id.imgBellIcon);
+        TextView bellBadge = view.findViewById(R.id.tvNotificationBadge);
+        TextView tvTitle = view.findViewById(R.id.tvToolbarTitle);
 
-        // Notification BottomSheet
-        view.findViewById(R.id.btnHomeNotifications).setOnClickListener(v ->
-                new NotificationBottomSheet().show(getChildFragmentManager(), "NotificationBottomSheet")
-        );
+        if (tvTitle != null) {
+            tvTitle.setText("Dashboard");
+        }
+        if (getActivity() instanceof BaseActivity) {
+            ((BaseActivity) getActivity()).setupCommonHeader(toolbarPersonal, bellIcon, bellBadge);
+        }
+
     }
 
     private void setupObservers() {
@@ -210,15 +210,6 @@ public class HomeFragment extends Fragment {
             }
         });
 
-        // Observe Notification Badge (Moved from UI to ViewModel)
-        viewModel.getUnreadNotificationCount().observe(getViewLifecycleOwner(), count -> {
-            if (count != null && count > 0) {
-                tvNotificationBadge.setVisibility(View.VISIBLE);
-                tvNotificationBadge.setText(count > 9 ? "9+" : String.valueOf(count));
-            } else {
-                tvNotificationBadge.setVisibility(View.GONE);
-            }
-        });
     }
 
     private void setupDonutChart() {

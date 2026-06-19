@@ -26,6 +26,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.cashify.R;
+import com.example.cashify.ui.common.BaseFragment;
 import com.example.cashify.ui.main.MainActivity;
 import com.example.cashify.utils.ImageHelper;
 import com.google.android.material.appbar.MaterialToolbar;
@@ -36,7 +37,7 @@ import com.google.firebase.firestore.DocumentSnapshot;
 
 import java.util.ArrayList;
 
-public class SocialNewsfeedFragment extends Fragment {
+public class SocialNewsfeedFragment extends BaseFragment {
 
     private SocialNewsfeedViewModel viewModel;
 
@@ -101,6 +102,8 @@ public class SocialNewsfeedFragment extends Fragment {
 
     private void initViews(View view) {
         MaterialToolbar toolbar = view.findViewById(R.id.toolbarSocialNewsfeed);
+        View bellIcon = view.findViewById(R.id.imgBellIcon);
+        TextView bellBadge = view.findViewById(R.id.tvBellBadge);
         View createPostPrompt = view.findViewById(R.id.cardCreatePostPrompt);
         View createPostPromptButton = view.findViewById(R.id.btnCreatePostPrompt);
         createAvatar = view.findViewById(R.id.imgCreatePromptAvatar);
@@ -159,12 +162,7 @@ public class SocialNewsfeedFragment extends Fragment {
 
         if (layoutFeedError != null) layoutFeedError.setOnClickListener(v -> viewModel.refreshFeed());
 
-        toolbar.setNavigationOnClickListener(v -> {
-            if (getActivity() != null) {
-                DrawerLayout drawer = getActivity().findViewById(R.id.drawerLayout);
-                if (drawer != null) drawer.openDrawer(GravityCompat.START);
-            }
-        });
+        setupCommonHeader(toolbar, bellIcon, bellBadge);
 
         createPostPrompt.setOnClickListener(v -> runPressAnimation(createPostPromptButton != null ? createPostPromptButton : v, this::openCreatePost));
         if (createPostPromptButton != null) createPostPromptButton.setOnClickListener(v -> runPressAnimation(v, this::openCreatePost));

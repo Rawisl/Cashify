@@ -21,6 +21,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
 import com.example.cashify.ui.auth.EditProfileActivity;
+import com.example.cashify.ui.common.BaseFragment;
 import com.example.cashify.ui.main.MainActivity;
 import com.example.cashify.ui.notifications.InvitationsActivity;
 import com.example.cashify.utils.ImageHelper;
@@ -35,7 +36,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
 
-public class SocialProfileFragment extends Fragment {
+public class SocialProfileFragment extends BaseFragment {
 
     private ImageView imgAvatar;
     private TextView tvDisplayName, tvBio, tvFriendCount, tvTrophyCount;
@@ -105,11 +106,9 @@ public class SocialProfileFragment extends Fragment {
 
     private void initToolbar(View view) {
         MaterialToolbar toolbar = view.findViewById(R.id.toolbarSocialProfile);
-        toolbar.setNavigationOnClickListener(v -> {
-            if (getActivity() == null) return;
-            androidx.drawerlayout.widget.DrawerLayout drawer = getActivity().findViewById(R.id.drawerLayout);
-            if (drawer != null) drawer.openDrawer(androidx.core.view.GravityCompat.START);
-        });
+        View bellIcon = view.findViewById(R.id.imgBellIcon);
+        TextView bellBadge = view.findViewById(R.id.tvBellBadge);
+        setupCommonHeader(toolbar, bellIcon, bellBadge);
     }
 
     private void initViewModel() {
@@ -134,7 +133,6 @@ public class SocialProfileFragment extends Fragment {
         view.findViewById(R.id.btnEditProfile).setOnClickListener(v -> startActivity(new Intent(requireContext(), EditProfileActivity.class)));
         view.findViewById(R.id.btnShareProfile).setOnClickListener(v -> shareProfile());
         view.findViewById(R.id.txtProfileLink).setOnClickListener(v -> copyProfileLink());
-        view.findViewById(R.id.btnProfileNotifications).setOnClickListener(v -> startActivity(new Intent(requireContext(), InvitationsActivity.class)));
 
         View.OnClickListener createPostListener = v -> openCreatePost("thoughts");
         view.findViewById(R.id.btnStartGrowing).setOnClickListener(createPostListener);

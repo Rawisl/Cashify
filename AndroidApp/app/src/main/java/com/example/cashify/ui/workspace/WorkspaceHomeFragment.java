@@ -77,19 +77,15 @@ public class WorkspaceHomeFragment extends Fragment {
         tvBalance = view.findViewById(R.id.tvWorkspaceBalance);
         tvIncome = view.findViewById(R.id.tvWorkspaceIncome);
         tvExpense = view.findViewById(R.id.tvWorkspaceExpense);
-        tvNotificationBadge = view.findViewById(R.id.tvNotificationBadge);
+        tvNotificationBadge = view.findViewById(R.id.tvBellBadge);
         rvMembers = view.findViewById(R.id.rvWorkspaceMembers);
         rvTransactions = view.findViewById(R.id.rvWorkspaceTransactions);
+        View bellIcon = view.findViewById(R.id.imgBellIcon);
 
-        // Open Sidebar from Main Activity
-        toolbar.setNavigationOnClickListener(v -> {
-            if (getActivity() != null) {
-                androidx.drawerlayout.widget.DrawerLayout drawer = getActivity().findViewById(R.id.drawerLayout);
-                if (drawer != null) {
-                    drawer.openDrawer(androidx.core.view.GravityCompat.START);
-                }
-            }
-        });
+        if (getActivity() instanceof com.example.cashify.ui.main.BaseActivity) {
+            ((com.example.cashify.ui.main.BaseActivity) getActivity())
+                    .setupCommonHeader(toolbar, bellIcon, tvNotificationBadge);
+        }
 
         // Setup Members RecyclerView
         rvMembers.setLayoutManager(new LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false));
@@ -124,10 +120,6 @@ public class WorkspaceHomeFragment extends Fragment {
             bottomSheet.show(getChildFragmentManager(), "AddMemberBottomSheet");
         });
 
-        view.findViewById(R.id.btnWorkspaceNotifications).setOnClickListener(v -> {
-            new com.example.cashify.ui.notifications.NotificationBottomSheet()
-                    .show(getChildFragmentManager(), "NotificationBottomSheet");
-        });
     }
 
     @SuppressLint("SetTextI18n")
@@ -175,17 +167,6 @@ public class WorkspaceHomeFragment extends Fragment {
             tvBalance.setText(CurrencyFormatter.formatFullVND(balance != null ? balance : 0L));
         });
 
-        // ============================================================
-        // ĐÃ DỌN DẸP CODE BẨN GỌI FIREBASE TỪ VIEW (CHUẨN MVVM)
-        // ============================================================
-        workspaceViewModel.getUnreadNotificationCount().observe(getViewLifecycleOwner(), count -> {
-            if (count != null && count > 0) {
-                tvNotificationBadge.setVisibility(View.VISIBLE);
-                tvNotificationBadge.setText(count > 9 ? "9+" : String.valueOf(count));
-            } else {
-                tvNotificationBadge.setVisibility(View.GONE);
-            }
-        });
 
         workspaceViewModel.errorMessage.observe(getViewLifecycleOwner(), errorMsg -> {
             if (errorMsg != null) {

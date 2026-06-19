@@ -29,8 +29,10 @@ import com.example.cashify.data.model.Workspace;
 import com.example.cashify.ui.FriendsActivity.FriendsActivity;
 import com.example.cashify.ui.auth.EditProfileActivity;
 import com.example.cashify.ui.notifications.InvitationsActivity;
+import com.example.cashify.ui.notifications.NotificationBottomSheet;
 import com.example.cashify.ui.workspace.AddWorkspaceBottomSheet;
 import com.example.cashify.utils.ImageHelper;
+import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.navigation.NavigationView;
 
 import java.util.HashMap;
@@ -237,5 +239,35 @@ public abstract class BaseActivity extends AppCompatActivity {
         SpannableStringBuilder ssb = new SpannableStringBuilder(title + "  ");
         ssb.setSpan(new ImageSpan(bd), title.length() + 1, title.length() + 2, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         inviteItem.setTitle(ssb);
+    }
+
+    // Dùng chung cho toàn bộ app: Lo cả mở Sidebar lẫn Chuông thông báo
+    public void setupCommonHeader(MaterialToolbar toolbar, View bellIcon, TextView badgeView) {
+        if (toolbar != null) {
+            toolbar.setNavigationOnClickListener(v -> {
+                if (drawerLayout != null) {
+                    drawerLayout.openDrawer(GravityCompat.START);
+                }
+            });
+        }
+
+        MainViewModel mainViewModel = new ViewModelProvider(this).get(MainViewModel.class);
+        if (badgeView != null) {
+            mainViewModel.getUnreadNotificationCount().observe(this, count -> {
+                if (count != null && count > 0) {
+                    badgeView.setText(count > 99 ? "99+" : String.valueOf(count));
+                    badgeView.setVisibility(View.VISIBLE);
+                } else {
+                    badgeView.setVisibility(View.GONE);
+                }
+            });
+        }
+
+        if (bellIcon != null) {
+            bellIcon.setOnClickListener(v -> {
+                NotificationBottomSheet bottomSheet = new NotificationBottomSheet();
+                bottomSheet.show(getSupportFragmentManager(), "NotificationBottomSheet");
+            });
+        }
     }
 }

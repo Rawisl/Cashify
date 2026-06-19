@@ -26,34 +26,30 @@
             app:titleCentered="true">
 
             <FrameLayout
-                android:layout_width="38dp"
-                android:layout_height="38dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:layout_gravity="end|center_vertical"
-                android:layout_marginEnd="12dp">
+                android:layout_marginEnd="16dp">
 
-                <ImageButton
-                    android:id="@+id/btnWorkspaceNotifications"
-                    android:layout_width="38dp"
-                    android:layout_height="38dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:padding="11dp"
-                    android:scaleType="center"
+                <ImageView
+                    android:id="@+id/imgBellIcon"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
                     android:src="@drawable/ic_notification_regular"
-                    app:tint="@color/brand_primary" />
+                    android:padding="2dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    app:tint="@color/brand_primary"/>
 
                 <TextView
-                    android:id="@+id/tvNotificationBadge"
-                    android:layout_width="18dp"
-                    android:layout_height="18dp"
+                    android:id="@+id/tvBellBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="top|end"
-                    android:layout_marginTop="8dp"
-                    android:layout_marginEnd="8dp"
                     android:background="@drawable/bg_badge_red"
-                    android:gravity="center"
-                    android:text="@string/one"
                     android:textColor="@color/white"
                     android:textSize="10sp"
-                    android:textStyle="bold"
+                    android:paddingHorizontal="4dp"
+                    android:text="1"
                     android:visibility="gone" />
             </FrameLayout>
 

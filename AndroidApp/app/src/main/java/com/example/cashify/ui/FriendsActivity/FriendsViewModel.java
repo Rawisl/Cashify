@@ -13,7 +13,7 @@ import com.google.firebase.firestore.ListenerRegistration;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SocialViewModel extends ViewModel {
+public class FriendsViewModel extends ViewModel {
     private static final String TAG = "SocialNewsfeedViewModel";
 
     // ============================================================

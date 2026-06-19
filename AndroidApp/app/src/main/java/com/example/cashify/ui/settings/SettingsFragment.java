@@ -26,10 +26,11 @@ import com.example.cashify.R;
 import com.example.cashify.ui.auth.ChangePasswordActivity;
 import com.example.cashify.ui.auth.LoginActivity;
 import com.example.cashify.ui.category.CategoryManagement;
-import com.example.cashify.ui.main.PersonalWorkspaceHeader;
+import com.example.cashify.ui.main.BaseActivity;
 import com.example.cashify.utils.DialogHelper;
 import com.example.cashify.utils.CurrencyManager;
 import com.example.cashify.utils.ToastHelper;
+import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 
 public class SettingsFragment extends Fragment {
@@ -76,6 +77,17 @@ public class SettingsFragment extends Fragment {
         toggleNotification = view.findViewById(R.id.toggle_notification);
         LinearLayout btnNotification = view.findViewById(R.id.btn_notification);
         setupNotificationToggle(btnNotification);
+
+        // Sidebar Navigation
+        MaterialToolbar toolbarPersonal = view.findViewById(R.id.toolbarPersonal);
+        View bellIcon = view.findViewById(R.id.imgBellIcon);
+        TextView bellBadge = view.findViewById(R.id.tvNotificationBadge);
+        TextView tvTitle = view.findViewById(R.id.tvToolbarTitle);
+        if (tvTitle != null) {
+            tvTitle.setText("Settings");
+        }        if (getActivity() instanceof BaseActivity) {
+            ((BaseActivity) getActivity()).setupCommonHeader(toolbarPersonal, bellIcon, bellBadge);
+        }
 
         // --- Language ---
         languageOptions = view.findViewById(R.id.layout_language_options);
@@ -137,7 +149,6 @@ public class SettingsFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        PersonalWorkspaceHeader.bind(this, view);
         observeViewModel();
     }
 

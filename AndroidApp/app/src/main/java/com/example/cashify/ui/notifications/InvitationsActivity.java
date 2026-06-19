@@ -3,10 +3,8 @@ package com.example.cashify.ui.notifications;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.ImageButton;
 import android.widget.TextView;
 
-import androidx.core.view.GravityCompat;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -27,23 +25,18 @@ public class InvitationsActivity extends BaseActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_invitations);
-
-        // 1. SETUP SIDEBAR TỪ BASE
         setupBaseSidebar();
-
-        // 2. KHỞI TẠO VIEWMODEL RIÊNG CHO MÀN HÌNH NÀY
         viewModel = new ViewModelProvider(this).get(InvitationsViewModel.class);
-
-        MaterialToolbar toolbar = findViewById(R.id.toolbarInvitations);
-        if (toolbar != null) {
-            toolbar.setNavigationOnClickListener(v -> {
-                if (drawerLayout != null) drawerLayout.openDrawer(GravityCompat.START);
-            });
-        }
-
+        setupHeader();
         setupRecyclerView();
-        setupNotifications();
         observeViewModel();
+    }
+
+    private void setupHeader() {
+        MaterialToolbar toolbar = findViewById(R.id.toolbarInvitations);
+        View btnNotifications = findViewById(R.id.btnNotifications);
+        TextView tvNotificationBadge = findViewById(R.id.tvBellBadge);
+        setupCommonHeader(toolbar, btnNotifications, tvNotificationBadge);
     }
 
     private void setupRecyclerView() {
@@ -53,13 +46,11 @@ public class InvitationsActivity extends BaseActivity {
         adapter = new InvitationAdapter(new InvitationAdapter.OnInviteClickListener() {
             @Override
             public void onAccept(WorkspaceInvitation invitation) {
-                // Đẩy logic xuống ViewModel xử lý
                 viewModel.acceptInvitation(invitation);
             }
 
             @Override
             public void onDecline(WorkspaceInvitation invitation) {
-                // Đẩy logic xuống ViewModel xử lý
                 viewModel.declineInvitation(invitation.getId());
             }
         });
@@ -67,20 +58,11 @@ public class InvitationsActivity extends BaseActivity {
         rvInvitations.setAdapter(adapter);
     }
 
-    private void setupNotifications() {
-        ImageButton btnNotifications = findViewById(R.id.btnNotifications);
-        if (btnNotifications != null) {
-            btnNotifications.setOnClickListener(v ->
-                    new com.example.cashify.ui.notifications.NotificationBottomSheet()
-                            .show(getSupportFragmentManager(), "NotificationBottomSheet"));
-        }
-    }
-
     private void observeViewModel() {
-        // Hóng danh sách lời mời
+        // danh sách lời mời
         viewModel.getInvitations().observe(this, data -> adapter.setData(data));
 
-        // Hóng kết quả hành động để hiện thông báo
+        //kết quả hành động để hiện thông báo
         viewModel.getActionResult().observe(this, result -> {
             if (result != null) {
                 ToastHelper.show(this, result.message);
@@ -88,18 +70,6 @@ public class InvitationsActivity extends BaseActivity {
             }
         });
 
-        // TÁI SỬ DỤNG LẠI MAIN_VIEW_MODEL TỪ BASE_ACTIVITY ĐỂ LẤY SỐ THÔNG BÁO!
-        TextView tvNotificationBadge = findViewById(R.id.tvNotificationBadge);
-        if (tvNotificationBadge != null && mainViewModel != null) {
-            mainViewModel.getUnreadNotificationCount().observe(this, count -> {
-                if (count != null && count > 0) {
-                    tvNotificationBadge.setVisibility(View.VISIBLE);
-                    tvNotificationBadge.setText(count > 9 ? "9+" : String.valueOf(count));
-                } else {
-                    tvNotificationBadge.setVisibility(View.GONE);
-                }
-            });
-        }
     }
 
     @Override
