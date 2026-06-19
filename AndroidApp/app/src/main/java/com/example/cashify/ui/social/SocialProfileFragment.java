@@ -72,8 +72,18 @@ public class SocialProfileFragment extends Fragment {
     public void onResume() {
         super.onResume();
         if (syncedPostId != null) {
-            viewModel.syncSinglePost(syncedPostId);
-            syncedPostId = null;
+            FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+            if (user != null) {
+                // Phải xin xỏ Firebase đàng hoàng nó mới nhả Token ra cho sếp xài
+                user.getIdToken(true).addOnSuccessListener(result -> {
+                    String token = "Bearer " + result.getToken();
+                    // Dùng đúng biến syncedPostId
+                    viewModel.syncSinglePost(syncedPostId, token);
+                    syncedPostId = null; // Update xong thì dọn rác
+                });
+            } else {
+                syncedPostId = null;
+            }
         }
     }
 

@@ -20,6 +20,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.SimpleItemAnimator;
 
 import com.example.cashify.R;
+import com.example.cashify.data.model.Comment;
 import com.example.cashify.ui.main.MainActivity;
 import com.example.cashify.utils.ImageHelper;
 import com.example.cashify.utils.TimeFormatter;
@@ -193,7 +194,7 @@ public class PostDetailActivity extends AppCompatActivity {
 
                     currentFeedItem = normal;
                 }
-
+                currentFeedItem.setLiked(post.likedByMe);
                 if (post.likedByMe) postAdapter.addLikedId(postId);
                 else postAdapter.clearLikedIds();
 
@@ -212,11 +213,14 @@ public class PostDetailActivity extends AppCompatActivity {
             for (Object obj : list) {
                 if (!(obj instanceof java.util.Map)) continue;
                 java.util.Map<String, Object> map = (java.util.Map<String, Object>) obj;
+
                 commentList.add(new Comment(
-                        mapStr(map, "commentId"), mapStr(map, "userId"), mapStr(map, "authorAvatarUrl"),
+                        mapStr(map, "commentId"),
+                        mapStr(map, "userId"),
+                        mapStr(map, "authorAvatarUrl"),
                         mapStr(map, "authorName").isEmpty() ? "Cashify User" : mapStr(map, "authorName"),
                         mapStr(map, "content"),
-                        mapNum(map, "timestamp") > 0 ? TimeFormatter.format(mapNum(map, "timestamp")) : "Just now", 0
+                        mapNum(map, "timestamp") > 0 ? TimeFormatter.format(mapNum(map, "timestamp")) : "Just now"
                 ));
             }
             commentAdapter.notifyDataSetChanged();

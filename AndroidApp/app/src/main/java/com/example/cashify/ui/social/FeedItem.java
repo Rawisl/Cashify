@@ -41,12 +41,17 @@ public abstract class FeedItem {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         FeedItem feedItem = (FeedItem) o;
-        return Objects.equals(id, feedItem.id);
+
+        // BẮT BUỘC PHẢI SO SÁNH CẢ TRẠNG THÁI TƯƠNG TÁC
+        return likeCount == feedItem.likeCount &&
+                commentCount == feedItem.commentCount &&
+                isLiked == feedItem.isLiked &&
+                Objects.equals(id, feedItem.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id);
+        return Objects.hash(id, likeCount, commentCount, isLiked);
     }
 
     // =========================================================================

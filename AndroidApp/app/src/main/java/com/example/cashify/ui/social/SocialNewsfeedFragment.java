@@ -26,7 +26,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.cashify.R;
-
 import com.example.cashify.ui.main.MainActivity;
 import com.example.cashify.utils.ImageHelper;
 import com.google.android.material.appbar.MaterialToolbar;
@@ -34,7 +33,6 @@ import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
 
@@ -43,15 +41,16 @@ public class SocialNewsfeedFragment extends Fragment {
     private SocialNewsfeedViewModel viewModel;
 
     private RecyclerView rvFeed;
-    private SocialNewsfeedAdapter feedAdapter; // Dùng đúng tên Adapter sếp đã đổi
+    private SocialNewsfeedAdapter feedAdapter;
     private View layoutFeedEmpty, layoutFeedEnd, layoutFeedSkeleton;
     private TextView layoutFeedError;
     private ProgressBar progressFeedMore;
     private SwipeRefreshLayout swipeRefreshNewsfeed;
     private NestedScrollView scrollNewsfeed;
+    private ImageView createAvatar;
 
     public static boolean needRefreshFeed = false;
-    public static String syncedPostId = null; // CHỐT CHẶN: Lưu ID bài viết cần update Like/Comment
+    public static String syncedPostId = null;
 
     @Nullable
     @Override
@@ -65,7 +64,11 @@ public class SocialNewsfeedFragment extends Fragment {
 
         viewModel = new ViewModelProvider(requireActivity()).get(SocialNewsfeedViewModel.class);
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user != null) viewModel.loadProfile(user.getUid());
+        if (user != null) {
+            viewModel.loadProfile(user.getUid());
+            // Điều hướng tải danh sách trang trí qua ViewModel
+            viewModel.loadTopUsersForDecoration();
+        }
 
         initViews(view);
         setupObservers();
@@ -76,10 +79,18 @@ public class SocialNewsfeedFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        // NẾU VỪA TỪ MÀN DETAIL RA -> CHỈ ĐỒNG BỘ 1 BÀI VÀ GIỮ NGUYÊN VỊ TRÍ CUỘN
+
         if (syncedPostId != null) {
-            viewModel.syncSinglePost(syncedPostId);
-            syncedPostId = null;
+            FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+            if (user != null) {
+                user.getIdToken(true).addOnSuccessListener(result -> {
+                    String token = "Bearer " + result.getToken();
+                    viewModel.syncSinglePost(syncedPostId, token);
+                    syncedPostId = null;
+                });
+            } else {
+                syncedPostId = null;
+            }
         }
 
         if (needRefreshFeed) {
@@ -92,6 +103,7 @@ public class SocialNewsfeedFragment extends Fragment {
         MaterialToolbar toolbar = view.findViewById(R.id.toolbarSocialNewsfeed);
         View createPostPrompt = view.findViewById(R.id.cardCreatePostPrompt);
         View createPostPromptButton = view.findViewById(R.id.btnCreatePostPrompt);
+        createAvatar = view.findViewById(R.id.imgCreatePromptAvatar);
 
         rvFeed = view.findViewById(R.id.rvNewsfeed);
         layoutFeedEmpty = view.findViewById(R.id.layoutNewsfeedEmpty);
@@ -108,7 +120,6 @@ public class SocialNewsfeedFragment extends Fragment {
                         Intent intent = new Intent(requireContext(), PostDetailActivity.class);
                         intent.putExtra(PostDetailActivity.EXTRA_POST_ID, item.getId());
                         startActivity(intent);
-                        // Đánh dấu ID khi bấm vào xem chi tiết
                         syncedPostId = item.getId();
                     },
                     this::showPostBottomSheet
@@ -157,8 +168,6 @@ public class SocialNewsfeedFragment extends Fragment {
 
         createPostPrompt.setOnClickListener(v -> runPressAnimation(createPostPromptButton != null ? createPostPromptButton : v, this::openCreatePost));
         if (createPostPromptButton != null) createPostPromptButton.setOnClickListener(v -> runPressAnimation(v, this::openCreatePost));
-
-        setupProfileSurfaces(view);
     }
 
     private void setupObservers() {
@@ -199,7 +208,7 @@ public class SocialNewsfeedFragment extends Fragment {
         viewModel.getIsDeleteSuccess().observe(getViewLifecycleOwner(), success -> {
             if (Boolean.TRUE.equals(success)) {
                 Toast.makeText(requireContext(), "Post deleted", Toast.LENGTH_SHORT).show();
-                ((MutableLiveData<Boolean>) viewModel.getIsDeleteSuccess()).setValue(false);
+                viewModel.resetDeleteStatus();
             }
         });
 
@@ -209,6 +218,24 @@ public class SocialNewsfeedFragment extends Fragment {
             }
         });
 
+        // CHUẨN MVVM: Lắng nghe Profile của chính mình để bind Avatar prompt
+        viewModel.getProfile().observe(getViewLifecycleOwner(), doc -> {
+            FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+            if (user != null && createAvatar != null) {
+                ImageHelper.loadAvatar(user.getPhotoUrl(), createAvatar, user.getDisplayName());
+            }
+        });
+
+        // CHUẨN MVVM: Lắng nghe danh sách user từ ViewModel để cập nhật giao diện trang trí
+        viewModel.getTopUsers().observe(getViewLifecycleOwner(), snapshots -> {
+            if (snapshots == null || snapshots.isEmpty()) return;
+            int index = 1;
+            for (DocumentSnapshot doc : snapshots) {
+                bindPostProfile(getView(), index, doc);
+                index++;
+                if (index > 5) break;
+            }
+        });
     }
 
     private void openCreatePost() {
@@ -296,25 +323,8 @@ public class SocialNewsfeedFragment extends Fragment {
         dialog.show();
     }
 
-    // Decorate Header
-    private void setupProfileSurfaces(View root) {
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        ImageView createAvatar = root.findViewById(R.id.imgCreatePromptAvatar);
-        if (user != null) ImageHelper.loadAvatar(user.getPhotoUrl(), createAvatar, user.getDisplayName());
-
-        FirebaseFirestore.getInstance().collection("users").limit(5).get()
-                .addOnSuccessListener(snapshot -> {
-                    if (!isAdded() || snapshot == null || snapshot.isEmpty()) return;
-                    int index = 1;
-                    for (DocumentSnapshot doc : snapshot.getDocuments()) {
-                        bindPostProfile(root, index, doc);
-                        index++;
-                        if (index > 5) break;
-                    }
-                });
-    }
-
     private void bindPostProfile(View root, int index, DocumentSnapshot doc) {
+        if (root == null) return;
         TextView nameView = root.findViewById(getResources().getIdentifier("txtPostName" + index, "id", requireContext().getPackageName()));
         ImageView avatarView = root.findViewById(getResources().getIdentifier("imgPostAvatar" + index, "id", requireContext().getPackageName()));
         String name = doc.getString("displayName");

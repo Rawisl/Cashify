@@ -74,7 +74,7 @@ public class SocialProfileViewModel extends ViewModel {
                 });
     }
 
-    //Lắng nghe Achievements
+    // Lắng nghe Achievements
     public void loadAchievements(String uid) {
         if (uid == null || uid.isEmpty()) return;
 
@@ -121,21 +121,39 @@ public class SocialProfileViewModel extends ViewModel {
         });
     }
 
-    public void syncSinglePost(String postId) {
-        db.collection("posts").document(postId).get().addOnSuccessListener(doc -> {
-            if (doc.exists() && doc.getData() != null) {
-                FeedItem updatedItem = mapPostFromMap(doc.getData());
-                List<FeedItem> current = _wallPosts.getValue();
-                if (current != null) {
-                    List<FeedItem> newList = new ArrayList<>(current);
-                    for (int i = 0; i < newList.size(); i++) {
-                        if (newList.get(i).getId().equals(postId)) {
-                            newList.set(i, updatedItem);
-                            _wallPosts.setValue(newList);
-                            break;
+    // ĐÃ FIX: Nhận 2 tham số (postId, token) và gọi thẳng API Backend
+    public void syncSinglePost(String postId, String token) {
+        if (token == null || token.isEmpty()) return;
+
+        apiService.getPostDetail(postId, token).enqueue(new Callback<ApiDto.SocialPostDetailResponse>() {
+            @Override
+            public void onResponse(@NonNull Call<ApiDto.SocialPostDetailResponse> call, @NonNull Response<ApiDto.SocialPostDetailResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    ApiDto.SocialPostDetailResponse data = response.body();
+
+                    List<FeedItem> current = _wallPosts.getValue();
+                    if (current != null) {
+                        List<FeedItem> newList = new ArrayList<>(current);
+                        for (int i = 0; i < newList.size(); i++) {
+                            if (newList.get(i).getId().equals(postId)) {
+                                FeedItem item = newList.get(i);
+
+                                // Gán đè dữ liệu tương tác từ Backend trả về
+                                item.setLikeCount(data.likeCount);
+                                item.setCommentCount(data.commentCount);
+                                item.setLiked(data.likedByMe);
+                                newList.set(i, item);
+                                _wallPosts.setValue(newList); // Cập nhật UI
+                                break;
+                            }
                         }
                     }
                 }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<ApiDto.SocialPostDetailResponse> call, @NonNull Throwable t) {
+                // Lỗi mạng thì bỏ qua, giữ UI cũ
             }
         });
     }
@@ -162,10 +180,40 @@ public class SocialProfileViewModel extends ViewModel {
         });
     }
 
+    // ĐÃ FIX: Có Optimistic Update (Bấm phát đỏ tim ngay lập tức)
     public void toggleLike(String postId, String token, boolean isLiked) {
+        // 1. OPTIMISTIC UPDATE: Cập nhật UI ngay lập tức
+        List<FeedItem> current = _wallPosts.getValue();
+        if (current != null) {
+            List<FeedItem> newList = new ArrayList<>(current);
+            for (int i = 0; i < newList.size(); i++) {
+                if (newList.get(i).getId().equals(postId)) {
+                    FeedItem item = newList.get(i);
+                    item.setLiked(isLiked);
+                    int currentCount = item.getLikeCount();
+                    item.setLikeCount(isLiked ? currentCount + 1 : Math.max(0, currentCount - 1));
+
+                    newList.set(i, item);
+                    _wallPosts.setValue(newList);
+                    break;
+                }
+            }
+        }
+
+        // 2. GỌI API NGẦM LÊN SERVER
         apiService.toggleLike(token, new ApiDto.LikeActionRequest(postId, isLiked)).enqueue(new Callback<Object>() {
-            @Override public void onResponse(@NonNull Call<Object> call, @NonNull Response<Object> response) {}
-            @Override public void onFailure(@NonNull Call<Object> call, @NonNull Throwable t) {}
+            @Override
+            public void onResponse(@NonNull Call<Object> call, @NonNull Response<Object> response) {
+                // Nếu Backend từ chối, rollback lại UI bằng data chuẩn
+                if (!response.isSuccessful()) {
+                    syncSinglePost(postId, token);
+                }
+            }
+            @Override
+            public void onFailure(@NonNull Call<Object> call, @NonNull Throwable t) {
+                // Nếu lỗi mạng, rollback UI
+                syncSinglePost(postId, token);
+            }
         });
     }
 

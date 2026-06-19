@@ -112,6 +112,7 @@ public class SocialNewsfeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vi
         } else if (holder instanceof MilestoneViewHolder && item instanceof FeedItem.MilestonePost) {
             ((MilestoneViewHolder) holder).bind((FeedItem.MilestonePost) item, expanded);
         }
+
     }
 
     @Override
@@ -289,10 +290,17 @@ public class SocialNewsfeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vi
             tvLikeCount.setText(String.valueOf(post.getLikeCount()));
             if(tvCommentCount != null) tvCommentCount.setText(String.valueOf(post.getCommentCount()));
 
+            if (post.isLiked()) {
+                likedItemIds.add(post.getId());
+            } else {
+                likedItemIds.remove(post.getId());
+            }
+
             boolean currentlyLiked = likedItemIds.contains(post.getId());
             applyLikeState(imgLikeHeart, tvLikeCount, currentlyLiked);
 
             btnLike.setOnClickListener(v -> handleLikeClick(post, imgLikeHeart, tvLikeCount));
+
             if(btnComment != null) btnComment.setOnClickListener(v -> { if (!isDetailMode && postClickListener != null) postClickListener.onPostClick(post); });
             if(btnShare != null) btnShare.setOnClickListener(v -> Toast.makeText(itemView.getContext(), "Post link copied", Toast.LENGTH_SHORT).show());
         }
@@ -391,6 +399,12 @@ public class SocialNewsfeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vi
 
             tvLikeCount.setText(String.valueOf(milestone.getLikeCount()));
             if(tvCommentCount != null) tvCommentCount.setText(String.valueOf(milestone.getCommentCount()));
+
+            if (milestone.isLiked()) {
+                likedItemIds.add(milestone.getId());
+            } else {
+                likedItemIds.remove(milestone.getId());
+            }
 
             boolean currentlyLiked = likedItemIds.contains(milestone.getId());
             applyLikeState(imgLikeHeart, tvLikeCount, currentlyLiked);

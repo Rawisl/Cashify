@@ -1,4 +1,4 @@
-package com.example.cashify.ui.social;
+package com.example.cashify.data.model;
 
 public class Comment {
     private String id;
@@ -7,7 +7,6 @@ public class Comment {
     private String username;
     private String content;
     private String time;
-    private int likeCount;
 
     public Comment(String avatarUrl, String username, String content, String time) {
         this.avatarUrl = avatarUrl;
@@ -16,14 +15,13 @@ public class Comment {
         this.time = time;
     }
 
-    public Comment(String id, String authorId, String avatarUrl, String username, String content, String time, int likeCount) {
+    public Comment(String id, String authorId, String avatarUrl, String username, String content, String time) {
         this.id = id;
         this.authorId = authorId;
         this.avatarUrl = avatarUrl;
         this.username = username;
         this.content = content;
         this.time = time;
-        this.likeCount = likeCount;
     }
 
     // =========================================================================
@@ -47,7 +45,4 @@ public class Comment {
 
     public String getTime() { return time; }
     public void setTime(String time) { this.time = time; }
-
-    public int getLikeCount() { return likeCount; }
-    public void setLikeCount(int likeCount) { this.likeCount = likeCount; }
 }

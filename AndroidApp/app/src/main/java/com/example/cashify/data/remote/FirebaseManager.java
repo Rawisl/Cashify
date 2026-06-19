@@ -494,7 +494,6 @@ public class FirebaseManager {
         user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
             String token = "Bearer " + getTokenResult.getToken();
             ApiService apiService = ApiClient.getClient().create(ApiService.class);
-            // Sửa thành ApiDto
             ApiDto.WorkspaceMessageSendRequest request = new ApiDto.WorkspaceMessageSendRequest(workspaceId, text, imageUrl);
 
             apiService.sendWorkspaceMessage(token, request).enqueue(new retrofit2.Callback<Object>() {
