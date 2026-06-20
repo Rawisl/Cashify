@@ -1,26 +1,22 @@
 package com.example.cashify.ui.workspace;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
-import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
-import androidx.navigation.NavController;
-import androidx.navigation.Navigation;
-import androidx.navigation.fragment.NavHostFragment;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
 import com.example.cashify.data.model.Category;
 import com.example.cashify.data.model.Transaction;
-import com.example.cashify.data.model.Workspace;
 import com.example.cashify.ui.transactions.TransactionViewModel;
 import com.example.cashify.utils.CurrencyFormatter;
 import com.google.android.material.imageview.ShapeableImageView;
@@ -36,15 +32,17 @@ import java.util.Map;
 
 public class WorkspaceTransactionAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
+    // Prevent GC thrashing by pre-allocating the formatter
+    private static final SimpleDateFormat TIME_FORMATTER = new SimpleDateFormat("h:mm a", Locale.ENGLISH);
+
     private final Context context;
     private final String workspaceId;
-    private String currentUserId;
+    private final String currentUserId;
     private String ownerId;
 
-    // Đổi kiểu List thành HistoryItem để chứa được cả Header Ngày
     private List<TransactionViewModel.HistoryItem> items = new ArrayList<>();
 
-    // Bộ nhớ đệm (Cache) tốc độ cao
+    // High-speed Memory Caches to prevent redundant Firestore queries during scrolling
     private final Map<String, String> userNameCache = new HashMap<>();
     private final Map<String, Category> categoryCache = new HashMap<>();
 
@@ -54,22 +52,23 @@ public class WorkspaceTransactionAdapter extends RecyclerView.Adapter<RecyclerVi
         void onClick(Transaction transaction);
     }
 
-    public WorkspaceTransactionAdapter(Context context, String workspaceId, String currentUserId, String ownerId, List<TransactionViewModel.HistoryItem> list, OnTransactionClickListener listener) {
+    public WorkspaceTransactionAdapter(Context context, String workspaceId, String currentUserId, String ownerId,
+                                       List<TransactionViewModel.HistoryItem> list, OnTransactionClickListener listener) {
         this.context = context;
         this.workspaceId = workspaceId;
         this.currentUserId = currentUserId;
         this.ownerId = ownerId;
-        if(list != null) this.items = list;
+        this.items = list != null ? list : new ArrayList<>();
         this.listener = listener;
     }
 
-    // Hàm này giúp update Owner ngay lập tức khi quỹ đổi chủ
+    @SuppressLint("NotifyDataSetChanged")
     public void setOwnerId(String ownerId) {
         this.ownerId = ownerId;
-        notifyDataSetChanged();
+        notifyDataSetChanged(); // Forces a re-render to update permissions immediately
     }
 
-    // Hàm set data mới từ ViewModel đổ xuống
+    @SuppressLint("NotifyDataSetChanged")
     public void setHistoryData(List<TransactionViewModel.HistoryItem> newList) {
         this.items = newList != null ? newList : new ArrayList<>();
         notifyDataSetChanged();
@@ -91,31 +90,33 @@ public class WorkspaceTransactionAdapter extends RecyclerView.Adapter<RecyclerVi
         }
     }
 
+    @SuppressLint("SetTextI18n")
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         TransactionViewModel.HistoryItem item = items.get(position);
+
         if (holder instanceof DateViewHolder) {
-            // =====================================
-            // XỬ LÝ GIAO DIỆN HEADER (NGÀY THÁNG)
-            // =====================================
+            // =========================================================================
+            // DATE HEADER RENDERER
+            // =========================================================================
             DateViewHolder dHolder = (DateViewHolder) holder;
-            if (dHolder.tvDate != null) {
-                dHolder.tvDate.setText(item.getDate());
-            }
+            if (dHolder.tvDate != null) dHolder.tvDate.setText(item.getDate());
+
         } else if (holder instanceof TransactionViewHolder) {
-            // =====================================
-            // XỬ LÝ GIAO DIỆN GIAO DỊCH (TRANSACTION)
-            // =====================================
+            // =========================================================================
+            // TRANSACTION ITEM RENDERER
+            // =========================================================================
             TransactionViewHolder tHolder = (TransactionViewHolder) holder;
             Transaction t = item.getTransaction();
 
             if (t == null) return;
+
+            // Tagging mechanism to prevent async responses from updating recycled views incorrectly
             String bindKey = t.id != null ? t.id : String.valueOf(position);
             tHolder.itemView.setTag(bindKey);
 
-            // 1. FORMAT THỜI GIAN VÀ EMOJI THANH TOÁN
-            SimpleDateFormat sdf = new SimpleDateFormat("h:mm a", Locale.ENGLISH);
-            String timeStr = sdf.format(new Date(t.timestamp));
+            // 1. Format Time & Payment Icon
+            String timeStr = TIME_FORMATTER.format(new Date(t.timestamp));
             String paymentIcon;
             if (t.paymentMethod == null) {
                 paymentIcon = "💵";
@@ -127,16 +128,16 @@ public class WorkspaceTransactionAdapter extends RecyclerView.Adapter<RecyclerVi
                 }
             }
 
-            // 2. XỬ LÝ SỐ TIỀN & MÀU CHỮ
-            if (t.type == 0) {
+            // 2. Resolve Amount & Text Color
+            if (t.type == 0) { // Expense
                 tHolder.tvAmount.setText(CurrencyFormatter.formatFullAmount(-t.amount));
                 tHolder.tvAmount.setTextColor(ContextCompat.getColor(context, R.color.status_red));
-            } else {
+            } else { // Income
                 tHolder.tvAmount.setText("+" + CurrencyFormatter.formatFullAmount(t.amount));
                 tHolder.tvAmount.setTextColor(ContextCompat.getColor(context, R.color.status_green));
             }
 
-            // 3. LOAD TÊN NGƯỜI TẠO (TRÁNH LAG BẰNG CACHE)
+            // 3. Resolve Creator Name (With Caching)
             if (t.userId != null) {
                 if (userNameCache.containsKey(t.userId)) {
                     tHolder.tvCreatorName.setText("By: " + userNameCache.get(t.userId));
@@ -144,7 +145,7 @@ public class WorkspaceTransactionAdapter extends RecyclerView.Adapter<RecyclerVi
                     tHolder.tvCreatorName.setText("Loading...");
                     FirebaseFirestore.getInstance().collection("users").document(t.userId).get()
                             .addOnSuccessListener(doc -> {
-                                if (!bindKey.equals(tHolder.itemView.getTag())) return;
+                                if (!bindKey.equals(tHolder.itemView.getTag())) return; // Avoid race conditions
                                 String name = doc.getString("displayName");
                                 if (name == null || name.isEmpty()) name = "Unknown Member";
                                 userNameCache.put(t.userId, name);
@@ -155,12 +156,12 @@ public class WorkspaceTransactionAdapter extends RecyclerView.Adapter<RecyclerVi
                 tHolder.tvCreatorName.setText("By: Unknown");
             }
 
-            // 4. LOAD CATEGORY (ICON, TÊN, MÀU SẮC)
+            // 4. Resolve Category UI (With Caching)
             if (t.firestoreCategoryId != null && workspaceId != null) {
                 if (categoryCache.containsKey(t.firestoreCategoryId)) {
                     updateCategoryUI(tHolder, t, categoryCache.get(t.firestoreCategoryId), timeStr, paymentIcon);
                 } else {
-                    updateCategoryUI(tHolder, t, null, timeStr, paymentIcon);
+                    updateCategoryUI(tHolder, t, null, timeStr, paymentIcon); // Show fallback while loading
                     FirebaseFirestore.getInstance()
                             .collection("workspaces").document(workspaceId)
                             .collection("categories").document(t.firestoreCategoryId)
@@ -178,32 +179,29 @@ public class WorkspaceTransactionAdapter extends RecyclerView.Adapter<RecyclerVi
                 updateCategoryUI(tHolder, t, null, timeStr, paymentIcon);
             }
 
-            // 5. BẮT SỰ KIỆN CLICK KÈM PHÂN QUYỀN
-            // Logic: Mình tạo ra -> Được sửa. HOẶC Mình là Trưởng nhóm -> Được sửa hết.
+            // 5. Apply Permission Logic for Interactions
+            // Rule: The Creator OR the Workspace Owner can edit/delete this transaction.
             boolean canEdit = (currentUserId != null && currentUserId.equals(t.userId))
                     || (currentUserId != null && currentUserId.equals(ownerId));
 
-            // Làm mờ đi 1 xíu để phân biệt giao dịch nào mình không đụng được
+            // Visual indicator for non-editable items (Alpha reduction)
             holder.itemView.setAlpha(canEdit ? 1.0f : 0.6f);
 
             holder.itemView.setOnClickListener(v -> {
                 if (canEdit) {
-                    if (listener != null) listener.onClick(t); // Mở màn hình Sửa/Xóa bình thường
+                    if (listener != null) listener.onClick(t);
                 } else {
-                    // Cảnh báo mượt mà thay vì báo lỗi
-                    android.widget.Toast.makeText(context, "Access denied! Only the creator or owner can edit this.", android.widget.Toast.LENGTH_SHORT).show();
+                    Toast.makeText(context, "Access denied. Only the creator or owner can modify this transaction.", Toast.LENGTH_SHORT).show();
                 }
             });
         }
     }
 
-    // Hàm phụ trợ cập nhật giao diện Category
     private void updateCategoryUI(TransactionViewHolder holder, Transaction t, Category cat, String timeStr, String paymentIcon) {
         String catName = (cat != null) ? cat.name : "Unknown";
-
         String title = (t.note != null && !t.note.isEmpty()) ? t.note : catName;
-        holder.tvMainTitle.setText(title);
 
+        holder.tvMainTitle.setText(title);
         holder.tvSubtitle.setText(String.format("%s • %s • %s", catName, timeStr, paymentIcon));
 
         if (cat != null) {
@@ -214,6 +212,7 @@ public class WorkspaceTransactionAdapter extends RecyclerView.Adapter<RecyclerVi
             try {
                 int originColor = Color.parseColor(cat.colorCode != null ? cat.colorCode : "#000000");
                 int pastelColor = Color.argb(51, Color.red(originColor), Color.green(originColor), Color.blue(originColor));
+
                 holder.ivCategoryIcon.setBackgroundTintList(ColorStateList.valueOf(pastelColor));
                 holder.ivCategoryIcon.setImageTintList(ColorStateList.valueOf(originColor));
             } catch (Exception e) {
@@ -236,9 +235,10 @@ public class WorkspaceTransactionAdapter extends RecyclerView.Adapter<RecyclerVi
         return items.size();
     }
 
-    // ==========================================
-    // CÁC LỚP VIEWHOLDER CHO HEADER VÀ ITEM
-    // ==========================================
+    // =========================================================================
+    // VIEW HOLDERS
+    // =========================================================================
+
     static class DateViewHolder extends RecyclerView.ViewHolder {
         TextView tvDate;
         DateViewHolder(@NonNull View itemView) {

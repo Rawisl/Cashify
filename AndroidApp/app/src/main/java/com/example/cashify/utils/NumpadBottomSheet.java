@@ -15,6 +15,7 @@ import androidx.annotation.Nullable;
 import com.example.cashify.R;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 
+// UI Component dùng chung (Reusable View) cho việc nhập số tiền
 public class NumpadBottomSheet extends BottomSheetDialogFragment {
 
     private String rawAmount = "0";
@@ -26,13 +27,14 @@ public class NumpadBottomSheet extends BottomSheetDialogFragment {
         try {
             tvAmount.setText(CurrencyManager.formatNumpadDigits(rawAmount));
         } catch (NumberFormatException e) {
+            // Fallback an toàn: Tránh crash nếu dữ liệu đầu vào vượt quá giới hạn parse của CurrencyManager
             rawAmount = rawAmount.length() > 1 ? rawAmount.substring(0, rawAmount.length() - 1) : "0";
             tvAmount.setText(CurrencyManager.formatNumpadDigits(rawAmount));
         }
     }
 
     private void appendNumber(String num) {
-        if (rawAmount.length() >= 15) return;
+        if (rawAmount.length() >= 15) return; // Chặn độ dài tối đa để chống tràn kiểu dữ liệu (Long/Double)
         rawAmount = rawAmount.equals("0") ? num : rawAmount + num;
         updateAmountDisplay();
     }
@@ -63,34 +65,27 @@ public class NumpadBottomSheet extends BottomSheetDialogFragment {
         super.onViewCreated(view, savedInstanceState);
 
         tvAmount = view.findViewById(R.id.tv_amount);
-        TextView btn1 = view.findViewById(R.id.btn_num_1);
-        TextView btn2 = view.findViewById(R.id.btn_num_2);
-        TextView btn3 = view.findViewById(R.id.btn_num_3);
-        TextView btn4 = view.findViewById(R.id.btn_num_4);
-        TextView btn5 = view.findViewById(R.id.btn_num_5);
-        TextView btn6 = view.findViewById(R.id.btn_num_6);
-        TextView btn7 = view.findViewById(R.id.btn_num_7);
-        TextView btn8 = view.findViewById(R.id.btn_num_8);
-        TextView btn9 = view.findViewById(R.id.btn_num_9);
-        TextView btn0 = view.findViewById(R.id.btn_num_0);
-        ImageView btnBackspace = view.findViewById(R.id.btn_backspace);
+
+        // Gán sự kiện click cho các phím số (UI Logic)
+        view.findViewById(R.id.btn_num_1).setOnClickListener(v -> appendNumber("1"));
+        view.findViewById(R.id.btn_num_2).setOnClickListener(v -> appendNumber("2"));
+        view.findViewById(R.id.btn_num_3).setOnClickListener(v -> appendNumber("3"));
+        view.findViewById(R.id.btn_num_4).setOnClickListener(v -> appendNumber("4"));
+        view.findViewById(R.id.btn_num_5).setOnClickListener(v -> appendNumber("5"));
+        view.findViewById(R.id.btn_num_6).setOnClickListener(v -> appendNumber("6"));
+        view.findViewById(R.id.btn_num_7).setOnClickListener(v -> appendNumber("7"));
+        view.findViewById(R.id.btn_num_8).setOnClickListener(v -> appendNumber("8"));
+        view.findViewById(R.id.btn_num_9).setOnClickListener(v -> appendNumber("9"));
+        view.findViewById(R.id.btn_num_0).setOnClickListener(v -> appendNumber("0"));
+
+        view.findViewById(R.id.btn_backspace).setOnClickListener(v -> removeLastNumber());
+
         Button btnContinue = view.findViewById(R.id.btn_continue);
-
-        btn1.setOnClickListener(v -> appendNumber("1"));
-        btn2.setOnClickListener(v -> appendNumber("2"));
-        btn3.setOnClickListener(v -> appendNumber("3"));
-        btn4.setOnClickListener(v -> appendNumber("4"));
-        btn5.setOnClickListener(v -> appendNumber("5"));
-        btn6.setOnClickListener(v -> appendNumber("6"));
-        btn7.setOnClickListener(v -> appendNumber("7"));
-        btn8.setOnClickListener(v -> appendNumber("8"));
-        btn9.setOnClickListener(v -> appendNumber("9"));
-        btn0.setOnClickListener(v -> appendNumber("0"));
-        btnBackspace.setOnClickListener(v -> removeLastNumber());
-
         btnContinue.setOnClickListener(v -> {
             if (rawAmount.equals("0") || rawAmount.isEmpty()) return;
+
             if (listener != null) {
+                // Đẩy dữ liệu ngược về màn hình gọi nó
                 listener.onAmountConfirmed(
                         CurrencyManager.numpadRawToDisplayInput(rawAmount),
                         tvAmount.getText().toString()
@@ -99,9 +94,11 @@ public class NumpadBottomSheet extends BottomSheetDialogFragment {
             dismiss();
         });
 
+        // Khởi tạo hiển thị ban đầu
         updateAmountDisplay();
     }
 
+    // Giao thức (Contract) để giao tiếp với các Fragment/Activity khác
     public interface OnNumpadListener {
         void onAmountConfirmed(String rawAmount, String formattedAmount);
     }

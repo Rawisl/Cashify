@@ -52,7 +52,7 @@
                     android:fontFamily="@font/inter_bold"
                     android:textColor="@color/brand_primary"
                     android:textSize="16sp"
-                    tools:text="Ong chăm chỉ" />
+                    tools:text="Hard-working Bee" />
 
                 <TextView
                     android:id="@+id/tvPreviewMonth"
@@ -62,7 +62,7 @@
                     android:fontFamily="@font/inter_regular"
                     android:textColor="#607D8B"
                     android:textSize="13sp"
-                    tools:text="Thành tựu vĩnh viễn" />
+                    tools:text="Lifetime Achievement" />
             </LinearLayout>
         </LinearLayout>
 
@@ -82,7 +82,7 @@
                 android:fontFamily="@font/inter_bold"
                 android:textColor="#313B60"
                 android:textSize="14sp"
-                tools:text="100 Giao dịch" />
+                tools:text="100 Transactions" />
 
             <ImageView
                 android:id="@+id/btnRemoveMilestonePreview"

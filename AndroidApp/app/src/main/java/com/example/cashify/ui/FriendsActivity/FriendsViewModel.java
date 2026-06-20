@@ -1,7 +1,6 @@
 package com.example.cashify.ui.FriendsActivity;
 
-import android.util.Log;
-
+import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
@@ -14,42 +13,58 @@ import com.google.firebase.firestore.ListenerRegistration;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SocialViewModel extends ViewModel {
-    private static final String TAG = "CASHIFY";
+public class FriendsViewModel extends ViewModel {
+    private static final String TAG = "SocialNewsfeedViewModel";
 
-    public MutableLiveData<List<User>> friendList = new MutableLiveData<>();
-    public MutableLiveData<List<User>> suggestionList = new MutableLiveData<>();
-    public MutableLiveData<List<User>> incomingList = new MutableLiveData<>();
-    public MutableLiveData<List<User>> sentList = new MutableLiveData<>();
+    // ============================================================
+    // 1. STATE LIVEDATA (Internal Mutable, External Immutable)
+    // ============================================================
+    private final MutableLiveData<List<User>> _friendList = new MutableLiveData<>();
+    public final LiveData<List<User>> friendList = _friendList;
 
-    public MutableLiveData<String> error = new MutableLiveData<>();
-    public MutableLiveData<String> toast = new MutableLiveData<>();
+    private final MutableLiveData<List<User>> _suggestionList = new MutableLiveData<>();
+    public final LiveData<List<User>> suggestionList = _suggestionList;
 
+    private final MutableLiveData<List<User>> _incomingList = new MutableLiveData<>();
+    public final LiveData<List<User>> incomingList = _incomingList;
+
+    private final MutableLiveData<List<User>> _sentList = new MutableLiveData<>();
+    public final LiveData<List<User>> sentList = _sentList;
+
+    private final MutableLiveData<String> _error = new MutableLiveData<>();
+    public final LiveData<String> error = _error;
+
+    private final MutableLiveData<String> _toast = new MutableLiveData<>();
+    public final LiveData<String> toast = _toast;
+
+    // Cache lists for local filtering and validation
     private List<User> allFriendsOriginal = new ArrayList<>();
     private List<User> allSuggestionsOriginal = new ArrayList<>();
-
-    // Các list lưu ID để check validate
     private List<String> myFriendIds = new ArrayList<>();
     private List<String> mySentRequestIds = new ArrayList<>();
     private List<String> myIncomingRequestIds = new ArrayList<>();
 
-    // BA CAMERA GIÁM SÁT REAL-TIME
+    // Real-time Snapshot Listeners
     private ListenerRegistration friendsListener;
     private ListenerRegistration incomingListener;
     private ListenerRegistration sentListener;
 
     // ============================================================
-    // 1. LẮNG NGHE REAL-TIME DANH SÁCH BẠN BÈ
+    // 2. REAL-TIME LISTENERS
     // ============================================================
     public void fetchOnlyFriends() {
         String myUid = FirebaseManager.getInstance().getCurrentUserId();
-        if (myUid == null) { error.setValue("Chưa đăng nhập!"); return; }
+        if (myUid == null) {
+            _error.setValue("Authentication required.");
+            return;
+        }
 
-        // Bật luôn camera giám sát 2 list lời mời để check logic lúc tìm bạn qua Email
+        // Initialize request listeners simultaneously to ensure validation lists are up-to-date
         fetchRequests();
 
         if (friendsListener != null) friendsListener.remove();
-        friendsListener = FirebaseFirestore.getInstance().collection("users").document(myUid).collection("friends")
+        friendsListener = FirebaseFirestore.getInstance()
+                .collection("users").document(myUid).collection("friends")
                 .addSnapshotListener((snapshots, e) -> {
                     if (e != null) return;
                     if (snapshots != null) {
@@ -58,26 +73,24 @@ public class SocialViewModel extends ViewModel {
                         myFriendIds = ids;
 
                         if (ids.isEmpty()) {
-                            friendList.setValue(new ArrayList<>());
+                            _friendList.setValue(new ArrayList<>());
                             allFriendsOriginal.clear();
                         } else {
-                            fetchUserProfilesFromIds(ids, friendList, 1); // 1 = Bạn bè
+                            fetchUserProfilesFromIds(ids, _friendList, 1); // 1 = Friends
                         }
                         refreshSuggestions();
                     }
                 });
     }
 
-    // ============================================================
-    // 2. LẮNG NGHE REAL-TIME DANH SÁCH LỜI MỜI
-    // ============================================================
     public void fetchRequests() {
         String myUid = FirebaseManager.getInstance().getCurrentUserId();
         if (myUid == null) return;
 
-        // Camera giám sát tab RECEIVED (Nhận)
+        // Monitor RECEIVED requests tab
         if (incomingListener != null) incomingListener.remove();
-        incomingListener = FirebaseFirestore.getInstance().collection("users").document(myUid).collection("friend_requests")
+        incomingListener = FirebaseFirestore.getInstance()
+                .collection("users").document(myUid).collection("friend_requests")
                 .addSnapshotListener((snapshots, e) -> {
                     if (e != null) return;
                     if (snapshots != null) {
@@ -85,15 +98,16 @@ public class SocialViewModel extends ViewModel {
                         for (DocumentSnapshot doc : snapshots.getDocuments()) ids.add(doc.getId());
                         myIncomingRequestIds = ids;
 
-                        if (ids.isEmpty()) incomingList.setValue(new ArrayList<>());
-                        else fetchUserProfilesFromIds(ids, incomingList, 3); // 3 = Lời mời đến
+                        if (ids.isEmpty()) _incomingList.setValue(new ArrayList<>());
+                        else fetchUserProfilesFromIds(ids, _incomingList, 3); // 3 = Incoming
                         refreshSuggestions();
                     }
                 });
 
-        // Camera giám sát tab SENT (Gửi đi)
+        // Monitor SENT requests tab
         if (sentListener != null) sentListener.remove();
-        sentListener = FirebaseFirestore.getInstance().collection("users").document(myUid).collection("sent_requests")
+        sentListener = FirebaseFirestore.getInstance()
+                .collection("users").document(myUid).collection("sent_requests")
                 .addSnapshotListener((snapshots, e) -> {
                     if (e != null) return;
                     if (snapshots != null) {
@@ -101,14 +115,13 @@ public class SocialViewModel extends ViewModel {
                         for (DocumentSnapshot doc : snapshots.getDocuments()) ids.add(doc.getId());
                         mySentRequestIds = ids;
 
-                        if (ids.isEmpty()) sentList.setValue(new ArrayList<>());
-                        else fetchUserProfilesFromIds(ids, sentList, 2); // 2 = Lời mời đi
+                        if (ids.isEmpty()) _sentList.setValue(new ArrayList<>());
+                        else fetchUserProfilesFromIds(ids, _sentList, 2); // 2 = Sent
                         refreshSuggestions();
                     }
                 });
     }
 
-    // Hàm dùng chung để kéo thông tin chi tiết của User dựa vào list ID
     private void refreshSentRequests() {
         FirebaseManager.getInstance().getSentRequestIds(new FirebaseManager.DataCallback<List<String>>() {
             @Override
@@ -116,15 +129,15 @@ public class SocialViewModel extends ViewModel {
                 mySentRequestIds = ids != null ? ids : new ArrayList<>();
 
                 if (mySentRequestIds.isEmpty()) {
-                    sentList.postValue(new ArrayList<>());
+                    _sentList.postValue(new ArrayList<>());
                 } else {
-                    fetchUserProfilesFromIds(mySentRequestIds, sentList, 2);
+                    fetchUserProfilesFromIds(mySentRequestIds, _sentList, 2);
                 }
             }
 
             @Override
             public void onError(String message) {
-                error.postValue(message);
+                _error.postValue(message);
             }
         });
     }
@@ -137,48 +150,29 @@ public class SocialViewModel extends ViewModel {
                 if (users != null) {
                     for (User user : users) {
                         if (user != null && !isRelatedUser(user.getUid())) {
-                            user.setFriendStatus(0);
+                            user.setFriendStatus(0); // 0 = Not friends
                             normalUsers.add(user);
                         }
                     }
                 }
                 allSuggestionsOriginal = normalUsers;
-                suggestionList.postValue(normalUsers);
+                _suggestionList.postValue(normalUsers);
             }
 
             @Override
             public void onError(String message) {
-                error.postValue(message);
-            }
-        });
-    }
-
-    public void loadMessageChats() {
-        FirebaseManager.getInstance().getFriendMessageChats(new FirebaseManager.DataCallback<List<User>>() {
-            @Override
-            public void onSuccess(List<User> users) {
-                List<User> chatUsers = new ArrayList<>();
-                if (users != null) {
-                    for (User user : users) {
-                        if (user != null) {
-                            user.setFriendStatus(1);
-                            chatUsers.add(user);
-                        }
-                    }
-                }
-                allFriendsOriginal = new ArrayList<>(chatUsers);
-                friendList.postValue(chatUsers);
-            }
-
-            @Override
-            public void onError(String message) {
-                error.postValue(message);
+                _error.postValue(message);
             }
         });
     }
 
     private void fetchUserProfilesFromIds(List<String> uids, MutableLiveData<List<User>> liveData, int status) {
-        FirebaseFirestore.getInstance().collection("users").whereIn("uid", uids).get()
+        // Firebase Firestore constraint: 'whereIn' supports a maximum of 30 items.
+        // We truncate the list safely to prevent application crashes.
+        List<String> safeUids = uids.size() > 30 ? uids.subList(0, 30) : uids;
+
+        FirebaseFirestore.getInstance().collection("users")
+                .whereIn("uid", safeUids).get()
                 .addOnSuccessListener(snapshots -> {
                     List<User> list = new ArrayList<>();
                     for (DocumentSnapshot doc : snapshots.getDocuments()) {
@@ -188,48 +182,52 @@ public class SocialViewModel extends ViewModel {
                             list.add(user);
                         }
                     }
-                    if (status == 1) allFriendsOriginal = new ArrayList<>(list); // Lưu backup để search nội bộ
+                    if (status == 1) allFriendsOriginal = new ArrayList<>(list); // Cache for local search
                     liveData.postValue(list);
-                });
+                })
+                .addOnFailureListener(e -> _error.postValue("Failed to fetch user profiles: " + e.getMessage()));
     }
 
     // ============================================================
-    // 3. ACTIONS - SỬ DỤNG API C# BACKEND "processFriendAction"
+    // 3. API ACTIONS - "processFriendAction"
     // ============================================================
+
     public void searchAndSendRequestByEmail(String email) {
         String myUid = FirebaseManager.getInstance().getCurrentUserId();
-        if (email.trim().isEmpty()) { error.postValue("Please enter Email!"); return; }
+        if (email.trim().isEmpty()) {
+            _error.postValue("Please enter an Email address.");
+            return;
+        }
 
         FirebaseManager.getInstance().searchUserByEmail(email.trim(), new FirebaseManager.DataCallback<String>() {
             @Override
             public void onSuccess(String targetUid) {
-                if (targetUid.equals(myUid)) { error.postValue("You cannot add yourself as a friend!"); return; }
-                if (myFriendIds.contains(targetUid)) { error.postValue("This person is already your friend!"); return; }
-                if (mySentRequestIds.contains(targetUid)) { error.postValue("Already waiting for this person's response!"); return; }
-                if (myIncomingRequestIds.contains(targetUid)) { error.postValue("They have already sent you a request, check the Requests tab!"); return; }
+                if (targetUid.equals(myUid)) { _error.postValue("You cannot add yourself."); return; }
+                if (myFriendIds.contains(targetUid)) { _error.postValue("This user is already in your friend list."); return; }
+                if (mySentRequestIds.contains(targetUid)) { _error.postValue("Friend request already sent."); return; }
+                if (myIncomingRequestIds.contains(targetUid)) { _error.postValue("Check your incoming requests, they already added you."); return; }
 
-                // GỌI CÁP 1: GỬI LỜI MỜI (request)
+                // ACTION: SEND REQUEST
                 FirebaseManager.getInstance().processFriendAction(targetUid, "request", new FirebaseManager.DataCallback<Void>() {
                     @Override
                     public void onSuccess(Void data) {
                         refreshSentRequests();
                         refreshSuggestions();
-                        toast.postValue("Request sent successfully");
+                        _toast.postValue("Request sent successfully.");
                     }
 
                     @Override
                     public void onError(String message) {
-                        toast.postValue("Failed to send request");
-                        error.postValue(message);
+                        _toast.postValue("Failed to send request.");
+                        _error.postValue(message);
                     }
                 });
             }
+
             @Override
             public void onError(String message) {
-                toast.postValue("Failed to send request");
-                error.postValue(message != null && !message.trim().isEmpty()
-                        ? message
-                        : "Email not found!");
+                _toast.postValue("Failed to find user.");
+                _error.postValue(message != null && !message.trim().isEmpty() ? message : "User not found.");
             }
         });
     }
@@ -242,73 +240,74 @@ public class SocialViewModel extends ViewModel {
             public void onSuccess(Void data) {
                 refreshSentRequests();
                 refreshSuggestions();
-                toast.postValue("Request sent successfully");
+                _toast.postValue("Request sent successfully.");
             }
 
             @Override
             public void onError(String message) {
-                toast.postValue("Failed to send request");
-                error.postValue(message);
+                _toast.postValue("Failed to send request.");
+                _error.postValue(message);
             }
         });
     }
 
     public void acceptFriendRequest(User user) {
-        // Check 30 friend limit (Firebase whereIn limit)
+        // Enforce the 30-friend architectural limit
         if (myFriendIds.size() >= 30) {
-            error.postValue("You have reached the 30 friend limit. Firebase only allows up to 30 friends in the list!");
+            _error.postValue("Friend limit reached. Firebase constraint limits lists to 30 friends.");
             return;
         }
 
-        // GỌI CÁP 2: ĐỒNG Ý KẾT BẠN (accept)
+        // ACTION: ACCEPT REQUEST
         FirebaseManager.getInstance().processFriendAction(user.getUid(), "accept", new FirebaseManager.DataCallback<Void>() {
             @Override
             public void onSuccess(Void data) {
                 refreshSuggestions();
-                toast.postValue("You are now friends with " + user.getNameToShow() + "!");
+                _toast.postValue("You are now friends with " + user.getNameToShow() + "!");
             }
-            @Override public void onError(String message) { error.postValue(message); }
+            @Override public void onError(String message) { _error.postValue(message); }
         });
     }
 
     public void declineFriendRequest(User user) {
-        // GỌI CÁP 3: TỪ CHỐI LỜI MỜI (remove)
+        // ACTION: DECLINE REQUEST
         FirebaseManager.getInstance().processFriendAction(user.getUid(), "remove", new FirebaseManager.DataCallback<Void>() {
             @Override public void onSuccess(Void data) { refreshSuggestions(); }
-            @Override public void onError(String message) { error.postValue(message); }
+            @Override public void onError(String message) { _error.postValue(message); }
         });
     }
 
     public void cancelFriendRequest(User user) {
-        // GỌI CÁP 4: HỦY LỜI MỜI ĐÃ GỬI (remove)
+        // ACTION: CANCEL OUTGOING REQUEST
         FirebaseManager.getInstance().processFriendAction(user.getUid(), "remove", new FirebaseManager.DataCallback<Void>() {
             @Override
             public void onSuccess(Void data) {
                 refreshSuggestions();
-                toast.postValue("Request cancelled");
+                _toast.postValue("Request cancelled.");
             }
-            @Override public void onError(String message) { error.postValue(message); }
+            @Override public void onError(String message) { _error.postValue(message); }
         });
     }
 
     public void unfriend(User user) {
-        // GỌI CÁP 5: HỦY KẾT BẠN (remove)
+        // ACTION: REMOVE FRIEND
         FirebaseManager.getInstance().processFriendAction(user.getUid(), "remove", new FirebaseManager.DataCallback<Void>() {
             @Override
             public void onSuccess(Void data) {
                 refreshSuggestions();
-                toast.postValue("Unfriended");
+                _toast.postValue("Removed from friend list.");
             }
-            @Override public void onError(String message) { error.postValue(message); }
+            @Override public void onError(String message) { _error.postValue(message); }
         });
     }
 
     // ============================================================
-    // 4. SEARCH LOCAL
+    // 4. LOCAL SEARCH FILTERS
     // ============================================================
+
     public void filterFriendsLocal(String query) {
         if (query == null || query.isEmpty()) {
-            friendList.setValue(allFriendsOriginal);
+            _friendList.setValue(allFriendsOriginal);
             return;
         }
         List<User> filtered = new ArrayList<>();
@@ -318,12 +317,12 @@ public class SocialViewModel extends ViewModel {
                 filtered.add(user);
             }
         }
-        friendList.setValue(filtered);
+        _friendList.setValue(filtered);
     }
 
     public void filterSuggestionsLocal(String query) {
         if (query == null || query.isEmpty()) {
-            suggestionList.setValue(allSuggestionsOriginal);
+            _suggestionList.setValue(allSuggestionsOriginal);
             return;
         }
 
@@ -334,7 +333,7 @@ public class SocialViewModel extends ViewModel {
             boolean matchesEmail = user.getEmail() != null && user.getEmail().toLowerCase().contains(pattern);
             if (matchesName || matchesEmail) filtered.add(user);
         }
-        suggestionList.setValue(filtered);
+        _suggestionList.setValue(filtered);
     }
 
     private boolean isRelatedUser(String uid) {
@@ -344,10 +343,14 @@ public class SocialViewModel extends ViewModel {
                 || myIncomingRequestIds.contains(uid);
     }
 
-    // CHỐT CHẶN BẢO MẬT: Hủy camera giám sát khi thoát màn hình để không bị rò rỉ RAM
+    // ============================================================
+    // LIFECYCLE CLEANUP
+    // ============================================================
+
     @Override
     protected void onCleared() {
         super.onCleared();
+        // Prevent memory leaks by detaching listeners when ViewModel is destroyed
         if (friendsListener != null) friendsListener.remove();
         if (incomingListener != null) incomingListener.remove();
         if (sentListener != null) sentListener.remove();

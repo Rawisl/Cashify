@@ -30,18 +30,33 @@
                 android:textColor="@color/brand_primary"
                 android:paddingBottom="5dp" />
 
-            <ImageView
-                android:id="@+id/btnProfileNotifications"
-                android:layout_width="38dp"
-                android:layout_height="38dp"
+            <FrameLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:layout_gravity="end|center_vertical"
-                android:layout_marginEnd="12dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:clickable="true"
-                android:focusable="true"
-                android:padding="11dp"
-                android:src="@drawable/ic_notification_regular"
-                app:tint="@color/brand_primary" />
+                android:layout_marginEnd="16dp">
+
+                <ImageView
+                    android:id="@+id/imgBellIcon"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:src="@drawable/ic_notification_regular"
+                    android:padding="2dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    app:tint="@color/brand_primary"/>
+
+                <TextView
+                    android:id="@+id/tvBellBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="top|end"
+                    android:background="@drawable/bg_badge_red"
+                    android:textColor="@color/white"
+                    android:textSize="10sp"
+                    android:paddingHorizontal="4dp"
+                    android:text="1"
+                    android:visibility="gone" />
+            </FrameLayout>
         </com.google.android.material.appbar.MaterialToolbar>
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -106,7 +121,7 @@
                     android:focusable="true"
                     android:padding="11dp"
                     android:src="@drawable/ic_share"
-                app:tint="#1A237E" />
+                    app:tint="#1A237E" />
             </FrameLayout>
 
             <LinearLayout
@@ -415,7 +430,9 @@
                         android:textSize="13sp" />
                 </LinearLayout>
 
+                <!-- ĐÃ THÊM ID layoutActionCards CHO KHỐI NÀY -->
                 <LinearLayout
+                    android:id="@+id/layoutActionCards"
                     android:layout_width="match_parent"
                     android:layout_height="126dp"
                     android:layout_marginTop="18dp"
@@ -501,20 +518,4 @@
             </LinearLayout>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
-
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fabProfileCreatePost"
-        android:layout_width="52dp"
-        android:layout_height="52dp"
-        android:layout_gravity="bottom|end"
-        android:layout_marginEnd="20dp"
-        android:layout_marginBottom="24dp"
-        android:contentDescription="@string/create_post"
-        android:src="@drawable/ic_add_bold"
-        app:backgroundTint="#1A237E"
-        app:borderWidth="0dp"
-        app:elevation="1dp"
-        app:fabCustomSize="52dp"
-        app:maxImageSize="22dp"
-        app:tint="@color/white" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

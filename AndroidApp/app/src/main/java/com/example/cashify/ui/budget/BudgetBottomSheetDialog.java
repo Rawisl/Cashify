@@ -12,19 +12,17 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
-
-import androidx.recyclerview.widget.RecyclerView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
 import com.example.cashify.data.local.AppDatabase;
 import com.example.cashify.data.model.Category;
-import com.example.cashify.utils.CurrencyManager;
 import com.example.cashify.utils.CurrencyFormatter;
+import com.example.cashify.utils.CurrencyManager;
 import com.example.cashify.utils.NumpadBottomSheet;
 import com.example.cashify.utils.ToastHelper;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
@@ -38,32 +36,33 @@ import java.util.List;
 
 public class BudgetBottomSheetDialog extends BottomSheetDialogFragment {
 
-    private int categoryId;
-    private String title;
-    private double currentSpending;
-    private double currentLimit;
+    private final int categoryId;
+    private final String title;
+    private final double currentSpending;
+    private final double currentLimit;
+    private final String iconName;
+    private final String colorCode;
 
+    // Đã trả lại biến cũ
     private List<Integer> disabledCategoryIds = new ArrayList<>();
     private OnBudgetActionListener actionListener;
-
-    public interface OnBudgetActionListener {
-        void onSave(int selectedCategoryId, double limitAmount);
-
-        void onDelete(int categoryId);
-    }
 
     private TextInputEditText edtBudgetAmount;
     private TextInputLayout layoutInputAmount;
     private LinearLayout layoutCategorySelector;
     private Button btnSaveBudget, btnDeleteBudget;
     private ImageView ivIcon;
+
     private int selectedCategoryIdFromDropdown = -1;
-    private List<Category> expenseCategories;
 
-    private String iconName;
-    private String colorCode;
+    public interface OnBudgetActionListener {
+        void onSave(int selectedCategoryId, double limitAmount);
+        void onDelete(int categoryId);
+    }
 
-    public BudgetBottomSheetDialog(int categoryId, String title, double currentSpending, double currentLimit, String iconName, String colorCode, OnBudgetActionListener listener) {
+    public BudgetBottomSheetDialog(int categoryId, String title, double currentSpending,
+                                   double currentLimit, String iconName, String colorCode,
+                                   OnBudgetActionListener listener) {
         this.categoryId = categoryId;
         this.title = title;
         this.currentSpending = currentSpending;
@@ -73,18 +72,17 @@ public class BudgetBottomSheetDialog extends BottomSheetDialogFragment {
         this.actionListener = listener;
     }
 
+    // Đã trả lại hàm cũ để Fragment gọi không bị lỗi
     public void setDisabledCategoryIds(List<Integer> ids) {
-        this.disabledCategoryIds = ids;
+        this.disabledCategoryIds = ids != null ? ids : new ArrayList<>();
     }
 
     @Override
     public void onStart() {
         super.onStart();
-// Kiểm tra và ép kiểu Dialog về BottomSheetDialog
         if (getDialog() instanceof BottomSheetDialog) {
-            com.google.android.material.bottomsheet.BottomSheetDialog dialog =
-                    (com.google.android.material.bottomsheet.BottomSheetDialog) getDialog();
-            dialog.getBehavior().setState(com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED);
+            BottomSheetDialog dialog = (BottomSheetDialog) getDialog();
+            dialog.getBehavior().setState(BottomSheetBehavior.STATE_EXPANDED);
         }
     }
 
@@ -98,27 +96,38 @@ public class BudgetBottomSheetDialog extends BottomSheetDialogFragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Ánh xạ views
-        TextView tvTitle = view.findViewById(R.id.tvTitle);
-        TextView tvCurrentSpending = view.findViewById(R.id.tvCurrentSpending);
-        ImageButton btnClose = view.findViewById(R.id.btnClose);
-        ivIcon = view.findViewById(R.id.ivIcon);
+        initViews(view);
+        setupHeaderUI();
+        setupInputHandlers();
+        setupCategoryPickerUI();
+        setupActionButtons();
+    }
 
+    private void initViews(View view) {
+        ivIcon = view.findViewById(R.id.ivIcon);
         edtBudgetAmount = view.findViewById(R.id.edtBudgetAmount);
         layoutInputAmount = view.findViewById(R.id.layoutInputAmount);
-        layoutInputAmount.setPrefixText(CurrencyManager.isUsd() ? "$" : "\u20ab");
-        layoutInputAmount.setSuffixText(null);
-
         layoutCategorySelector = view.findViewById(R.id.layoutCategorySelector);
-
         btnSaveBudget = view.findViewById(R.id.btnSaveBudget);
         btnDeleteBudget = view.findViewById(R.id.btnDeleteBudget);
 
+        TextView tvTitle = view.findViewById(R.id.tvTitle);
+        TextView tvCurrentSpending = view.findViewById(R.id.tvCurrentSpending);
+        ImageButton btnClose = view.findViewById(R.id.btnClose);
+
+        tvTitle.setText(title);
+        tvCurrentSpending.setText(CurrencyFormatter.formatFullVND(currentSpending));
+        layoutInputAmount.setPrefixText(CurrencyManager.isUsd() ? "$" : "\u0111");
+        layoutInputAmount.setSuffixText(null);
+
+        btnClose.setOnClickListener(v -> dismiss());
+    }
+
+    private void setupHeaderUI() {
         if (categoryId > 0) {
             btnDeleteBudget.setVisibility(View.VISIBLE);
-
             String currentIconName = (iconName != null && !iconName.isEmpty()) ? iconName : "ic_food";
-            int currentResId = getContext().getResources().getIdentifier(currentIconName, "drawable", getContext().getPackageName());
+            int currentResId = requireContext().getResources().getIdentifier(currentIconName, "drawable", requireContext().getPackageName());
             ivIcon.setImageResource(currentResId != 0 ? currentResId : R.drawable.ic_food);
 
             try {
@@ -132,63 +141,87 @@ public class BudgetBottomSheetDialog extends BottomSheetDialogFragment {
             ivIcon.setImageTintList(ColorStateList.valueOf(Color.parseColor("#FF9800")));
         }
 
+        if (currentLimit > 0) {
+            edtBudgetAmount.setText(CurrencyFormatter.formatDoubleToVND(currentLimit));
+        }
+    }
+
+    private void setupInputHandlers() {
+        edtBudgetAmount.setFocusable(false);
+        edtBudgetAmount.setFocusableInTouchMode(false);
+
+        edtBudgetAmount.setOnClickListener(v -> {
+            NumpadBottomSheet numpad = new NumpadBottomSheet();
+            String currentAmt = edtBudgetAmount.getText() != null ? edtBudgetAmount.getText().toString() : "0";
+            if (currentAmt.isEmpty()) currentAmt = "0";
+
+            numpad.setInitialAmount(currentAmt);
+            numpad.setListener((rawAmount, formattedAmount) -> edtBudgetAmount.setText(rawAmount));
+            numpad.show(getParentFragmentManager(), "NumpadFromBudget");
+        });
+    }
+
+    private void setupCategoryPickerUI() {
+        if (categoryId == 0) {
+            layoutCategorySelector.setVisibility(View.VISIBLE);
+            loadCategoriesSafely(); // Gọi hàm load DB an toàn
+        } else {
+            layoutCategorySelector.setVisibility(View.GONE);
+        }
+    }
+
+    // =========================================================================
+    // DATABASE SAFE LOADING
+    // =========================================================================
+    private void loadCategoriesSafely() {
+        new Thread(() -> {
+            // Check context null safety before querying DB
+            if (getContext() == null) return;
+
+            List<Category> allCategories = AppDatabase.getInstance(requireContext())
+                    .categoryDao().getCategoriesByType(0);
+
+            List<Category> available = new ArrayList<>();
+            for (Category c : allCategories) {
+                if (!disabledCategoryIds.contains(c.id)) {
+                    available.add(c);
+                }
+            }
+
+            // UI Thread null safety check
+            if (getActivity() != null) {
+                getActivity().runOnUiThread(() -> {
+                    View view = getView();
+                    if (view != null) {
+                        RecyclerView rvCategoryPicker = view.findViewById(R.id.rvCategoryPicker);
+                        InnerCategoryGridAdapter adapter = new InnerCategoryGridAdapter(available);
+                        rvCategoryPicker.setAdapter(adapter);
+                    }
+                });
+            }
+        }).start();
+    }
+
+    private void setupActionButtons() {
+        btnSaveBudget.setText(R.string.action_save);
+        btnSaveBudget.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.brand_primary)));
+
         btnDeleteBudget.setOnClickListener(v -> {
             if (actionListener != null) actionListener.onDelete(categoryId);
             dismiss();
         });
 
-        // Khóa không cho hiện bàn phím hệ thống
-        edtBudgetAmount.setFocusable(false);
-        edtBudgetAmount.setFocusableInTouchMode(false);
-
-        // Bắt sự kiện click để gọi Numpad
-        edtBudgetAmount.setOnClickListener(v -> {
-            NumpadBottomSheet numpad = new NumpadBottomSheet();
-
-            String currentAmt = edtBudgetAmount.getText().toString();
-            if (currentAmt.isEmpty()) {
-                currentAmt = "0";
-            }
-            numpad.setInitialAmount(currentAmt);
-
-            numpad.setListener((rawAmount, formattedAmount) -> {
-                edtBudgetAmount.setText(rawAmount);
-            });
-
-            numpad.show(getParentFragmentManager(), "NumpadFromCategory");
-        });
-
-        btnSaveBudget.setText(R.string.action_save);
-
-        //thêm mới
-        if (categoryId == 0) {
-            layoutCategorySelector.setVisibility(View.VISIBLE);
-            loadCategoriesFromDB();
-        } else/*sửa*/{
-            layoutCategorySelector.setVisibility(View.GONE);
-        }
-        int blueColor = ContextCompat.getColor(requireContext(), R.color.brand_primary);
-        btnSaveBudget.setBackgroundTintList(ColorStateList.valueOf(blueColor));
-
-        tvTitle.setText(title);
-        tvCurrentSpending.setText(CurrencyFormatter.formatFullVND(currentSpending));
-
-        if (currentLimit > 0) {
-            edtBudgetAmount.setText(CurrencyFormatter.formatDoubleToVND(currentLimit));
-        }
-
-        btnClose.setOnClickListener(v -> dismiss());
-
         btnSaveBudget.setOnClickListener(v -> {
-            String amountVal = edtBudgetAmount.getText().toString().trim();
+            String amountVal = edtBudgetAmount.getText() != null ? edtBudgetAmount.getText().toString().trim() : "";
+
             if (TextUtils.isEmpty(amountVal)) {
                 layoutInputAmount.setBoxStrokeColor(ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark));
-                ToastHelper.show(getContext(), "Please enter the valid money amount!");
+                ToastHelper.show(getContext(), "Please enter a valid money amount.");
                 return;
             }
 
             if (categoryId == 0 && selectedCategoryIdFromDropdown == -1) {
-                ToastHelper.show(getContext(), "Please pick a category!");
+                ToastHelper.show(getContext(), "Please select a category.");
                 return;
             }
 
@@ -201,35 +234,13 @@ public class BudgetBottomSheetDialog extends BottomSheetDialogFragment {
         });
     }
 
-    private void loadCategoriesFromDB() {
-        AppDatabase db = AppDatabase.getInstance(requireContext());
-        new Thread(() -> {
-            // Lấy tất cả danh mục chi tiêu từ DB
-            List<Category> allCategories = db.categoryDao().getCategoriesByType(0);
-
-            // Lọc: Chỉ giữ lại những danh mục CHƯA có budget
-            List<Category> availableCategories = new ArrayList<>();
-            for (Category c : allCategories) {
-                if (!disabledCategoryIds.contains(c.id)) {
-                    availableCategories.add(c);
-                }
-            }
-
-            if (getActivity() != null) {
-                getActivity().runOnUiThread(() -> {
-                    // Ánh xạ lại RecyclerView mới tạo bên giao diện
-                    RecyclerView rvCategoryPicker = getDialog().findViewById(R.id.rvCategoryPicker);
-
-                    InnerCategoryGridAdapter adapter = new InnerCategoryGridAdapter(availableCategories);
-                    rvCategoryPicker.setAdapter(adapter);
-                });
-            }
-        }).start();
-    }
+    // =========================================================================
+    // INNER ADAPTER FOR CATEGORY SELECTION
+    // =========================================================================
 
     private class InnerCategoryGridAdapter extends RecyclerView.Adapter<InnerCategoryGridAdapter.ViewHolder> {
         private final List<Category> categories;
-        private int selectedPos = -1; // Lưu vị trí đang được bấm chọn
+        private int selectedPos = -1;
 
         public InnerCategoryGridAdapter(List<Category> categories) {
             this.categories = categories;
@@ -247,50 +258,32 @@ public class BudgetBottomSheetDialog extends BottomSheetDialogFragment {
             Category cat = categories.get(position);
             holder.tvCatName.setText(cat.name);
 
-            // Load Icon
             String iconName = (cat.iconName != null && !cat.iconName.isEmpty()) ? cat.iconName : "ic_food";
             int resId = holder.itemView.getContext().getResources().getIdentifier(iconName, "drawable", holder.itemView.getContext().getPackageName());
             holder.imgCatIcon.setImageResource(resId != 0 ? resId : R.drawable.ic_food);
 
-            // Load Color
             try {
                 String colorStr = (cat.colorCode != null && !cat.colorCode.isEmpty()) ? cat.colorCode : "#4C6FFF";
-                int color = Color.parseColor(colorStr);
-                holder.imgCatIcon.setImageTintList(ColorStateList.valueOf(color));
+                holder.imgCatIcon.setImageTintList(ColorStateList.valueOf(Color.parseColor(colorStr)));
             } catch (Exception e) {
                 holder.imgCatIcon.setImageTintList(ColorStateList.valueOf(Color.GRAY));
             }
 
-            if (position == selectedPos) {
-                // Khi được chọn: Dùng file bg_circle_button (có viền đen)
-                holder.imgCatIcon.setBackgroundResource(R.drawable.bg_circle_button);
-            } else {
-                // Khi không được chọn: Dùng file bg_circle_icon (nền xám bình thường)
-                holder.imgCatIcon.setBackgroundResource(R.drawable.bg_circle_icon);
-            }
-
-            // Xóa hiệu ứng làm mờ để các icon luôn rõ nét
+            holder.imgCatIcon.setBackgroundResource(position == selectedPos ? R.drawable.bg_circle_button : R.drawable.bg_circle_icon);
             holder.itemView.setAlpha(1.0f);
-            // =========================================================================
 
-            // Sự kiện bấm vào
             holder.itemView.setOnClickListener(v -> {
                 int oldPos = selectedPos;
                 selectedPos = holder.getAdapterPosition();
-                selectedCategoryIdFromDropdown = cat.id; // Gán ID để lưu Database
+                selectedCategoryIdFromDropdown = cat.id;
 
-                // Lấy tên và đổi chữ "Add Budget" thành "Add [Tên danh mục]"
-                TextView tvTitle = getDialog().findViewById(R.id.tvTitle);
+                TextView tvTitle = getDialog() != null ? getDialog().findViewById(R.id.tvTitle) : null;
                 if (tvTitle != null) {
                     tvTitle.setText("Add " + cat.name);
                 }
 
-                // Cập nhật lại cái Icon lớn trên cùng góc trái
                 if (ivIcon != null) {
-                    String currentIconName = (cat.iconName != null && !cat.iconName.isEmpty()) ? cat.iconName : "ic_food";
-                    int currentResId = holder.itemView.getContext().getResources().getIdentifier(currentIconName, "drawable", holder.itemView.getContext().getPackageName());
-                    ivIcon.setImageResource(currentResId != 0 ? currentResId : R.drawable.ic_food);
-
+                    ivIcon.setImageResource(resId != 0 ? resId : R.drawable.ic_food);
                     try {
                         String colorStr = (cat.colorCode != null && !cat.colorCode.isEmpty()) ? cat.colorCode : "#4C6FFF";
                         ivIcon.setImageTintList(ColorStateList.valueOf(Color.parseColor(colorStr)));
@@ -298,7 +291,7 @@ public class BudgetBottomSheetDialog extends BottomSheetDialogFragment {
                         ivIcon.setImageTintList(ColorStateList.valueOf(Color.GRAY));
                     }
                 }
-                // Cập nhật lại UI để hiện viền đen cho cục mới
+
                 notifyItemChanged(oldPos);
                 notifyItemChanged(selectedPos);
             });

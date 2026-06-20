@@ -25,7 +25,7 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
         android:fontFamily="@font/inter_bold"
-        android:text="🏆 Thành tựu có thể chia sẻ"
+        android:text="🏆 Shareable Personal Achievements"
         android:textColor="@color/brand_primary"
         android:textSize="18sp" />
 

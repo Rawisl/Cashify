@@ -10,6 +10,7 @@
     <include layout="@layout/include_personal_workspace_header" />
 
     <androidx.core.widget.NestedScrollView
+        android:id="@+id/transactionScrollView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:background="@drawable/bg_budget_screen"

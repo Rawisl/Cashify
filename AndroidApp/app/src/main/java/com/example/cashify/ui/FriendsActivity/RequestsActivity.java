@@ -3,7 +3,6 @@ package com.example.cashify.ui.FriendsActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.LinearLayout;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
@@ -12,6 +11,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
 import com.example.cashify.data.model.User;
+import com.example.cashify.utils.ToastHelper;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.tabs.TabLayout;
 
@@ -20,34 +20,39 @@ import java.util.List;
 
 public class RequestsActivity extends AppCompatActivity {
 
-    private SocialViewModel socialViewModel;
+    private FriendsViewModel friendsViewModel;
     private TabLayout tabLayout;
     private RecyclerView rvRequests;
     private LinearLayout layoutEmpty;
 
     private RequestAdapter adapter;
-    private List<User> incomingList = new ArrayList<>();
-    private List<User> sentList = new ArrayList<>();
-    private boolean isShowingIncoming = true; // Theo dõi đang ở tab nào
+    private boolean isShowingIncoming = true; // Tracks the currently active tab
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_requests);
 
-        tabLayout = findViewById(R.id.tabLayout);
-        rvRequests = findViewById(R.id.rvRequests);
-        layoutEmpty = findViewById(R.id.layoutEmpty);
-        MaterialToolbar toolbar = findViewById(R.id.toolbarRequests);
-        toolbar.setNavigationOnClickListener(v -> finish());
-
-        socialViewModel = new ViewModelProvider(this).get(SocialViewModel.class);
+        initViews();
+        friendsViewModel = new ViewModelProvider(this).get(FriendsViewModel.class);
 
         setupTabs();
         setupRecyclerView();
-        setupObservers();
+        observeViewModel();
 
-        socialViewModel.fetchRequests(); // Gọi load data
+        // Trigger initial data fetch
+        friendsViewModel.fetchRequests();
+    }
+
+    private void initViews() {
+        tabLayout = findViewById(R.id.tabLayout);
+        rvRequests = findViewById(R.id.rvRequests);
+        layoutEmpty = findViewById(R.id.layoutEmpty);
+
+        MaterialToolbar toolbar = findViewById(R.id.toolbarRequests);
+        if (toolbar != null) {
+            toolbar.setNavigationOnClickListener(v -> finish());
+        }
     }
 
     private void setupTabs() {
@@ -58,119 +63,100 @@ public class RequestsActivity extends AppCompatActivity {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
                 isShowingIncoming = (tab.getPosition() == 0);
-                updateUI(); // Đổi tab thì vẽ lại list
+                // Recreate adapter ONLY when switching tabs (to toggle action buttons)
+                recreateAdapterForCurrentTab();
             }
 
             @Override
-            public void onTabUnselected(TabLayout.Tab tab) {
-            }
+            public void onTabUnselected(TabLayout.Tab tab) {}
 
             @Override
-            public void onTabReselected(TabLayout.Tab tab) {
-            }
+            public void onTabReselected(TabLayout.Tab tab) {}
         });
     }
 
     private void setupRecyclerView() {
         rvRequests.setLayoutManager(new LinearLayoutManager(this));
+        recreateAdapterForCurrentTab();
+    }
 
+    /**
+     * Initializes a new adapter instance. This is required when switching tabs
+     * because the 'isIncoming' flag fundamentally changes the ViewHolder layout structure.
+     */
+    private void recreateAdapterForCurrentTab() {
         adapter = new RequestAdapter(new ArrayList<>(), isShowingIncoming, new RequestAdapter.RequestActionListener() {
             @Override
             public void onAccept(User user) {
-                socialViewModel.acceptFriendRequest(user);
+                friendsViewModel.acceptFriendRequest(user);
             }
 
             @Override
             public void onDecline(User user) {
-                socialViewModel.declineFriendRequest(user);
+                friendsViewModel.declineFriendRequest(user);
             }
 
             @Override
             public void onCancel(User user) {
-                socialViewModel.cancelFriendRequest(user);
+                friendsViewModel.cancelFriendRequest(user);
             }
         });
         rvRequests.setAdapter(adapter);
+
+        // Immediately populate the new adapter with existing cached data
+        refreshCurrentData();
     }
 
-    private void setupObservers() {
-        socialViewModel.incomingList.observe(this, users -> {
-            incomingList = users != null ? users : new ArrayList<>();
-            if (isShowingIncoming) updateUI();
+    private void observeViewModel() {
+        friendsViewModel.incomingList.observe(this, users -> {
+            if (isShowingIncoming) {
+                updateAdapterData(users);
+            }
         });
 
-        socialViewModel.sentList.observe(this, users -> {
-            sentList = users != null ? users : new ArrayList<>();
-            if (!isShowingIncoming) updateUI();
+        friendsViewModel.sentList.observe(this, users -> {
+            if (!isShowingIncoming) {
+                updateAdapterData(users);
+            }
         });
 
-        socialViewModel.toast.observe(this, msg -> {
-            if (msg != null) Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
+        friendsViewModel.toast.observe(this, msg -> {
+            if (msg != null && !msg.isEmpty()) {
+                ToastHelper.show(this, msg);
+            }
         });
     }
 
-    // Logic vẽ List hoặc vẽ Empty State
-    private void updateUI() {
-        // Lấy đúng danh sách theo tab hiện tại từ ViewModel ra, thay vì dùng cái biến toàn cục bị out-date
+    /**
+     * Pulls the correct list from the ViewModel based on the active tab and updates the UI.
+     */
+    private void refreshCurrentData() {
         List<User> displayList = new ArrayList<>();
-        if (isShowingIncoming && socialViewModel.incomingList.getValue() != null) {
-            displayList = socialViewModel.incomingList.getValue();
-        } else if (!isShowingIncoming && socialViewModel.sentList.getValue() != null) {
-            displayList = socialViewModel.sentList.getValue();
+        if (isShowingIncoming && friendsViewModel.incomingList.getValue() != null) {
+            displayList = friendsViewModel.incomingList.getValue();
+        } else if (!isShowingIncoming && friendsViewModel.sentList.getValue() != null) {
+            displayList = friendsViewModel.sentList.getValue();
+        }
+        updateAdapterData(displayList);
+    }
+
+    /**
+     * Performs a lightweight data update using the existing adapter to prevent UI flickering.
+     */
+    private void updateAdapterData(List<User> users) {
+        List<User> safeList = users != null ? users : new ArrayList<>();
+
+        if (adapter != null) {
+            adapter.updateData(safeList);
         }
 
-        // Cấp lại Adapter để đổi loại Nút (Accept/Decline <-> Cancel)
-        adapter = new RequestAdapter(displayList, isShowingIncoming, new RequestAdapter.RequestActionListener() {
-            @Override
-            public void onAccept(User user) {
-                socialViewModel.acceptFriendRequest(user);
-            }
-
-            @Override
-            public void onDecline(User user) {
-                socialViewModel.declineFriendRequest(user);
-            }
-
-            @Override
-            public void onCancel(User user) {
-                socialViewModel.cancelFriendRequest(user);
-            }
-        });
-        rvRequests.setAdapter(adapter);
-
-        if (displayList.isEmpty()) {
+        // Toggle Empty State UI
+        if (safeList.isEmpty()) {
             rvRequests.setVisibility(View.GONE);
             layoutEmpty.setVisibility(View.VISIBLE);
         } else {
             rvRequests.setVisibility(View.VISIBLE);
             layoutEmpty.setVisibility(View.GONE);
         }
-    }
-
-    private void setupBottomNav() {
-        /*
-        bottomNavigation.setItemActiveIndicatorEnabled(false);
-        bottomNavigation.setOnItemSelectedListener(item -> {
-            int id = item.getItemId();
-            if (id == R.id.nav_friends) {
-                // CHUYỂN VỀ MÀN HÌNH BẠN BÈ VÀ TẮT MÀN NÀY ĐI
-                startActivity(new Intent(RequestsActivity.this, FriendsActivity.class));
-                overridePendingTransition(0, 0); // Tắt hiệu ứng trượt màn hình cho nó mượt như đổi Tab
-                finish();
-                return true;
-            } else if (id == R.id.nav_requests) {
-                return true; // Đang ở đây rồi thì đứng im
-            }
-            // TODO: Sếp thêm luồng cho nav_messages ở đây nếu sau này làm
-            // TODO: Sếp thêm luồng cho nav_messages ở đây nếu sau này làm
-            if (id == R.id.nav_messages) {
-                startActivity(new Intent(RequestsActivity.this, MessagesActivity.class));
-                overridePendingTransition(0, 0);
-                finish();
-                return true;
-            }
-            return false;
-        });
-        */
     }
 }

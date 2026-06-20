@@ -1,5 +1,6 @@
 package com.example.cashify.ui.home;
 
+import android.annotation.SuppressLint;
 import android.graphics.drawable.GradientDrawable;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -17,17 +18,18 @@ import java.util.List;
 public class LegendAdapter extends RecyclerView.Adapter<LegendAdapter.ViewHolder> {
 
     private List<LegendItem> list = new ArrayList<>();
+    private OnItemClickListener listener;
 
-    //interface để nhận diện click vô legend
+    // Interface to handle legend item click events
     public interface OnItemClickListener {
         void onItemClick(LegendItem item);
     }
-    private OnItemClickListener listener;
 
     public void setOnItemClickListener(OnItemClickListener listener) {
         this.listener = listener;
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     public void updateData(List<LegendItem> newList) {
         this.list = newList != null ? newList : new ArrayList<>();
         notifyDataSetChanged();
@@ -47,12 +49,13 @@ public class LegendAdapter extends RecyclerView.Adapter<LegendAdapter.ViewHolder
         holder.tvName.setText(item.getName());
         holder.tvAmount.setText(item.getFormattedAmount());
 
-        GradientDrawable bgShape = (GradientDrawable) holder.colorCircle.getBackground();
-        if (bgShape != null) {
+        // Update the color of the circular indicator dynamically
+        if (holder.colorCircle.getBackground() instanceof GradientDrawable) {
+            GradientDrawable bgShape = (GradientDrawable) holder.colorCircle.getBackground();
             bgShape.setColor(item.getColor());
         }
 
-        //Gắn sự kiện click vào cả cái dòng đó
+        // Attach click listener to the entire row
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) {
                 listener.onItemClick(item);
@@ -61,7 +64,9 @@ public class LegendAdapter extends RecyclerView.Adapter<LegendAdapter.ViewHolder
     }
 
     @Override
-    public int getItemCount() { return list.size(); }
+    public int getItemCount() {
+        return list.size();
+    }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         View colorCircle;

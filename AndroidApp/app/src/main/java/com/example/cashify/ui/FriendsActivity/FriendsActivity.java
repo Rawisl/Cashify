@@ -2,6 +2,8 @@ package com.example.cashify.ui.FriendsActivity;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
@@ -18,25 +20,31 @@ import com.example.cashify.R;
 import com.example.cashify.data.model.User;
 import com.example.cashify.ui.main.BaseActivity;
 import com.example.cashify.ui.main.MainActivity;
+import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
-import java.util.List;
 
 public class FriendsActivity extends BaseActivity {
 
-    private SocialViewModel socialViewModel;
+    private FriendsViewModel socialViewModel;
+
+    // UI Components
     private FloatingActionButton fabAddFriend;
     private RecyclerView rvFriends;
     private RecyclerView rvSuggestions;
-    private FriendAdapter friendAdapter;
-    private SuggestionAdapter suggestionAdapter;
     private TextView tvFriendsEmpty;
     private TextView tvSuggestionsEmpty;
     private TextView tvSuggestionCount;
     private TextView tvRequestsSummary;
-    private final List<User> friendList = new ArrayList<>();
-    private final List<User> suggestionList = new ArrayList<>();
+
+    // Adapters
+    private FriendAdapter friendAdapter;
+    private SuggestionAdapter suggestionAdapter;
+
+    // Search optimization
+    private final Handler searchHandler = new Handler(Looper.getMainLooper());
+    private Runnable searchRunnable;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,12 +52,13 @@ public class FriendsActivity extends BaseActivity {
         setContentView(R.layout.activity_friends);
         setupBaseSidebar();
 
+        socialViewModel = new ViewModelProvider(this).get(FriendsViewModel.class);
+
         bindViews();
-        socialViewModel = new ViewModelProvider(this).get(SocialViewModel.class);
         setupAdapters();
         setupActions();
-        observeViewModel();
         setupSearch();
+        observeViewModel();
 
         socialViewModel.fetchOnlyFriends();
     }
@@ -65,12 +74,32 @@ public class FriendsActivity extends BaseActivity {
     }
 
     private void setupAdapters() {
-        FriendAdapter.ActionListener listener = new FriendAdapter.ActionListener() {
-            @Override public void onAddFriend(User user) { socialViewModel.sendFriendRequest(user); }
-            @Override public void onCancelRequest(User user) { socialViewModel.cancelFriendRequest(user); }
-            @Override public void onAccept(User user) { socialViewModel.acceptFriendRequest(user); }
-            @Override public void onDecline(User user) { socialViewModel.declineFriendRequest(user); }
-            @Override public void onUnfriend(User user) { socialViewModel.unfriend(user); }
+        // Friend List Adapter Setup
+        FriendAdapter.ActionListener friendListener = new FriendAdapter.ActionListener() {
+            @Override
+            public void onAddFriend(User user) {
+                socialViewModel.sendFriendRequest(user);
+            }
+
+            @Override
+            public void onCancelRequest(User user) {
+                socialViewModel.cancelFriendRequest(user);
+            }
+
+            @Override
+            public void onAccept(User user) {
+                socialViewModel.acceptFriendRequest(user);
+            }
+
+            @Override
+            public void onDecline(User user) {
+                socialViewModel.declineFriendRequest(user);
+            }
+
+            @Override
+            public void onUnfriend(User user) {
+                socialViewModel.unfriend(user);
+            }
 
             @Override
             public void onMessage(User user) {
@@ -78,27 +107,41 @@ public class FriendsActivity extends BaseActivity {
             }
         };
 
-        friendAdapter = new FriendAdapter(friendList, listener);
+        // Initialize with empty list, delegate data management to the Adapter
+        friendAdapter = new FriendAdapter(new ArrayList<>(), friendListener);
         rvFriends.setLayoutManager(new LinearLayoutManager(this));
         rvFriends.setNestedScrollingEnabled(false);
         rvFriends.setAdapter(friendAdapter);
 
-        suggestionAdapter = new SuggestionAdapter(suggestionList, new SuggestionAdapter.ActionListener() {
-            @Override public void onAddFriend(User user) { socialViewModel.sendFriendRequest(user); }
-            @Override public void onCancelRequest(User user) { socialViewModel.cancelFriendRequest(user); }
-            @Override public void onSeeAll() { openSuggestedFriends(); }
-        });
+        // Suggestions List Adapter Setup
+        SuggestionAdapter.ActionListener suggestionListener = new SuggestionAdapter.ActionListener() {
+            @Override
+            public void onAddFriend(User user) {
+                socialViewModel.sendFriendRequest(user);
+            }
+
+            @Override
+            public void onCancelRequest(User user) {
+                socialViewModel.cancelFriendRequest(user);
+            }
+
+            @Override
+            public void onSeeAll() {
+                openSuggestedFriends();
+            }
+        };
+
+        suggestionAdapter = new SuggestionAdapter(new ArrayList<>(), suggestionListener);
         rvSuggestions.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
         rvSuggestions.setAdapter(suggestionAdapter);
     }
 
     private void setupActions() {
-        com.google.android.material.appbar.MaterialToolbar toolbarFriends = findViewById(R.id.toolbarFriends);
-        if (toolbarFriends != null) {
-            toolbarFriends.setNavigationOnClickListener(v -> {
-                if (drawerLayout != null) drawerLayout.openDrawer(GravityCompat.START);
-            });
-        }
+        MaterialToolbar toolbarFriends = findViewById(R.id.toolbarFriends);
+        View bellIcon = findViewById(R.id.imgBellIcon);
+        TextView bellBadge = findViewById(R.id.tvBellBadge);
+
+        setupCommonHeader(toolbarFriends, bellIcon, bellBadge);
 
         View btnMessages = findViewById(R.id.btnMessages);
         if (btnMessages != null) {
@@ -115,22 +158,52 @@ public class FriendsActivity extends BaseActivity {
         }
     }
 
+    private void setupSearch() {
+        EditText edtSearch = findViewById(R.id.edtSearch);
+        if (edtSearch == null) return;
+
+        edtSearch.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // Debounce search input (waits 300ms after user stops typing to trigger search)
+                if (searchRunnable != null) searchHandler.removeCallbacks(searchRunnable);
+
+                String query = s == null ? "" : s.toString().trim();
+                searchRunnable = () -> {
+                    socialViewModel.filterFriendsLocal(query);
+                    socialViewModel.filterSuggestionsLocal(query);
+                };
+
+                searchHandler.postDelayed(searchRunnable, 300);
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+            }
+        });
+    }
+
     private void observeViewModel() {
         socialViewModel.friendList.observe(this, users -> {
-            friendList.clear();
-            if (users != null) friendList.addAll(users);
-            friendAdapter.updateList(friendList);
-            tvFriendsEmpty.setVisibility(friendList.isEmpty() ? View.VISIBLE : View.GONE);
-            rvFriends.setVisibility(friendList.isEmpty() ? View.GONE : View.VISIBLE);
+            boolean isEmpty = (users == null || users.isEmpty());
+            friendAdapter.updateList(users);
+
+            tvFriendsEmpty.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
+            rvFriends.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
         });
 
         socialViewModel.suggestionList.observe(this, users -> {
             int fullCount = users == null ? 0 : users.size();
-            suggestionList.clear();
-            if (users != null) suggestionList.addAll(users.subList(0, Math.min(5, users.size())));
+
+            // Limit preview to 5 items safely
+            suggestionAdapter.updateList(users != null ? users.subList(0, Math.min(5, fullCount)) : new ArrayList<>());
             suggestionAdapter.setShowSeeAllCard(fullCount > 5);
-            suggestionAdapter.updateList(suggestionList);
-            tvSuggestionCount.setText(fullCount + " people");
+
+            tvSuggestionCount.setText(getString(R.string.friend_count_format, fullCount));
             tvSuggestionsEmpty.setVisibility(fullCount == 0 ? View.VISIBLE : View.GONE);
             rvSuggestions.setVisibility(fullCount == 0 ? View.GONE : View.VISIBLE);
         });
@@ -138,33 +211,20 @@ public class FriendsActivity extends BaseActivity {
         socialViewModel.incomingList.observe(this, users -> {
             int count = users == null ? 0 : users.size();
             tvRequestsSummary.setText(count > 0
-                    ? count + " requests waiting for your response"
-                    : "View pending friend requests");
+                    ? getString(R.string.friend_requests_waiting, count)
+                    : getString(R.string.friend_requests_empty));
         });
 
         socialViewModel.error.observe(this, msg -> {
-            if (msg != null) Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
+            if (msg != null && !msg.isEmpty()) {
+                Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
+            }
         });
 
         socialViewModel.toast.observe(this, msg -> {
-            if (msg != null) Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
-        });
-    }
-
-    private void setupSearch() {
-        EditText edtSearch = findViewById(R.id.edtSearch);
-        if (edtSearch == null) return;
-        edtSearch.addTextChangedListener(new TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                String query = s == null ? "" : s.toString().trim();
-                socialViewModel.filterFriendsLocal(query);
-                socialViewModel.filterSuggestionsLocal(query);
+            if (msg != null && !msg.isEmpty()) {
+                Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
             }
-
-            @Override public void afterTextChanged(Editable s) {}
         });
     }
 
@@ -189,8 +249,6 @@ public class FriendsActivity extends BaseActivity {
     private void openChat(User user) {
         Intent intent = new Intent(FriendsActivity.this, FriendChatActivity.class);
         intent.putExtra(FriendChatActivity.EXTRA_FRIEND_UID, user.getUid());
-        intent.putExtra(FriendChatActivity.EXTRA_FRIEND_NAME, user.getNameToShow());
-        intent.putExtra(FriendChatActivity.EXTRA_FRIEND_AVATAR, user.getAvatarUrl());
         startActivity(intent);
     }
 

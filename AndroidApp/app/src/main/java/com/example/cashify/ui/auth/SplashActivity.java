@@ -2,19 +2,19 @@ package com.example.cashify.ui.auth;
 
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
+import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-
-import android.app.Activity;
 import android.view.View;
 import android.view.Window;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.TextView;
 
 import com.example.cashify.R;
-import com.example.cashify.data.remote.FirebaseManager;
+import com.example.cashify.data.repository.AuthRepositoryImpl;
+import com.example.cashify.data.repository.IAuthRepository;
 import com.example.cashify.ui.main.MainActivity;
 
 import java.util.Random;
@@ -22,13 +22,17 @@ import java.util.Random;
 public class SplashActivity extends Activity {
 
     private static final long SPLASH_DELAY_MS = 1400L;
+
     private ObjectAnimator mascotBounceAnimator;
+    private final Handler routingHandler = new Handler(Looper.getMainLooper());
+    private Runnable routingRunnable;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_splash);
+
         setupLoadingMessage();
         startSplashAnimations();
         routeAfterLoading();
@@ -37,6 +41,7 @@ public class SplashActivity extends Activity {
     private void setupLoadingMessage() {
         TextView loadingText = findViewById(R.id.txtSplashLoading);
         if (loadingText == null) return;
+
         int[] messages = {
                 R.string.splash_loading_default,
                 R.string.splash_loading_wallet,
@@ -59,23 +64,35 @@ public class SplashActivity extends Activity {
     }
 
     private void routeAfterLoading() {
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+        routingRunnable = () -> {
+            IAuthRepository authRepo = new AuthRepositoryImpl();
             Intent intent;
-            if (FirebaseManager.getInstance().getAuth().getCurrentUser() != null) {
+
+            if (authRepo.isLoggedIn()) {
                 intent = new Intent(SplashActivity.this, MainActivity.class);
             } else {
                 intent = new Intent(SplashActivity.this, LoginActivity.class);
             }
+
             startActivity(intent);
             finish();
-        }, SPLASH_DELAY_MS);
+        };
+
+        routingHandler.postDelayed(routingRunnable, SPLASH_DELAY_MS);
     }
 
     @Override
     protected void onDestroy() {
+        // Dọn dẹp animation
         if (mascotBounceAnimator != null) {
             mascotBounceAnimator.cancel();
         }
+
+        // Hủy bộ đếm chuyển màn hình nếu user thoát app sớm để chống rò rỉ bộ nhớ
+        if (routingHandler != null && routingRunnable != null) {
+            routingHandler.removeCallbacks(routingRunnable);
+        }
+
         super.onDestroy();
     }
 }

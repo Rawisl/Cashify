@@ -24,13 +24,13 @@ public static class SocialEndpoints
                 var token = authHeader.Substring("Bearer ".Length);
                 var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token)).Uid;
 
-                // 1. Kéo Profile User xem có phải Admin không
+                // Kiểm tra quyền Admin
                 var userSnap = await db.Collection("users").Document(uid).GetSnapshotAsync();
                 bool isAdmin = userSnap.ContainsField("role") && userSnap.GetValue<string>("role") == "ADMIN";
 
                 Query query = db.Collection("posts");
 
-                // NẾU KHÔNG PHẢI ADMIN THÌ MỚI BỊ LỌC THEO BẠN BÈ
+                // Giới hạn feed theo danh sách bạn bè nếu không phải Admin
                 if (!isAdmin && body.FriendIds != null && body.FriendIds.Count > 0)
                 {
                     var limitedFriends = body.FriendIds.Take(30).ToList();
@@ -44,6 +44,7 @@ public static class SocialEndpoints
 
                 var snapshot = await query.GetSnapshotAsync();
 
+                // Gắn trạng thái like của user đang xem cho từng bài viết
                 var likeCheckTasks = snapshot.Documents.Select(async doc =>
                 {
                     var postDict = doc.ToDictionary();
@@ -55,7 +56,7 @@ public static class SocialEndpoints
                 var posts = (await Task.WhenAll(likeCheckTasks)).ToList();
                 return Results.Ok(posts);
             }
-            catch (Exception ex) { return Results.Problem($"Lỗi lấy feed: {ex.Message}"); }
+            catch (Exception ex) { return Results.Problem($"Failed to fetch feed: {ex.Message}"); }
         });
 
         // ---------------------------------------------------------
@@ -79,7 +80,7 @@ public static class SocialEndpoints
         });
 
         // ---------------------------------------------------------
-        // 3. TẢI BÀI TƯỜNG NHÀ 
+        // 3. TẢI BÀI TRÊN TƯỜNG CÁ NHÂN
         // ---------------------------------------------------------
         group.MapGet("/post/wall/{targetUid}", async (HttpRequest request, FirestoreDb db, string targetUid, int limit = 10, long lastTimestamp = 0) =>
         {
@@ -129,13 +130,13 @@ public static class SocialEndpoints
                 var decodedToken = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token);
                 var uid = decodedToken.Uid;
 
-                if (string.IsNullOrEmpty(body.Content) && string.IsNullOrEmpty(body.ImageUrl) && string.IsNullOrEmpty(body.MilestoneData))
-                    return Results.BadRequest("Nội dung không được để trống");
+                if (string.IsNullOrEmpty(body.Title) && string.IsNullOrEmpty(body.Content) && string.IsNullOrEmpty(body.ImageUrl) && string.IsNullOrEmpty(body.MilestoneData))
+                    return Results.BadRequest("Title or content cannot be empty");
 
                 var userSnap = await db.Collection("users").Document(uid).GetSnapshotAsync();
                 var authorName = userSnap.Exists && userSnap.ContainsField("displayName")
                     ? userSnap.GetValue<string>("displayName")
-                    : "Người dùng Cashify";
+                    : "Cashify User";
 
                 var authorAvatarUrl = userSnap.Exists && userSnap.ContainsField("avatarUrl")
                     ? userSnap.GetValue<string>("avatarUrl") : "";
@@ -144,22 +145,24 @@ public static class SocialEndpoints
                 var postRef = db.Collection("posts").Document(postId);
 
                 var postData = new Dictionary<string, object>
-                {
-                    { "postId", postId },
-                    { "userId", uid },
-                    { "authorName", authorName },
-                    { "authorAvatarUrl", authorAvatarUrl },
-                    { "type", body.Type ?? "USER_POST" },
-                    { "audience", body.Audience ?? "FRIENDS" }, // HỨNG Audience TỪ ANDROID
-                    { "content", body.Content ?? "" },
-                    { "imageUrl", body.ImageUrl ?? "" },
-                    { "milestoneData", body.MilestoneData },
-                    { "likeCount", 0 },
-                    { "commentCount", 0 },
-                    { "timestamp", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() },
-                    { "isEdited", false }
-                };
-                // Bắt sự kiện: Nếu là bài đăng MILESTONE, lưu cờ vào shared_achievements
+         {
+             { "postId", postId },
+             { "userId", uid },
+             { "authorName", authorName },
+             { "authorAvatarUrl", authorAvatarUrl },
+             { "type", body.Type ?? "USER_POST" },
+             { "audience", body.Audience ?? "FRIENDS" },
+             { "title", body.Title ?? "" },
+             { "content", body.Content ?? "" },
+             { "imageUrl", body.ImageUrl ?? "" },
+             { "milestoneData", body.MilestoneData },
+             { "likeCount", 0 },
+             { "commentCount", 0 },
+             { "timestamp", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() },
+             { "isEdited", false }
+         };
+
+                // Đánh dấu thành tựu đã được chia sẻ nếu đây là bài post Milestone
                 if (body.Type == "MILESTONE_POST" && !string.IsNullOrEmpty(body.MilestoneData))
                 {
                     try
@@ -172,15 +175,16 @@ public static class SocialEndpoints
                             await achRef.SetAsync(new { sharedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() });
                         }
                     }
-                    catch (Exception) { /* Bỏ qua nếu parse JSON lỗi */ }
+                    catch (Exception) { /* Bỏ qua lỗi parse JSON */ }
                 }
+
                 await postRef.SetAsync(postData);
-                return Results.Ok(new { message = "Đăng bài thành công", postId });
+                return Results.Ok(new { message = "Post created successfully", postId });
             }
-            catch (Exception ex) { return Results.Problem($"Lỗi tạo bài: {ex.Message}"); }
+            catch (Exception ex) { return Results.Problem($"Failed to create post: {ex.Message}"); }
         });
 
-        // quét transactions và check shared_achievement cho post
+        // Tải các thành tựu chưa chia sẻ của User
         group.MapGet("/achievements/available", async (HttpRequest request, FirestoreDb db) =>
         {
             try
@@ -192,15 +196,13 @@ public static class SocialEndpoints
                 var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(authHeader.Substring("Bearer ".Length))).Uid;
                 var availableList = new List<AchievementSuggestion>();
 
-                // 1. Lấy danh sách achievement đã chia sẻ để không báo lại
+                // Lọc các thành tựu đã chia sẻ
                 var sharedSnap = await db.Collection("users").Document(uid).Collection("shared_achievements").GetSnapshotAsync();
                 var sharedIds = new HashSet<string>(sharedSnap.Documents.Select(d => d.Id));
 
-                // 2. Kéo Profile User (để lấy Chuỗi Streak)
                 var userSnap = await db.Collection("users").Document(uid).GetSnapshotAsync();
                 int streakDays = userSnap.ContainsField("streakDays") ? Convert.ToInt32(userSnap.GetValue<object>("streakDays")) : 0;
 
-                // 3. Kéo Thống kê Cá nhân
                 var statsSnap = await db.Collection("users").Document(uid).Collection("user_stats").Document("summary").GetSnapshotAsync();
 
                 var now = DateTimeOffset.UtcNow;
@@ -221,10 +223,10 @@ public static class SocialEndpoints
                 }
 
                 // ==========================================
-                // LUẬT CHƠI CÁ NHÂN
+                // THÀNH TỰU CÁ NHÂN
                 // ==========================================
 
-                // SỐ LƯỢNG GIAO DỊCH
+                // Milestone số lượng giao dịch
                 int[] transMilestones = { 10, 50, 100, 500 };
                 foreach (var m in transMilestones)
                 {
@@ -245,7 +247,7 @@ public static class SocialEndpoints
                     }
                 }
 
-                //CHUỖI NGÀY KỶ LUẬT (STREAK)
+                // Milestone chuỗi ngày liên tiếp
                 int[] streakMilestones = { 3, 7, 15, 30, 100 };
                 foreach (var s in streakMilestones)
                 {
@@ -268,7 +270,7 @@ public static class SocialEndpoints
 
                 if (statsSnap.Exists)
                 {
-                    // CÚ ĐÊM (NIGHT OWL)
+                    // Thành tựu Cú Đêm
                     bool isNightOwl = statsSnap.ContainsField("nightOwlUnlocked") && Convert.ToBoolean(statsSnap.GetValue<object>("nightOwlUnlocked"));
                     if (isNightOwl && !sharedIds.Contains("ach_night_owl"))
                     {
@@ -280,11 +282,11 @@ public static class SocialEndpoints
                             IconText = "🦉",
                             MonthLabel = "Lifetime",
                             AmountLabel = "Night Owl",
-                            Progress = 100
+                            Progress = 0
                         });
                     }
 
-                    //BIG SPENDER
+                    // Thành tựu Big Spender
                     bool isBigSpender = statsSnap.ContainsField("bigSpenderUnlocked") && Convert.ToBoolean(statsSnap.GetValue<object>("bigSpenderUnlocked"));
                     if (isBigSpender && !sharedIds.Contains("ach_big_spender"))
                     {
@@ -296,32 +298,37 @@ public static class SocialEndpoints
                             IconText = "🐋",
                             MonthLabel = "Lifetime",
                             AmountLabel = "> 10M VND",
-                            Progress = 100
+                            Progress = 0
                         });
                     }
                 }
 
-                //DƯƠNG THÁI QUÁ
+                // Thành tựu Tiết kiệm tháng
                 long surplus = totalIncomeThisMonth - totalSpendThisMonth;
                 string surplusAchId = $"recap_surplus_{now.Year}_{now.Month}";
                 if (surplus > 0 && !sharedIds.Contains(surplusAchId))
                 {
+                    int savedPercent = 0;
+                    if (totalIncomeThisMonth > 0)
+                    {
+                        savedPercent = (int)((surplus * 100.0) / totalIncomeThisMonth);
+                    }
+
                     availableList.Add(new AchievementSuggestion
                     {
                         Id = surplusAchId,
                         Title = "Healthy Finances",
-                        Description = "You earned more than you spent this month. Keep it up!",
+                        Description = $"You saved {savedPercent}% of your income this month. Keep it up!",
                         IconText = "💰",
                         MonthLabel = $"{now.Month}/{now.Year}",
                         AmountLabel = $"Surplus: {surplus:N0}đ",
-                        Progress = 100
+                        Progress = savedPercent > 0 ? savedPercent : 0
                     });
                 }
 
                 // ==========================================
-                // LUẬT CHƠI QUỸ NHÓM (QUÉT TẤT CẢ CÁC QUỸ)
+                // THÀNH TỰU NHÓM
                 // ==========================================
-                // Tìm tất cả các quỹ mà User này đang làm thành viên
                 var workspacesSnap = await db.Collection("workspaces").WhereArrayContains("members", uid).GetSnapshotAsync();
 
                 foreach (var wsDoc in workspacesSnap.Documents)
@@ -332,7 +339,6 @@ public static class SocialEndpoints
 
                     if (wsStatsSnap.Exists)
                     {
-                        // THE CARRY
                         string carryId = wsStatsSnap.ContainsField("theCarryId") ? wsStatsSnap.GetValue<string>("theCarryId") : "";
                         long maxIncome = wsStatsSnap.ContainsField("maxSingleIncome") ? Convert.ToInt64(wsStatsSnap.GetValue<object>("maxSingleIncome")) : 0;
                         string dynamicCarryId = $"ws_the_carry_{wsId}_{maxIncome}";
@@ -345,13 +351,12 @@ public static class SocialEndpoints
                                 Title = "The Carry",
                                 Description = "You are the MVP! The largest single contributor.",
                                 IconText = "🦸‍♂️",
-                                MonthLabel = wsName, 
+                                MonthLabel = wsName,
                                 AmountLabel = $"{maxIncome:N0}đ",
-                                Progress = 100
+                                Progress = 0
                             });
                         }
 
-                        // BIGGEST SPENDER
                         string spenderId = wsStatsSnap.ContainsField("biggestSpenderId") ? wsStatsSnap.GetValue<string>("biggestSpenderId") : "";
                         long maxSpend = wsStatsSnap.ContainsField("maxSingleSpend") ? Convert.ToInt64(wsStatsSnap.GetValue<object>("maxSingleSpend")) : 0;
                         string dynamicSpenderId = $"ws_biggest_spender_{wsId}_{maxSpend}";
@@ -366,7 +371,7 @@ public static class SocialEndpoints
                                 IconText = "🛍️",
                                 MonthLabel = wsName,
                                 AmountLabel = $"{maxSpend:N0}đ",
-                                Progress = 100
+                                Progress = 0
                             });
                         }
                     }
@@ -398,7 +403,7 @@ public static class SocialEndpoints
                 {
                     DocumentSnapshot postSnap = await transaction.GetSnapshotAsync(postRef);
                     if (!postSnap.Exists)
-                        throw new Exception("Bài viết không tồn tại");
+                        throw new Exception("Post not found");
 
                     DocumentSnapshot likeSnap = await transaction.GetSnapshotAsync(likeRef);
                     long currentLikes = postSnap.GetValue<long>("likeCount");
@@ -415,13 +420,13 @@ public static class SocialEndpoints
                     }
                 });
 
-                return Results.Ok(new { message = "Thao tác Like/Unlike thành công" });
+                return Results.Ok(new { message = "Like/Unlike action successful" });
             }
             catch (Exception ex) { return Results.Problem(ex.Message); }
         });
 
         // ---------------------------------------------------------
-        // 6. SỬA BÀI VIẾT (Đã fix Update Audience)
+        // 6. SỬA BÀI VIẾT
         // ---------------------------------------------------------
         group.MapPost("/post/edit", async (HttpRequest request, EditPostRequest body, FirestoreDb db) =>
         {
@@ -438,7 +443,7 @@ public static class SocialEndpoints
                 var postSnap = await postRef.GetSnapshotAsync();
 
                 if (!postSnap.Exists)
-                    return Results.NotFound("Bài viết không tồn tại");
+                    return Results.NotFound("Post not found");
 
                 var currentUserSnap = await db.Collection("users").Document(uid).GetSnapshotAsync();
                 bool isAdmin = currentUserSnap.ContainsField("role") && currentUserSnap.GetValue<string>("role") == "ADMIN";
@@ -448,18 +453,19 @@ public static class SocialEndpoints
 
                 var updates = new Dictionary<string, object>
                 {
-                    { "content", body.NewContent },
+                    { "title", body.Title ?? "" },
+                    { "content", body.NewContent ?? "" },
                     { "isEdited", true }
                 };
                 if (body.NewImageUrl != null)
                     updates["imageUrl"] = body.NewImageUrl;
 
-                // Nếu Android có truyền Audience lên thì C# mới Update
+                // Chỉ update Audience nếu client gửi lên
                 if (body.Audience != null)
                     updates["audience"] = body.Audience;
 
                 await postRef.UpdateAsync(updates);
-                return Results.Ok(new { message = "Đã sửa bài viết" });
+                return Results.Ok(new { message = "Post updated successfully" });
             }
             catch (Exception ex) { return Results.Problem(ex.Message); }
         });
@@ -482,7 +488,7 @@ public static class SocialEndpoints
                 var postSnap = await postRef.GetSnapshotAsync();
 
                 if (!postSnap.Exists)
-                    return Results.NotFound("Bài viết không tồn tại");
+                    return Results.NotFound("Post not found");
 
                 var currentUserSnap = await db.Collection("users").Document(uid).GetSnapshotAsync();
                 bool isAdmin = currentUserSnap.ContainsField("role") && currentUserSnap.GetValue<string>("role") == "ADMIN";
@@ -503,7 +509,7 @@ public static class SocialEndpoints
                 batch.Delete(postRef);
                 await batch.CommitAsync();
 
-                return Results.Ok(new { message = "Đã xóa bài viết và các dữ liệu liên quan" });
+                return Results.Ok(new { message = "Post and related data deleted successfully" });
             }
             catch (Exception ex) { return Results.Problem(ex.Message); }
         });
@@ -528,7 +534,7 @@ public static class SocialEndpoints
 
                 var userSnap = await db.Collection("users").Document(uid).GetSnapshotAsync();
                 var authorName = userSnap.Exists && userSnap.ContainsField("displayName")
-                    ? userSnap.GetValue<string>("displayName") : "Người dùng Cashify";
+                    ? userSnap.GetValue<string>("displayName") : "Cashify User";
                 var authorAvatarUrl = userSnap.Exists && userSnap.ContainsField("avatarUrl")
                     ? userSnap.GetValue<string>("avatarUrl") : "";
 
@@ -536,7 +542,7 @@ public static class SocialEndpoints
                 {
                     DocumentSnapshot postSnap = await transaction.GetSnapshotAsync(postRef);
                     if (!postSnap.Exists)
-                        throw new Exception("Bài viết không tồn tại");
+                        throw new Exception("Post not found");
 
                     var commentData = new Dictionary<string, object>
                     {
@@ -554,7 +560,7 @@ public static class SocialEndpoints
                     transaction.Update(postRef, "commentCount", currentComments + 1);
                 });
 
-                return Results.Ok(new { message = "Bình luận thành công", commentId });
+                return Results.Ok(new { message = "Comment added successfully", commentId });
             }
             catch (Exception ex) { return Results.Problem(ex.Message); }
         });
@@ -577,7 +583,7 @@ public static class SocialEndpoints
                 var commentSnap = await commentRef.GetSnapshotAsync();
 
                 if (!commentSnap.Exists)
-                    return Results.NotFound("Comment's not exist");
+                    return Results.NotFound("Comment not found");
 
                 var currentUserSnap = await db.Collection("users").Document(uid).GetSnapshotAsync();
                 bool isAdmin = currentUserSnap.ContainsField("role") && currentUserSnap.GetValue<string>("role") == "ADMIN";
@@ -587,11 +593,11 @@ public static class SocialEndpoints
 
                 await commentRef.UpdateAsync(new Dictionary<string, object>
                 {
-                    { "content", body.NewContent },
+                    { "content", body.NewContent ?? "" },
                     { "isEdited", true }
                 });
 
-                return Results.Ok(new { message = "Edited" });
+                return Results.Ok(new { message = "Comment updated successfully" });
             }
             catch (Exception ex) { return Results.Problem(ex.Message); }
         });
@@ -622,13 +628,13 @@ public static class SocialEndpoints
                     var commentSnap = await transaction.GetSnapshotAsync(commentRef);
 
                     if (!postSnap.Exists || !commentSnap.Exists)
-                        throw new Exception("Không tìm thấy dữ liệu");
+                        throw new Exception("Data not found");
 
                     var postOwnerId = postSnap.GetValue<string>("userId");
                     var commentOwnerId = commentSnap.GetValue<string>("userId");
 
                     if (uid != commentOwnerId && uid != postOwnerId && !isAdmin)
-                        throw new Exception("Không có quyền xóa");
+                        throw new Exception("Permission denied");
 
                     transaction.Delete(commentRef);
 
@@ -636,7 +642,7 @@ public static class SocialEndpoints
                     transaction.Update(postRef, "commentCount", Math.Max(0, currentComments - 1));
                 });
 
-                return Results.Ok(new { message = "Đã xóa bình luận" });
+                return Results.Ok(new { message = "Comment deleted successfully" });
             }
             catch (Exception ex) { return Results.Problem(ex.Message); }
         });
@@ -661,7 +667,7 @@ public static class SocialEndpoints
                     {
                         profiles[uid] = new
                         {
-                            displayName = userSnap.ContainsField("displayName") ? userSnap.GetValue<string>("displayName") : "Người dùng Cashify",
+                            displayName = userSnap.ContainsField("displayName") ? userSnap.GetValue<string>("displayName") : "Cashify User",
                             avatarUrl = userSnap.ContainsField("avatarUrl") ? userSnap.GetValue<string>("avatarUrl") : ""
                         };
                     }
@@ -689,26 +695,26 @@ public static class SocialEndpoints
                 string senderName = decodedToken.Claims.TryGetValue("name", out var nameObj) ? nameObj.ToString()! : "Unknown user";
 
                 if (string.IsNullOrEmpty(body.TargetUid) || uid == body.TargetUid)
-                    return Results.BadRequest("UID invalid");
+                    return Results.BadRequest("Invalid UID");
 
                 var currentUserRef = db.Collection("users").Document(uid);
                 var targetUserRef = db.Collection("users").Document(body.TargetUid);
                 var targetUserSnap = await targetUserRef.GetSnapshotAsync();
 
                 if (!targetUserSnap.Exists)
-                    return Results.NotFound(new { message = "Không tìm thấy người dùng nhận lời mời" });
+                    return Results.NotFound(new { message = "Target user not found" });
 
                 var existingFriendSnap = await currentUserRef.Collection("friends").Document(body.TargetUid).GetSnapshotAsync();
                 if (existingFriendSnap.Exists)
-                    return Results.Conflict(new { message = "Người này đã là bạn bè của bạn rồi" });
+                    return Results.Conflict(new { message = "User is already your friend" });
 
                 var existingSentRequestSnap = await currentUserRef.Collection("sent_requests").Document(body.TargetUid).GetSnapshotAsync();
                 if (existingSentRequestSnap.Exists)
-                    return Results.Conflict(new { message = "Bạn đã gửi lời mời cho người này rồi" });
+                    return Results.Conflict(new { message = "Friend request already sent" });
 
                 var incomingRequestSnap = await currentUserRef.Collection("friend_requests").Document(body.TargetUid).GetSnapshotAsync();
                 if (incomingRequestSnap.Exists)
-                    return Results.Conflict(new { message = "Người này đã gửi lời mời cho bạn" });
+                    return Results.Conflict(new { message = "User has already sent you a request" });
 
                 var batch = db.StartBatch();
                 var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -731,11 +737,11 @@ public static class SocialEndpoints
                 });
 
                 await batch.CommitAsync();
-                return Results.Ok(new { message = "sent request successfully" });
+                return Results.Ok(new { message = "Friend request sent successfully" });
             }
             catch (Exception ex)
             {
-                return Results.Problem(title: "Gửi lời mời thất bại", detail: ex.Message, statusCode: 500);
+                return Results.Problem(title: "Failed to send friend request", detail: ex.Message, statusCode: 500);
             }
         });
 
@@ -752,7 +758,7 @@ public static class SocialEndpoints
 
                 var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(authHeader.Substring("Bearer ".Length))).Uid;
                 if (string.IsNullOrEmpty(body.TargetUid))
-                    return Results.BadRequest("UID không hợp lệ");
+                    return Results.BadRequest("Invalid UID");
 
                 var batch = db.StartBatch();
                 var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -764,7 +770,7 @@ public static class SocialEndpoints
                 batch.Set(db.Collection("users").Document(body.TargetUid).Collection("friends").Document(uid), new { timestamp });
 
                 await batch.CommitAsync();
-                return Results.Ok(new { message = "Đã trở thành bạn bè" });
+                return Results.Ok(new { message = "Friend request accepted" });
             }
             catch (Exception ex) { return Results.Problem(ex.Message); }
         });
@@ -782,7 +788,7 @@ public static class SocialEndpoints
 
                 var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(authHeader.Substring("Bearer ".Length))).Uid;
                 if (string.IsNullOrEmpty(body.TargetUid))
-                    return Results.BadRequest("UID invalid");
+                    return Results.BadRequest("Invalid UID");
 
                 var batch = db.StartBatch();
                 string[] collections = { "friends", "friend_requests", "sent_requests" };
@@ -793,7 +799,7 @@ public static class SocialEndpoints
                 }
 
                 await batch.CommitAsync();
-                return Results.Ok(new { message = "successfully" });
+                return Results.Ok(new { message = "Action successful" });
             }
             catch (Exception ex) { return Results.Problem(ex.Message); }
         });
@@ -835,7 +841,7 @@ public static class SocialEndpoints
             }
             catch (Exception ex)
             {
-                return Results.Problem(title: "Tải gợi ý kết bạn thất bại", detail: ex.Message, statusCode: 500);
+                return Results.Problem(title: "Failed to load friend suggestions", detail: ex.Message, statusCode: 500);
             }
         });
 
@@ -857,7 +863,7 @@ public static class SocialEndpoints
                 var postSnap = await postRef.GetSnapshotAsync();
 
                 if (!postSnap.Exists)
-                    return Results.NotFound(new { message = "Bài viết không tồn tại" });
+                    return Results.NotFound(new { message = "Post not found" });
 
                 var postDict = postSnap.ToDictionary();
 

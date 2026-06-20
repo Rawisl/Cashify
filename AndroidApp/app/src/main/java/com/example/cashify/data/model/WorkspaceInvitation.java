@@ -2,9 +2,13 @@ package com.example.cashify.data.model;
 
 import com.google.firebase.firestore.Exclude;
 
+// POJO map dữ liệu Lời mời tham gia Quỹ nhóm từ Firebase Firestore
 public class WorkspaceInvitation {
+
+    // Loại trừ biến này khi push lên server, chỉ dùng để hứng Document ID ở Local
     @Exclude
     private String id;
+
     private String workspaceId;
     private String workspaceName;
     private String inviterName;

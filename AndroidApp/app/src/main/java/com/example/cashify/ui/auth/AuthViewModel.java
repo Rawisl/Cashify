@@ -6,12 +6,18 @@ import androidx.lifecycle.ViewModel;
 
 import com.example.cashify.data.remote.FirebaseManager;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.SetOptions;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class AuthViewModel extends ViewModel {
-    //Bộ não của cả cụm auth. Nó sẽ gọi qua FirebaseManager để hỏi thông tin đăng nhập, sau đó báo kết quả lại cho Activity để chuyển màn hình.
+
+    // Core dependency for authentication operations
     private final FirebaseManager firebaseManager;
 
-    // LiveData để Activity quan sát (Observe) trạng thái
+    // Internal MutableLiveData (Writable) -> External LiveData (Read-only)
     private final MutableLiveData<Boolean> _isLoading = new MutableLiveData<>(false);
     public LiveData<Boolean> isLoading = _isLoading;
 
@@ -31,32 +37,30 @@ public class AuthViewModel extends ViewModel {
         this.firebaseManager = FirebaseManager.getInstance();
     }
 
+    // Resets the loading state (e.g., when a user cancels the Google Sign-In flow)
+    public void resetLoadingState() {
+        _isLoading.setValue(false);
+    }
+
     // ============================================================
-    // TODO 1: LOGIC ĐĂNG NHẬP (EMAIL/PASSWORD)
-    // - Gọi firebaseManager.loginWithEmail(email, password).
-    // - Trước khi gọi: set _isLoading = true.
-    // - Nếu thành công: set _isAuthSuccess = true.
-    // - Nếu thất bại: set _errorMessage = lỗi trả về từ Firebase.
-    // - Kết thúc: set _isLoading = false.
+    // EMAIL / PASSWORD LOGIN
     // ============================================================
     public void login(String email, String password) {
         _isLoading.setValue(true);
 
-        // Dùng AuthCallback thay cho addOnSuccessListener
         firebaseManager.loginWithEmail(email, password, new FirebaseManager.AuthCallback() {
             @Override
             public void onSuccess(String uid) {
                 FirebaseUser user = firebaseManager.getAuth().getCurrentUser();
                 if (user != null) {
-                    // ÉP FIREBASE TẢI LẠI DỮ LIỆU MỚI NHẤT (Đề phòng user vừa mới click link trong mail xong)
+                    // Force reload to fetch the latest email verification status
                     user.reload().addOnCompleteListener(task -> {
-                        _isLoading.setValue(false);
-
-                        // KIỂM TRA HÀNG REAL: Đã xác thực mail chưa?
                         if (user.isEmailVerified()) {
-                            _isAuthSuccess.setValue(true); // Pass! Cho vào nhà
+                            // Valid user -> Sync profile to Firestore before allowing entry
+                            syncUserWithFirestore(user);
                         } else {
-                            firebaseManager.logout(); // Chưa xác thực -> Đăng xuất ngay lập tức
+                            _isLoading.setValue(false);
+                            firebaseManager.logout(); // Instantly log out unverified users
                             _errorMessage.setValue("Account is not verified! Please check your email.");
                         }
                     });
@@ -72,28 +76,21 @@ public class AuthViewModel extends ViewModel {
     }
 
     // ============================================================
-    // TODO 2: LOGIC ĐĂNG KÝ TÀI KHOẢN MỚI
-    // - Gọi firebaseManager.register(email, password, displayName).
-    // - Sau khi Firebase tạo xong User Auth, phải gọi thêm lệnh
-    //   để tạo một Document "User" mới trong Firestore và một
-    //   Workspace "PERSONAL" mặc định cho user đó.
+    // ACCOUNT REGISTRATION
     // ============================================================
     public void register(String email, String password, String name) {
         _isLoading.setValue(true);
 
-        // Lưu ý: Tên hàm bên FirebaseManager giờ là registerWithEmail
-        firebaseManager.registerWithEmail(email, password, name,new FirebaseManager.AuthCallback() {
+        firebaseManager.registerWithEmail(email, password, name, new FirebaseManager.AuthCallback() {
             @Override
             public void onSuccess(String uid) {
                 FirebaseUser user = firebaseManager.getAuth().getCurrentUser();
                 if (user != null) {
-                    // LỆNH BẮN EMAIL XÁC THỰC ĐẾN NGƯỜI DÙNG
+                    // Trigger email verification automatically upon registration
                     user.sendEmailVerification().addOnCompleteListener(task -> {
                         _isLoading.setValue(false);
                         firebaseManager.logout();
-
-                        // Báo cho UI hiện chữ thành công
-                        _infoMessage.setValue("Register successful! Please check your email to verify.");
+                        _infoMessage.setValue("Registration successful! Please check your email to verify.");
                     });
                 }
             }
@@ -107,9 +104,7 @@ public class AuthViewModel extends ViewModel {
     }
 
     // ============================================================
-    // TODO 3: ĐĂNG NHẬP BẰNG GOOGLE
-    // - Nhận idToken từ GoogleSignInAccount.
-    // - Gọi firebaseManager.loginWithGoogle(idToken).
+    // GOOGLE SIGN IN
     // ============================================================
     public void loginWithGoogle(String idToken) {
         _isLoading.setValue(true);
@@ -117,8 +112,9 @@ public class AuthViewModel extends ViewModel {
         firebaseManager.loginWithGoogle(idToken, new FirebaseManager.AuthCallback() {
             @Override
             public void onSuccess(String uid) {
-                _isLoading.setValue(false);
-                _isAuthSuccess.setValue(true);
+                FirebaseUser user = firebaseManager.getAuth().getCurrentUser();
+                // Sync profile to Firestore before allowing entry
+                syncUserWithFirestore(user);
             }
 
             @Override
@@ -130,14 +126,11 @@ public class AuthViewModel extends ViewModel {
     }
 
     // ============================================================
-    // TODO 4: QUÊN MẬT KHẨU
-    // - Gọi firebaseManager.sendPasswordResetEmail(email).
-    // - Báo thành công để Activity hiển thị Toast thông báo check mail.
+    // PASSWORD RESET
     // ============================================================
     public void resetPassword(String email) {
         _isLoading.setValue(true);
 
-        // Gọi trực tiếp getAuth() từ FirebaseManager
         firebaseManager.getAuth().sendPasswordResetEmail(email)
                 .addOnSuccessListener(aVoid -> {
                     _isLoading.setValue(false);
@@ -147,5 +140,51 @@ public class AuthViewModel extends ViewModel {
                     _isLoading.setValue(false);
                     _errorMessage.setValue(e.getMessage());
                 });
+    }
+
+    // ============================================================
+    // FIRESTORE SYNCHRONIZATION
+    // ============================================================
+    private void syncUserWithFirestore(FirebaseUser firebaseUser) {
+        if (firebaseUser == null) {
+            _isAuthSuccess.postValue(true);
+            _isLoading.postValue(false);
+            return;
+        }
+
+        Map<String, Object> userMap = new HashMap<>();
+        userMap.put("uid", firebaseUser.getUid());
+        userMap.put("email", firebaseUser.getEmail());
+
+        if (firebaseUser.getDisplayName() != null && !firebaseUser.getDisplayName().isEmpty()) {
+            userMap.put("displayName", firebaseUser.getDisplayName());
+        }
+        if (firebaseUser.getPhotoUrl() != null) {
+            String originalUrl = firebaseUser.getPhotoUrl().toString();
+            // Enhance Google avatar resolution by swapping URL parameters
+            if (originalUrl.contains("s96-c")) {
+                originalUrl = originalUrl.replace("s96-c", "s400-c");
+            }
+            userMap.put("avatarUrl", originalUrl);
+        }
+
+        // Note: Ideally handled by a UserRepository. Kept here to minimize structural breaking.
+        FirebaseFirestore.getInstance().collection("users").document(firebaseUser.getUid())
+                .set(userMap, SetOptions.merge())
+                .addOnCompleteListener(task -> {
+                    // Trigger UI navigation only after database sync is complete
+                    _isAuthSuccess.postValue(true);
+                    _isLoading.postValue(false);
+                });
+    }
+
+    // Xóa lỗi để không bị nổ Toast nhiều lần
+    public void clearErrorMessage() {
+        _errorMessage.setValue(null);
+    }
+
+    // Reset lại trạng thái gửi mail
+    public void clearResetMailStatus() {
+        _isResetMailSent.setValue(false);
     }
 }

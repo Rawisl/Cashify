@@ -21,63 +21,40 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
 import com.example.cashify.ui.auth.EditProfileActivity;
-import com.example.cashify.ui.feed.CommunityFeedAdapter;
-import com.example.cashify.ui.feed.FeedItem;
+import com.example.cashify.ui.common.BaseFragment;
 import com.example.cashify.ui.main.MainActivity;
 import com.example.cashify.ui.notifications.InvitationsActivity;
-import com.example.cashify.utils.ApiClient;
-import com.example.cashify.utils.ApiService;
 import com.example.cashify.utils.ImageHelper;
 import com.google.android.material.appbar.MaterialToolbar;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.DocumentSnapshot;  // GIỮ — dùng trong observeViewModel
-import com.google.firebase.firestore.FirebaseFirestore;
-
-// ĐÃ XÓA: import FirebaseFirestore, ListenerRegistration, Query
-// (không còn dùng Firestore snapshot listener để load posts nữa)
+import com.google.firebase.firestore.DocumentSnapshot;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 import java.util.Locale;
-import java.util.Map;  // THÊM MỚI — dùng trong bindProfilePosts
 
-import retrofit2.Call;       // THÊM MỚI
-import retrofit2.Callback;   // THÊM MỚI
-import retrofit2.Response;   // THÊM MỚI
-
-public class SocialProfileFragment extends Fragment {
+public class SocialProfileFragment extends BaseFragment {
 
     private ImageView imgAvatar;
-    private TextView tvDisplayName;
-    private TextView tvBio;
-    private TextView tvFriendCount;
-    private TextView tvTrophyCount;
-    private TextView tvPostCount;
-    private TextView tvJoinedDate;
-    private TextView tvPinnedAchievement;
-    private TextView tvStreakCount;
-    private TextView btnEditProfile;
-    private RecyclerView rvMyPosts;
+    private TextView tvDisplayName, tvBio, tvFriendCount, tvTrophyCount;
+    private TextView tvPostCount, tvJoinedDate, tvPinnedAchievement, tvStreakCount;
+    private RecyclerView rvMyPosts, rvAchievementsProfile;
     private View layoutEmptyState;
+    private View layoutActionCards;
 
-    private SocialViewModel socialViewModel;
-    private CommunityFeedAdapter myPostsAdapter;
-    private String currentUserId = "";
-    private RecyclerView rvAchievementsProfile;
+    private SocialProfileViewModel viewModel;
+    private SocialNewsfeedAdapter myPostsAdapter;
     private ProfileAchievementAdapter badgeAdapter;
-    private com.google.firebase.firestore.ListenerRegistration achievementsRegistration;
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // LIFECYCLE — GIỮ NGUYÊN, chỉ bỏ cleanup listener
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    private String currentUserId = "";
+    public static String syncedPostId = null;
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater,
-                             @Nullable ViewGroup container,
-                             @Nullable Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_social_profile, container, false);
     }
 
@@ -90,21 +67,24 @@ public class SocialProfileFragment extends Fragment {
         setupActions(view);
         setupRecyclerView();
         observeViewModel();
-        loadMyPosts();
-        listenToAchievementsRealtime();
     }
 
     @Override
-    public void onDestroyView() {
-        if (achievementsRegistration != null) {
-            achievementsRegistration.remove();
+    public void onResume() {
+        super.onResume();
+        if (syncedPostId != null) {
+            FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+            if (user != null) {
+                user.getIdToken(true).addOnSuccessListener(result -> {
+                    String token = "Bearer " + result.getToken();
+                    viewModel.syncSinglePost(syncedPostId, token);
+                    syncedPostId = null; // Update xong thì dọn rác
+                });
+            } else {
+                syncedPostId = null;
+            }
         }
-        super.onDestroyView();
     }
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // CÁC HÀM SETUP — GIỮ NGUYÊN 100%, không đổi gì
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     private void bindViews(View view) {
         imgAvatar = view.findViewById(R.id.imgAvatar);
@@ -116,288 +96,147 @@ public class SocialProfileFragment extends Fragment {
         tvJoinedDate = view.findViewById(R.id.tvJoinedDate);
         tvPinnedAchievement = view.findViewById(R.id.tvPinnedAchievement);
         tvStreakCount = view.findViewById(R.id.tvStreakCount);
-        btnEditProfile = view.findViewById(R.id.btnEditProfile);
         rvMyPosts = view.findViewById(R.id.rvMyPosts);
         layoutEmptyState = view.findViewById(R.id.layoutEmptyState);
         rvAchievementsProfile = view.findViewById(R.id.rvAchievementsProfile);
+        layoutActionCards = view.findViewById(R.id.layoutActionCards);
     }
 
     private void initToolbar(View view) {
         MaterialToolbar toolbar = view.findViewById(R.id.toolbarSocialProfile);
-        toolbar.setNavigationOnClickListener(v -> {
-            if (getActivity() == null) return;
-            androidx.drawerlayout.widget.DrawerLayout drawer =
-                    getActivity().findViewById(R.id.drawerLayout);
-            if (drawer != null) {
-                drawer.openDrawer(androidx.core.view.GravityCompat.START);
-            }
-        });
+        View bellIcon = view.findViewById(R.id.imgBellIcon);
+        TextView bellBadge = view.findViewById(R.id.tvBellBadge);
+        setupCommonHeader(toolbar, bellIcon, bellBadge);
     }
 
     private void initViewModel() {
-        socialViewModel = new ViewModelProvider(requireActivity()).get(SocialViewModel.class);
+        viewModel = new ViewModelProvider(this).get(SocialProfileViewModel.class);
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser != null) {
             currentUserId = currentUser.getUid();
-            socialViewModel.loadProfile(currentUserId);
+            viewModel.loadProfileData(currentUserId);
+
+            // YÊU CẦU VIEWMODEL TẢI HUY HIỆU
+            viewModel.loadAchievements(currentUserId);
+
+            currentUser.getIdToken(true).addOnSuccessListener(result -> {
+                viewModel.loadWallPosts(currentUserId, "Bearer " + result.getToken());
+            });
+        } else {
+            showEmptyState(true);
         }
     }
 
     private void setupActions(View view) {
-        btnEditProfile.setOnClickListener(v ->
-                startActivity(new Intent(requireContext(), EditProfileActivity.class)));
-
+        view.findViewById(R.id.btnEditProfile).setOnClickListener(v -> startActivity(new Intent(requireContext(), EditProfileActivity.class)));
         view.findViewById(R.id.btnShareProfile).setOnClickListener(v -> shareProfile());
         view.findViewById(R.id.txtProfileLink).setOnClickListener(v -> copyProfileLink());
-        view.findViewById(R.id.btnProfileNotifications).setOnClickListener(v ->
-                startActivity(new Intent(requireContext(), InvitationsActivity.class)));
-        view.findViewById(R.id.fabProfileCreatePost).setOnClickListener(v -> openCreatePost("thoughts"));
-        view.findViewById(R.id.btnStartGrowing).setOnClickListener(v -> openCreatePost("thoughts"));
+
+        View.OnClickListener createPostListener = v -> openCreatePost("thoughts");
+        view.findViewById(R.id.btnStartGrowing).setOnClickListener(createPostListener);
+        view.findViewById(R.id.actionFirstEntry).setOnClickListener(createPostListener);
         view.findViewById(R.id.actionSetMilestone).setOnClickListener(v -> openCreatePost("milestone"));
-        view.findViewById(R.id.actionFirstEntry).setOnClickListener(v -> openCreatePost("thoughts"));
-    }
-
-    private void shareProfile() {
-        String name = tvDisplayName.getText().toString().trim();
-        String text = (name.isEmpty() ? "Cashify Profile" : name)
-                + "\n" + profileLink()
-                + "\nCheck out my financial journey on Cashify.";
-        Intent intent = new Intent(Intent.ACTION_SEND);
-        intent.setType("text/plain");
-        intent.putExtra(Intent.EXTRA_TEXT, text);
-        startActivity(Intent.createChooser(intent, "Share profile"));
-    }
-
-    private void copyProfileLink() {
-        ClipboardManager clipboard = (ClipboardManager) requireContext()
-                .getSystemService(Context.CLIPBOARD_SERVICE);
-        if (clipboard != null) {
-            clipboard.setPrimaryClip(ClipData.newPlainText("Cashify profile", profileLink()));
-            Toast.makeText(requireContext(), "Profile link copied", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private String profileLink() {
-        return currentUserId == null || currentUserId.trim().isEmpty()
-                ? "cashify.vn/ho-so"
-                : "cashify.vn/ho-so/" + currentUserId;
-    }
-
-    private void openCreatePost(String categoryKey) {
-        if (requireActivity() instanceof MainActivity) {
-            ((MainActivity) requireActivity()).openCreatePostScreen(categoryKey);
-        }
     }
 
     private void setupRecyclerView() {
-        myPostsAdapter = new CommunityFeedAdapter(
-                // Tham số 1: Click vào bài -> Mở Detail
+        myPostsAdapter = new SocialNewsfeedAdapter(
                 item -> {
                     Intent intent = new Intent(requireContext(), PostDetailActivity.class);
                     intent.putExtra(PostDetailActivity.EXTRA_POST_ID, item.getId());
                     startActivity(intent);
+                    syncedPostId = item.getId();
                 },
-                // Tham số 2: Click vào 3 chấm -> Mở Menu
                 this::showPostBottomSheet
         );
+
+        myPostsAdapter.setOnLikeClickListener((postId, isLiked, callback) -> {
+            FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+            if (user != null) {
+                user.getIdToken(true).addOnSuccessListener(result -> {
+                    viewModel.toggleLike(postId, "Bearer " + result.getToken(), isLiked);
+                    callback.onResult(true);
+                }).addOnFailureListener(e -> callback.onResult(false));
+            } else callback.onResult(false);
+        });
+
         rvMyPosts.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvMyPosts.setNestedScrollingEnabled(false);
         rvMyPosts.setHasFixedSize(false);
         rvMyPosts.setAdapter(myPostsAdapter);
+
         badgeAdapter = new ProfileAchievementAdapter();
         rvAchievementsProfile.setLayoutManager(new LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false));
         rvAchievementsProfile.setAdapter(badgeAdapter);
     }
 
     private void observeViewModel() {
-        socialViewModel.getProfile().observe(getViewLifecycleOwner(), doc -> {
+        viewModel.getProfile().observe(getViewLifecycleOwner(), doc -> {
             if (doc == null) return;
-            String displayName = firstNonEmpty(doc.getString("displayName"),
-                    doc.getString("username"), "Cashify User");
-            String bio = firstNonEmpty(doc.getString("bio"), doc.getString("status"),
-                    doc.getString("about"), "Ready to share your finance journey.");
-            String avatarUrl = doc.getString("avatarUrl");
+            String displayName = firstNonEmpty(doc.getString("displayName"), doc.getString("username"), "Cashify User");
+            String bio = firstNonEmpty(doc.getString("bio"), doc.getString("status"), doc.getString("about"), "Ready to share your finance journey.");
+
             tvDisplayName.setText(displayName);
             tvBio.setText(bio);
             tvJoinedDate.setText(joinedLabel(doc));
-            tvStreakCount.setText(Math.max(0, numberField(doc, "streakDays", 0)) + " days");
-            ImageHelper.loadAvatar(avatarUrl, imgAvatar, firstNonEmpty(displayName, currentUserId));
+
+            Object streakObj = doc.get("streakDays");
+            long streak = streakObj instanceof Number ? ((Number) streakObj).longValue() : 0;
+            tvStreakCount.setText(Math.max(0, streak) + " days");
+
+            ImageHelper.loadAvatar(doc.getString("avatarUrl"), imgAvatar, firstNonEmpty(displayName, currentUserId));
         });
 
-        socialViewModel.getFriendCount().observe(getViewLifecycleOwner(), count ->
-                tvFriendCount.setText(Math.max(0, count) + " friends"));
-    }
+        viewModel.getFriendCount().observe(getViewLifecycleOwner(), count -> tvFriendCount.setText(Math.max(0, count) + " friends"));
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // LOAD POSTS — THAY HOÀN TOÀN: Firestore snapshot → gọi API wall
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    // ĐÃ XÓA toàn bộ hàm loadMyPosts() cũ (dùng addSnapshotListener)
-    // THAY BẰNG hàm này: gọi API /post/wall/{uid}
-    private void loadMyPosts() {
-        if (currentUserId == null || currentUserId.trim().isEmpty()) {
-            showEmptyState(true);
-            return;
-        }
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user == null) {
-            showEmptyState(true);
-            return;
-        }
-
-        user.getIdToken(true).addOnSuccessListener(result -> {
-            String token = "Bearer " + result.getToken();
-            ApiService apiService = ApiClient.getClient().create(ApiService.class);
-
-            apiService.getWall(token, currentUserId, 30, 0)
-                    .enqueue(new Callback<List<Object>>() {
-                        @Override
-                        public void onResponse(@NonNull Call<List<Object>> call,
-                                               @NonNull Response<List<Object>> response) {
-                            if (!isAdded()) return;
-                            if (!response.isSuccessful() || response.body() == null) {
-                                android.util.Log.e("PROFILE", "API error: " + response.code());
-                                showEmptyState(true);
-                                return;
-                            }
-                            bindProfilePosts(response.body());
-                        }
-
-                        @Override
-                        public void onFailure(@NonNull Call<List<Object>> call, @NonNull Throwable t) {
-                            if (!isAdded()) return;
-                            android.util.Log.e("PROFILE", "Network error: " + t.getMessage());
-                            showEmptyState(true);
-                        }
-                    });
-
-        }).addOnFailureListener(e -> {
-            android.util.Log.e("PROFILE", "Token error: " + e.getMessage());
-            showEmptyState(true);
+        // LẮNG NGHE LIVEDATA HUY HIỆU TỪ VIEWMODEL
+        viewModel.getAchievements().observe(getViewLifecycleOwner(), badges -> {
+            if (badges == null) return;
+            tvTrophyCount.setText(badges.size() + " Trophies");
+            badgeAdapter.updateData(badges);
         });
-    }
 
-    // ĐÃ XÓA: mapPost(DocumentSnapshot doc) — không còn nhận Firestore doc nữa
-    // THAY BẰNG 2 hàm dưới đây:
+        viewModel.getWallPosts().observe(getViewLifecycleOwner(), posts -> {
+            if (posts == null) return;
+            myPostsAdapter.submitList(new ArrayList<>(posts));
+            tvPostCount.setText(posts.size() + " posts");
 
-    // Hàm nhận List<Object> từ API response, tạo danh sách FeedItem
-    @SuppressWarnings("unchecked")
-    private void bindProfilePosts(List<Object> raw) {
-        List<FeedItem> posts = new ArrayList<>();
-        int achievementCount = 0;
-        FeedItem firstAchievement = null;
-
-        for (Object obj : raw) {
-            if (!(obj instanceof Map)) continue;
-            Map<String, Object> map = (Map<String, Object>) obj;
-            FeedItem item = mapPostFromMap(map);
-            posts.add(item);
-            if (item instanceof FeedItem.MilestonePost) {
-                achievementCount++;
-                if (firstAchievement == null) firstAchievement = item;
-            }
-        }
-
-        myPostsAdapter.submitList(posts);
-        tvPostCount.setText(posts.size() + " posts");
-        tvTrophyCount.setText(achievementCount + " achievements");
-        bindPinnedAchievement(firstAchievement, posts.size());
-        showEmptyState(posts.isEmpty());
-    }
-
-    // Hàm map 1 record (Map) từ API → FeedItem
-    // Hàm map 1 record (Map) từ API → FeedItem
-    private FeedItem mapPostFromMap(Map<String, Object> map) {
-        String id       = str(map, "postId");
-        String userId   = str(map, "userId");
-        String content  = str(map, "content");
-        String imageUrl = str(map, "imageUrl");
-        String type     = str(map, "type").toLowerCase(Locale.US);
-        long timestamp  = num(map, "timestamp");
-        String name     = str(map, "authorName");
-        String avatarUrl = str(map, "authorAvatarUrl");
-        boolean hasImage   = !imageUrl.isEmpty();
-        boolean expandable = content.length() > 120;
-
-        FeedItem item = null;
-
-        if (type.contains("milestone") || type.contains("achievement")) {
-            // 1. Lấy chuỗi JSON từ Database
-            String milestoneData = str(map, "milestoneData");
-
-            // 2. Khởi tạo các giá trị mặc định
-            String title = "Cột mốc mới";
-            String description = content;
-            String amount = "";
-            String iconText = "🏆";
-            String month = "Thành tựu";
-            int progress = 0;
-
-            // 3. BÓC TÁCH JSON ĐỂ LẤY SỐ LIỆU CHUẨN
-            if (!milestoneData.isEmpty()) {
-                try {
-                    org.json.JSONObject json = new org.json.JSONObject(milestoneData);
-                    iconText = json.optString("iconText", "🏆");
-                    title = json.optString("title", "Cột mốc mới");
-                    amount = json.optString("amount", "");
-                    month = json.optString("month", "Thành tựu");
-                    progress = json.optInt("progress", 0);
-
-                    // Nếu trong JSON có description thì lấy, không thì dùng content
-                    String jsonDesc = json.optString("description", "");
-                    if (!jsonDesc.isEmpty() && content.isEmpty()) {
-                        description = jsonDesc;
-                    }
-                } catch (Exception e) {
-                    android.util.Log.e("PROFILE_PARSE", "Lỗi giải mã milestoneData JSON: " + e.getMessage());
+            FeedItem firstAchievement = null;
+            for (FeedItem item : posts) {
+                if (item instanceof FeedItem.MilestonePost) {
+                    if (firstAchievement == null) firstAchievement = item;
+                    break;
                 }
             }
 
-            item = new FeedItem.MilestonePost(
-                    id,
-                    userId,
-                    name.isEmpty() ? "Bạn" : name,
-                    formatTime(timestamp),
-                    title,
-                    description,
-                    month,
-                    amount,
-                    iconText, // Đã lấy đúng Emoji 🐝
-                    progress, // Đã lấy đúng số % (VD: 85)
-                    description.length() > 120,
-                    milestoneData, // Truyền cục data gốc vào để lỡ user bấm Edit Post thì còn có cái mà đọc
-                    avatarUrl,
-                    initials(name)
-            );
-        } else {
-            item = new FeedItem.NormalPost(
-                    id,
-                    userId,
-                    name.isEmpty() ? "Bạn" : name,
-                    formatTime(timestamp),
-                    content,
-                    hasImage,
-                    imageUrl,
-                    initials(name),
-                    expandable,
-                    avatarUrl
-            );
-        }
+            bindPinnedAchievement(firstAchievement, posts.size());
+            showEmptyState(posts.isEmpty());
 
-        item.setLikeCount((int) num(map, "likeCount"));
-        item.setCommentCount((int) num(map, "commentCount"));
-        item.setLiked(Boolean.TRUE.equals(map.get("isLiked")));
+            if (layoutActionCards != null) {
+                layoutActionCards.setVisibility(posts.isEmpty() ? View.VISIBLE : View.GONE);
+            }
+        });
 
-        return item;
+        viewModel.getIsDeleteSuccess().observe(getViewLifecycleOwner(), success -> {
+            if (Boolean.TRUE.equals(success)) {
+                Toast.makeText(requireContext(), "Post deleted", Toast.LENGTH_SHORT).show();
+                viewModel.resetDeleteStatus();
+            }
+        });
+
+        viewModel.getErrorMessage().observe(getViewLifecycleOwner(), error -> {
+            if (error != null && !error.isEmpty()) Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show();
+        });
     }
 
+    // =========================================================================
+    // INTERACTIONS & UTILITIES
+    // =========================================================================
+
     private void showPostBottomSheet(FeedItem item) {
-        com.google.android.material.bottomsheet.BottomSheetDialog dialog = new com.google.android.material.bottomsheet.BottomSheetDialog(requireContext());
+        BottomSheetDialog dialog = new BottomSheetDialog(requireContext());
         View sheetView = LayoutInflater.from(requireContext()).inflate(R.layout.bottom_sheet_option, null);
 
         sheetView.findViewById(R.id.btnEditComment).setVisibility(View.GONE);
-
-        // Đứng ở trang Profile cá nhân thì 99% bài viết là của mình, nhưng cứ check cho chắc ăn
         boolean isOwner = !currentUserId.isEmpty() && currentUserId.equals(item.getUserId());
 
         View btnEditPost = sheetView.findViewById(R.id.btnEditPost);
@@ -409,40 +248,23 @@ public class SocialProfileFragment extends Fragment {
             sheetView.findViewById(R.id.btnHideComment).setVisibility(View.GONE);
             sheetView.findViewById(R.id.btnReportPost).setVisibility(View.GONE);
 
-            // LOGIC XÓA BÀI
             btnDeletePost.setOnClickListener(v -> {
                 dialog.dismiss();
                 FirebaseAuth.getInstance().getCurrentUser().getIdToken(true).addOnSuccessListener(result -> {
-                    String token = "Bearer " + result.getToken();
-                    ApiClient.getClient().create(ApiService.class)
-                            .deletePost(token, new ApiService.DeletePostRequest(item.getId()))
-                            .enqueue(new Callback<Object>() {
-                                @Override
-                                public void onResponse(@NonNull Call<Object> call, @NonNull Response<Object> response) {
-                                    if (response.isSuccessful()) {
-                                        Toast.makeText(requireContext(), "Deleted", Toast.LENGTH_SHORT).show();
-                                        loadMyPosts(); // Load lại tường nhà
-                                    } else {
-                                        Toast.makeText(requireContext(), "Failed to delete post", Toast.LENGTH_SHORT).show();
-                                    }
-                                }
-                                @Override
-                                public void onFailure(@NonNull Call<Object> call, @NonNull Throwable t) {
-                                    Toast.makeText(requireContext(), "Network error", Toast.LENGTH_SHORT).show();
-                                }
-                            });
+                    viewModel.deletePost(item.getId(), "Bearer " + result.getToken());
                 });
             });
 
-            // LOGIC SỬA BÀI
             btnEditPost.setOnClickListener(v -> {
                 dialog.dismiss();
                 Intent intent = new Intent(requireContext(), MainActivity.class);
                 intent.putExtra("ACTION_EDIT_POST", true);
                 intent.putExtra("edit_post_id", item.getId());
-
                 if (item instanceof FeedItem.NormalPost) {
-                    intent.putExtra("edit_post_content", ((FeedItem.NormalPost) item).text);
+                    intent.putExtra("edit_post_title", ((FeedItem.NormalPost) item).title);
+                    intent.putExtra("edit_post_content", ((FeedItem.NormalPost) item).description);
+                    intent.putExtra("edit_post_image", ((FeedItem.NormalPost) item).imageUrl);
+
                 } else if (item instanceof FeedItem.MilestonePost) {
                     intent.putExtra("edit_post_content", ((FeedItem.MilestonePost) item).description);
                     intent.putExtra("edit_milestone_data", ((FeedItem.MilestonePost) item).milestoneJson);
@@ -450,7 +272,6 @@ public class SocialProfileFragment extends Fragment {
                 startActivity(intent);
             });
         } else {
-            // Đề phòng trường hợp mở tường nhà người khác (Tương lai sếp phát triển)
             if (btnEditPost != null) btnEditPost.setVisibility(View.GONE);
             btnDeletePost.setVisibility(View.GONE);
             sheetView.findViewById(R.id.btnHideComment).setVisibility(View.VISIBLE);
@@ -458,11 +279,11 @@ public class SocialProfileFragment extends Fragment {
 
             sheetView.findViewById(R.id.btnHideComment).setOnClickListener(v -> {
                 dialog.dismiss();
-                Toast.makeText(requireContext(), "Hided", Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(), "Post hidden", Toast.LENGTH_SHORT).show();
             });
             sheetView.findViewById(R.id.btnReportPost).setOnClickListener(v -> {
                 dialog.dismiss();
-                Toast.makeText(requireContext(), "Reported", Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(), "Post reported", Toast.LENGTH_SHORT).show();
             });
         }
 
@@ -471,19 +292,27 @@ public class SocialProfileFragment extends Fragment {
         dialog.show();
     }
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // CÁC HÀM HELPER — GIỮ NGUYÊN, chỉ thêm str() và num()
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
     private void bindPinnedAchievement(@Nullable FeedItem achievement, int postCount) {
         if (achievement instanceof FeedItem.MilestonePost) {
             FeedItem.MilestonePost milestone = (FeedItem.MilestonePost) achievement;
-            tvPinnedAchievement.setText(milestone.title + " · " + milestone.amount);
+
+            String displayTitle = milestone.title;
+            String displayAmount = milestone.amount;
+
+            if (displayTitle == null || displayTitle.trim().isEmpty() || displayTitle.equals("New Milestone")) {
+                displayTitle = "Financial Milestone";
+            }
+
+            String text = displayTitle;
+            if (displayAmount != null && !displayAmount.trim().isEmpty() && !displayAmount.equals("null")) {
+                text += " · " + displayAmount;
+            }
+
+            tvPinnedAchievement.setText(text);
             return;
         }
-        tvPinnedAchievement.setText(postCount > 0
-                ? "Started building your personal financial house."
-                : "Share your first milestone to pin a highlighted achievement here.");
+
+        tvPinnedAchievement.setText(postCount > 0 ? "Started building your personal financial house." : "Share your first milestone to pin a highlighted achievement here.");
     }
 
     private void showEmptyState(boolean show) {
@@ -491,104 +320,39 @@ public class SocialProfileFragment extends Fragment {
         rvMyPosts.setVisibility(show ? View.GONE : View.VISIBLE);
     }
 
-    private String joinedLabel(DocumentSnapshot doc) {
-        long createdAt = numberField(doc, "createdAt", 0);
-        if (createdAt <= 0) createdAt = numberField(doc, "joinedAt", 0);
-        if (createdAt <= 0) return "Cashify's member";
-        return "Participate " + new SimpleDateFormat("MM/yyyy", Locale.getDefault()).format(new Date(createdAt));
+    private void shareProfile() {
+        String name = tvDisplayName.getText().toString().trim();
+        Intent intent = new Intent(Intent.ACTION_SEND);
+        intent.setType("text/plain");
+        intent.putExtra(Intent.EXTRA_TEXT, (name.isEmpty() ? "Cashify Profile" : name) + "\n" + profileLink() + "\nCheck out my financial journey on Cashify.");
+        startActivity(Intent.createChooser(intent, "Share profile"));
     }
 
-    private String achievementTitle(String content) {
-        if (content == null || content.trim().isEmpty()) return "New finance milestone";
-        return content.length() > 54 ? content.substring(0, 54).trim() + "..." : content.trim();
+    private void copyProfileLink() {
+        ClipboardManager clipboard = (ClipboardManager) requireContext().getSystemService(Context.CLIPBOARD_SERVICE);
+        if (clipboard != null) {
+            clipboard.setPrimaryClip(ClipData.newPlainText("Cashify profile", profileLink()));
+            Toast.makeText(requireContext(), "Profile link copied", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void openCreatePost(String categoryKey) {
+        if (requireActivity() instanceof MainActivity) ((MainActivity) requireActivity()).openCreatePostScreen(categoryKey);
+    }
+
+    private String profileLink() {
+        return currentUserId == null || currentUserId.trim().isEmpty() ? "cashify.vn/profile" : "cashify.vn/profile/" + currentUserId;
+    }
+
+    private String joinedLabel(DocumentSnapshot doc) {
+        Object createdObj = doc.get("createdAt");
+        if (createdObj == null) createdObj = doc.get("joinedAt");
+        long createdAt = createdObj instanceof Number ? ((Number) createdObj).longValue() : 0;
+        return createdAt <= 0 ? "Cashify Member" : "Joined " + new SimpleDateFormat("MM/yyyy", Locale.ENGLISH).format(new Date(createdAt));
     }
 
     private String firstNonEmpty(String... values) {
-        if (values == null) return "";
-        for (String value : values) {
-            if (value != null && !value.trim().isEmpty()) return value.trim();
-        }
+        for (String value : values) if (value != null && !value.trim().isEmpty()) return value.trim();
         return "";
-    }
-
-    // GIỮ NGUYÊN — dùng cho DocumentSnapshot trong observeViewModel
-    private long numberField(DocumentSnapshot doc, String field, long fallback) {
-        Object value = doc.get(field);
-        return value instanceof Number ? ((Number) value).longValue() : fallback;
-    }
-
-    // THÊM MỚI — dùng cho Map từ API response
-    private String str(Map<String, Object> map, String key) {
-        Object v = map.get(key);
-        return v instanceof String ? (String) v : "";
-    }
-
-    // THÊM MỚI — dùng cho Map từ API response
-    private long num(Map<String, Object> map, String key) {
-        Object v = map.get(key);
-        return v instanceof Number ? ((Number) v).longValue() : 0L;
-    }
-
-    private String formatTime(long timestamp) {
-        if (timestamp <= 0) return "Vừa xong";
-        return com.example.cashify.utils.TimeFormatter.format(timestamp);
-    }
-
-    private String initials(String name) {
-        if (name == null || name.trim().isEmpty()) return "CF";
-        String[] parts = name.trim().split("\\s+");
-        String first = parts[0].substring(0, 1);
-        String second = parts.length > 1 ? parts[parts.length - 1].substring(0, 1) : "";
-        return (first + second).toUpperCase(Locale.getDefault());
-    }
-
-    private int avatarColor(String key) {
-        int[] colors = {
-                R.color.brand_primary,
-                R.color.cat_pastel_blue,
-                R.color.cat_pastel_green,
-                R.color.cat_pastel_pink,
-                R.color.cat_pastel_indigo
-        };
-        int index = Math.abs((key == null ? "" : key).hashCode()) % colors.length;
-        return androidx.core.content.ContextCompat.getColor(requireContext(), colors[index]);
-    }
-    private void listenToAchievementsRealtime() {
-        if (currentUserId == null || currentUserId.isEmpty()) return;
-
-        achievementsRegistration = FirebaseFirestore.getInstance()
-                .collection("users")
-                .document(currentUserId)
-                .collection("shared_achievements")
-                .orderBy("sharedAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
-                .addSnapshotListener((snapshots, e) -> {
-                    if (e != null || snapshots == null) {
-                        return;
-                    }
-
-                    // Cập nhật số lượng (Trophy Count) ngay lập tức
-                    tvTrophyCount.setText(snapshots.size() + " Trophy");
-
-                    List<ProfileAchievementAdapter.BadgeMeta> badges = new ArrayList<>();
-                    for (DocumentSnapshot doc : snapshots.getDocuments()) {
-                        badges.add(getBadgeMetaFromId(doc.getId()));
-                    }
-
-                    // Nạp vào danh sách cuộn ngang
-                    badgeAdapter.submitList(badges);
-                });
-    }
-
-    // TỪ ĐIỂN DỊCH ID THÀNH UI (Giao diện)
-    private ProfileAchievementAdapter.BadgeMeta getBadgeMetaFromId(String achId) {
-        if (achId.startsWith("ach_trans_")) {
-            String count = achId.replace("ach_trans_", "");
-            return new ProfileAchievementAdapter.BadgeMeta("Ong chăm chỉ", "🐝", "#FFFDF7");
-        }
-        if (achId.startsWith("recap_surplus_")) {
-            return new ProfileAchievementAdapter.BadgeMeta("Dư dả", "💰", "#E2F5DA");
-        }
-        // Huy hiệu mặc định nếu không khớp
-        return new ProfileAchievementAdapter.BadgeMeta("Bí ẩn", "🎁", "#E2ECFF");
     }
 }

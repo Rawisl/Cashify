@@ -10,13 +10,17 @@ import androidx.core.view.ViewCompat;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
+/**
+ * Custom Behavior for FloatingActionButton.
+ * Hides the FAB when scrolling down and shows it when scrolling up.
+ */
 public class FabScaleBehavior extends FloatingActionButton.Behavior {
 
     public FabScaleBehavior(Context context, AttributeSet attrs) {
         super(context, attrs);
     }
 
-    // 1. Chỉ lắng nghe sự kiện cuộn dọc (lên/xuống)
+    // 1. Only listen to vertical scroll events
     @Override
     public boolean onStartNestedScroll(@NonNull CoordinatorLayout coordinatorLayout,
                                        @NonNull FloatingActionButton child,
@@ -27,7 +31,7 @@ public class FabScaleBehavior extends FloatingActionButton.Behavior {
         return axes == ViewCompat.SCROLL_AXIS_VERTICAL;
     }
 
-    // 2. Xử lý hoạt ảnh khi ngón tay đang cuộn
+    // 2. Handle the animation during the scroll event
     @Override
     public void onNestedScroll(@NonNull CoordinatorLayout coordinatorLayout,
                                @NonNull FloatingActionButton child,
@@ -39,18 +43,18 @@ public class FabScaleBehavior extends FloatingActionButton.Behavior {
 
         super.onNestedScroll(coordinatorLayout, child, target, dxConsumed, dyConsumed, dxUnconsumed, dyUnconsumed, type, consumed);
 
-        // Cuộn XUỐNG (dy > 0) -> Kích hoạt hiệu ứng thu nhỏ (Shrink/Hide)
+        // Scroll DOWN (dy > 0) -> Trigger shrink/hide animation
         if (dyConsumed > 0 && child.getVisibility() == View.VISIBLE) {
             child.hide(new FloatingActionButton.OnVisibilityChangedListener() {
                 @Override
                 public void onHidden(FloatingActionButton fab) {
                     super.onHidden(fab);
-                    // Ép nó thành INVISIBLE thay vì GONE để không làm co giật layout
+                    // Force INVISIBLE instead of GONE to prevent CoordinatorLayout jumping/stuttering
                     fab.setVisibility(View.INVISIBLE);
                 }
             });
         }
-        // Cuộn LÊN (dy < 0) -> Kích hoạt hiệu ứng nở ra (Pop/Show)
+        // Scroll UP (dy < 0) -> Trigger pop/show animation
         else if (dyConsumed < 0 && child.getVisibility() != View.VISIBLE) {
             child.show();
         }

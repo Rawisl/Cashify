@@ -6,7 +6,6 @@ import android.util.Log;
 import com.example.cashify.data.local.AppDatabase;
 import com.example.cashify.data.model.Category;
 import com.example.cashify.data.local.CategoryDao;
-//import com.example.cashify.data.local.DatabaseSeeder;
 import com.example.cashify.data.remote.FirebaseManager;
 
 import java.util.HashMap;
@@ -15,27 +14,26 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+// Xử lý logic nghiệp vụ và đồng bộ dữ liệu cho Danh mục (Categories)
 public class CategoryRepository {
 
     private final CategoryDao categoryDao;
     private final FirebaseManager firebaseManager;
     private final ExecutorService executor;
 
-    public CategoryRepository(Context context)
-    {
+    public CategoryRepository(Context context) {
         categoryDao = AppDatabase.getInstance(context).categoryDao();
         executor = Executors.newSingleThreadExecutor();
         firebaseManager = FirebaseManager.getInstance();
-//        executor.execute(() -> DatabaseSeeder.seedIfEmpty(context));
     }
 
     public void insert(Category category, Runnable onComplete) {
         executor.execute(() -> {
-            // Lưu Local lấy ID
+            // Lưu xuống Local trước để lấy ID tự sinh từ SQLite
             long id = categoryDao.insert(category);
             category.id = (int) id;
 
-            // Chỉ đồng bộ nếu là danh mục User tự tạo
+            // Chỉ đồng bộ lên Cloud những danh mục do User tự tạo (isDefault == 0)
             if (category.isDefault == 0) {
                 syncCategoryToCloud(category);
             }
@@ -46,10 +44,8 @@ public class CategoryRepository {
 
     public void update(Category category, Runnable onComplete) {
         executor.execute(() -> {
-            // Cập nhật Local
             categoryDao.update(category);
 
-            // Cập nhật Cloud (Nếu không phải mặc định)
             if (category.isDefault == 0) {
                 syncCategoryToCloud(category);
             }
@@ -70,15 +66,20 @@ public class CategoryRepository {
         String currentWorkspaceId = (category.workspaceId != null) ? category.workspaceId : "PERSONAL";
         data.put("workspaceId", currentWorkspaceId);
 
-        firebaseManager.syncLocalToCloud(currentWorkspaceId, "categories", String.valueOf(category.id), data, new FirebaseManager.DataCallback<Void>() {
+        //Ưu tiên dùng firestoreId
+        String targetDocId = (category.firestoreId != null && !category.firestoreId.trim().isEmpty())
+                ? category.firestoreId
+                : String.valueOf(category.id);
+
+        firebaseManager.syncLocalToCloud(currentWorkspaceId, "categories", targetDocId, data, new FirebaseManager.DataCallback<Void>() {
             @Override
             public void onSuccess(Void result) {
-                Log.d("FIREBASE_SYNC", "Synchronous success: " + category.name);
+                Log.d("FIREBASE_SYNC", "Category synced successfully: " + category.name);
             }
 
             @Override
             public void onError(String message) {
-                Log.e("FIREBASE_SYNC", "Synchronous failed: " + message);
+                Log.e("FIREBASE_SYNC", "Category sync failed: " + message);
             }
         });
     }
@@ -88,24 +89,26 @@ public class CategoryRepository {
             Category category = categoryDao.getCategoryById(categoryId);
             if (category != null) {
                 int count = categoryDao.countTransactionsByCategory(categoryId);
-
-                // Xác định Workspace ID
                 String currentWorkspaceId = (category.workspaceId != null) ? category.workspaceId : "PERSONAL";
 
                 if (count > 0) {
-                    // CÓ GIAO DỊCH: Xóa mềm (Soft Delete)
+                    // Logic Xóa mềm
                     categoryDao.softDelete(categoryId);
                     if (category.isDefault == 0) {
                         category.isDeleted = 1;
-                        syncCategoryToCloud(category); // Đẩy cập nhật isDeleted = 1 lên mây
+                        syncCategoryToCloud(category);
                     }
                 } else {
-                    // KHÔNG CÓ GIAO DỊCH: Xóa cứng (Hard Delete)
+                    // Logic Xóa cứng
                     categoryDao.hardDelete(categoryId);
-
-                    // GỌI HÀM VỪA THÊM ĐỂ BẮN TÍN HIỆU TIÊU DIỆT LÊN FIREBASE
                     if (category.isDefault == 0) {
-                        firebaseManager.deleteDocumentFromCloud(currentWorkspaceId, "categories", String.valueOf(category.id), new FirebaseManager.DataCallback<Void>() {
+
+                        // Chỗ này cũng phải xóa bằng firestoreId
+                        String targetDocId = (category.firestoreId != null && !category.firestoreId.trim().isEmpty())
+                                ? category.firestoreId
+                                : String.valueOf(category.id);
+
+                        firebaseManager.deleteDocumentFromCloud(currentWorkspaceId, "categories", targetDocId, new FirebaseManager.DataCallback<Void>() {
                             @Override
                             public void onSuccess(Void result) {
                                 Log.d("FIREBASE_SYNC", "Hard delete success on Cloud!");
@@ -125,27 +128,23 @@ public class CategoryRepository {
 
     public void restoreCategory(int categoryId, Runnable onComplete) {
         executor.execute(() -> {
-            // 1. Lôi thằng Category từ dưới mồ SQLite lên
             Category category = categoryDao.getCategoryById(categoryId);
 
+            // Phục hồi trạng thái hoạt động cho danh mục đã bị xóa mềm
             if (category != null && category.isDeleted == 1) {
-
-                // 2. Châm lại sức sống cho nó (Sửa cờ isDeleted về 0)
                 category.isDeleted = 0;
-
-                // Cập nhật lại vào SQLite Local
                 categoryDao.update(category);
 
-                // 3. Nếu là danh mục do người dùng tạo, bắn tín hiệu báo cho Firebase biết nó đã đội mồ sống dậy
                 if (category.isDefault == 0) {
                     syncCategoryToCloud(category);
                 }
             }
 
-            // 4. Báo cho ViewModel biết là làm xong rồi, gọi refreshData để RecyclerView vẽ lại đi
             if (onComplete != null) onComplete.run();
         });
     }
+
+    // --- CÁC HÀM GET DỮ LIỆU ĐỌC TRỰC TIẾP TỪ LOCAL ---
 
     public void getCategoriesByType(int type, Callback<List<Category>> callback) {
         executor.execute(() -> callback.onResult(categoryDao.getCategoriesByType(type)));
@@ -158,8 +157,6 @@ public class CategoryRepository {
     public void getAllActive(Callback<List<Category>> callback) {
         executor.execute(() -> callback.onResult(categoryDao.getAllActive()));
     }
-
-    // Tự động chọn soft hay hard delete
 
     public interface Callback<T> {
         void onResult(T result);
