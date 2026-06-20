@@ -23,6 +23,6 @@
     <fragment
         android:id="@+id/nav_other_profile"
         android:name="com.example.cashify.ui.social.SocialProfileFragment"
-        android:label="Hồ sơ thành viên" />
+        android:label="User Profile" />
 
 </navigation>

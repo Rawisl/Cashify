@@ -1,18 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-    item_workspace_log.xml
-    Layout timeline cho mỗi item log.
-
-    Cấu trúc:
-    ┌──────────────────────────────────────────────────┐
-    │  [●]  [Avatar]  [Tên đậm + màu] [message]       │
-    │  [│]            [timestamp nhỏ]                  │
-    └──────────────────────────────────────────────────┘
-
-    Cột 1 (20dp): timeline dot + line dọc
-    Cột 2 (40dp): avatar tròn
-    Cột 3 (0dp, weight=1): nội dung text
--->
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -73,7 +59,6 @@
 
         <!--
             tvMessage hiển thị: [Tên người dùng đậm + màu primary] + [nội dung log]
-            Ví dụ: "Trần Khang đã thêm khoản chi 50.000đ"
         -->
         <TextView
             android:id="@+id/tvMessage"

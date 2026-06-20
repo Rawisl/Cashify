@@ -48,7 +48,7 @@
                 android:ellipsize="end"
                 android:textColor="@color/brand_primary"
                 android:textSize="15sp"
-                tools:text="Ong chăm chỉ" />
+                tools:text="Hard-working Bee" />
 
             <TextView
                 android:id="@+id/tvAchievementDesc"
@@ -60,7 +60,7 @@
                 android:ellipsize="end"
                 android:textColor="#607D8B"
                 android:textSize="13sp"
-                tools:text="Đã ghi chép giao dịch thứ 100 trên Cashify!" />
+                tools:text="Just recorded my 100th transaction on Cashify!" />
         </LinearLayout>
 
         <ImageView

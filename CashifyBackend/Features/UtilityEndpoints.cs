@@ -12,14 +12,14 @@ public static class UtilityEndpoints
     {
         var group = app.MapGroup("/api/v1");
 
-        // QUÉT HÓA ĐƠN AI
+        // SCAN BILL VIA AI
         group.MapPost("/scan-bill", async (HttpRequest request, ScanRequest req, IHttpClientFactory httpClientFactory) =>
         {
             var authHeader = request.Headers["Authorization"].FirstOrDefault();
             if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
                 return Results.Unauthorized();
 
-            try // TẦNG TRY OUTER (Xác thực Token & Gọi API)
+            try // OUTER TRY: Token validation & API call
             {
                 var token = authHeader.Substring("Bearer ".Length);
                 await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token);
@@ -34,24 +34,23 @@ public static class UtilityEndpoints
                 client.Timeout = TimeSpan.FromSeconds(60);
                 var openRouterUrl = "https://openrouter.ai/api/v1/chat/completions";
 
-                // 1. ULTRA-LEAN PROMPT (Tối giản tối đa để né Token Limit)
+                // 1. ULTRA-LEAN PROMPT to avoid Token Limit
                 var systemPrompt = $"Extract receipt info to JSON. NO markdown. NO extra text.\n" +
                                    $"Schema:\n{{\"amount\":0,\"description\":\"\",\"category\":\"Khác\",\"paymentMethod\":\"Cash\"}}\n" +
                                    $"Valid Payment: Cash, Card, Bank.";
-                var userPrompt = req.OcrText; // Truyền chay vào luôn cho nhẹ
+                var userPrompt = req.OcrText; // Pass raw text directly
 
-                // 3. PAYLOAD: 
+                // 2. PAYLOAD
                 var payload = new
                 {
-                    //tham khảo thử mấy model khác con nào ngon thì vứt vào chứ openrouter/free hơi hên xui
-                    //nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free
+                    // Consider testing other models if openrouter/free is inconsistent
                     model = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
                     messages = new[]
                     {
-                new { role = "system", content = systemPrompt },
-                new { role = "user", content = userPrompt }
-            },
-                    temperature = 0.0 // ÉP VỀ 0: Chống sáng tạo, biến AI thành cái máy bóc tách data 100% logic.
+                        new { role = "system", content = systemPrompt },
+                        new { role = "user", content = userPrompt }
+                    },
+                    temperature = 0.0 // Strict data extraction mode
                 };
 
                 var jsonPayload = JsonSerializer.Serialize(payload);
@@ -61,7 +60,7 @@ public static class UtilityEndpoints
                 client.DefaultRequestHeaders.Add("HTTP-Referer", "http://localhost");
                 client.DefaultRequestHeaders.Add("X-Title", "Cashify App");
 
-                try // TẦNG TRY INNER (Xử lý chuỗi JSON trả về)
+                try // INNER TRY: Process returned JSON
                 {
                     var response = await client.PostAsync(openRouterUrl, content);
                     if (!response.IsSuccessStatusCode)
@@ -92,56 +91,58 @@ public static class UtilityEndpoints
                 }
                 catch (Exception ex)
                 {
-                    return Results.Problem($"Lỗi xử lý kết quả AI: {ex.Message}", statusCode: 500);
+                    return Results.Problem($"Error processing AI response: {ex.Message}", statusCode: 500);
                 }
             }
             catch (FirebaseAuthException)
             {
-                return Results.Json(new { error = "TOKEN_INVALID", message = "Xác thực thất bại hoặc phiên đăng nhập hết hạn!" }, statusCode: 401);
+                return Results.Json(new { error = "TOKEN_INVALID", message = "Authentication failed or session expired!" }, statusCode: 401);
             }
             catch (Exception ex)
             {
-                return Results.Problem($"Lỗi hệ thống: {ex.Message}", statusCode: 500);
+                return Results.Problem($"System error: {ex.Message}", statusCode: 500);
             }
         });
 
 
-        //CẤP CHỮ KÝ CLOUDINARY
+        // CLOUDINARY SIGNATURE GENERATION
         group.MapGet("/cloudinary/sign", async (HttpRequest request) =>
         {
-            //Gặp bug băm tham số trong thư viện SDK của cloudinary, tham khảo tài liệu băm chay tại cloudinary.com/documentation/response_signatures
+            // Manual hashing workaround for Cloudinary SDK parameter hashing bug: cloudinary.com/documentation/response_signatures
+            // Ref: cloudinary.com/documentation/response_signatures
             try
             {
                 var authHeader = request.Headers["Authorization"].FirstOrDefault();
-                if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer ")) return Results.Unauthorized();
+                if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
+                    return Results.Unauthorized();
 
-                // 1. Xác thực Token Firebase
+                // 1. Verify Firebase Token
                 var token = authHeader.Substring("Bearer ".Length);
                 await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token);
 
-                // 2. Kéo Config từ .env (Diệt sạch khoảng trắng và dấu ngoặc kép nếu có)
+                // 2. Fetch Config from .env (Remove whitespace and quotes)
                 var cloudName = Environment.GetEnvironmentVariable("CLOUDINARY_CLOUD_NAME")?.Replace("\"", "").Trim();
                 var apiKey = Environment.GetEnvironmentVariable("CLOUDINARY_API_KEY")?.Replace("\"", "").Trim();
                 var apiSecret = Environment.GetEnvironmentVariable("CLOUDINARY_API_SECRET")?.Replace("\"", "").Trim();
 
                 if (string.IsNullOrEmpty(cloudName) || string.IsNullOrEmpty(apiKey) || string.IsNullOrEmpty(apiSecret))
-                    return Results.Problem("Lỗi cấu hình Cloudinary trên Server", statusCode: 500);
+                    return Results.Problem("Cloudinary server configuration error", statusCode: 500);
 
                 long timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
                 string folder = "cashify_uploads";
 
-                // 3. TỰ TAY GHÉP CHUỖI (Chuẩn A-Z: folder rồi tới timestamp)
+                // 3. MANUAL STRING CONCATENATION (Alphabetical: folder then timestamp)
                 string stringToSign = $"folder={folder}&timestamp={timestamp}";
 
-                // 4. Kẹp API_SECRET vào đuôi chuỗi
+                // 4. Append API_SECRET
                 string stringToHash = stringToSign + apiSecret;
 
-                // 5. Băm SHA-1 thủ công
+                // 5. Manual SHA-1 Hashing
                 using var sha1 = System.Security.Cryptography.SHA1.Create();
                 byte[] hashBytes = sha1.ComputeHash(System.Text.Encoding.UTF8.GetBytes(stringToHash));
                 string signature = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
 
-                // 6. Trả hàng về cho Android
+                // 6. Return response to client
                 return Results.Ok(new
                 {
                     signature = signature,
@@ -153,7 +154,7 @@ public static class UtilityEndpoints
             }
             catch (Exception ex)
             {
-                return Results.Problem($"Lỗi hệ thống: {ex.Message}");
+                return Results.Problem($"System error: {ex.Message}");
             }
         });
     }

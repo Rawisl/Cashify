@@ -65,14 +65,6 @@ public class WorkspaceLogFragment extends Fragment {
 
         setupRecyclerView(view);
         setupViewModel(workspaceId);
-
-        // Nút bấm chỉ ra lệnh, mọi nghiệp vụ để ViewModel lo
-        view.findViewById(R.id.fabSeedLog).setOnClickListener(v -> {
-            if (viewModel != null) {
-                viewModel.seedMockLogs();
-                Toast.makeText(requireContext(), "Generating mock logs...", Toast.LENGTH_SHORT).show();
-            }
-        });
     }
 
     private void setupRecyclerView(View view) {
