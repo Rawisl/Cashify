@@ -405,7 +405,7 @@ public class MainViewModel extends AndroidViewModel {
                                 AppDatabase db = AppDatabase.getInstance(getApplication());
 
                                 if (snapshots.isEmpty()) {
-//                                    db.transactionDao().deleteAllTransactions("PERSONAL");
+                                    db.transactionDao().deleteAllTransactions("PERSONAL");
                                     syncCompleted.postValue(true);
                                     return;
                                 }
@@ -620,11 +620,10 @@ public class MainViewModel extends AndroidViewModel {
                 //                                if (snapshots.isEmpty()) {
                 //                                    db.transactionDao().deleteAllTransactions("PERSONAL");
                 // comment cái dòng db.transactionDao().deleteAllTransactions("PERSONAL"); lại xong xóa app chạy lại, đăng nhập vào 1 acc mới là seed được data
-
-                List<Category> allCats = db.categoryDao().getAll();
-                if (allCats != null && !allCats.isEmpty()) {
-                    FakeDataSeeder.seed(getApplication(), allCats, currentUserId, true);
-                }
+//                List<Category> allCats = db.categoryDao().getAll();
+//                if (allCats != null && !allCats.isEmpty()) {
+//                    FakeDataSeeder.seed(getApplication(), allCats, currentUserId, true);
+//                }
 
                 // 3. Lúc này chắc chắn có Data rồi
                 int count = db.transactionDao().countTransactions("PERSONAL");
