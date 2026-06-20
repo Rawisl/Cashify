@@ -10,6 +10,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.widget.NestedScrollView;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -31,6 +32,7 @@ public class WorkspaceHomeFragment extends Fragment {
     private WorkspaceTransactionAdapter historyAdapter;
     private TextView tvBalance, tvIncome, tvExpense, tvNotificationBadge;
     private MaterialToolbar toolbar;
+    private NestedScrollView scrollView;
 
     private WorkspaceViewModel workspaceViewModel;
     private String workspaceId;
@@ -45,7 +47,6 @@ public class WorkspaceHomeFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // 1. EXTRACT WORKSPACE ID FROM PARENT FRAGMENT
         this.workspaceId = "";
         Fragment parent = getParentFragment();
         while (parent != null) {
@@ -69,7 +70,9 @@ public class WorkspaceHomeFragment extends Fragment {
         workspaceViewModel = new ViewModelProvider(requireActivity()).get(WorkspaceViewModel.class);
         workspaceViewModel.loadWorkspaceDetails(workspaceId);
         workspaceViewModel.loadWorkspaceMembers(workspaceId);
-        workspaceViewModel.loadWorkspaceTransactions(workspaceId);
+
+        // Chỉ cần gắn cò súng Realtime, nó sẽ tự auto-load trang đầu và tự tính số dư
+        workspaceViewModel.startRealtimeSyncTrigger(workspaceId);
     }
 
     private void initViews(View view) {
@@ -80,6 +83,7 @@ public class WorkspaceHomeFragment extends Fragment {
         tvNotificationBadge = view.findViewById(R.id.tvBellBadge);
         rvMembers = view.findViewById(R.id.rvWorkspaceMembers);
         rvTransactions = view.findViewById(R.id.rvWorkspaceTransactions);
+        scrollView = view.findViewById(R.id.workspaceScrollView);
         View bellIcon = view.findViewById(R.id.imgBellIcon);
 
         if (getActivity() instanceof com.example.cashify.ui.main.BaseActivity) {
@@ -87,12 +91,10 @@ public class WorkspaceHomeFragment extends Fragment {
                     .setupCommonHeader(toolbar, bellIcon, tvNotificationBadge);
         }
 
-        // Setup Members RecyclerView
         rvMembers.setLayoutManager(new LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false));
         memberAdapter = new WorkspaceMemberAdapter(new ArrayList<>());
         rvMembers.setAdapter(memberAdapter);
 
-        // Setup Transactions RecyclerView
         rvTransactions.setLayoutManager(new LinearLayoutManager(requireContext()));
 
         String currentUserUid = FirebaseAuth.getInstance().getCurrentUser() != null ?
@@ -120,6 +122,13 @@ public class WorkspaceHomeFragment extends Fragment {
             bottomSheet.show(getChildFragmentManager(), "AddMemberBottomSheet");
         });
 
+        if (scrollView != null) {
+            scrollView.setOnScrollChangeListener((NestedScrollView.OnScrollChangeListener) (v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
+                if (!v.canScrollVertically(1)) {
+                    workspaceViewModel.loadWorkspaceTransactions(workspaceId, false);
+                }
+            });
+        }
     }
 
     @SuppressLint("SetTextI18n")
@@ -148,13 +157,11 @@ public class WorkspaceHomeFragment extends Fragment {
         });
 
         workspaceViewModel.getTransactionsLiveData().observe(getViewLifecycleOwner(), historyItems -> {
-            historyAdapter.setHistoryData(historyItems);
+            if (historyItems != null && historyAdapter != null) {
+                historyAdapter.setHistoryData(historyItems);
+            }
         });
 
-        // ============================================================
-        // ĐÃ DỌN DẸP CODE BẨN TÍNH TOÁN Ở VIEW (CHUẨN MVVM)
-        // View chỉ nhận data đã tính sẵn từ ViewModel
-        // ============================================================
         workspaceViewModel.getTotalIncomeLiveData().observe(getViewLifecycleOwner(), income -> {
             tvIncome.setText(CurrencyFormatter.formatFullVND(income != null ? income : 0L));
         });
@@ -166,7 +173,6 @@ public class WorkspaceHomeFragment extends Fragment {
         workspaceViewModel.getActualBalanceLiveData().observe(getViewLifecycleOwner(), balance -> {
             tvBalance.setText(CurrencyFormatter.formatFullVND(balance != null ? balance : 0L));
         });
-
 
         workspaceViewModel.errorMessage.observe(getViewLifecycleOwner(), errorMsg -> {
             if (errorMsg != null) {

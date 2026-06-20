@@ -1,5 +1,8 @@
 package com.example.cashify.ui.workspace;
 
+import android.app.Application;
+import android.util.Log;
+
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
@@ -14,11 +17,14 @@ import com.example.cashify.data.repository.IWorkspaceRepo;
 import com.example.cashify.data.repository.MediaRepository;
 import com.example.cashify.data.repository.RemoteWorkspaceRepoImpl;
 import com.example.cashify.ui.transactions.TransactionViewModel;
+import com.google.firebase.firestore.AggregateField;
+import com.google.firebase.firestore.AggregateSource;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.QuerySnapshot;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -28,14 +34,12 @@ public class WorkspaceViewModel extends ViewModel {
 
     private ListenerRegistration workspaceListener;
     private ListenerRegistration chatListener;
+    private ListenerRegistration realtimeTriggerListener;
 
     private final IWorkspaceRepo workspaceRepo;
     private final MediaRepository mediaRepository = new MediaRepository();
     private final IAuthRepository authRepository = new AuthRepositoryImpl();
 
-    // ============================================================
-    // 1. STATE LIVEDATA
-    // ============================================================
     private final MutableLiveData<Boolean> _isLoading = new MutableLiveData<>(false);
     public LiveData<Boolean> isLoading = _isLoading;
 
@@ -51,7 +55,13 @@ public class WorkspaceViewModel extends ViewModel {
     private final MutableLiveData<Boolean> isUploading = new MutableLiveData<>(false);
     public LiveData<Boolean> getIsUploading() { return isUploading; }
 
-    // --- LIVEDATA CHO SỐ LIỆU TỔNG QUAN ---
+    private final MutableLiveData<List<TransactionViewModel.HistoryItem>> _transactionsLiveData = new MutableLiveData<>();
+    public LiveData<List<TransactionViewModel.HistoryItem>> getTransactionsLiveData() { return _transactionsLiveData; }
+    private final List<TransactionViewModel.HistoryItem> currentTransactionList = new ArrayList<>();
+
+    //KHÓA CHỐNG SPAM LOAD MẠNG
+    private boolean isFetchingMore = false;
+
     private final MutableLiveData<Long> totalIncomeLiveData = new MutableLiveData<>(0L);
     public LiveData<Long> getTotalIncomeLiveData() { return totalIncomeLiveData; }
 
@@ -64,17 +74,11 @@ public class WorkspaceViewModel extends ViewModel {
     private final MutableLiveData<Integer> unreadNotificationCount = new MutableLiveData<>(0);
     public LiveData<Integer> getUnreadNotificationCount() { return unreadNotificationCount; }
 
-    // ============================================================
-    // 2. DATA LIVEDATA
-    // ============================================================
     private final MutableLiveData<Workspace> _workspaceLiveData = new MutableLiveData<>();
     public LiveData<Workspace> getWorkspaceLiveData() { return _workspaceLiveData; }
 
     private final MutableLiveData<List<User>> _membersLiveData = new MutableLiveData<>();
     public LiveData<List<User>> getMembersLiveData() { return _membersLiveData; }
-
-    private final MutableLiveData<List<TransactionViewModel.HistoryItem>> _transactionsLiveData = new MutableLiveData<>();
-    public LiveData<List<TransactionViewModel.HistoryItem>> getTransactionsLiveData() { return _transactionsLiveData; }
 
     private final MutableLiveData<List<ChatMessage>> _chatMessages = new MutableLiveData<>();
     public LiveData<List<ChatMessage>> getChatMessages() { return _chatMessages; }
@@ -86,13 +90,9 @@ public class WorkspaceViewModel extends ViewModel {
 
     public WorkspaceViewModel() {
         this.workspaceRepo = new RemoteWorkspaceRepoImpl();
-        // Tự động hóng số lượng thông báo ngay khi khởi tạo ViewModel
         loadUnreadNotifications();
     }
 
-    // =========================================================================
-    // KHỞI ĐỘNG LẮNG NGHE THÔNG BÁO TỪ FIREBASE MANAGER (Mới thêm)
-    // =========================================================================
     public void loadUnreadNotifications() {
         FirebaseManager.getInstance().listenToUnreadNotifications(new FirebaseManager.DataCallback<Integer>() {
             @Override
@@ -100,15 +100,9 @@ public class WorkspaceViewModel extends ViewModel {
                 unreadNotificationCount.postValue(count);
             }
             @Override
-            public void onError(String message) {
-                // Nuốt lỗi im lặng hoặc log ra, không nên quấy rầy user bằng toast liên tục
-            }
+            public void onError(String message) {}
         });
     }
-
-    // =========================================================================
-    // MEDIA & UPLOAD HANDLING
-    // =========================================================================
 
     public void uploadChatImage(File imageFile) {
         isUploading.setValue(true);
@@ -144,10 +138,6 @@ public class WorkspaceViewModel extends ViewModel {
         }
     }
 
-    // =========================================================================
-    // SEQUENTIAL CHAT SENDING
-    // =========================================================================
-
     public boolean submitChatMessages(String workspaceId, String text) {
         List<String> urls = pendingImages.getValue();
         if (text.isEmpty() && (urls == null || urls.isEmpty())) return false;
@@ -160,9 +150,7 @@ public class WorkspaceViewModel extends ViewModel {
 
     private void sendMessagesSequentially(String workspaceId, String text, List<String> urls, int index) {
         if (index >= urls.size()) {
-            if (urls.isEmpty()) {
-                sendChatMessage(workspaceId, text, null);
-            }
+            if (urls.isEmpty()) sendChatMessage(workspaceId, text, null);
             return;
         }
 
@@ -172,10 +160,6 @@ public class WorkspaceViewModel extends ViewModel {
         sendChatMessage(workspaceId, msgText, imgUrl,
                 () -> sendMessagesSequentially(workspaceId, text, urls, index + 1));
     }
-
-    // ============================================================
-    // WORKSPACE DATA LOADING (REAL-TIME)
-    // ============================================================
 
     public void loadWorkspaceDetails(String workspaceId) {
         if (workspaceId == null || workspaceId.isEmpty()) return;
@@ -195,9 +179,7 @@ public class WorkspaceViewModel extends ViewModel {
                 .addSnapshotListener((snapshot, e) -> {
                     _isLoading.postValue(false);
                     if (e != null) {
-                        if (e.getCode() == FirebaseFirestoreException.Code.PERMISSION_DENIED) {
-                            _isKickedOut.postValue(true);
-                        }
+                        if (e.getCode() == FirebaseFirestoreException.Code.PERMISSION_DENIED) _isKickedOut.postValue(true);
                         return;
                     }
 
@@ -235,46 +217,6 @@ public class WorkspaceViewModel extends ViewModel {
             }
         });
     }
-
-    public void loadWorkspaceTransactions(String workspaceId) {
-        if (workspaceId == null || workspaceId.isEmpty()) return;
-
-        workspaceRepo.getWorkspaceTransactions(workspaceId, new IWorkspaceRepo.OnTransactionsLoadedListener() {
-            @Override
-            public void onSuccess(List<TransactionViewModel.HistoryItem> transactions) {
-                _transactionsLiveData.postValue(transactions);
-
-                long income = 0;
-                long expense = 0;
-
-                if (transactions != null) {
-                    for (TransactionViewModel.HistoryItem item : transactions) {
-                        if (item != null && item.getType() == TransactionViewModel.HistoryItem.TYPE_TRANSACTION) {
-                            com.example.cashify.data.model.Transaction t = item.getTransaction();
-                            if (t != null) {
-                                if (t.type == 1) income += t.amount;
-                                else if (t.type == 0) expense += t.amount;
-                            }
-                        }
-                    }
-                }
-
-                // Cập nhật cho View hiển thị
-                totalIncomeLiveData.postValue(income);
-                totalExpenseLiveData.postValue(expense);
-                actualBalanceLiveData.postValue(income - expense);
-            }
-
-            @Override
-            public void onError(Exception e) {
-                _errorMessage.postValue("Failed to load transactions: " + e.getMessage());
-            }
-        });
-    }
-
-    // ============================================================
-    // WORKSPACE ACTIONS (CREATION & DELETION)
-    // ============================================================
 
     public void createNewWorkspace(String name, String type, String iconName) {
         if (!authRepository.isLoggedIn()) {
@@ -327,9 +269,106 @@ public class WorkspaceViewModel extends ViewModel {
         });
     }
 
-    // ============================================================
-    // WORKSPACE CHAT ACTIONS
-    // ============================================================
+    public void loadWorkspaceTransactions(String workspaceId, boolean isRefresh) {
+        if (workspaceId == null || workspaceId.isEmpty()) return;
+
+        // Cắm chốt chặn spam
+        if (isFetchingMore) return;
+        isFetchingMore = true;
+
+        if (isRefresh) {
+            currentTransactionList.clear();
+            _isLoading.setValue(true);
+        }
+
+        ((RemoteWorkspaceRepoImpl) workspaceRepo).getWorkspaceTransactionsPaginated(
+                workspaceId, isRefresh, new IWorkspaceRepo.OnTransactionsLoadedListener() {
+                    @Override
+                    public void onSuccess(List<TransactionViewModel.HistoryItem> newItems) {
+                        _isLoading.postValue(false);
+                        isFetchingMore = false; // Mở khóa
+
+                        if (newItems != null && !newItems.isEmpty()) {
+                            if (!currentTransactionList.isEmpty()) {
+                                TransactionViewModel.HistoryItem firstNewItem = newItems.get(0);
+                                if (firstNewItem.getType() == TransactionViewModel.HistoryItem.TYPE_DATE_HEADER) {
+                                    String lastDateInOldList = "";
+                                    for (int i = currentTransactionList.size() - 1; i >= 0; i--) {
+                                        if (currentTransactionList.get(i).getType() == TransactionViewModel.HistoryItem.TYPE_TRANSACTION) {
+                                            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("MMMM dd, yyyy", java.util.Locale.ENGLISH);
+                                            lastDateInOldList = sdf.format(new java.util.Date(currentTransactionList.get(i).getTransaction().timestamp));
+                                            break;
+                                        }
+                                    }
+                                    if (firstNewItem.getDate() != null && firstNewItem.getDate().equals(lastDateInOldList)) {
+                                        newItems.remove(0);
+                                    }
+                                }
+                            }
+                            currentTransactionList.addAll(newItems);
+                            _transactionsLiveData.postValue(new ArrayList<>(currentTransactionList));
+                        } else if (isRefresh) {
+                            _transactionsLiveData.postValue(new ArrayList<>());
+                        }
+                    }
+
+                    @Override
+                    public void onError(Exception e) {
+                        _isLoading.postValue(false);
+                        isFetchingMore = false; // Mở khóa
+                        _errorMessage.postValue("Failed to load transactions: " + e.getMessage());
+                    }
+                });
+    }
+
+    public void calculateWorkspaceBalance(String workspaceId) {
+        AggregateField sumField = AggregateField.sum("amount");
+
+        FirebaseFirestore.getInstance().collection("workspaces")
+                .document(workspaceId).collection("transactions")
+                .whereEqualTo("type", 1)
+                .aggregate(sumField)
+                .get(AggregateSource.SERVER)
+                .addOnSuccessListener(incomeSnap -> {
+                    Number incomeObj = (Number) incomeSnap.get(sumField);
+                    long totalIncome = incomeObj != null ? incomeObj.longValue() : 0L;
+                    totalIncomeLiveData.postValue(totalIncome);
+
+                    FirebaseFirestore.getInstance().collection("workspaces")
+                            .document(workspaceId).collection("transactions")
+                            .whereEqualTo("type", 0)
+                            .aggregate(sumField)
+                            .get(AggregateSource.SERVER)
+                            .addOnSuccessListener(expenseSnap -> {
+                                Number expenseObj = (Number) expenseSnap.get(sumField);
+                                long totalExpense = expenseObj != null ? expenseObj.longValue() : 0L;
+                                totalExpenseLiveData.postValue(totalExpense);
+                                actualBalanceLiveData.postValue(totalIncome - totalExpense);
+                            })
+                            .addOnFailureListener(e -> {
+                                Log.e("Cashify", "Index error: ", e);
+                            });
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("Cashify", "Index error: ", e);
+                });
+    }
+
+    public void startRealtimeSyncTrigger(String workspaceId) {
+        if (workspaceId == null || workspaceId.isEmpty()) return;
+        if (realtimeTriggerListener != null) return;
+
+        realtimeTriggerListener = FirebaseFirestore.getInstance()
+                .collection("workspaces").document(workspaceId).collection("logs")
+                .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                .limit(1)
+                .addSnapshotListener((snap, e) -> {
+                    if (e != null) return;
+                    // Auto refresh khi Quỹ nhóm có cập nhật mới
+                    loadWorkspaceTransactions(workspaceId, true);
+                    calculateWorkspaceBalance(workspaceId);
+                });
+    }
 
     public void listenForChatMessages(String workspaceId) {
         if (workspaceId == null || workspaceId.isEmpty()) return;
@@ -397,10 +436,6 @@ public class WorkspaceViewModel extends ViewModel {
         });
     }
 
-    // ============================================================
-    // INVITATION LOGIC
-    // ============================================================
-
     public void loadAvailableFriends(String workspaceId) {
         String myUid = authRepository.getCurrentUserId();
         if (myUid == null) {
@@ -410,7 +445,6 @@ public class WorkspaceViewModel extends ViewModel {
 
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
-        // Lấy danh sách bạn bè
         db.collection("users").document(myUid).collection("friends").get().addOnSuccessListener(friendSnap -> {
             List<String> friendIds = new ArrayList<>();
             for (DocumentSnapshot d : friendSnap.getDocuments()) friendIds.add(d.getId());
@@ -420,29 +454,26 @@ public class WorkspaceViewModel extends ViewModel {
                 return;
             }
 
-            // Đối chiếu với danh sách member hiện tại của Workspace
             db.collection("workspaces").document(workspaceId).get().addOnSuccessListener(wsSnap -> {
                 List<String> currentMembers = (List<String>) wsSnap.get("members");
-                if (currentMembers != null) friendIds.removeAll(currentMembers); // Loại trừ những đứa đã ở trong nhóm
+                if (currentMembers != null) friendIds.removeAll(currentMembers);
 
                 if (friendIds.isEmpty()) {
                     availableFriends.setValue(new ArrayList<>());
                     return;
                 }
 
-                //CHIA NHỎ MẢNG VÌ FIRESTORE CHỈ CHO TỐI ĐA 10 ITEM/WHERE_IN
-                List<com.google.android.gms.tasks.Task<com.google.firebase.firestore.QuerySnapshot>> tasks = new ArrayList<>();
+                List<com.google.android.gms.tasks.Task<QuerySnapshot>> tasks = new ArrayList<>();
 
                 for (int i = 0; i < friendIds.size(); i += 10) {
                     List<String> chunk = friendIds.subList(i, Math.min(friendIds.size(), i + 10));
                     tasks.add(db.collection("users").whereIn("uid", chunk).get());
                 }
 
-                // Đợi tất cả các truy vấn nhỏ hoàn thành rồi gộp data lại
                 com.google.android.gms.tasks.Tasks.whenAllSuccess(tasks).addOnSuccessListener(results -> {
                     List<User> resultList = new ArrayList<>();
                     for (Object res : results) {
-                        com.google.firebase.firestore.QuerySnapshot snap = (com.google.firebase.firestore.QuerySnapshot) res;
+                        QuerySnapshot snap = (QuerySnapshot) res;
                         for (DocumentSnapshot uDoc : snap.getDocuments()) {
                             User u = uDoc.toObject(User.class);
                             if(u != null) resultList.add(u);
@@ -475,10 +506,6 @@ public class WorkspaceViewModel extends ViewModel {
         });
     }
 
-    // ============================================================
-    // WORKSPACE SETTINGS & MANAGEMENT
-    // ============================================================
-
     public String getCurrentUserId() {
         return authRepository.getCurrentUserId();
     }
@@ -499,21 +526,18 @@ public class WorkspaceViewModel extends ViewModel {
         });
     }
 
-    // ============================================================
-    // LIFECYCLE
-    // ============================================================
-
     @Override
     protected void onCleared() {
         super.onCleared();
         if (chatListener != null) chatListener.remove();
         if (workspaceListener != null) workspaceListener.remove();
+        if (realtimeTriggerListener != null) realtimeTriggerListener.remove();
     }
-    // Bổ sung Helper Class nếu chưa có
+
     public static class MemberActionResult {
         public boolean isSuccess;
         public String message;
-        public String actionType; // "KICK" hoặc "TRANSFER"
+        public String actionType;
 
         public MemberActionResult(boolean isSuccess, String message, String actionType) {
             this.isSuccess = isSuccess;
@@ -522,17 +546,14 @@ public class WorkspaceViewModel extends ViewModel {
         }
     }
 
-    // Bổ sung LiveData
     private final MutableLiveData<MemberActionResult> memberActionResult = new MutableLiveData<>();
     public LiveData<MemberActionResult> getMemberActionResult() { return memberActionResult; }
     public void clearMemberActionResult() { memberActionResult.setValue(null); }
 
-    // Bổ sung Hàm Kick Member
     public void kickMember(String workspaceId, String targetUid) {
-        com.example.cashify.data.remote.FirebaseManager.getInstance().kickMember(workspaceId, targetUid, new com.example.cashify.data.remote.FirebaseManager.DataCallback<Void>() {
+        FirebaseManager.getInstance().kickMember(workspaceId, targetUid, new FirebaseManager.DataCallback<Void>() {
             @Override
             public void onSuccess(Void data) {
-                // Kick xong thì gọi nạp lại danh sách thành viên (Hàm loadWorkspaceMembers có sẵn của sếp)
                 loadWorkspaceMembers(workspaceId);
                 memberActionResult.postValue(new MemberActionResult(true, "Member removed!", "KICK"));
             }
@@ -544,12 +565,10 @@ public class WorkspaceViewModel extends ViewModel {
         });
     }
 
-    // Bổ sung Hàm Transfer Ownership
     public void transferOwnership(String workspaceId, String targetUid) {
-        com.example.cashify.data.remote.FirebaseManager.getInstance().transferOwnership(workspaceId, targetUid, new com.example.cashify.data.remote.FirebaseManager.DataCallback<Void>() {
+        FirebaseManager.getInstance().transferOwnership(workspaceId, targetUid, new FirebaseManager.DataCallback<Void>() {
             @Override
             public void onSuccess(Void data) {
-                // Nhường quyền xong thì nạp lại thông tin quỹ (Hàm loadWorkspaceDetails có sẵn của sếp)
                 loadWorkspaceDetails(workspaceId);
                 memberActionResult.postValue(new MemberActionResult(true, "You are no longer the owner.", "TRANSFER"));
             }

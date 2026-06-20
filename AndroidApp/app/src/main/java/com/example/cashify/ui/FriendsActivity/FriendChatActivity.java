@@ -63,7 +63,6 @@ public class FriendChatActivity extends AppCompatActivity {
         setupObservers();
         setupListeners();
 
-        // 🌟 Giao việc cho ViewModel tự xử
         viewModel.loadFriendProfile(friendUid);
         viewModel.startListeningMessages(friendUid);
     }
@@ -111,7 +110,6 @@ public class FriendChatActivity extends AppCompatActivity {
     }
 
     private void setupObservers() {
-        // 🌟 HÓNG THÔNG TIN PROFILE ĐỂ VẼ LÊN TOOLBAR
         viewModel.getFriendProfile().observe(this, user -> {
             if (user != null) {
                 ((TextView) findViewById(R.id.tvFriendName)).setText(user.getNameToShow());

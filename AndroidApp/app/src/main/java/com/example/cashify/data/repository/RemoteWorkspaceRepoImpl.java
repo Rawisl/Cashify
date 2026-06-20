@@ -1,7 +1,9 @@
 package com.example.cashify.data.repository;
 
+import com.example.cashify.data.model.Transaction;
 import com.example.cashify.data.model.Workspace;
 import com.example.cashify.data.model.User;
+import com.example.cashify.ui.transactions.TransactionViewModel;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
@@ -11,10 +13,12 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import java.util.ArrayList;
 import java.util.List;
 
-// Repository chuyên biệt quản lý Quỹ chung thông qua Firestore Real-time
 public class RemoteWorkspaceRepoImpl implements IWorkspaceRepo {
 
     private final FirebaseFirestore db;
+    private DocumentSnapshot lastVisibleTransaction = null;
+    private boolean isLastPageTransactions = false;
+    private static final int PAGE_LIMIT = 10;
 
     public RemoteWorkspaceRepoImpl() {
         this.db = FirebaseFirestore.getInstance();
@@ -22,7 +26,6 @@ public class RemoteWorkspaceRepoImpl implements IWorkspaceRepo {
 
     @Override
     public void getWorkspaces(String userId, OnWorkspacesLoadedListener listener) {
-        // Real-time: Tự động tải lại Sidebar khi user được thêm/xóa khỏi nhóm
         db.collection("workspaces")
                 .whereArrayContains("members", userId)
                 .addSnapshotListener((queryDocumentSnapshots, e) -> {
@@ -104,27 +107,10 @@ public class RemoteWorkspaceRepoImpl implements IWorkspaceRepo {
 
     @Override
     public void getWorkspaceTransactions(String workspaceId, OnTransactionsLoadedListener listener) {
-        db.collection("workspaces").document(workspaceId).collection("transactions")
-                .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
-                .addSnapshotListener((queryDocumentSnapshots, e) -> {
-                    if (e != null) {
-                        listener.onError(e);
-                        return;
-                    }
-
-                    if (queryDocumentSnapshots != null) {
-                        List<com.example.cashify.data.model.Transaction> list = new ArrayList<>();
-                        for (com.google.firebase.firestore.QueryDocumentSnapshot doc : queryDocumentSnapshots) {
-                            com.example.cashify.data.model.Transaction t = doc.toObject(com.example.cashify.data.model.Transaction.class);
-                            t.id = doc.getId();
-                            list.add(t);
-                        }
-                        listener.onSuccess(mapToHistoryItems(list));
-                    }
-                });
+        // Hàm cũ này không xài nữa vì đã thay bằng getWorkspaceTransactionsPaginated
     }
 
-    private List<com.example.cashify.ui.transactions.TransactionViewModel.HistoryItem> mapToHistoryItems(List<com.example.cashify.data.model.Transaction> transactions) {
+    private List<TransactionViewModel.HistoryItem> mapToHistoryItems(List<Transaction> transactions) {
         List<com.example.cashify.ui.transactions.TransactionViewModel.HistoryItem> historyItems = new ArrayList<>();
         if (transactions == null || transactions.isEmpty()) return historyItems;
 
@@ -135,11 +121,11 @@ public class RemoteWorkspaceRepoImpl implements IWorkspaceRepo {
             String currentDate = sdf.format(new java.util.Date(t.timestamp));
 
             if (!currentDate.equals(lastDate)) {
-                historyItems.add(new com.example.cashify.ui.transactions.TransactionViewModel.HistoryItem(currentDate));
+                historyItems.add(new TransactionViewModel.HistoryItem(currentDate));
                 lastDate = currentDate;
             }
 
-            historyItems.add(new com.example.cashify.ui.transactions.TransactionViewModel.HistoryItem(
+            historyItems.add(new TransactionViewModel.HistoryItem(
                     t,
                     "Category " + t.categoryId, // Fallback name
                     "ic_other",                 // Default icon
@@ -192,5 +178,50 @@ public class RemoteWorkspaceRepoImpl implements IWorkspaceRepo {
                                 }
                             });
                 });
+    }
+
+    public void getWorkspaceTransactionsPaginated(String workspaceId, boolean isRefresh, OnTransactionsLoadedListener listener) {
+        if (isRefresh) {
+            lastVisibleTransaction = null;
+            isLastPageTransactions = false;
+        }
+
+        if (isLastPageTransactions) {
+            listener.onSuccess(new ArrayList<>());
+            return;
+        }
+
+        com.google.firebase.firestore.Query query = db.collection("workspaces")
+                .document(workspaceId).collection("transactions")
+                .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                .limit(PAGE_LIMIT);
+
+        if (lastVisibleTransaction != null) {
+            query = query.startAfter(lastVisibleTransaction);
+        }
+
+        query.get().addOnSuccessListener(queryDocumentSnapshots -> {
+            if (queryDocumentSnapshots.isEmpty()) {
+                isLastPageTransactions = true;
+                // Trả về list rỗng để giải phóng khóa lock
+                listener.onSuccess(new ArrayList<>());
+                return;
+            }
+
+            lastVisibleTransaction = queryDocumentSnapshots.getDocuments()
+                    .get(queryDocumentSnapshots.size() - 1);
+
+            if (queryDocumentSnapshots.size() < PAGE_LIMIT) {
+                isLastPageTransactions = true;
+            }
+
+            List<Transaction> list = new ArrayList<>();
+            for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                Transaction t = doc.toObject(Transaction.class);
+                t.id = doc.getId();
+                list.add(t);
+            }
+            listener.onSuccess(mapToHistoryItems(list));
+        }).addOnFailureListener(listener::onError);
     }
 }

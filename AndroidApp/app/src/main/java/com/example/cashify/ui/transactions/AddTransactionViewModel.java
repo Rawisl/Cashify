@@ -216,7 +216,7 @@ public class AddTransactionViewModel extends AndroidViewModel {
                         }
                     });
         } else {
-            loadCategories(type); // Gọi hàm tải Room DB cũ của sếp
+            loadCategories(type); // Gọi hàm tải Room DB cũ
         }
     }
 

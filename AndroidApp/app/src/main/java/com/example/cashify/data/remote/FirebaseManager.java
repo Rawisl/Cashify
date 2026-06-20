@@ -231,7 +231,6 @@ public class FirebaseManager {
         user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
             String token = "Bearer " + getTokenResult.getToken();
             ApiService apiService = ApiClient.getClient().create(ApiService.class);
-            // Sửa thành ApiDto
             ApiDto.WorkspaceInviteSendRequest req = new ApiDto.WorkspaceInviteSendRequest(workspaceId, workspaceName, targetUids);
 
             apiService.sendWorkspaceInvites(token, req).enqueue(new retrofit2.Callback<Object>() {
@@ -251,7 +250,6 @@ public class FirebaseManager {
         user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
             String token = "Bearer " + getTokenResult.getToken();
             ApiService apiService = ApiClient.getClient().create(ApiService.class);
-            // Sửa thành ApiDto
             ApiDto.WorkspaceInviteHandleRequest req = new ApiDto.WorkspaceInviteHandleRequest(invitation.getWorkspaceId(), invitation.getId());
 
             apiService.acceptWorkspaceInvite(token, req).enqueue(new retrofit2.Callback<Object>() {
@@ -281,7 +279,6 @@ public class FirebaseManager {
         user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
             String token = "Bearer " + getTokenResult.getToken();
             ApiService apiService = ApiClient.getClient().create(ApiService.class);
-            // Sửa thành ApiDto
             ApiDto.WorkspaceInviteHandleRequest req = new ApiDto.WorkspaceInviteHandleRequest(null, invitationId);
 
             apiService.declineWorkspaceInvite(token, req).enqueue(new retrofit2.Callback<Object>() {
@@ -515,7 +512,6 @@ public class FirebaseManager {
         user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
             String token = "Bearer " + getTokenResult.getToken();
             ApiService apiService = ApiClient.getClient().create(ApiService.class);
-            // Sửa thành ApiDto
             ApiDto.WorkspaceCreateRequest request = new ApiDto.WorkspaceCreateRequest(workspaceName, type, iconName);
 
             apiService.createWorkspace(token, request).enqueue(new retrofit2.Callback<ApiDto.WorkspaceCreateResponse>() {
@@ -606,7 +602,6 @@ public class FirebaseManager {
         user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
             String token = "Bearer " + getTokenResult.getToken();
             ApiService apiService = ApiClient.getClient().create(ApiService.class);
-            // Sửa thành ApiDto
             ApiDto.EditCategoryRequest request = new ApiDto.EditCategoryRequest(workspaceId, categoryId, name, iconName, colorCode, type);
 
             apiService.editCategory(token, request).enqueue(new retrofit2.Callback<Object>() {
@@ -694,7 +689,6 @@ public class FirebaseManager {
         user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
             String token = "Bearer " + getTokenResult.getToken();
             ApiService apiService = ApiClient.getClient().create(ApiService.class);
-            // Sửa thành ApiDto
             ApiDto.FriendActionRequest request = new ApiDto.FriendActionRequest(targetUid);
 
             apiService.processFriendAction(actionType, token, request).enqueue(new retrofit2.Callback<Object>() {
@@ -716,7 +710,6 @@ public class FirebaseManager {
         user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
             String token = "Bearer " + getTokenResult.getToken();
             ApiService apiService = ApiClient.getClient().create(ApiService.class);
-            // Sửa thành ApiDto
             ApiDto.DirectFriendMessageRequest request = new ApiDto.DirectFriendMessageRequest(receiverId, text, imageUrl);
 
             apiService.sendDirectFriendMessage(token, request).enqueue(new retrofit2.Callback<Object>() {

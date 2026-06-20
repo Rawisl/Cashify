@@ -15,6 +15,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.util.Pair;
+import androidx.core.widget.NestedScrollView;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
@@ -28,6 +29,7 @@ import com.example.cashify.data.model.Transaction;
 import com.example.cashify.ui.main.BaseActivity;
 import com.example.cashify.ui.main.MainViewModel;
 import com.example.cashify.utils.DialogHelper;
+import com.example.cashify.utils.EndlessRecyclerViewScrollListener;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.datepicker.MaterialDatePicker;
@@ -39,7 +41,7 @@ import java.util.List;
 import java.util.Locale;
 
 public class TransactionFragment extends Fragment {
-
+    private NestedScrollView scrollView;
     private TransactionViewModel viewModel;
     private HistoryAdapter historyAdapter;
     private FilterChipAdapter chipAdapter;
@@ -48,21 +50,21 @@ public class TransactionFragment extends Fragment {
     private EditText etSearch;
 
     private String currentWorkspaceId = "PERSONAL";
-    private List<Category> availableCategories = new ArrayList<>(); // CACHE DANH MỤC CHO FILTER
+    private List<Category> availableCategories = new ArrayList<>();
 
-    public TransactionFragment() {
-    }
+    public TransactionFragment() {}
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        if (getArguments() != null && getArguments().getString("WORKSPACE_ID") != null) {
+            currentWorkspaceId = getArguments().getString("WORKSPACE_ID");
+        }
         return inflater.inflate(R.layout.fragment_transaction, container, false);
-
     }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
         initViews(view);
         setupRecyclerViews();
         setupObservers();
@@ -75,14 +77,14 @@ public class TransactionFragment extends Fragment {
         layoutEmpty = view.findViewById(R.id.layoutEmpty);
         etSearch = view.findViewById(R.id.etSearch);
         rvFilterChips = view.findViewById(R.id.rvFilterChips);
+        scrollView = view.findViewById(R.id.transactionScrollView);
 
-        // Sidebar Navigation
         MaterialToolbar toolbarPersonal = view.findViewById(R.id.toolbarPersonal);
         View bellIcon = view.findViewById(R.id.imgBellIcon);
         TextView bellBadge = view.findViewById(R.id.tvNotificationBadge);
         TextView tvTitle = view.findViewById(R.id.tvToolbarTitle);
         if (tvTitle != null) {
-            tvTitle.setText("Transaction History");
+            tvTitle.setText(currentWorkspaceId.equals("PERSONAL") ? "Transaction History" : "Group History");
         }
         if (getActivity() instanceof BaseActivity) {
             ((BaseActivity) getActivity()).setupCommonHeader(toolbarPersonal, bellIcon, bellBadge);
@@ -91,53 +93,52 @@ public class TransactionFragment extends Fragment {
 
     private void setupRecyclerViews() {
         historyAdapter = new HistoryAdapter();
-        rvHistory.setLayoutManager(new LinearLayoutManager(getContext()));
+        historyAdapter.setOnTransactionClickListener(transaction -> openEditScreen(transaction.id));
+
+        if (scrollView != null) {
+            scrollView.setOnScrollChangeListener((NestedScrollView.OnScrollChangeListener) (v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
+                // Kiểm tra xem cuộn đến đít chưa
+                if (scrollY == (v.getChildAt(0).getMeasuredHeight() - v.getMeasuredHeight())) {
+                    viewModel.loadMore();
+                }
+            });
+        }
+
+        LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());
+        rvHistory.setLayoutManager(layoutManager);
         rvHistory.setAdapter(historyAdapter);
 
-        historyAdapter.setOnTransactionClickListener(transaction -> openEditScreen(transaction.id));
+        // Gắn Bảo bối phân trang
+        rvHistory.addOnScrollListener(new EndlessRecyclerViewScrollListener(layoutManager) {
+            @Override
+            public void onLoadMore(int page, int totalItemsCount, RecyclerView view) {
+                viewModel.loadMore();
+            }
+        });
 
         chipAdapter = new FilterChipAdapter(new FilterChipAdapter.OnChipClickListener() {
             @Override
             public void onChipClick(FilterChip chip, int position, View anchorView) {
                 switch (chip.getType()) {
-                    case DATE:
-                        showDatePicker(chip, position);
-                        break;
-                    case TYPE:
-                        showTypeFilterPopup(anchorView, chip, position);
-                        break;
-                    case METHOD:
-                        showMethodFilterPopup(anchorView, chip, position);
-                        break;
-                    case CATEGORY:
-                        showCategoryBottomSheet(chip, position);
-                        break;
+                    case DATE: showDatePicker(chip, position); break;
+                    case TYPE: showTypeFilterPopup(anchorView, chip, position); break;
+                    case METHOD: showMethodFilterPopup(anchorView, chip, position); break;
+                    case CATEGORY: showCategoryBottomSheet(chip, position); break;
                 }
             }
 
             @Override
             public void onChipClearClick(FilterChip chip, int position) {
                 switch (chip.getType()) {
-                    case DATE:
-                        viewModel.selectedDateRange.setValue(null);
-                        break;
-                    case TYPE:
-                        viewModel.selectedType.setValue(null);
-                        break;
-                    case METHOD:
-                        viewModel.selectedMethod.setValue(null);
-                        break;
-                    case CATEGORY:
-                        viewModel.selectedCategoryId.setValue(null);
-                        break;
+                    case DATE: viewModel.selectedDateRange.setValue(null); break;
+                    case TYPE: viewModel.selectedType.setValue(null); break;
+                    case METHOD: viewModel.selectedMethod.setValue(null); break;
+                    case CATEGORY: viewModel.selectedCategoryId.setValue(null); break;
                 }
-
                 chip.setActive(false);
                 chip.setActiveLabel(chip.getFilLabel());
                 chipAdapter.notifyItemChanged(position);
-
-                String query = (etSearch != null) ? etSearch.getText().toString().trim() : "";
-                viewModel.fetchHistoryData(currentWorkspaceId, query);
+                refreshData();
             }
         });
 
@@ -148,12 +149,9 @@ public class TransactionFragment extends Fragment {
     private void setupObservers() {
         viewModel = new ViewModelProvider(requireActivity()).get(TransactionViewModel.class);
 
-        // Nạp sẵn danh mục từ DB vào Cache khi Fragment vừa mở
         viewModel.loadCategoriesForFilter();
         viewModel.getFilterCategories().observe(getViewLifecycleOwner(), categories -> {
-            if (categories != null) {
-                availableCategories = categories;
-            }
+            if (categories != null) availableCategories = categories;
         });
 
         viewModel.getGroupedTransactions().observe(getViewLifecycleOwner(), items -> {
@@ -172,57 +170,51 @@ public class TransactionFragment extends Fragment {
 
         MainViewModel mainViewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
         mainViewModel.syncCompleted.observe(getViewLifecycleOwner(), isDone -> {
-            if (Boolean.TRUE.equals(isDone)) {
-                String query = (etSearch != null) ? etSearch.getText().toString().trim() : "";
-                viewModel.fetchHistoryData(currentWorkspaceId, query);
-            }
+            if (Boolean.TRUE.equals(isDone)) refreshData();
         });
     }
 
     private void setupListeners() {
         if (etSearch == null) return;
         etSearch.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                refreshData();
             }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                viewModel.fetchHistoryData(currentWorkspaceId, s.toString().trim());
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-            }
+            @Override public void afterTextChanged(Editable s) {}
         });
     }
 
     // =========================================================================
-    // FILTER POPUPS & MENUS
+    // HELPER METHOD ĐỂ LOAD DATA
+    // =========================================================================
+    private void refreshData() {
+        String query = (etSearch != null) ? etSearch.getText().toString().trim() : "";
+        viewModel.fetchHistoryData(currentWorkspaceId, query, true);
+    }
+
+    // =========================================================================
+    // FILTER POPUPS
     // =========================================================================
 
     private void showDatePicker(FilterChip chip, int position) {
         MaterialDatePicker<Pair<Long, Long>> datePicker = MaterialDatePicker.Builder.dateRangePicker()
-                .setTitleText("Select Date Range")
-                .build();
+                .setTitleText("Select Date Range").build();
 
         datePicker.addOnPositiveButtonClickListener(selection -> {
             Long startDate = selection.first;
             Long endDate = selection.second;
-
             if (startDate != null && endDate != null) {
                 SimpleDateFormat sdf = new SimpleDateFormat("MMM dd", Locale.ENGLISH);
                 String label = sdf.format(new Date(startDate)) + " - " + sdf.format(new Date(endDate));
-
                 chip.setActive(true);
                 chip.setActiveLabel(label);
                 chipAdapter.notifyItemChanged(position);
 
                 viewModel.selectedDateRange.setValue(new long[]{startDate, endDate});
-                viewModel.fetchHistoryData(currentWorkspaceId);
+                refreshData();
             }
         });
-
         datePicker.show(getParentFragmentManager(), "DATE_PICKER");
     }
 
@@ -232,14 +224,12 @@ public class TransactionFragment extends Fragment {
         popup.getMenu().add(0, 0, 0, R.string.expense_chip);
 
         popup.setOnMenuItemClickListener(item -> {
-            int typeId = item.getItemId();
-
             chip.setActive(true);
             chip.setActiveLabel(item.getTitle().toString());
             chipAdapter.notifyItemChanged(position);
 
-            viewModel.selectedType.setValue(typeId);
-            viewModel.fetchHistoryData(currentWorkspaceId);
+            viewModel.selectedType.setValue(item.getItemId());
+            refreshData();
             return true;
         });
         popup.show();
@@ -252,36 +242,20 @@ public class TransactionFragment extends Fragment {
         popup.getMenu().add(0, 2, 0, R.string.bank_chip);
 
         popup.setOnMenuItemClickListener(item -> {
-            String displayLabel = item.getTitle().toString();
-            String filterValue = "";
-            switch (item.getItemId()) {
-                case 0:
-                    filterValue = "Cash";
-                    break;
-                case 1:
-                    filterValue = "Card";
-                    break;
-                case 2:
-                    filterValue = "Bank";
-                    break;
-            }
-
+            String filterValue = item.getItemId() == 0 ? "Cash" : (item.getItemId() == 1 ? "Card" : "Bank");
             chip.setActive(true);
-            chip.setActiveLabel(displayLabel);
+            chip.setActiveLabel(item.getTitle().toString());
             chipAdapter.notifyItemChanged(position);
 
             viewModel.selectedMethod.setValue(filterValue);
-            viewModel.fetchHistoryData(currentWorkspaceId);
+            refreshData();
             return true;
         });
         popup.show();
     }
 
     private void showCategoryBottomSheet(FilterChip chip, int position) {
-        if (availableCategories == null || availableCategories.isEmpty()) {
-            DialogHelper.showCustomDialog(requireContext(), "Info", "No categories available for filtering.", "OK", null, DialogHelper.DialogType.NORMAL, true, null, null);
-            return;
-        }
+        if (availableCategories == null || availableCategories.isEmpty()) return;
 
         BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(requireContext());
         View bottomSheetView = getLayoutInflater().inflate(R.layout.bottom_sheet_filter, null);
@@ -291,16 +265,12 @@ public class TransactionFragment extends Fragment {
         CategoryPickerAdapter adapter = new CategoryPickerAdapter(requireContext(), availableCategories, selectedCat -> {
             chip.setActive(true);
             chip.setActiveLabel(selectedCat.name);
-
-            String iconName = selectedCat.iconName != null ? selectedCat.iconName : "";
-            int resId = requireContext().getResources().getIdentifier(iconName, "drawable", requireContext().getPackageName());
+            int resId = requireContext().getResources().getIdentifier(selectedCat.iconName != null ? selectedCat.iconName : "", "drawable", requireContext().getPackageName());
             if (resId != 0) chip.setIconRes(resId);
-
             chipAdapter.notifyItemChanged(position);
 
             viewModel.selectedCategoryId.setValue(selectedCat.id);
-            viewModel.fetchHistoryData(currentWorkspaceId);
-
+            refreshData();
             bottomSheetDialog.dismiss();
         });
 
@@ -310,7 +280,7 @@ public class TransactionFragment extends Fragment {
     }
 
     // =========================================================================
-    // SWIPE ACTIONS
+    // SWIPE ACTIONS & ON_RESUME
     // =========================================================================
 
     private void setupSwipeToDelete() {
@@ -321,16 +291,11 @@ public class TransactionFragment extends Fragment {
                 if (position == RecyclerView.NO_POSITION) return makeMovementFlags(0, 0);
 
                 TransactionViewModel.HistoryItem item = historyAdapter.getItemAt(position);
-                if (item.getType() == TransactionViewModel.HistoryItem.TYPE_DATE_HEADER) {
-                    return makeMovementFlags(0, 0);
-                }
+                if (item.getType() == TransactionViewModel.HistoryItem.TYPE_DATE_HEADER) return makeMovementFlags(0, 0);
                 return makeMovementFlags(0, ItemTouchHelper.LEFT);
             }
 
-            @Override
-            public boolean onMove(@NonNull RecyclerView r, @NonNull RecyclerView.ViewHolder v, @NonNull RecyclerView.ViewHolder t) {
-                return false;
-            }
+            @Override public boolean onMove(@NonNull RecyclerView r, @NonNull RecyclerView.ViewHolder v, @NonNull RecyclerView.ViewHolder t) { return false; }
 
             @Override
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
@@ -338,32 +303,15 @@ public class TransactionFragment extends Fragment {
                 if (position == RecyclerView.NO_POSITION) return;
 
                 TransactionViewModel.HistoryItem item = historyAdapter.getItemAt(position);
-
                 if (item.getType() == TransactionViewModel.HistoryItem.TYPE_TRANSACTION) {
-                    Transaction deletedTrans = item.getTransaction();
-
-                    DialogHelper.showCustomDialog(
-                            requireContext(),
-                            getString(R.string.action_delete),
-                            "Are you sure? This action cannot be undone.",
-                            "Delete",
-                            "Cancel",
-                            DialogHelper.DialogType.DANGER,
-                            true,
+                    DialogHelper.showCustomDialog(requireContext(), getString(R.string.action_delete), "Are you sure? This action cannot be undone.", "Delete", "Cancel", DialogHelper.DialogType.DANGER, true,
                             () -> {
-                                viewModel.deleteOnly(deletedTrans);
-                                DialogHelper.showSuccess(
-                                        requireContext(),
-                                        "Success",
-                                        "Transaction deleted successfully",
-                                        null
-                                );
+                                viewModel.deleteOnly(item.getTransaction());
+                                DialogHelper.showSuccess(requireContext(), "Success", "Transaction deleted successfully", null);
                             },
                             () -> historyAdapter.notifyItemChanged(position)
                     );
-                } else {
-                    historyAdapter.notifyItemChanged(position);
-                }
+                } else historyAdapter.notifyItemChanged(position);
             }
         }).attachToRecyclerView(rvHistory);
     }
@@ -377,7 +325,6 @@ public class TransactionFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        String query = (etSearch != null) ? etSearch.getText().toString().trim() : "";
-        viewModel.fetchHistoryData(currentWorkspaceId, query);
+        refreshData();
     }
 }

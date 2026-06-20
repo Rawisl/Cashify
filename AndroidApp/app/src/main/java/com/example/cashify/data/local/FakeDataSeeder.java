@@ -5,33 +5,41 @@ import android.util.Log;
 
 import com.example.cashify.data.model.Category;
 import com.example.cashify.data.model.Transaction;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.WriteBatch;
 
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 public class FakeDataSeeder {
 
-    public static void seed(Context context, List<Category> categories) {
+    public static void seed(Context context, List<Category> categories, String uid, boolean pushToFirebase) {
         TransactionDao dao = AppDatabase.getInstance(context).transactionDao();
 
-        // Skip seeding if data already exists
+        // Bỏ qua nếu máy này đã có dữ liệu
         if (dao.countTransactions("PERSONAL") > 0) return;
 
-        // Insert monthly allowance to balance the massive expenses
-        insertIncome(dao, categories, 2026, 3, 9, "Allowance", 1000, "Allowance tuần");
-        insertIncome(dao, categories, 2026, 3, 16, "Allowance", 700, "Allowance tuần");
-        insertIncome(dao, categories, 2026, 3, 23, "Allowance", 1100, "Allowance tuần");
+        List<Transaction> generatedTrans = new ArrayList<>();
 
+        // Thu nhập
+        insertIncome(dao, categories, generatedTrans, 2026, 3, 9, "Allowance", 1000, "Allowance tuần");
+        insertIncome(dao, categories, generatedTrans, 2026, 3, 16, "Allowance", 700, "Allowance tuần");
+        insertIncome(dao, categories, generatedTrans, 2026, 3, 23, "Allowance", 1100, "Allowance tuần");
 
-        // Raw CSV extracted from user's Excel file, mapped strictly to English categories
+        // Dữ liệu chi tiêu
         String rawCsv =
                 "2026-03-09|Food & Dining|30|Bún chả;" +
                         "2026-03-09|Fuel|80|27k/lít đcmcs?;" +
                         "2026-03-10|Food & Dining|30|Cơm gà xối mỡ;" +
                         "2026-03-11|Food & Dining|40|BĐMT đặc biệt;" +
-                        "2026-03-11|Food & Dining|40|Lẩu chay;";
-        //muốn seed thêm thì thêm đúng định dạng "năm-tháng-ngày|category|số tiền bỏ 3 số 0|description" vào cái rawCsv ấy
+                        "2026-03-11|Food & Dining|40|Lẩu chay;" +
+                        "2026-06-20|Entertainment|33|Spotify;";
 
+        //muốn seed thêm thì tự thêm giống định dạng trên vào cái rawCsv ấy
         String[] rows = rawCsv.split(";");
         for (String row : rows) {
             String[] cols = row.split("\\|", -1);
@@ -39,7 +47,7 @@ public class FakeDataSeeder {
 
             String[] dateParts = cols[0].split("-");
             int year = Integer.parseInt(dateParts[0]);
-            int month = Integer.parseInt(dateParts[1]) - 1; // Lùi 1 cho chuẩn Calendar
+            int month = Integer.parseInt(dateParts[1]) - 1;
             int day = Integer.parseInt(dateParts[2]);
 
             String catName = cols[1];
@@ -53,8 +61,9 @@ public class FakeDataSeeder {
             cal.set(year, month, day, 12, 0, 0);
 
             Transaction t = new Transaction();
+            t.id = UUID.randomUUID().toString();
             t.amount = amount;
-            t.type = 0; // Chi phí
+            t.type = 0; // Expense
             t.categoryId = catId;
             t.note = note;
             t.timestamp = cal.getTimeInMillis();
@@ -62,36 +71,65 @@ public class FakeDataSeeder {
             t.workspaceId = "PERSONAL";
 
             dao.insert(t);
+            generatedTrans.add(t);
         }
 
-        Log.d("FakeDataSeeder", "Seed completed with " + dao.countTransactions("PERSONAL") + " transactions.");
+        //ĐẨY LÊN FIREBASE BẰNG 1 REQUEST DUY NHẤT
+        if (pushToFirebase && uid != null && !uid.isEmpty()) {
+            FirebaseFirestore dbCloud = FirebaseFirestore.getInstance();
+            WriteBatch batch = dbCloud.batch();
+
+            for (Transaction trans : generatedTrans) {
+                Map<String, Object> data = new HashMap<>();
+                data.put("amount", trans.amount);
+                data.put("type", trans.type);
+                data.put("categoryId", trans.categoryId);
+                data.put("note", trans.note);
+                data.put("timestamp", trans.timestamp);
+                data.put("paymentMethod", trans.paymentMethod);
+                data.put("workspaceId", trans.workspaceId);
+
+                // Gói vào WriteBatch
+                batch.set(dbCloud.collection("users")
+                        .document(uid)
+                        .collection("transactions")
+                        .document(trans.id), data);
+            }
+
+            // Gửi cục hàng lên Cloud
+            batch.commit()
+                    .addOnSuccessListener(v -> Log.d("FakeDataSeeder", "Bắn " + generatedTrans.size() + " records lên Firebase thành công!"))
+                    .addOnFailureListener(e -> Log.e("FakeDataSeeder", "Lỗi bắn Firebase: " + e.getMessage()));
+        }
+
+        Log.d("FakeDataSeeder", "Seed completed with " + dao.countTransactions("PERSONAL") + " local transactions.");
     }
 
-    private static void insertIncome(TransactionDao dao, List<Category> categories, int year, int realMonth, int day, String catName, long amountK, String note) {
+    private static void insertIncome(TransactionDao dao, List<Category> categories, List<Transaction> generatedTrans, int year, int realMonth, int day, String catName, long amountK, String note) {
         int catId = findId(categories, catName);
         if (catId == -1) return;
 
         Calendar cal = Calendar.getInstance();
-        // Lùi đi 1 để khớp với cách Calendar đếm tháng (0-11)
         cal.set(year, realMonth - 1, day, 9, 0, 0);
 
         Transaction t = new Transaction();
+        t.id = UUID.randomUUID().toString();
         t.amount = amountK * 1000L;
-        t.type = 1; // Thu nhập
+        t.type = 1; // Income
         t.categoryId = catId;
         t.note = note;
         t.timestamp = cal.getTimeInMillis();
         t.paymentMethod = "Bank";
         t.workspaceId = "PERSONAL";
+
         dao.insert(t);
+        generatedTrans.add(t);
     }
 
     private static int findId(List<Category> categories, String name) {
         for (Category c : categories) {
-            // Dùng equalsIgnoreCase cho an toàn
             if (c.name.equalsIgnoreCase(name)) return c.id;
         }
-        Log.e("FakeDataSeeder", "Category not found: " + name);
         return -1;
     }
 }

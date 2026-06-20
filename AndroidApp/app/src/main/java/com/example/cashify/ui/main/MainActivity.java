@@ -37,6 +37,7 @@ import com.example.cashify.data.repository.IAuthRepository;
 import com.example.cashify.ui.auth.LoginActivity;
 import com.example.cashify.ui.transactions.AddTransactionActivity;
 import com.example.cashify.ui.transactions.TransactionViewModel;
+import com.example.cashify.ui.workspace.AddWorkspaceBottomSheet;
 import com.example.cashify.utils.ToastHelper;
 import com.example.cashify.utils.WorkScheduler;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -89,7 +90,7 @@ public class MainActivity extends BaseActivity {
         //Đẩy trách nhiệm dọn dẹp Database về cho ViewModel
         mainViewModel.checkAndSeedLocalData(currentUserId, () -> {
             Log.d("AUTH_FLOW", "Data ready. Fetching history for UI.");
-            transactionViewModel.fetchHistoryData(currentWorkspaceId);
+            transactionViewModel.fetchHistoryData(currentWorkspaceId, "", true);
         });
 
         // Tự động tắt Splash Screen
@@ -231,7 +232,7 @@ public class MainActivity extends BaseActivity {
             currentWorkspaceId = "PERSONAL";
             androidx.navigation.Navigation.findNavController(this, R.id.nav_host_fragment)
                     .popBackStack(R.id.nav_home, false);
-            transactionViewModel.fetchHistoryData("PERSONAL");
+            transactionViewModel.fetchHistoryData("PERSONAL", "", true);
         } else if (itemId == R.id.nav_social) {
             NavController nav = androidx.navigation.Navigation.findNavController(this, R.id.nav_host_fragment);
             if (nav.getCurrentDestination() == null
@@ -433,7 +434,7 @@ public class MainActivity extends BaseActivity {
 
     private void maybeOpenCreateWorkspaceSheet() {
         if (getIntent().getBooleanExtra("OPEN_CREATE_WORKSPACE", false)) {
-            new com.example.cashify.ui.workspace.AddWorkspaceBottomSheet()
+            new AddWorkspaceBottomSheet()
                     .show(getSupportFragmentManager(), "AddWorkspaceBottomSheet");
         }
     }

@@ -180,11 +180,11 @@ public class AuthViewModel extends ViewModel {
 
     // Xóa lỗi để không bị nổ Toast nhiều lần
     public void clearErrorMessage() {
-        _errorMessage.setValue(null); // Giả sử biến mutable của sếp là _errorMessage
+        _errorMessage.setValue(null);
     }
 
     // Reset lại trạng thái gửi mail
     public void clearResetMailStatus() {
-        _isResetMailSent.setValue(false); // Giả sử biến mutable của sếp là _isResetMailSent
+        _isResetMailSent.setValue(false);
     }
 }

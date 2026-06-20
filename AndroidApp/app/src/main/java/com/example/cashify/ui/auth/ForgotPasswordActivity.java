@@ -68,7 +68,7 @@ public class ForgotPasswordActivity extends AppCompatActivity {
             if (error != null && !error.isEmpty()) {
                 ToastHelper.show(this, "Error: " + error);
 
-                // ĐÃ BỔ SUNG: Xóa lỗi sau khi hiện để chống lỗi xoay màn hình
+                //Xóa lỗi sau khi hiện để chống lỗi xoay màn hình
                 authViewModel.clearErrorMessage();
             }
         });
@@ -77,7 +77,7 @@ public class ForgotPasswordActivity extends AppCompatActivity {
             if (isSent != null && isSent) {
                 ToastHelper.show(this, "Check your email to reset your password");
 
-                // ĐÃ BỔ SUNG: Reset state trước khi thoát
+                //Reset state trước khi thoát
                 authViewModel.clearResetMailStatus();
                 finish();
             }

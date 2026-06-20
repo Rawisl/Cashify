@@ -184,7 +184,8 @@ public class HomeFragment extends BaseFragment {
         // Observe Available Months for Dialog
         viewModel.getAvailableMonths().observe(getViewLifecycleOwner(), monthMap -> {
             if (monthMap == null || monthMap.isEmpty()) {
-                ToastHelper.show(getContext(), "No transaction data available.");
+                //Nếu chưa có data thì báo người dùng chờ tí
+                ToastHelper.show(getContext(), "Syncing data, please wait...");
                 return;
             }
 

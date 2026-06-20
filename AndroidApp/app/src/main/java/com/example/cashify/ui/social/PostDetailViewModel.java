@@ -95,9 +95,6 @@ public class PostDetailViewModel extends ViewModel {
         });
     }
 
-    // ==========================================
-    // API XÓA / SỬA THẬT SỰ Ở ĐÂY SẾP ƠI
-    // ==========================================
     public void deletePost(String postId, String token) {
         isLoading.setValue(true);
         apiService.deletePost(token, new ApiDto.DeletePostRequest(postId)).enqueue(new Callback<Object>() {

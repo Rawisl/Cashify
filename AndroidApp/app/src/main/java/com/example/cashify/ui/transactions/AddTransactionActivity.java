@@ -138,7 +138,7 @@ public class AddTransactionActivity extends AppCompatActivity {
     }
 
     private void setupObservers() {
-        // Observers UI Data (Giữ nguyên của sếp)
+        // Observers UI Data
         viewModel.existingTransaction.observe(this, t -> {
             if (t != null) {
                 edtAmount.setText(CurrencyFormatter.formatFullVND((double) t.amount));
