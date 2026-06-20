@@ -165,7 +165,7 @@ public static class ChatEndpoints
             }
         });
 
-        //GỬI TIN NHẮN TRỰC TIẾP CHO BẠN BÈ
+        // GỬI TIN NHẮN TRỰC TIẾP CHO BẠN BÈ (CÓ BẮN THÔNG BÁO)
         group.MapPost("/send", async (HttpRequest request, DirectFriendMessageRequest body, FirestoreDb db) =>
         {
             try
@@ -206,27 +206,47 @@ public static class ChatEndpoints
                 var senderName = senderSnap.ContainsField("displayName") ? senderSnap.GetValue<string>("displayName") : "User";
                 var senderAvatar = senderSnap.ContainsField("avatarUrl") ? senderSnap.GetValue<string>("avatarUrl") : "";
 
-                var messageData = new Dictionary<string, object>
-            {
-                { "senderId", uid },
-                { "receiverId", body.ReceiverId },
-                { "senderName", senderName ?? "User" },
-                { "senderAvatar", senderAvatar ?? "" },
-                { "text", body.Text?.Trim() ?? "" },
-                { "timestamp", timestamp },
-                { "isRead", false },
-                { "imageUrl", body.ImageUrl ?? "" },
-                { "isRecalled", false }
-            };
+                // 🌟 MỞ BATCH ĐỂ ĐẢM BẢO GHI TIN NHẮN VÀ THÔNG BÁO CÙNG LÚC
+                var batch = db.StartBatch();
 
-                await db.Collection("direct_chats")
-                    .Document(chatId)
-                    .Collection("messages")
-                    .Document()
-                    .SetAsync(messageData);
+                // 1. Ghi tin nhắn vào phòng chat
+                var msgRef = db.Collection("direct_chats").Document(chatId).Collection("messages").Document();
+                var messageData = new Dictionary<string, object>
+                {
+                    { "senderId", uid },
+                    { "receiverId", body.ReceiverId },
+                    { "senderName", senderName ?? "User" },
+                    { "senderAvatar", senderAvatar ?? "" },
+                    { "text", body.Text?.Trim() ?? "" },
+                    { "timestamp", timestamp },
+                    { "isRead", false },
+                    { "imageUrl", body.ImageUrl ?? "" },
+                    { "isRecalled", false }
+                };
+                batch.Set(msgRef, messageData);
+
+                // 2. Ghi In-app Notification cho người nhận
+                var notifRef = receiverRef.Collection("notifications").Document();
+
+                // Nếu text rỗng thì chắc chắn là đang gửi ảnh
+                string notifMessage = string.IsNullOrWhiteSpace(body.Text) ? "Đã gửi một ảnh" : body.Text.Trim();
+
+                batch.Set(notifRef, new
+                {
+                    type = "FRIEND_CHAT",
+                    title = senderName ?? "Bạn bè",
+                    message = notifMessage,
+                    timestamp = timestamp,
+                    isRead = false,
+                    // TRUYỀN UID CỦA NGƯỜI GỬI: Để khi máy người nhận bấm vào thông báo, nó biết phải load màn hình chat với ai
+                    referenceId = uid
+                });
+
+                // 🌟 COMMIT TOÀN BỘ DATA LÊN CLOUD
+                await batch.CommitAsync();
 
                 return Results.Ok(new { message = "Gửi tin nhắn thành công", chatId });
-                }
+            }
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"Direct friend message failed: {ex}");

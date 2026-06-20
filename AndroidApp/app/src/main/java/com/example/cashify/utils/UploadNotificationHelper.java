@@ -16,8 +16,6 @@ public class UploadNotificationHelper {
 
     private static final String CHANNEL_ID = "cashify_upload";
 
-    // Lưu ý: Dùng cố định 1 ID nghĩa là tại một thời điểm chỉ hiển thị 1 tiến trình upload duy nhất.
-    // Nếu sếp cho phép upload nhiều ảnh song song thì phải truyền ID động vào.
     private static final int NOTIF_ID = 1001;
 
     private final NotificationManager manager;

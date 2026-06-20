@@ -7,8 +7,10 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 import com.example.cashify.data.model.ChatMessage;
+import com.example.cashify.data.model.User;
 import com.example.cashify.data.remote.FirebaseManager;
 import com.example.cashify.data.repository.MediaRepository;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 
 import java.io.File;
@@ -20,6 +22,9 @@ public class FriendChatViewModel extends ViewModel {
 
     // Data Repositories
     private final MediaRepository mediaRepository = new MediaRepository();
+
+    private final MutableLiveData<User> friendProfile = new MutableLiveData<>();
+    public LiveData<User> getFriendProfile() { return friendProfile; }
 
     // UI States (Chat)
     private final MutableLiveData<List<ChatMessage>> chatMessages = new MutableLiveData<>(new ArrayList<>());
@@ -43,6 +48,26 @@ public class FriendChatViewModel extends ViewModel {
 
 
     // =========================================================================
+    // FRIEND PROFILE HANDLING (NEW)
+    // =========================================================================
+
+    public void loadFriendProfile(String uid) {
+        if (uid == null || uid.isEmpty()) return;
+
+        // Tự động fetch thông tin User từ Firestore thay vì chờ Intent truyền qua
+        FirebaseFirestore.getInstance().collection("users").document(uid)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        User user = documentSnapshot.toObject(User.class);
+                        friendProfile.postValue(user);
+                    }
+                })
+                .addOnFailureListener(e -> loadErrorMessage.postValue("Failed to load friend profile: " + e.getMessage()));
+    }
+
+
+    // =========================================================================
     // MEDIA HANDLING
     // =========================================================================
 
@@ -50,9 +75,7 @@ public class FriendChatViewModel extends ViewModel {
         isUploading.setValue(true);
         mediaRepository.uploadImage(imageFile, new MediaRepository.UploadCallback() {
             @Override
-            public void onProgress(int percent) {
-                // Future expansion: Post progress to UI if needed
-            }
+            public void onProgress(int percent) {}
 
             @Override
             public void onSuccess(String imageUrl) {
@@ -62,14 +85,14 @@ public class FriendChatViewModel extends ViewModel {
                     current.add(imageUrl);
                     pendingImages.postValue(current);
                 }
-                imageFile.delete(); // Cleanup cache file
+                imageFile.delete();
             }
 
             @Override
             public void onFailure(String error) {
                 isUploading.postValue(false);
                 sendErrorMessage.postValue("Image upload failed: " + error);
-                imageFile.delete(); // Ensure cleanup on failure
+                imageFile.delete();
             }
         });
     }
@@ -87,8 +110,6 @@ public class FriendChatViewModel extends ViewModel {
     // CHAT HANDLING (SEND & RECALL)
     // =========================================================================
 
-    // Validates inputs and triggers the sequential sending process
-    // Returns true if the send process has started, false otherwise
     public boolean submitMessages(String friendUid, String text) {
         List<String> urls = pendingImages.getValue();
         if ((text == null || text.trim().isEmpty()) && (urls == null || urls.isEmpty())) {
@@ -96,18 +117,13 @@ public class FriendChatViewModel extends ViewModel {
         }
 
         List<String> urlsToSend = new ArrayList<>(urls != null ? urls : new ArrayList<>());
-
-        // Clear UI pending state immediately for better UX
         pendingImages.setValue(new ArrayList<>());
-
         sendMessagesSequentially(friendUid, text, urlsToSend, 0);
         return true;
     }
 
-    // Recursively sends images one by one to maintain chronological order in Firestore
     private void sendMessagesSequentially(String friendUid, String text, List<String> urls, int index) {
         if (index >= urls.size()) {
-            // No more images, send the text if it exists and hasn't been sent yet
             if (urls.isEmpty()) {
                 sendMessage(friendUid, text, null);
             }
@@ -115,37 +131,28 @@ public class FriendChatViewModel extends ViewModel {
         }
 
         String imgUrl = urls.get(index);
-        // Only attach text to the first image to avoid duplicating the text message
         String msgText = (index == 0) ? text : "";
-
         sendMessage(friendUid, msgText, imgUrl,
                 () -> sendMessagesSequentially(friendUid, text, urls, index + 1));
     }
 
-    // Standard send method (No callback)
     public void sendMessage(String friendUid, String text, String imageUrl) {
         String trimmed = text != null ? text.trim() : "";
         if (trimmed.isEmpty() && (imageUrl == null || imageUrl.isEmpty())) return;
         if (isSending) return;
 
         isSending = true;
-
         FirebaseManager.getInstance().sendDirectFriendMessage(
                 friendUid, trimmed, imageUrl,
                 new FirebaseManager.DataCallback<Void>() {
-                    @Override
-                    public void onSuccess(Void data) {
-                        isSending = false;
-                    }
-                    @Override
-                    public void onError(String message) {
+                    @Override public void onSuccess(Void data) { isSending = false; }
+                    @Override public void onError(String message) {
                         isSending = false;
                         sendErrorMessage.postValue(message);
                     }
                 });
     }
 
-    // Overloaded send method (With callback for sequential execution)
     public void sendMessage(String friendUid, String text, String imageUrl, Runnable onSuccess) {
         String trimmed = text != null ? text.trim() : "";
         if (trimmed.isEmpty() && (imageUrl == null || imageUrl.isEmpty())) {
@@ -165,20 +172,15 @@ public class FriendChatViewModel extends ViewModel {
                     public void onError(String message) {
                         isSending = false;
                         sendErrorMessage.postValue(message);
-                        if (onSuccess != null) onSuccess.run(); // Proceed to next item even if one fails
+                        if (onSuccess != null) onSuccess.run();
                     }
                 });
     }
 
     public void recallMessage(String friendUid, String messageId) {
         FirebaseManager.getInstance().recallDirectFriendMessage(friendUid, messageId, new FirebaseManager.DataCallback<Void>() {
-            @Override
-            public void onSuccess(Void data) {
-                // UI updates automatically via Firestore SnapshotListener
-            }
-
-            @Override
-            public void onError(String message) {
+            @Override public void onSuccess(Void data) {}
+            @Override public void onError(String message) {
                 sendErrorMessage.postValue("Failed to unsend message: " + message);
             }
         });
@@ -192,16 +194,13 @@ public class FriendChatViewModel extends ViewModel {
     public void startListeningMessages(String friendUid) {
         if (friendUid == null || friendUid.isEmpty()) return;
 
-        // Detach previous listener if binding to a new user
         if (messageListener != null) {
             messageListener.remove();
         }
 
-        // Attach Real-time listener
         messageListener = FirebaseManager.getInstance().listenToDirectMessages(friendUid, new FirebaseManager.DataCallback<List<ChatMessage>>() {
             @Override
             public void onSuccess(List<ChatMessage> messages) {
-                // Post new data to UI instantly on updates/recalls
                 chatMessages.postValue(messages);
             }
 
@@ -216,7 +215,6 @@ public class FriendChatViewModel extends ViewModel {
     @Override
     protected void onCleared() {
         super.onCleared();
-        // CRITICAL: Remove Firestore listener to prevent memory leaks when ViewModel is destroyed
         if (messageListener != null) {
             messageListener.remove();
         }

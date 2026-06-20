@@ -91,8 +91,6 @@ public class MessagesActivity extends AppCompatActivity {
     private void openConversation(DirectConversation conversation) {
         Intent intent = new Intent(this, FriendChatActivity.class);
         intent.putExtra(FriendChatActivity.EXTRA_FRIEND_UID, conversation.getFriendUid());
-        intent.putExtra(FriendChatActivity.EXTRA_FRIEND_NAME, conversation.getNameToShow());
-        intent.putExtra(FriendChatActivity.EXTRA_FRIEND_AVATAR, conversation.getFriendAvatarUrl());
         startActivity(intent);
     }
 }

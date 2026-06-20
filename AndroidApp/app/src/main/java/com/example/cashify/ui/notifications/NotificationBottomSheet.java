@@ -42,6 +42,7 @@ public class NotificationBottomSheet extends BottomSheetDialogFragment {
     private static final String TYPE_WORKSPACE_INVITE = "WORKSPACE_INVITE";
     private static final String TYPE_WORKSPACE_TRANS = "WORKSPACE_TRANS";
     private static final String TYPE_WORKSPACE_CHAT = "WORKSPACE_CHAT";
+    private static final String TYPE_FRIEND_CHAT = "FRIEND_CHAT";
 
     private NotificationAdapter adapter;
     private FirebaseFirestore db;
@@ -148,6 +149,16 @@ public class NotificationBottomSheet extends BottomSheetDialogFragment {
 
                     NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment);
                     navController.navigate(R.id.nav_workspace_container, chatBundle);
+                }
+                dismiss();
+                break;
+
+            case TYPE_FRIEND_CHAT:
+                if (notification.getReferenceId() != null && !notification.getReferenceId().isEmpty()) {
+                    Intent intent = new Intent(requireContext(), com.example.cashify.ui.FriendsActivity.FriendChatActivity.class);
+                    // Truyền UID (lấy từ referenceId do Backend trả về) sang Activity
+                    intent.putExtra(com.example.cashify.ui.FriendsActivity.FriendChatActivity.EXTRA_FRIEND_UID, notification.getReferenceId());
+                    startActivity(intent);
                 }
                 dismiss();
                 break;

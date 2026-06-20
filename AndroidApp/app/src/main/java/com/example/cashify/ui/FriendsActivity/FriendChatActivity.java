@@ -36,8 +36,6 @@ import java.util.ArrayList;
 
 public class FriendChatActivity extends AppCompatActivity {
     public static final String EXTRA_FRIEND_UID = "friend_uid";
-    public static final String EXTRA_FRIEND_NAME = "friend_name";
-    public static final String EXTRA_FRIEND_AVATAR = "friend_avatar";
     private static final int PERMISSION_REQUEST_CODE = 101;
 
     private FriendChatViewModel viewModel;
@@ -57,18 +55,16 @@ public class FriendChatActivity extends AppCompatActivity {
         setContentView(R.layout.activity_friend_chat);
 
         friendUid = getIntent().getStringExtra(EXTRA_FRIEND_UID);
-        String friendName = getIntent().getStringExtra(EXTRA_FRIEND_NAME);
-        String friendAvatar = getIntent().getStringExtra(EXTRA_FRIEND_AVATAR);
-
         viewModel = new ViewModelProvider(this).get(FriendChatViewModel.class);
 
         initViews();
-        setupToolbar(friendName, friendAvatar);
         setupRecyclerView();
         setupImagePicker();
         setupObservers();
         setupListeners();
 
+        // 🌟 Giao việc cho ViewModel tự xử
+        viewModel.loadFriendProfile(friendUid);
         viewModel.startListeningMessages(friendUid);
     }
 
@@ -78,12 +74,8 @@ public class FriendChatActivity extends AppCompatActivity {
         btnSendMessage = findViewById(R.id.btnSendMessage);
         layoutImagePreview = findViewById(R.id.layoutImagePreview);
         layoutPreviewImages = findViewById(R.id.layoutPreviewImages);
-    }
 
-    private void setupToolbar(String friendName, String friendAvatar) {
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
-        ((TextView) findViewById(R.id.tvFriendName)).setText(friendName != null ? friendName : "Friend");
-        ImageHelper.loadAvatar(friendAvatar, findViewById(R.id.imgFriendAvatar), friendName);
     }
 
     private void setupRecyclerView() {
@@ -119,6 +111,14 @@ public class FriendChatActivity extends AppCompatActivity {
     }
 
     private void setupObservers() {
+        // 🌟 HÓNG THÔNG TIN PROFILE ĐỂ VẼ LÊN TOOLBAR
+        viewModel.getFriendProfile().observe(this, user -> {
+            if (user != null) {
+                ((TextView) findViewById(R.id.tvFriendName)).setText(user.getNameToShow());
+                ImageHelper.loadAvatar(user.getAvatarUrl(), findViewById(R.id.imgFriendAvatar), user.getNameToShow());
+            }
+        });
+
         viewModel.getChatMessages().observe(this, messages -> {
             chatAdapter.setMessages(messages);
             if (messages != null && !messages.isEmpty()) {
@@ -128,23 +128,21 @@ public class FriendChatActivity extends AppCompatActivity {
 
         viewModel.getLoadErrorMessage().observe(this, message -> {
             if (message != null && !message.isEmpty()) {
-                ToastHelper.show(this, "Failed to load messages: " + message);
+                ToastHelper.show(this, "Failed to load: " + message);
             }
         });
 
         viewModel.getSendErrorMessage().observe(this, message -> {
             if (message != null && !message.isEmpty()) {
-                ToastHelper.show(this, "Failed to send message: " + message);
+                ToastHelper.show(this, "Failed to send: " + message);
             }
         });
 
-        // Delegate UI blocking to ViewModel state
         viewModel.getIsUploading().observe(this, isUploading -> {
             btnSendMessage.setEnabled(!isUploading);
             btnSendMessage.setAlpha(isUploading ? 0.5f : 1.0f);
         });
 
-        // Auto-render previews driven by ViewModel state
         viewModel.getPendingImages().observe(this, images -> {
             layoutPreviewImages.removeAllViews();
             if (images == null || images.isEmpty()) {
@@ -161,8 +159,6 @@ public class FriendChatActivity extends AppCompatActivity {
     private void setupListeners() {
         btnSendMessage.setOnClickListener(v -> {
             String text = edtMessageInput.getText() != null ? edtMessageInput.getText().toString().trim() : "";
-
-            // ViewModel handles the check if text/images are empty
             boolean hasStartedSending = viewModel.submitMessages(friendUid, text);
             if (hasStartedSending) {
                 edtMessageInput.setText("");

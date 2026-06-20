@@ -143,12 +143,6 @@ public class FriendsActivity extends BaseActivity {
 
         setupCommonHeader(toolbarFriends, bellIcon, bellBadge);
 
-        if (toolbarFriends != null) {
-            toolbarFriends.setNavigationOnClickListener(v -> {
-                if (drawerLayout != null) drawerLayout.openDrawer(GravityCompat.START);
-            });
-        }
-
         View btnMessages = findViewById(R.id.btnMessages);
         if (btnMessages != null) {
             btnMessages.setOnClickListener(v -> startActivity(new Intent(this, MessagesActivity.class)));
@@ -255,8 +249,6 @@ public class FriendsActivity extends BaseActivity {
     private void openChat(User user) {
         Intent intent = new Intent(FriendsActivity.this, FriendChatActivity.class);
         intent.putExtra(FriendChatActivity.EXTRA_FRIEND_UID, user.getUid());
-        intent.putExtra(FriendChatActivity.EXTRA_FRIEND_NAME, user.getNameToShow());
-        intent.putExtra(FriendChatActivity.EXTRA_FRIEND_AVATAR, user.getAvatarUrl());
         startActivity(intent);
     }
 
