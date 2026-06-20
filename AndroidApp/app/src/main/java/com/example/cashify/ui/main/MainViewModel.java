@@ -9,6 +9,8 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
 import com.example.cashify.data.local.AppDatabase;
+import com.example.cashify.data.local.DatabaseSeeder;
+import com.example.cashify.data.local.FakeDataSeeder;
 import com.example.cashify.data.model.Category;
 import com.example.cashify.data.model.Budget;
 import com.example.cashify.data.model.Transaction;
@@ -611,8 +613,19 @@ public class MainViewModel extends AndroidViewModel {
                     prefs.edit().putString("last_uid", currentUserId).apply();
                 }
 
-                com.example.cashify.data.local.DatabaseSeeder.seedIfEmpty(getApplication());
+                //Chạy tạo Category
+                DatabaseSeeder.seedIfEmpty(getApplication());
 
+                //chạy fakedataseeder gỡ comment chỗ này ra xong quay lên dòng 407 chỗ
+                //                                if (snapshots.isEmpty()) {
+                //                                    db.transactionDao().deleteAllTransactions("PERSONAL");
+                // comment cái dòng db.transactionDao().deleteAllTransactions("PERSONAL"); lại xong xóa app chạy lại, đăng nhập vào 1 acc mới là seed được data
+                List<Category> allCats = db.categoryDao().getAll();
+//                if (allCats != null && !allCats.isEmpty()) {
+//                    FakeDataSeeder.seed(getApplication(), allCats);
+//                }
+
+                // 3. Lúc này chắc chắn có Data rồi
                 int count = db.transactionDao().countTransactions("PERSONAL");
 
                 new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
