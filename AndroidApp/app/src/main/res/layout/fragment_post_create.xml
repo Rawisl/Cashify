@@ -430,7 +430,7 @@
                         android:fontFamily="@font/inter_semibold"
                         android:gravity="center"
                         android:lineSpacingExtra="2dp"
-                        android:text="@string/post_npreview"
+                        android:text="Preview"
                         android:textAllCaps="true"
                         android:textColor="#8F6842"
                         android:textSize="10sp" />
