@@ -155,7 +155,7 @@ public class SocialComposerFragment extends Fragment {
         editPostContent = view.findViewById(R.id.editPostContent);
         editPostTitle = view.findViewById(R.id.editPostTitle);
         txtComposerCount = view.findViewById(R.id.txtComposerCount);
-        txtComposerHint = view.findViewById(R.id.txtComposerHint);
+        txtComposerHint = null; // Removed from UI
         btnAudience = view.findViewById(R.id.btnAudience);
         btnAudienceFriends = view.findViewById(R.id.btnAudienceFriends);
         btnAudiencePrivate = view.findViewById(R.id.btnAudiencePrivate);
@@ -170,8 +170,8 @@ public class SocialComposerFragment extends Fragment {
         txtModeTitle = view.findViewById(R.id.txtModeTitle);
         txtModeDescription = view.findViewById(R.id.txtModeDescription);
         txtModePrompt = view.findViewById(R.id.txtModePrompt);
-        btnSubmitPost = view.findViewById(R.id.btnSubmitPost);
-        progressPosting = view.findViewById(R.id.progressPosting);
+        btnSubmitPost = null; // Removed from UI
+        progressPosting = null; // Removed from UI
         imagePreviewContainer = view.findViewById(R.id.imagePreviewContainer);
         imgPostPreview = view.findViewById(R.id.imgPostPreview);
         imgComposerAvatar = view.findViewById(R.id.imgComposerAvatar);
@@ -190,6 +190,23 @@ public class SocialComposerFragment extends Fragment {
     private void setupToolbar(View view) {
         MaterialToolbar toolbar = view.findViewById(R.id.toolbarCreatePost);
         toolbar.setNavigationOnClickListener(v -> navigateBack());
+        
+        toolbar.getMenu().add(android.view.Menu.NONE, 1, android.view.Menu.NONE, "Post")
+               .setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_ALWAYS);
+        toolbar.setOnMenuItemClickListener(item -> {
+            if (item.getItemId() == 1) {
+                if (editPostContent != null && editPostContent.getText().toString().trim().length() > 0 ||
+                    editPostTitle != null && editPostTitle.getVisibility() == View.VISIBLE && editPostTitle.getText().toString().trim().length() > 0 ||
+                    selectedImageUri != null || (existingImageUrl != null && !existingImageUrl.isEmpty()) ||
+                    generatedMilestoneJson != null) {
+                    submitPost();
+                } else {
+                    Toast.makeText(requireContext(), "Post cannot be empty", Toast.LENGTH_SHORT).show();
+                }
+                return true;
+            }
+            return false;
+        });
     }
 
     private void setupComposer(View view) {
@@ -215,7 +232,7 @@ public class SocialComposerFragment extends Fragment {
         });
 
         editPostContent.setOnFocusChangeListener((v, hasFocus) -> {
-            if (hasFocus) {
+            if (hasFocus && txtComposerHint != null) {
                 txtComposerHint.setText(milestoneMode
                         ? "Milestones are better when celebrating a clear win."
                         : "Start a small financial story.");
@@ -242,7 +259,9 @@ public class SocialComposerFragment extends Fragment {
 
         setupTopicHashtags();
         view.findViewById(R.id.btnRemoveImage).setOnClickListener(v -> clearSelectedImage());
-        btnSubmitPost.setOnClickListener(v -> submitPost());
+        if (btnSubmitPost != null) {
+            btnSubmitPost.setOnClickListener(v -> submitPost());
+        }
 
         applyInitialCategoryArgument();
         updateCategoryTiles();
@@ -762,15 +781,15 @@ public class SocialComposerFragment extends Fragment {
                     if (bottomSheetDialog != null) bottomSheetDialog.dismiss();
 
                     milestoneMode = true;
-                    milestonePreviewContainer.setVisibility(View.VISIBLE);
-                    tvPreviewIcon.setText(achievement.iconText);
-                    tvPreviewTitle.setText(achievement.title);
-                    tvPreviewMonth.setText(achievement.monthLabel);
-                    tvPreviewAmount.setText(achievement.amountLabel);
-                    pbPreviewProgress.setProgress(achievement.progress);
+                    if (milestonePreviewContainer != null) milestonePreviewContainer.setVisibility(View.VISIBLE);
+                    if (tvPreviewIcon != null) tvPreviewIcon.setText(achievement.iconText);
+                    if (tvPreviewTitle != null) tvPreviewTitle.setText(achievement.title);
+                    if (tvPreviewMonth != null) tvPreviewMonth.setText(achievement.monthLabel);
+                    if (tvPreviewAmount != null) tvPreviewAmount.setText(achievement.amountLabel);
+                    if (pbPreviewProgress != null) pbPreviewProgress.setProgress(achievement.progress);
 
-                    actionPhoto.setVisibility(View.GONE);
-                    txtComposerHint.setText("Your milestone is ready! Add some thoughts to share.");
+                    if (actionPhoto != null) actionPhoto.setVisibility(View.GONE);
+                    if (txtComposerHint != null) txtComposerHint.setText("Your milestone is ready! Add some thoughts to share.");
 
                     try {
                         JSONObject json = new JSONObject();
@@ -791,13 +810,15 @@ public class SocialComposerFragment extends Fragment {
     }
 
     private void setPosting(boolean posting) {
-        progressPosting.setVisibility(posting ? View.VISIBLE : View.GONE);
-        btnSubmitPost.setEnabled(!posting);
-        actionPhoto.setEnabled(!posting);
-        actionMilestone.setEnabled(!posting);
-        btnAudience.setEnabled(!posting);
-        editPostContent.setEnabled(!posting);
-        btnSubmitPost.setText(posting ? "Posting..." : publishTextForCategory());
+        if (progressPosting != null) progressPosting.setVisibility(posting ? View.VISIBLE : View.GONE);
+        if (btnSubmitPost != null) {
+            btnSubmitPost.setEnabled(!posting);
+            btnSubmitPost.setText(posting ? "Posting..." : publishTextForCategory());
+        }
+        if (actionPhoto != null) actionPhoto.setEnabled(!posting);
+        if (actionMilestone != null) actionMilestone.setEnabled(!posting);
+        if (btnAudience != null) btnAudience.setEnabled(!posting);
+        if (editPostContent != null) editPostContent.setEnabled(!posting);
     }
 
     private String publishTextForCategory() {
@@ -819,8 +840,10 @@ public class SocialComposerFragment extends Fragment {
 
         boolean canSubmit = hasText || hasTitle || hasImage || hasMilestone;
 
-        btnSubmitPost.setEnabled(canSubmit);
-        btnSubmitPost.setAlpha(canSubmit ? 1f : 0.55f);
+        if (btnSubmitPost != null) {
+            btnSubmitPost.setEnabled(canSubmit);
+            btnSubmitPost.setAlpha(canSubmit ? 1f : 0.55f);
+        }
         int count = editPostContent == null ? 0 : editPostContent.length();
         int color = count > 250 ? R.color.status_red : R.color.item_description;
         txtComposerCount.setTextColor(ContextCompat.getColor(requireContext(), color));

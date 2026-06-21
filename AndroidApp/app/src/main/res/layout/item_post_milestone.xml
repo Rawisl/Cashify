@@ -353,6 +353,7 @@
                     android:background="?attr/selectableItemBackgroundBorderless">
 
                     <ImageView
+                        android:id="@+id/imgLikeHeart"
                         android:layout_width="22dp"
                         android:layout_height="22dp"
                         android:src="@drawable/ic_feed_like"
@@ -360,13 +361,14 @@
                         android:contentDescription="@string/like" />
 
                     <TextView
+                        android:id="@+id/tvLikeCount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="6dp"
                         android:fontFamily="@font/inter_medium"
                         android:textColor="@color/item_description"
                         android:textSize="13sp"
-                        android:text="@string/like" />
+                        android:text="0" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -389,13 +391,14 @@
                         android:contentDescription="@string/comment" />
 
                     <TextView
+                        android:id="@+id/tvCommentCount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="6dp"
                         android:fontFamily="@font/inter_medium"
                         android:textColor="@color/item_description"
                         android:textSize="13sp"
-                        android:text="@string/comment" />
+                        android:text="0" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -418,13 +421,14 @@
                         android:contentDescription="@string/share" />
 
                     <TextView
+                        android:id="@+id/tvShareCount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="6dp"
                         android:fontFamily="@font/inter_medium"
                         android:textColor="@color/item_description"
                         android:textSize="13sp"
-                        android:text="@string/share" />
+                        android:text="Share" />
                 </LinearLayout>
 
                 <View

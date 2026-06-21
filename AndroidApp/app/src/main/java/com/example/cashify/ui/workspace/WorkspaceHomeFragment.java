@@ -183,8 +183,8 @@ public class WorkspaceHomeFragment extends Fragment {
             // ui-consistency: empty state + activity summary
             int transactionCount = 0;
             if (historyItems != null) {
-                for (WorkspaceTransactionAdapter.HistoryItem item : historyItems) {
-                    if (item != null && item.getType() == WorkspaceTransactionAdapter.HistoryItem.TYPE_TRANSACTION) {
+                for (com.example.cashify.ui.transactions.TransactionViewModel.HistoryItem item : historyItems) {
+                    if (item != null && item.getType() == com.example.cashify.ui.transactions.TransactionViewModel.HistoryItem.TYPE_TRANSACTION) {
                         transactionCount++;
                     }
                 }

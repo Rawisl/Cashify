@@ -367,7 +367,6 @@ public class SocialNewsfeedFragment extends BaseFragment {
         dialog.show();
     }
 
-    \
     private void bindPostProfile(View root, int index, DocumentSnapshot doc) {
         if (root == null) return;
         TextView nameView = root.findViewById(getResources().getIdentifier("txtPostName" + index, "id", requireContext().getPackageName()));

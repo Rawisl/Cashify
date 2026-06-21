@@ -120,12 +120,16 @@ public class SocialProfileFragment extends BaseFragment {
                 tvGreeting.setText(greeting);
                 tvGreeting.setVisibility(View.VISIBLE);
             }
-            view.findViewById(R.id.btnProfileNotifications).setVisibility(View.VISIBLE);
+            if (view.findViewById(R.id.imgBellIcon) != null) {
+                view.findViewById(R.id.imgBellIcon).setVisibility(View.VISIBLE);
+            }
         } else {
             if (tvGreeting != null) tvGreeting.setVisibility(View.GONE);
             toolbar.setTitle(R.string.social_profile_title);
             toolbar.setNavigationIcon(R.drawable.ic_arrow_left_back);
-            view.findViewById(R.id.btnProfileNotifications).setVisibility(View.GONE);
+            if (view.findViewById(R.id.imgBellIcon) != null) {
+                view.findViewById(R.id.imgBellIcon).setVisibility(View.GONE);
+            }
         }
 
         toolbar.setNavigationOnClickListener(v -> {
@@ -179,15 +183,6 @@ public class SocialProfileFragment extends BaseFragment {
             view.findViewById(R.id.btnStartGrowing).setOnClickListener(createThoughts);
             view.findViewById(R.id.actionFirstEntry).setOnClickListener(createThoughts);
             view.findViewById(R.id.actionSetMilestone).setOnClickListener(v -> openCreatePost("milestone"));
-
-            view.findViewById(R.id.actionAchievementEarly).setOnClickListener(v ->
-                    toast("Early Start: post your first post to unlock."));
-            view.findViewById(R.id.actionAchievementTop).setOnClickListener(v ->
-                    toast("Top 1%: maintain consistent engagement."));
-            view.findViewById(R.id.actionAchievementVault).setOnClickListener(v ->
-                    toast("Safe Vault: complete a savings milestone."));
-            view.findViewById(R.id.actionAchievementGiver).setOnClickListener(v ->
-                    toast("The Giver: share a useful financial tip."));
         }
 
         view.findViewById(R.id.btnShareProfile).setOnClickListener(v -> shareProfile());
@@ -428,10 +423,7 @@ public class SocialProfileFragment extends BaseFragment {
     }
 
     private void bindAchievementBadges(ProfileAchievementState state) {
-        setAchievementVisible(R.id.actionAchievementEarly, state.hasFirstPost);
-        setAchievementVisible(R.id.actionAchievementTop, state.hasTwoDayStreak);
-        setAchievementVisible(R.id.actionAchievementVault, state.hasCompletedMilestone);
-        setAchievementVisible(R.id.actionAchievementGiver, state.hasSharedTip);
+        // Achievements are now managed via rvAchievementsProfile
     }
 
     private void setAchievementVisible(int iconId, boolean visible) {
