@@ -254,6 +254,7 @@
                         android:layout_marginTop="12dp"
                         android:layout_marginBottom="12dp"
                         android:background="@color/cardview_divider" />
+
                     <EditText
                         android:id="@+id/editPostContent"
                         android:layout_width="match_parent"
@@ -430,7 +431,7 @@
                         android:fontFamily="@font/inter_semibold"
                         android:gravity="center"
                         android:lineSpacingExtra="2dp"
-                        android:text="@string/post_npreview"
+                        android:text="POST\nPREVIEW"
                         android:textAllCaps="true"
                         android:textColor="#8F6842"
                         android:textSize="10sp" />
@@ -478,6 +479,7 @@
                             android:textSize="15sp" />
 
                         <TextView
+                            android:id="@+id/actionThoughts"
                             android:layout_width="0dp"
                             android:layout_height="match_parent"
                             android:layout_marginStart="9dp"
@@ -488,7 +490,6 @@
                             android:drawableTint="#B07D62"
                             android:fontFamily="@font/inter_medium"
                             android:gravity="center"
-                            android:id="@+id/actionThoughts"
                             android:includeFontPadding="false"
                             android:paddingTop="32dp"
                             android:paddingBottom="10dp"
@@ -504,6 +505,7 @@
                         android:orientation="horizontal">
 
                         <TextView
+                            android:id="@+id/actionAnalysis"
                             android:layout_width="0dp"
                             android:layout_height="match_parent"
                             android:layout_marginEnd="9dp"
@@ -514,7 +516,6 @@
                             android:drawableTint="#8A6237"
                             android:fontFamily="@font/inter_medium"
                             android:gravity="center"
-                            android:id="@+id/actionAnalysis"
                             android:includeFontPadding="false"
                             android:paddingTop="32dp"
                             android:paddingBottom="10dp"
@@ -523,6 +524,7 @@
                             android:textSize="15sp" />
 
                         <TextView
+                            android:id="@+id/actionShare"
                             android:layout_width="0dp"
                             android:layout_height="match_parent"
                             android:layout_marginStart="9dp"
@@ -533,7 +535,6 @@
                             android:drawableTint="#D4A373"
                             android:fontFamily="@font/inter_medium"
                             android:gravity="center"
-                            android:id="@+id/actionShare"
                             android:includeFontPadding="false"
                             android:paddingTop="32dp"
                             android:paddingBottom="10dp"
@@ -542,57 +543,6 @@
                             android:textSize="15sp" />
                     </LinearLayout>
                 </LinearLayout>
-
-                <include
-                    android:id="@+id/milestonePreviewContainer"
-                    layout="@layout/layout_milestone_preview"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="18dp"
-                    android:visibility="gone" />
-                <TextView
-                    android:id="@+id/txtComposerHint"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="18dp"
-                    android:background="@drawable/bg_creator_panel"
-                    android:drawableStart="@drawable/ic_cozy_leaf"
-                    android:drawablePadding="10dp"
-                    android:drawableTint="@color/brand_primary"
-                    android:fontFamily="@font/inter_regular"
-                    android:lineSpacingExtra="3dp"
-                    android:padding="14dp"
-                    android:text="@string/composer_hint"
-                    android:textColor="@color/item_description"
-                    android:textSize="13sp" />
-
-                <ProgressBar
-                    android:id="@+id/progressPosting"
-                    style="@style/Widget.AppCompat.ProgressBar.Horizontal"
-                    android:layout_width="match_parent"
-                    android:layout_height="4dp"
-                    android:layout_marginTop="22dp"
-                    android:indeterminate="true"
-                    android:indeterminateTint="@color/brand_primary"
-                    android:visibility="gone"
-                    tools:visibility="visible"
-                    android:max="100"/>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnSubmitPost"
-                    android:layout_width="match_parent"
-                    android:layout_height="70dp"
-                    android:layout_marginTop="14dp"
-                    android:fontFamily="@font/inter_bold"
-                    android:text="@string/upload_post"
-                    android:textAllCaps="false"
-                    android:textColor="@color/white"
-                    android:textSize="18sp"
-                    app:backgroundTint="@color/brand_primary"
-                    app:cornerRadius="24dp"
-                    app:icon="@drawable/ic_send"
-                    app:iconGravity="textEnd"
-                    app:iconTint="@color/white" />
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>
     </LinearLayout>

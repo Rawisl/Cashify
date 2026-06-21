@@ -7,14 +7,14 @@
     <path
         android:fillColor="@android:color/transparent"
         android:pathData="M12,11 C14.209,11 16,9.209 16,7 C16,4.791 14.209,3 12,3 C9.791,3 8,4.791 8,7 C8,9.209 9.791,11 12,11 Z"
-        android:strokeColor="#9B5A3A"
+        android:strokeColor="@color/btn_disabled_text"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
         android:strokeWidth="1.8" />
     <path
         android:fillColor="@android:color/transparent"
         android:pathData="M4,21 C4,17.134 7.582,14 12,14 C16.418,14 20,17.134 20,21"
-        android:strokeColor="#9B5A3A"
+        android:strokeColor="@color/btn_disabled_text"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
         android:strokeWidth="1.8" />

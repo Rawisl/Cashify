@@ -14,13 +14,11 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.core.widget.NestedScrollView;
-import androidx.core.view.GravityCompat;
-import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
+import androidx.navigation.fragment.NavHostFragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
@@ -67,7 +65,6 @@ public class SocialNewsfeedFragment extends BaseFragment {
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user != null) {
             viewModel.loadProfile(user.getUid());
-            // Điều hướng tải danh sách trang trí qua ViewModel
             viewModel.loadTopUsersForDecoration();
         }
 
@@ -81,6 +78,7 @@ public class SocialNewsfeedFragment extends BaseFragment {
     public void onResume() {
         super.onResume();
 
+        
         if (syncedPostId != null) {
             FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
             if (user != null) {
@@ -118,14 +116,15 @@ public class SocialNewsfeedFragment extends BaseFragment {
         scrollNewsfeed = view.findViewById(R.id.scrollNewsfeed);
 
         if (rvFeed != null) {
+            // master: SocialNewsfeedAdapter với listener tách biệt
             feedAdapter = new SocialNewsfeedAdapter(
                     item -> {
                         Intent intent = new Intent(requireContext(), PostDetailActivity.class);
                         intent.putExtra(PostDetailActivity.EXTRA_POST_ID, item.getId());
                         startActivity(intent);
-                        syncedPostId = item.getId();
+                        syncedPostId = item.getId(); // master: đánh dấu để sync khi quay lại
                     },
-                    this::showPostBottomSheet
+                    this::showPostBottomSheet  // ui-consistency: BottomSheet thay vì PopupMenu
             );
 
             feedAdapter.setOnLikeClickListener((postId, isLiked, callback) -> {
@@ -137,6 +136,9 @@ public class SocialNewsfeedFragment extends BaseFragment {
                     }).addOnFailureListener(e -> callback.onResult(false));
                 } else callback.onResult(false);
             });
+
+        
+            feedAdapter.setOnAvatarClickListener(this::openMemberProfile);
 
             rvFeed.setLayoutManager(new LinearLayoutManager(requireContext()));
             rvFeed.setAdapter(feedAdapter);
@@ -169,6 +171,7 @@ public class SocialNewsfeedFragment extends BaseFragment {
     }
 
     private void setupObservers() {
+        // master: MVVM observers
         viewModel.getFeedItems().observe(getViewLifecycleOwner(), items -> {
             feedAdapter.submitList(new ArrayList<>(items));
         });
@@ -176,13 +179,9 @@ public class SocialNewsfeedFragment extends BaseFragment {
         viewModel.isLoading.observe(getViewLifecycleOwner(), isLoading -> {
             if (swipeRefreshNewsfeed != null) swipeRefreshNewsfeed.setRefreshing(isLoading);
             if (isLoading && feedAdapter.getCurrentList().isEmpty()) {
-                layoutFeedSkeleton.setVisibility(View.VISIBLE);
-                rvFeed.setVisibility(View.GONE);
-                layoutFeedEmpty.setVisibility(View.GONE);
-                layoutFeedError.setVisibility(View.GONE);
+                showFeedSkeleton(true);
             } else {
-                layoutFeedSkeleton.setVisibility(View.GONE);
-                rvFeed.setVisibility(View.VISIBLE);
+                showFeedSkeleton(false);
             }
         });
 
@@ -191,16 +190,14 @@ public class SocialNewsfeedFragment extends BaseFragment {
         });
 
         viewModel.getIsFeedEmpty().observe(getViewLifecycleOwner(), isEmpty -> {
-            layoutFeedEmpty.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
-            if (isEmpty) {
-                rvFeed.setVisibility(View.GONE);
-                layoutFeedSkeleton.setVisibility(View.GONE);
-            }
+            showFeedEmpty(isEmpty);
         });
 
         viewModel.getIsLastPage().observe(getViewLifecycleOwner(), isLast -> {
-            boolean showEnd = isLast && !feedAdapter.getCurrentList().isEmpty() && !Boolean.TRUE.equals(viewModel.isLoading.getValue());
-            if (layoutFeedEnd != null) layoutFeedEnd.setVisibility(showEnd ? View.VISIBLE : View.GONE);
+            boolean showEnd = isLast
+                    && !feedAdapter.getCurrentList().isEmpty()
+                    && !Boolean.TRUE.equals(viewModel.isLoading.getValue());
+            showFeedEnd(showEnd);
         });
 
         viewModel.getIsDeleteSuccess().observe(getViewLifecycleOwner(), success -> {
@@ -216,7 +213,6 @@ public class SocialNewsfeedFragment extends BaseFragment {
             }
         });
 
-        // CHUẨN MVVM: Lắng nghe Profile của chính mình để bind Avatar prompt
         viewModel.getProfile().observe(getViewLifecycleOwner(), doc -> {
             FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
             if (user != null && createAvatar != null) {
@@ -224,7 +220,7 @@ public class SocialNewsfeedFragment extends BaseFragment {
             }
         });
 
-        // CHUẨN MVVM: Lắng nghe danh sách user từ ViewModel để cập nhật giao diện trang trí
+        // ui-consistency: trang trí top users
         viewModel.getTopUsers().observe(getViewLifecycleOwner(), snapshots -> {
             if (snapshots == null || snapshots.isEmpty()) return;
             int index = 1;
@@ -234,6 +230,55 @@ public class SocialNewsfeedFragment extends BaseFragment {
                 if (index > 5) break;
             }
         });
+    }
+
+    
+    private void showFeedEmpty(boolean show) {
+        if (show) showFeedSkeleton(false);
+        if (layoutFeedEmpty != null)
+            layoutFeedEmpty.setVisibility(show ? View.VISIBLE : View.GONE);
+        if (rvFeed != null)
+            rvFeed.setVisibility(show ? View.GONE : View.VISIBLE);
+        if (show) showFeedEnd(false);
+    }
+
+    private void showFeedError(boolean show) {
+        if (layoutFeedError != null) {
+            layoutFeedError.setVisibility(show ? View.VISIBLE : View.GONE);
+        }
+        if (show) {
+            showFeedSkeleton(false);
+            showFeedEmpty(false);
+            showFeedEnd(false);
+            if (rvFeed != null) rvFeed.setVisibility(View.GONE);
+        }
+    }
+
+    private void showFeedEnd(boolean show) {
+        if (layoutFeedEnd != null) {
+            layoutFeedEnd.setVisibility(show ? View.VISIBLE : View.GONE);
+        }
+    }
+
+    private void showFeedSkeleton(boolean show) {
+        if (layoutFeedSkeleton != null) {
+            layoutFeedSkeleton.setVisibility(show ? View.VISIBLE : View.GONE);
+        }
+        if (show) {
+            if (rvFeed != null) rvFeed.setVisibility(View.GONE);
+            if (layoutFeedEmpty != null) layoutFeedEmpty.setVisibility(View.GONE);
+            if (layoutFeedError != null) layoutFeedError.setVisibility(View.GONE);
+            showFeedEnd(false);
+        }
+    }
+
+   
+    private void openMemberProfile(String userId) {
+        if (!isAdded() || userId == null || userId.trim().isEmpty()) return;
+        Bundle args = new Bundle();
+        args.putString("USER_ID", userId);
+        NavController navController = NavHostFragment.findNavController(this);
+        navController.navigate(R.id.action_newsfeed_to_other_profile, args);
     }
 
     private void openCreatePost() {
@@ -253,6 +298,7 @@ public class SocialNewsfeedFragment extends BaseFragment {
                 .withEndAction(() -> view.animate().scaleX(1f).scaleY(1f).setDuration(90).withEndAction(action).start()).start();
     }
 
+    
     private void showPostBottomSheet(FeedItem item) {
         if (getActivity() == null) return;
         BottomSheetDialog dialog = new BottomSheetDialog(requireContext());

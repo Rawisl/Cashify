@@ -21,6 +21,7 @@
     <!--Màu nền và màu thẻ hiện trên nền-->
     <color name="bg_title">#BFD0FF</color>
     <color name="bg_main">#ffffff</color>
+    <color name="bg_budget_screen">#F7F9FF</color>
     <color name="bg_card">#30F0E7D5</color>
 
     <!--Màu của nút bị disable/tắt-->

@@ -79,7 +79,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tvCategoryName"
-            tools:text="100K / 600K" />
+            tools:text="150.000đ / 1.2M" />
 
         <ProgressBar
             android:id="@+id/pbBudget"
@@ -106,7 +106,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/pbBudget"
-            tools:text="100K available"
+            tools:text="850.000đ available"
             tools:textColor="#FF9800"
             tools:visibility="visible" />
 

@@ -6,29 +6,30 @@
     android:background="@drawable/bg_budget_screen"
     android:fitsSystemWindows="true">
 
-    <com.google.android.material.appbar.AppBarLayout
-        android:id="@+id/appBarProfile"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@android:color/transparent"
-        app:elevation="0dp">
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbarSocialProfile"
             android:layout_width="match_parent"
             android:layout_height="40dp"
             android:background="@drawable/bg_workspace_header_light"
+            android:paddingStart="6dp"
+            android:paddingEnd="12dp"
             app:navigationIcon="@drawable/ic_menu_padded"
             app:navigationIconTint="@color/brand_primary">
 
             <TextView
+                android:id="@+id/tvProfileGreeting"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
+                android:paddingBottom="5dp"
                 android:text="@string/good_day"
                 android:textAppearance="@style/ToolbarTitleFont"
-                android:textColor="@color/brand_primary"
-                android:paddingBottom="5dp" />
+                android:textColor="@color/brand_primary" />
 
             <FrameLayout
                 android:layout_width="wrap_content"
@@ -58,14 +59,13 @@
                     android:visibility="gone" />
             </FrameLayout>
         </com.google.android.material.appbar.MaterialToolbar>
-    </com.google.android.material.appbar.AppBarLayout>
 
-    <androidx.core.widget.NestedScrollView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:clipToPadding="false"
-        android:paddingBottom="110dp"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+        <androidx.core.widget.NestedScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:clipToPadding="false"
+            android:paddingBottom="110dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -430,7 +430,6 @@
                         android:textSize="13sp" />
                 </LinearLayout>
 
-                <!-- ĐÃ THÊM ID layoutActionCards CHO KHỐI NÀY -->
                 <LinearLayout
                     android:id="@+id/layoutActionCards"
                     android:layout_width="match_parent"
@@ -517,5 +516,22 @@
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>
-    </androidx.core.widget.NestedScrollView>
+        </androidx.core.widget.NestedScrollView>
+    </LinearLayout>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabProfileCreatePost"
+        android:layout_width="52dp"
+        android:layout_height="52dp"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="24dp"
+        android:contentDescription="@string/create_post"
+        android:src="@drawable/ic_add_bold"
+        app:backgroundTint="#1A237E"
+        app:borderWidth="0dp"
+        app:elevation="1dp"
+        app:fabCustomSize="52dp"
+        app:maxImageSize="22dp"
+        app:tint="@color/white" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
