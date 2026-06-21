@@ -14,7 +14,7 @@ import com.example.cashify.data.model.Category;
 import com.example.cashify.data.model.Transaction;
 import com.example.cashify.data.model.Workspace;
 
-@Database(entities = {Category.class, Transaction.class, Budget.class, Workspace.class}, version = 7, exportSchema = false)
+@Database(entities = {Category.class, Transaction.class, Budget.class, Workspace.class}, version = 8, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
 
     private static volatile AppDatabase instance;

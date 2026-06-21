@@ -1,79 +1,122 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginHorizontal="16dp"
-    android:layout_marginBottom="8dp"
-    app:cardBackgroundColor="@color/white"
-    app:cardElevation="1dp"
-    app:cardCornerRadius="24dp"
-    app:strokeWidth="0dp"
+    android:layout_marginBottom="10dp"
     android:clickable="true"
     android:focusable="true"
-    android:background="?attr/selectableItemBackground">
+    android:foreground="?attr/selectableItemBackground"
+    app:cardBackgroundColor="@color/white"
+    app:cardCornerRadius="24dp"
+    app:cardElevation="1dp">
 
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/itemContainer"
-        style="@style/btn_component_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="12dp"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:clickable="false"
-        android:focusable="false"
-        android:background="@color/white">
+        android:minHeight="92dp"
+        android:paddingStart="14dp"
+        android:paddingTop="13dp"
+        android:paddingEnd="14dp"
+        android:paddingBottom="13dp">
 
-        <!-- Icon Danh mục -->
-        <com.google.android.material.imageview.ShapeableImageView
-            android:id="@+id/ivCategoryIcon"
-            style="@style/btn_main_icon"
-            app:shapeAppearanceOverlay="@style/circle" />
+        <com.example.cashify.ui.common.AvatarImageView
+            android:id="@+id/ivCreatorAvatar"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:scaleType="centerCrop"
+            android:src="@drawable/bg_default_avatar_pastel"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
-        <!-- Cột chứa Text -->
-        <LinearLayout
-            style="@style/btn_text_layout"
+        <TextView
+            android:id="@+id/tvMainTitle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="12dp"
-            android:orientation="vertical">
+            android:layout_marginStart="13dp"
+            android:layout_marginEnd="10dp"
+            android:ellipsize="end"
+            android:fontFamily="@font/inter_bold"
+            android:maxLines="1"
+            android:textColor="@color/item_title"
+            android:textSize="15sp"
+            app:layout_constraintEnd_toStartOf="@id/tvAmount"
+            app:layout_constraintStart_toEndOf="@id/ivCreatorAvatar"
+            app:layout_constraintTop_toTopOf="@id/ivCreatorAvatar"
+            tools:text="An added +500.000đ" />
 
-            <TextView
-                android:id="@+id/tvMainTitle"
-                style="@style/btn_item_title"
-                android:textSize="14sp"
-                android:textColor="@color/item_title" />
+        <TextView
+            android:id="@+id/tvSubtitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="13dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginEnd="10dp"
+            android:ellipsize="end"
+            android:fontFamily="@font/inter_regular"
+            android:maxLines="1"
+            android:textColor="@color/item_description"
+            android:textSize="12.5sp"
+            app:layout_constraintEnd_toStartOf="@id/tvAmount"
+            app:layout_constraintStart_toEndOf="@id/ivCreatorAvatar"
+            app:layout_constraintTop_toBottomOf="@id/tvMainTitle"
+            tools:text="Food • 9:24 AM • Cash" />
 
-            <TextView
-                android:id="@+id/tvSubtitle"
-                style="@style/btn_item_description"
-                android:layout_marginTop="2dp"
-                android:textSize="12sp"/>
+        <LinearLayout
+            android:id="@+id/layoutMeta"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="13dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="10dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            app:layout_constraintEnd_toStartOf="@id/tvAmount"
+            app:layout_constraintStart_toEndOf="@id/ivCreatorAvatar"
+            app:layout_constraintTop_toBottomOf="@id/tvSubtitle">
 
-            <!-- DÒNG MỚI THÊM: HIỂN THỊ TÊN NGƯỜI TẠO GIAO DỊCH -->
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/ivCategoryIcon"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:padding="5dp"
+                android:scaleType="centerInside"
+                app:shapeAppearanceOverlay="@style/circle"
+                tools:src="@drawable/ic_food" />
+
             <TextView
                 android:id="@+id/tvCreatorName"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:textSize="11sp"
-                android:textStyle="italic"
+                android:layout_height="26dp"
+                android:layout_marginStart="7dp"
+                android:background="@drawable/bg_tag_blue"
+                android:ellipsize="end"
+                android:fontFamily="@font/inter_bold"
+                android:gravity="center"
+                android:maxLines="1"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:text="@string/loading_user"
                 android:textColor="@color/brand_primary"
-                android:text="@string/loading_user"/>
+                android:textSize="11sp"
+                tools:text="Income" />
         </LinearLayout>
 
-        <!-- Cột Số tiền -->
         <TextView
             android:id="@+id/tvAmount"
-            style="@style/item_budget_money_amount"
-            android:layout_width="wrap_content"
+            android:layout_width="116dp"
             android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:fontFamily="@font/outfit_bold"
+            android:gravity="end|center_vertical"
+            android:maxLines="1"
             android:textSize="14sp"
-            android:textStyle="bold"
-            android:padding="8dp" />
-
-    </LinearLayout>
-</com.google.android.material.card.MaterialCardView>
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="+500.000đ" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.cardview.widget.CardView>

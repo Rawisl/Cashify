@@ -40,4 +40,13 @@
         android:id="@+id/nav_social_container"
         android:name="com.example.cashify.ui.social.SocialContainerFragment"
         android:label="Social" />
+
+    <!-- Global default transitions applied to all navigation actions -->
+    <action
+        android:id="@+id/global_default_anim"
+        app:enterAnim="@anim/nav_enter_slide_right"
+        app:exitAnim="@anim/nav_exit_slide_left"
+        app:popEnterAnim="@anim/nav_pop_enter_slide_left"
+        app:popExitAnim="@anim/nav_pop_exit_slide_right" />
+
 </navigation>

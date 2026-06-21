@@ -20,14 +20,18 @@
         android:id="@+id/bottom_navigation_workspace"
         style="@style/CashifyBottomNavigation"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"  android:layout_gravity="bottom"
+        android:layout_height="@dimen/bottom_nav_height"
+        android:layout_gravity="bottom"
         android:layout_marginHorizontal="@dimen/bottom_nav_workspace_horizontal_margin"
         android:layout_marginBottom="@dimen/bottom_nav_system_margin"
+        android:background="@drawable/bg_bottom_nav"
+        android:elevation="@dimen/bottom_nav_center_button_elevation"
         app:menu="@menu/bottom_nav_workspace_menu"
         app:itemIconTint="@color/nav_color_selector"
+        app:itemTextAppearanceActive="@style/BottomNavWorkspaceLabelActive"
+        app:itemTextAppearanceInactive="@style/BottomNavWorkspaceLabelInactive"
         app:itemTextColor="@color/nav_color_selector"
-        app:labelVisibilityMode="auto"
-        android:background="@drawable/bg_bottom_nav" />
+        app:labelVisibilityMode="unlabeled" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabAddWorkspaceTransaction"

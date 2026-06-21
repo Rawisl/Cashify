@@ -196,7 +196,7 @@ public class SocialNewsfeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vi
             time = itemView.findViewById(R.id.txtPostTime);
 
             // ÁNH XẠ TIÊU ĐỀ & NỘI DUNG
-            title = itemView.findViewById(R.id.txtPostTitle);
+            title = itemView.findViewById(R.id.txtPostContent);
             content = itemView.findViewById(R.id.txtPostContent);
 
             seeMore = itemView.findViewById(R.id.txtSeeMore);
@@ -207,14 +207,14 @@ public class SocialNewsfeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vi
             menuButton = itemView.findViewById(R.id.btnPostMenu);
 
             btnLike = itemView.findViewById(R.id.btnLike);
-            imgLikeHeart = itemView.findViewById(R.id.imgLikeHeart);
-            tvLikeCount = itemView.findViewById(R.id.tvLikeCount);
+            imgLikeHeart = itemView.findViewById(R.id.btnLike);
+            tvLikeCount = itemView.findViewById(R.id.tvPostEngagementSummary);
 
             btnComment = itemView.findViewById(R.id.btnComment);
-            tvCommentCount = itemView.findViewById(R.id.tvCommentCount);
+            tvCommentCount = itemView.findViewById(R.id.tvPostEngagementSummary);
 
             btnShare = itemView.findViewById(R.id.btnShare);
-            tvShareCount = itemView.findViewById(R.id.tvShareCount);
+            tvShareCount = itemView.findViewById(R.id.tvPostShareSummary);
         }
 
         void bind(FeedItem.NormalPost post, boolean expanded) {
@@ -287,8 +287,7 @@ public class SocialNewsfeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vi
                 decorCaption.setVisibility(View.VISIBLE);
             }
 
-            tvLikeCount.setText(String.valueOf(post.getLikeCount()));
-            if(tvCommentCount != null) tvCommentCount.setText(String.valueOf(post.getCommentCount()));
+            tvLikeCount.setText(post.getLikeCount() + " likes · " + post.getCommentCount() + " comments");
 
             if (post.isLiked()) {
                 likedItemIds.add(post.getId());
@@ -329,20 +328,20 @@ public class SocialNewsfeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vi
             description = itemView.findViewById(R.id.txtMilestoneDescription);
             month = itemView.findViewById(R.id.txtMilestoneMonth);
             amount = itemView.findViewById(R.id.txtMilestoneAmount);
-            pbProgress = itemView.findViewById(R.id.pbMilestoneProgress);
+            pbProgress = itemView.findViewById(R.id.pbPreviewProgress);
             goalPanel = itemView.findViewById(R.id.layoutMilestoneGoalPanel);
             menuButton = itemView.findViewById(R.id.btnMilestoneMenu);
             seeMore = itemView.findViewById(R.id.txtMilestoneSeeMore);
 
             btnLike = itemView.findViewById(R.id.btnMilestoneLike);
-            imgLikeHeart = itemView.findViewById(R.id.imgLikeHeart);
-            tvLikeCount = itemView.findViewById(R.id.tvLikeCount);
+            imgLikeHeart = itemView.findViewById(R.id.btnLike);
+            tvLikeCount = itemView.findViewById(R.id.tvPostEngagementSummary);
 
             btnComment = itemView.findViewById(R.id.btnMilestoneComment);
-            tvCommentCount = itemView.findViewById(R.id.tvCommentCount);
+            tvCommentCount = itemView.findViewById(R.id.tvPostEngagementSummary);
 
             btnShare = itemView.findViewById(R.id.btnMilestoneShare);
-            tvShareCount = itemView.findViewById(R.id.tvShareCount);
+            tvShareCount = itemView.findViewById(R.id.tvPostShareSummary);
 
             View shineView = itemView.findViewById(R.id.viewMilestoneShine);
             shineHelper = new ShineAnimationHelper(shineView, itemView);
@@ -397,8 +396,7 @@ public class SocialNewsfeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vi
             txtAvatar.setOnClickListener(onAvatarClicked);
             name.setOnClickListener(onAvatarClicked);
 
-            tvLikeCount.setText(String.valueOf(milestone.getLikeCount()));
-            if(tvCommentCount != null) tvCommentCount.setText(String.valueOf(milestone.getCommentCount()));
+            tvLikeCount.setText(milestone.getLikeCount() + " likes · " + milestone.getCommentCount() + " comments");
 
             if (milestone.isLiked()) {
                 likedItemIds.add(milestone.getId());

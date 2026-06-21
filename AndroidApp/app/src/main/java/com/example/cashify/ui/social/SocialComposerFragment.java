@@ -153,12 +153,12 @@ public class SocialComposerFragment extends Fragment {
 
     private void bindViews(View view) {
         editPostContent = view.findViewById(R.id.editPostContent);
-        editPostTitle = view.findViewById(R.id.editPostTitle);
+        // editPostTitle = view.findViewById(R.id.editPostTitle);
         txtComposerCount = view.findViewById(R.id.txtComposerCount);
         txtComposerHint = view.findViewById(R.id.txtComposerHint);
-        btnAudience = view.findViewById(R.id.btnAudience);
-        btnAudienceFriends = view.findViewById(R.id.btnAudienceFriends);
-        btnAudiencePrivate = view.findViewById(R.id.btnAudiencePrivate);
+        // btnAudience = view.findViewById(R.id.btnAudience);
+        // btnAudienceFriends = view.findViewById(R.id.btnAudienceFriends);
+        // btnAudiencePrivate = view.findViewById(R.id.btnAudiencePrivate);
         actionMilestone = view.findViewById(R.id.actionMilestone);
         actionThoughts = view.findViewById(R.id.actionThoughts);
         actionAnalysis = view.findViewById(R.id.actionAnalysis);
@@ -286,7 +286,7 @@ public class SocialComposerFragment extends Fragment {
 
             if (editPostTitle != null) {
                 editPostTitle.setVisibility(View.GONE);
-                View divider = getView() != null ? getView().findViewById(R.id.dividerTitle) : null;
+                // View divider = null;
                 if (divider != null) divider.setVisibility(View.GONE);
             }
 
@@ -518,7 +518,7 @@ public class SocialComposerFragment extends Fragment {
                 : "What financial story would you like to share today?");
         if (editPostTitle != null) {
             editPostTitle.setVisibility(enabled ? View.GONE : View.VISIBLE);
-            View divider = getView() != null ? getView().findViewById(R.id.dividerTitle) : null;
+            // View divider = null;
             if (divider != null) divider.setVisibility(enabled ? View.GONE : View.VISIBLE);
         }
 
