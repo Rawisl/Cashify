@@ -1,12 +1,25 @@
 package com.example.cashify.ui.notifications;
 
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
+import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.example.cashify.R;
+import com.example.cashify.data.model.WorkspaceInvitation;
+import com.example.cashify.data.remote.FirebaseManager;
+import com.example.cashify.ui.main.BaseActivity;
+import com.example.cashify.ui.main.MainActivity;
+import com.example.cashify.utils.ToastHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -24,16 +37,22 @@ public class InvitationsActivity extends BaseActivity { // Đổi sang kế th�
 
     private InvitationAdapter adapter;
     private FirebaseManager firebaseManager;
+    private View layoutInvitationsEmpty;
+    private RecyclerView rvInvitations;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        applyLightSystemBars();
         setContentView(R.layout.activity_invitations);
 
         firebaseManager = FirebaseManager.getInstance();
 
         // 1. GỌI HÀM CỦA CHA ĐỂ SETUP SIDEBAR
         setupBaseSidebar();
+        if (drawerLayout != null) {
+            drawerLayout.setStatusBarBackgroundColor(ContextCompat.getColor(this, R.color.bg_budget_screen));
+        }
 
         MaterialToolbar toolbar = findViewById(R.id.toolbarInvitations);
 
@@ -46,7 +65,8 @@ public class InvitationsActivity extends BaseActivity { // Đổi sang kế th�
             });
         }
 
-        RecyclerView rvInvitations = findViewById(R.id.rvInvitations);
+        rvInvitations = findViewById(R.id.rvInvitations);
+        layoutInvitationsEmpty = findViewById(R.id.layoutInvitationsEmpty);
         rvInvitations.setLayoutManager(new LinearLayoutManager(this));
 
         adapter = new InvitationAdapter(new InvitationAdapter.OnInviteClickListener() {
@@ -116,6 +136,16 @@ public class InvitationsActivity extends BaseActivity { // Đổi sang kế th�
         }
     }
 
+    private void applyLightSystemBars() {
+        Window window = getWindow();
+        window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+        window.setStatusBarColor(ContextCompat.getColor(this, R.color.bg_budget_screen));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+        }
+    }
+
     // 4. XỬ LÝ LOGIC KHI BẤM VÀO ITEM QUỸ TRÊN SIDEBAR (BẮT BUỘC VÌ IMPLEMENTS)
     @Override
     protected void onNavigationItemSelected(int itemId) {
@@ -136,6 +166,11 @@ public class InvitationsActivity extends BaseActivity { // Đổi sang kế th�
             @Override
             public void onSuccess(List<WorkspaceInvitation> data) {
                 adapter.setData(data);
+                boolean isEmpty = data == null || data.isEmpty();
+                if (rvInvitations != null)
+                    rvInvitations.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
+                if (layoutInvitationsEmpty != null)
+                    layoutInvitationsEmpty.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
             }
 
             @Override

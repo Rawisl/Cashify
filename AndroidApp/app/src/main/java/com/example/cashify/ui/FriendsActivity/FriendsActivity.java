@@ -1,14 +1,18 @@
 package com.example.cashify.ui.FriendsActivity;
 
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -41,8 +45,12 @@ public class FriendsActivity extends BaseActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        applyLightSystemBars();
         setContentView(R.layout.activity_friends);
         setupBaseSidebar();
+        if (drawerLayout != null) {
+            drawerLayout.setStatusBarBackgroundColor(ContextCompat.getColor(this, R.color.bg_budget_screen));
+        }
 
         bindViews();
         socialViewModel = new ViewModelProvider(this).get(SocialViewModel.class);
@@ -52,6 +60,16 @@ public class FriendsActivity extends BaseActivity {
         setupSearch();
 
         socialViewModel.fetchOnlyFriends();
+    }
+
+    private void applyLightSystemBars() {
+        Window window = getWindow();
+        window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+        window.setStatusBarColor(ContextCompat.getColor(this, R.color.bg_budget_screen));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+        }
     }
 
     private void bindViews() {

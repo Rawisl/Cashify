@@ -255,7 +255,7 @@
     <!-- Social — Post / Composer -->
     <!-- ======================== -->
     <string name="create_post">Create Post</string>
-    <string name="post_detail">Post Detail</string>
+    <string name="post_detail">Comments</string>
     <string name="hello_creator">Hello, creator</string>
     <string name="digital_journal">DIGITAL JOURNAL</string>
     <string name="share_thought">Share a thought</string>
@@ -285,7 +285,6 @@
     <string name="private_state">Private</string>
     <string name="personal">Personal</string>
     <string name="upload_post">Upload</string>
-    <string name="post_npreview">Post\nPreview</string>
 
     <string name="time_ago">2 hours ago</string>
     <string name="quote">This month I saved 2 million. I scheduled an automatic transfer right after payday so I don\'t have to fight the urge to spend it.</string>
@@ -330,6 +329,7 @@
     <!-- ======================== -->
     <string name="social_profile_friends_section">Friends</string>
     <string name="add_friend">Add friend</string>
+    <string name="friends_subtitle">Manage your friends and connections</string>
     <string name="add_more_friend">Find more friends</string>
     <string name="invite_friends">Invite Friends</string>
     <string name="find_friend_rn">Find friends now</string>
@@ -391,6 +391,17 @@
     <string name="remove_yourself_from_this_fund">Remove yourself from this fund</string>
 
     <string name="fund_balance">Fund Balance</string>
+    <string name="groups_title">Groups</string>
+    <string name="groups_subtitle">Track and manage shared expenses with friends.</string>
+    <string name="group_balance_label">Group Balance</string>
+    <string name="group_members_zero">0 members</string>
+    <string name="group_members_count">%1$d members</string>
+    <string name="group_member_count">%1$d member</string>
+    <string name="group_no_activity">No activity yet</string>
+    <string name="group_activity_count">%1$d transactions tracked</string>
+    <string name="group_activity_one">1 transaction tracked</string>
+    <string name="group_empty_activity_title">No shared expenses yet</string>
+    <string name="group_empty_activity_desc">Add the first transaction to start tracking this group.</string>
     <string name="income">Income</string>
     <string name="expenses">Expenses</string>
     <string name="transactions">Transactions</string>

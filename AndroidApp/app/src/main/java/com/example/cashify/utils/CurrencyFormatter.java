@@ -16,11 +16,8 @@ public class CurrencyFormatter {
         if (absAmount >= 1_000_000_000) {
             return sign + trimCompact(absAmount / 1_000_000_000) + "B";
         }
-        if (absAmount >= 1_000_000) {
+        if (absAmount >= 100_000_000) {
             return sign + trimCompact(absAmount / 1_000_000) + "M";
-        }
-        if (absAmount >= 100_000) {
-            return sign + Math.round(absAmount / 1_000) + "K";
         }
         return sign + CurrencyManager.VND_FORMAT.format(Math.round(absAmount)) + "\u0111";
     }

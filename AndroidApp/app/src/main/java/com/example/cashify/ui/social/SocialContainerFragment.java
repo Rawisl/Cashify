@@ -1,13 +1,9 @@
 package com.example.cashify.ui.social;
 
-import android.graphics.Color;
-import android.graphics.Typeface;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -16,17 +12,11 @@ import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
 
 import com.example.cashify.R;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 public class SocialContainerFragment extends Fragment {
-    private static final int ACTIVE_COLOR = Color.rgb(26, 35, 126);
-    private static final int INACTIVE_COLOR = Color.rgb(96, 125, 139);
 
-    private View navNewsfeed;
-    private View navProfile;
-    private ImageView imgNewsfeed;
-    private ImageView imgProfile;
-    private TextView txtNewsfeed;
-    private TextView txtProfile;
+    private boolean syncingBottomNavSelection = false;
 
     @Nullable
     @Override
@@ -48,45 +38,36 @@ public class SocialContainerFragment extends Fragment {
         if (navHostFragment == null) return;
 
         NavController navController = navHostFragment.getNavController();
-        navNewsfeed = view.findViewById(R.id.navSocialNewsfeed);
-        navProfile = view.findViewById(R.id.navSocialProfile);
-        imgNewsfeed = view.findViewById(R.id.imgSocialNewsfeed);
-        imgProfile = view.findViewById(R.id.imgSocialProfile);
-        txtNewsfeed = view.findViewById(R.id.txtSocialNewsfeed);
-        txtProfile = view.findViewById(R.id.txtSocialProfile);
+        BottomNavigationView bottomNav = view.findViewById(R.id.bottom_navigation_social);
+        if (bottomNav == null) return;
 
-        navNewsfeed.setOnClickListener(v -> navigateIfNeeded(navController, R.id.nav_social_newsfeed));
-        navProfile.setOnClickListener(v -> navigateIfNeeded(navController, R.id.nav_social_profile));
+        bottomNav.setOnItemSelectedListener(item -> {
+            if (syncingBottomNavSelection) {
+                return true;
+            }
 
-        navController.addOnDestinationChangedListener((controller, destination, arguments) ->
-                updateSelectedState(destination.getId()));
-        updateSelectedState(navController.getCurrentDestination() == null
-                ? R.id.nav_social_newsfeed
-                : navController.getCurrentDestination().getId());
-    }
+            int destinationId = item.getItemId();
+            if (navController.getCurrentDestination() != null
+                    && navController.getCurrentDestination().getId() == destinationId) {
+                return true;
+            }
+            navController.popBackStack(destinationId, false);
+            if (navController.getCurrentDestination() == null
+                    || navController.getCurrentDestination().getId() != destinationId) {
+                navController.navigate(destinationId);
+            }
+            return true;
+        });
 
-    private void navigateIfNeeded(NavController navController, int destinationId) {
-        if (navController.getCurrentDestination() != null
-                && navController.getCurrentDestination().getId() == destinationId) {
-            return;
-        }
-        navController.navigate(destinationId);
-    }
-
-    private void updateSelectedState(int destinationId) {
-        boolean newsfeedSelected = destinationId == R.id.nav_social_newsfeed;
-        bindNavItem(navNewsfeed, imgNewsfeed, txtNewsfeed, newsfeedSelected);
-        bindNavItem(navProfile, imgProfile, txtProfile, !newsfeedSelected);
-    }
-
-    private void bindNavItem(View item, ImageView icon, TextView label, boolean selected) {
-        if (item == null || icon == null || label == null) return;
-        int color = selected ? ACTIVE_COLOR : INACTIVE_COLOR;
-        float inactiveAlpha = getResources().getFraction(R.fraction.bottom_nav_social_inactive_alpha, 1, 1);
-        item.setSelected(selected);
-        item.setAlpha(selected ? 1f : inactiveAlpha);
-        icon.setColorFilter(color);
-        label.setTextColor(color);
-        label.setTypeface(label.getTypeface(), selected ? Typeface.BOLD : Typeface.NORMAL);
+        navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
+            int destinationId = destination.getId() == R.id.nav_other_profile
+                    ? R.id.nav_social_profile
+                    : destination.getId();
+            if (bottomNav.getSelectedItemId() != destinationId) {
+                syncingBottomNavSelection = true;
+                bottomNav.setSelectedItemId(destinationId);
+                syncingBottomNavSelection = false;
+            }
+        });
     }
 }

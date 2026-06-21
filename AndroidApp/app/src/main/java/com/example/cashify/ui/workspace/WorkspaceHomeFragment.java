@@ -35,6 +35,8 @@ public class WorkspaceHomeFragment extends Fragment { // Vẫn giữ nguyên ext
     private WorkspaceMemberAdapter memberAdapter;
     private WorkspaceTransactionAdapter historyAdapter;
     private TextView tvBalance, tvIncome, tvExpense;
+    private TextView tvWorkspaceNameCard, tvWorkspaceMemberCount, tvWorkspaceActivitySummary;
+    private View layoutWorkspaceEmptyTransactions;
     private MaterialToolbar toolbar;
 
     private WorkspaceViewModel workspaceViewModel;
@@ -83,6 +85,10 @@ public class WorkspaceHomeFragment extends Fragment { // Vẫn giữ nguyên ext
         tvBalance = view.findViewById(R.id.tvWorkspaceBalance);
         tvIncome = view.findViewById(R.id.tvWorkspaceIncome);
         tvExpense = view.findViewById(R.id.tvWorkspaceExpense);
+        tvWorkspaceNameCard = view.findViewById(R.id.tvWorkspaceNameCard);
+        tvWorkspaceMemberCount = view.findViewById(R.id.tvWorkspaceMemberCount);
+        tvWorkspaceActivitySummary = view.findViewById(R.id.tvWorkspaceActivitySummary);
+        layoutWorkspaceEmptyTransactions = view.findViewById(R.id.layoutWorkspaceEmptyTransactions);
         rvMembers = view.findViewById(R.id.rvWorkspaceMembers);
         rvTransactions = view.findViewById(R.id.rvWorkspaceTransactions);
 
@@ -181,6 +187,7 @@ public class WorkspaceHomeFragment extends Fragment { // Vẫn giữ nguyên ext
         workspaceViewModel.getWorkspaceLiveData().observe(getViewLifecycleOwner(), workspace -> {
             if (workspace != null) {
                 toolbar.setTitle(workspace.getName());
+                tvWorkspaceNameCard.setText(workspace.getName());
                 if (historyAdapter != null && workspace.getOwnerId() != null) {
                     historyAdapter.setOwnerId(workspace.getOwnerId());
                 }
@@ -190,6 +197,11 @@ public class WorkspaceHomeFragment extends Fragment { // Vẫn giữ nguyên ext
         workspaceViewModel.getMembersLiveData().observe(getViewLifecycleOwner(), members -> {
             if (members != null && memberAdapter != null) {
                 memberAdapter.setMembers(members);
+                int memberCount = members.size();
+                tvWorkspaceMemberCount.setText(getString(
+                        memberCount == 1 ? R.string.group_member_count : R.string.group_members_count,
+                        memberCount
+                ));
             }
         });
 
@@ -198,12 +210,14 @@ public class WorkspaceHomeFragment extends Fragment { // Vẫn giữ nguyên ext
 
             long totalIncome = 0;
             long totalExpense = 0;
+            int transactionCount = 0;
 
             if (historyItems != null) {
                 for (TransactionViewModel.HistoryItem item : historyItems) {
                     if (item != null && item.getType() == TransactionViewModel.HistoryItem.TYPE_TRANSACTION) {
                         Transaction t = item.getTransaction();
                         if (t != null) {
+                            transactionCount++;
                             if (t.type == 1) totalIncome += t.amount;
                             else if (t.type == 0) totalExpense += t.amount;
                         }
@@ -215,6 +229,19 @@ public class WorkspaceHomeFragment extends Fragment { // Vẫn giữ nguyên ext
             tvBalance.setText(CurrencyFormatter.formatFullVND(actualBalance));
             tvIncome.setText(CurrencyFormatter.formatFullVND(totalIncome));
             tvExpense.setText(CurrencyFormatter.formatFullVND(totalExpense));
+
+            boolean hasTransactions = transactionCount > 0;
+            rvTransactions.setVisibility(hasTransactions ? View.VISIBLE : View.GONE);
+            if (layoutWorkspaceEmptyTransactions != null) {
+                layoutWorkspaceEmptyTransactions.setVisibility(hasTransactions ? View.GONE : View.VISIBLE);
+            }
+            if (!hasTransactions) {
+                tvWorkspaceActivitySummary.setText(R.string.group_no_activity);
+            } else if (transactionCount == 1) {
+                tvWorkspaceActivitySummary.setText(R.string.group_activity_one);
+            } else {
+                tvWorkspaceActivitySummary.setText(getString(R.string.group_activity_count, transactionCount));
+            }
         });
 
         // ============================================================

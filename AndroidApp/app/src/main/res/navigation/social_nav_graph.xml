@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<navigation
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/social_nav_graph"
     app:startDestination="@id/nav_social_newsfeed">
@@ -12,7 +11,11 @@
 
         <action
             android:id="@+id/action_newsfeed_to_other_profile"
-            app:destination="@id/nav_other_profile" />
+            app:destination="@id/nav_other_profile"
+            app:enterAnim="@anim/nav_enter_slide_right"
+            app:exitAnim="@anim/nav_exit_slide_left"
+            app:popEnterAnim="@anim/nav_pop_enter_slide_left"
+            app:popExitAnim="@anim/nav_pop_exit_slide_right" />
     </fragment>
 
     <fragment
@@ -23,6 +26,10 @@
     <fragment
         android:id="@+id/nav_other_profile"
         android:name="com.example.cashify.ui.social.SocialProfileFragment"
-        android:label="Hồ sơ thành viên" />
-
+        android:label="Member Profile">
+        <argument
+            android:name="USER_ID"
+            app:argType="string"
+            app:nullable="true" />
+    </fragment>
 </navigation>

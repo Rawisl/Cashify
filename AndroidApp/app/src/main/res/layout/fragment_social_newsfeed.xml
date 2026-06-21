@@ -63,29 +63,12 @@
                     android:paddingEnd="20dp"
                     android:paddingBottom="28dp">
 
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="@font/outfit_bold"
-                        android:text="@string/community_corner"
-                        android:textColor="#1A237E"
-                        android:textSize="24sp" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:fontFamily="@font/inter_regular"
-                        android:lineSpacingExtra="3dp"
-                        android:text="@string/wtfisthat"
-                        android:textColor="#607D8B"
-                        android:textSize="13sp" />
 
                     <androidx.cardview.widget.CardView
                         android:id="@+id/cardCreatePostPrompt"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="22dp"
+                        android:layout_marginTop="10dp"
                         android:clickable="true"
                         android:focusable="true"
                         app:cardBackgroundColor="@android:color/transparent"

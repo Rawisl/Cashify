@@ -16,6 +16,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -38,6 +39,9 @@ import com.google.firebase.firestore.DocumentSnapshot;  // GIỮ — dùng trong
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -66,6 +70,7 @@ public class SocialProfileFragment extends Fragment {
     private CommunityFeedAdapter myPostsAdapter;
     // ĐÃ XÓA: private ListenerRegistration postsRegistration; — không cần nữa
     private String currentUserId = "";
+    private boolean viewingOwnProfile = true;
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // LIFECYCLE — GIỮ NGUYÊN, chỉ bỏ cleanup listener
@@ -83,8 +88,8 @@ public class SocialProfileFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         bindViews(view);
-        initToolbar(view);
         initViewModel();
+        initToolbar(view);
         setupActions(view);
         setupRecyclerView();
         observeViewModel();
@@ -118,7 +123,35 @@ public class SocialProfileFragment extends Fragment {
 
     private void initToolbar(View view) {
         MaterialToolbar toolbar = view.findViewById(R.id.toolbarSocialProfile);
+        TextView tvGreeting = view.findViewById(R.id.tvProfileGreeting);
+        if (viewingOwnProfile) {
+            if (tvGreeting != null) {
+                int hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY);
+                String greeting;
+                if (hour >= 5 && hour < 12) {
+                    greeting = "Good morning ☀️";
+                } else if (hour >= 12 && hour < 18) {
+                    greeting = "Good afternoon 🌤️";
+                } else {
+                    greeting = "Good night 🌙";
+                }
+                tvGreeting.setText(greeting);
+                tvGreeting.setVisibility(View.VISIBLE);
+            }
+            view.findViewById(R.id.btnProfileNotifications).setVisibility(View.VISIBLE);
+        } else {
+            if (tvGreeting != null) {
+                tvGreeting.setVisibility(View.GONE);
+            }
+            toolbar.setTitle(R.string.social_profile_title);
+            view.findViewById(R.id.btnProfileNotifications).setVisibility(View.GONE);
+            toolbar.setNavigationIcon(R.drawable.ic_arrow_left_back);
+        }
         toolbar.setNavigationOnClickListener(v -> {
+            if (!viewingOwnProfile) {
+                Navigation.findNavController(view).popBackStack();
+                return;
+            }
             if (getActivity() == null) return;
             androidx.drawerlayout.widget.DrawerLayout drawer =
                     getActivity().findViewById(R.id.drawerLayout);
@@ -129,17 +162,31 @@ public class SocialProfileFragment extends Fragment {
     }
 
     private void initViewModel() {
-        socialViewModel = new ViewModelProvider(requireActivity()).get(SocialViewModel.class);
+        socialViewModel = new ViewModelProvider(this).get(SocialViewModel.class);
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
-        if (currentUser != null) {
-            currentUserId = currentUser.getUid();
+        String signedInUserId = currentUser != null ? currentUser.getUid() : "";
+        String requestedUserId = getArguments() != null ? getArguments().getString("USER_ID") : null;
+
+        currentUserId = firstNonEmpty(requestedUserId, signedInUserId);
+        viewingOwnProfile = !signedInUserId.trim().isEmpty() && currentUserId.equals(signedInUserId);
+
+        if (!currentUserId.trim().isEmpty()) {
             socialViewModel.loadProfile(currentUserId);
         }
     }
 
     private void setupActions(View view) {
-        btnEditProfile.setOnClickListener(v ->
-                startActivity(new Intent(requireContext(), EditProfileActivity.class)));
+        btnEditProfile.setVisibility(viewingOwnProfile ? View.VISIBLE : View.GONE);
+        view.findViewById(R.id.fabProfileCreatePost).setVisibility(viewingOwnProfile ? View.VISIBLE : View.GONE);
+        view.findViewById(R.id.btnStartGrowing).setVisibility(viewingOwnProfile ? View.VISIBLE : View.GONE);
+        view.findViewById(R.id.actionSetMilestone).setVisibility(viewingOwnProfile ? View.VISIBLE : View.GONE);
+        view.findViewById(R.id.actionFirstEntry).setVisibility(viewingOwnProfile ? View.VISIBLE : View.GONE);
+
+        btnEditProfile.setOnClickListener(v -> {
+            if (viewingOwnProfile) {
+                startActivity(new Intent(requireContext(), EditProfileActivity.class));
+            }
+        });
 
         view.findViewById(R.id.btnShareProfile).setOnClickListener(v -> shareProfile());
         view.findViewById(R.id.txtProfileLink).setOnClickListener(v -> copyProfileLink());
@@ -186,6 +233,9 @@ public class SocialProfileFragment extends Fragment {
     }
 
     private void openCreatePost(String categoryKey) {
+        if (!viewingOwnProfile) {
+            return;
+        }
         if (requireActivity() instanceof MainActivity) {
             ((MainActivity) requireActivity()).openCreatePostScreen(categoryKey);
         }
@@ -214,7 +264,7 @@ public class SocialProfileFragment extends Fragment {
             tvDisplayName.setText(displayName);
             tvBio.setText(bio);
             tvJoinedDate.setText(joinedLabel(doc));
-            tvStreakCount.setText(Math.max(0, numberField(doc, "streakDays", 0)) + " days");
+            updateStreakState(0);
             ImageHelper.loadAvatar(avatarUrl, imgAvatar, firstNonEmpty(displayName, currentUserId));
         });
 
@@ -278,24 +328,26 @@ public class SocialProfileFragment extends Fragment {
     @SuppressWarnings("unchecked")
     private void bindProfilePosts(List<Object> raw) {
         List<FeedItem> posts = new ArrayList<>();
-        int achievementCount = 0;
-        FeedItem firstAchievement = null;
+        ProfileAchievementState achievementState = evaluateAchievements(raw);
+        FeedItem pinnedAchievement = null;
 
         for (Object obj : raw) {
             if (!(obj instanceof Map)) continue;
             Map<String, Object> map = (Map<String, Object>) obj;
             FeedItem item = mapPostFromMap(map);
             posts.add(item);
-            if (item instanceof FeedItem.MilestonePost) {
-                achievementCount++;
-                if (firstAchievement == null) firstAchievement = item;
+            if (pinnedAchievement == null && item instanceof FeedItem.MilestonePost
+                    && isCompletedMilestone(map)) {
+                pinnedAchievement = item;
             }
         }
 
         myPostsAdapter.submitList(posts);
         tvPostCount.setText(posts.size() + " posts");
-        tvTrophyCount.setText(achievementCount + " achivements");
-        bindPinnedAchievement(firstAchievement, posts.size());
+        tvTrophyCount.setText(achievementState.earnedCount + " achievements");
+        updateStreakState(achievementState.currentStreakDays);
+        bindAchievementBadges(achievementState);
+        bindPinnedAchievement(pinnedAchievement, posts.size(), achievementState.earnedCount);
         showEmptyState(posts.isEmpty());
     }
 
@@ -353,18 +405,151 @@ public class SocialProfileFragment extends Fragment {
     // CÁC HÀM HELPER — GIỮ NGUYÊN, chỉ thêm str() và num()
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    private void bindPinnedAchievement(@Nullable FeedItem achievement, int postCount) {
+    private void bindPinnedAchievement(@Nullable FeedItem achievement, int postCount, int earnedCount) {
         if (achievement instanceof FeedItem.MilestonePost) {
             FeedItem.MilestonePost milestone = (FeedItem.MilestonePost) achievement;
             tvPinnedAchievement.setText(milestone.title + " · " + milestone.amount);
             return;
         }
-        tvPinnedAchievement.setText(postCount > 0
+        tvPinnedAchievement.setText(earnedCount > 0
+                ? "Achievement unlocked. Keep building your financial journey."
+                : postCount > 0
                 ? "Started building your personal financial house."
                 : "Share your first milestone to pin a highlighted achievement here.");
     }
 
+    private void updateStreakState(int currentStreakDays) {
+        int days = Math.max(0, currentStreakDays);
+        boolean active = days >= 2;
+        tvStreakCount.setText(days + " days");
+        tvStreakCount.setBackgroundResource(active
+                ? R.drawable.bg_profile_streak_fire_circle
+                : R.drawable.bg_profile_streak_fire_circle_inactive);
+        tvStreakCount.setTextColor(androidx.core.content.ContextCompat.getColor(
+                requireContext(), active ? R.color.status_red : R.color.item_description));
+        tvStreakCount.setAlpha(active ? 1f : 0.65f);
+    }
+
+    @SuppressWarnings("unchecked")
+    private ProfileAchievementState evaluateAchievements(List<Object> raw) {
+        ProfileAchievementState state = new ProfileAchievementState();
+        Set<Long> postDays = new HashSet<>();
+
+        for (Object obj : raw) {
+            if (!(obj instanceof Map)) continue;
+            Map<String, Object> map = (Map<String, Object>) obj;
+            long timestamp = normalizeTimestamp(num(map, "timestamp"));
+            if (timestamp > 0) postDays.add(dayKey(timestamp));
+
+            String content = str(map, "content").toLowerCase(Locale.US);
+            String type = str(map, "type").toLowerCase(Locale.US);
+            String category = str(map, "category").toLowerCase(Locale.US);
+            String categoryKey = str(map, "categoryKey").toLowerCase(Locale.US);
+
+            state.hasFirstPost = true;
+            if (isCompletedMilestone(map)) state.hasCompletedMilestone = true;
+            if (type.contains("share")
+                    || category.contains("share")
+                    || categoryKey.contains("share")
+                    || content.contains("#tip")
+                    || content.contains("#share")
+                    || content.contains(" tip ")) {
+                state.hasSharedTip = true;
+            }
+        }
+
+        state.currentStreakDays = currentConsecutivePostDays(postDays);
+        state.hasTwoDayStreak = state.currentStreakDays >= 2;
+        state.earnedCount = (state.hasFirstPost ? 1 : 0)
+                + (state.hasTwoDayStreak ? 1 : 0)
+                + (state.hasCompletedMilestone ? 1 : 0)
+                + (state.hasSharedTip ? 1 : 0);
+        return state;
+    }
+
+    private void bindAchievementBadges(ProfileAchievementState state) {
+        setAchievementVisible(R.id.actionAchievementEarly, state.hasFirstPost);
+        setAchievementVisible(R.id.actionAchievementTop, state.hasTwoDayStreak);
+        setAchievementVisible(R.id.actionAchievementVault, state.hasCompletedMilestone);
+        setAchievementVisible(R.id.actionAchievementGiver, state.hasSharedTip);
+    }
+
+    private void setAchievementVisible(int iconId, boolean visible) {
+        View root = getView();
+        if (root == null) return;
+        View icon = root.findViewById(iconId);
+        if (icon == null) return;
+        View parent = (View) icon.getParent();
+        parent.setVisibility(visible ? View.VISIBLE : View.GONE);
+    }
+
+    private boolean isCompletedMilestone(Map<String, Object> map) {
+        String type = str(map, "type").toLowerCase(Locale.US);
+        if (!type.contains("milestone") && !type.contains("achievement")) return false;
+        return Math.max(num(map, "progress"), progressFromMilestoneData(str(map, "milestoneData"))) >= 100;
+    }
+
+    private long progressFromMilestoneData(String milestoneData) {
+        if (milestoneData == null || milestoneData.trim().isEmpty()) return 0;
+        try {
+            return new org.json.JSONObject(milestoneData).optLong("progress", 0);
+        } catch (Exception ignored) {
+            return 0;
+        }
+    }
+
+    private int currentConsecutivePostDays(Set<Long> postDays) {
+        if (postDays == null || postDays.isEmpty()) return 0;
+        long today = dayKey(System.currentTimeMillis());
+        long yesterday = today - 1;
+        long cursor;
+        if (postDays.contains(today)) {
+            cursor = today;
+        } else if (postDays.contains(yesterday)) {
+            cursor = yesterday;
+        } else {
+            return 0;
+        }
+
+        int streak = 0;
+        while (postDays.contains(cursor)) {
+            streak++;
+            cursor--;
+        }
+        return streak;
+    }
+
+    private long dayKey(long timestamp) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeInMillis(normalizeTimestamp(timestamp));
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        return calendar.getTimeInMillis() / 86_400_000L;
+    }
+
+    private long normalizeTimestamp(long timestamp) {
+        return timestamp > 0 && timestamp < 1_000_000_000_000L ? timestamp * 1000L : timestamp;
+    }
+
+    private static class ProfileAchievementState {
+        boolean hasFirstPost;
+        boolean hasTwoDayStreak;
+        boolean hasCompletedMilestone;
+        boolean hasSharedTip;
+        int currentStreakDays;
+        int earnedCount;
+    }
+
     private void showEmptyState(boolean show) {
+        if (show) {
+            ProfileAchievementState emptyState = new ProfileAchievementState();
+            tvTrophyCount.setText("0 achievements");
+            updateStreakState(0);
+            bindAchievementBadges(emptyState);
+            bindPinnedAchievement(null, 0, 0);
+        }
         layoutEmptyState.setVisibility(show ? View.VISIBLE : View.GONE);
         rvMyPosts.setVisibility(show ? View.GONE : View.VISIBLE);
     }

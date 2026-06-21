@@ -149,7 +149,7 @@
                         android:paddingHorizontal="9dp"
                         android:text="@string/public_state"
                         android:textColor="#1A237E"
-                        android:textSize="10sp" />
+                        android:textSize="11sp" />
                 </LinearLayout>
             </LinearLayout>
 
@@ -170,20 +170,22 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="14dp"
             android:fontFamily="@font/inter_regular"
-            android:lineSpacingExtra="4dp"
+            android:lineSpacingExtra="6dp"
             android:textColor="@color/item_title"
-            android:textSize="14sp"
+            android:textSize="16sp"
+            android:maxLines="5"
+            android:ellipsize="end"
             tools:text="@string/subquote" />
 
         <TextView
             android:id="@+id/txtSeeMore"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:fontFamily="@font/inter_bold"
-            android:paddingVertical="5dp"
+            android:layout_marginTop="8dp"
+            android:fontFamily="@font/inter_semibold"
+            android:paddingVertical="4dp"
             android:textColor="#1A237E"
-            android:textSize="13sp"
+            android:textSize="14sp"
             android:visibility="gone"
             tools:text="@string/see_more"
             tools:visibility="visible" />
@@ -196,6 +198,7 @@
             android:orientation="horizontal">
 
             <TextView
+                android:id="@+id/tvPostEngagementSummary"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -205,6 +208,7 @@
                 android:textSize="12sp" />
 
             <TextView
+                android:id="@+id/tvPostShareSummary"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFamily="@font/inter_regular"
@@ -213,35 +217,181 @@
                 android:textSize="12sp" />
         </LinearLayout>
 
+        <!-- Instagram/Threads-style action row -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="44dp"
-            android:layout_marginTop="12dp"
-            android:gravity="center"
-            android:orientation="horizontal">
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp">
 
-            <TextView
+            <LinearLayout
                 android:id="@+id/btnLike"
-                style="@style/feed_action_text"
-                android:background="@drawable/bg_social_action_soft"
-                android:drawableStart="@drawable/ic_feed_like"
-                android:text="@string/like" />
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="8dp"
+                android:paddingEnd="16dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackgroundBorderless">
 
-            <TextView
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:src="@drawable/ic_feed_like"
+                    app:tint="@color/icon_inactive"
+                    android:contentDescription="@string/like" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:fontFamily="@font/inter_medium"
+                    android:textColor="@color/item_description"
+                    android:textSize="13sp"
+                    android:text="@string/like" />
+            </LinearLayout>
+
+            <LinearLayout
                 android:id="@+id/btnComment"
-                style="@style/feed_action_text"
-                android:layout_marginStart="8dp"
-                android:background="@drawable/bg_social_action_soft"
-                android:drawableStart="@drawable/ic_feed_comment"
-                android:text="@string/comment" />
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="8dp"
+                android:paddingEnd="16dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackgroundBorderless">
+
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:src="@drawable/ic_feed_comment"
+                    app:tint="@color/icon_inactive"
+                    android:contentDescription="@string/comment" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:fontFamily="@font/inter_medium"
+                    android:textColor="@color/item_description"
+                    android:textSize="13sp"
+                    android:text="@string/comment" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/btnShare"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="8dp"
+                android:paddingEnd="16dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackgroundBorderless">
+
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:src="@drawable/ic_feed_share"
+                    app:tint="@color/icon_inactive"
+                    android:contentDescription="@string/share" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:fontFamily="@font/inter_medium"
+                    android:textColor="@color/item_description"
+                    android:textSize="13sp"
+                    android:text="@string/share" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <ImageButton
+                android:id="@+id/btnPostMenu"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/menu"
+                android:padding="6dp"
+                app:srcCompat="@drawable/ic_more_horizontal"
+                app:tint="@color/icon_inactive" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/layoutInlineComments"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="vertical"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <LinearLayout
+                android:id="@+id/layoutCommentPreviewList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
 
             <TextView
-                android:id="@+id/btnShare"
-                style="@style/feed_action_text"
-                android:layout_marginStart="8dp"
+                android:id="@+id/btnViewAllComments"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:fontFamily="@font/inter_bold"
+                android:paddingVertical="6dp"
+                android:textColor="@color/brand_primary"
+                android:textSize="13sp"
+                android:visibility="gone"
+                tools:text="View all comments (8)"
+                tools:visibility="visible" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="46dp"
+                android:layout_marginTop="8dp"
                 android:background="@drawable/bg_social_action_soft"
-                android:drawableStart="@drawable/ic_feed_share"
-                android:text="@string/share" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="12dp"
+                android:paddingEnd="8dp">
+
+                <EditText
+                    android:id="@+id/editInlineComment"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@android:color/transparent"
+                    android:fontFamily="@font/inter_regular"
+                    android:hint="Write a comment..."
+                    android:inputType="textCapSentences|textMultiLine"
+                    android:maxLines="2"
+                    android:textColor="@color/item_title"
+                    android:textColorHint="@color/item_description"
+                    android:textSize="13sp" />
+
+                <ImageButton
+                    android:id="@+id/btnSendInlineComment"
+                    android:layout_width="38dp"
+                    android:layout_height="38dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/comment"
+                    android:padding="9dp"
+                    app:srcCompat="@drawable/ic_send"
+                    app:tint="@color/brand_primary" />
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

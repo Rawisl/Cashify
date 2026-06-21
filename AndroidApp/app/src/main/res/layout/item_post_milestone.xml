@@ -235,20 +235,22 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
                 android:fontFamily="@font/inter_regular"
-                android:lineSpacingExtra="4dp"
+                android:lineSpacingExtra="6dp"
                 android:textColor="@color/item_title"
-                android:textSize="14sp"
+                android:textSize="16sp"
+                android:maxLines="5"
+                android:ellipsize="end"
                 tools:text="@string/milestone_description" />
 
             <TextView
                 android:id="@+id/txtMilestoneSeeMore"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="5dp"
-                android:fontFamily="@font/inter_bold"
-                android:paddingVertical="5dp"
+                android:layout_marginTop="8dp"
+                android:fontFamily="@font/inter_semibold"
+                android:paddingVertical="4dp"
                 android:textColor="#B8892B"
-                android:textSize="13sp"
+                android:textSize="14sp"
                 android:visibility="gone"
                 tools:text="@string/see_more"
                 tools:visibility="visible" />
@@ -287,33 +289,206 @@
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="44dp"
+                android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:gravity="center"
+                android:gravity="center_vertical"
                 android:orientation="horizontal">
 
                 <TextView
+                    android:id="@+id/tvMilestoneEngagementSummary"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:fontFamily="@font/inter_regular"
+                    android:text="@string/like_comment"
+                    android:textColor="@color/item_description"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/tvMilestoneShareSummary"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/inter_regular"
+                    android:text="@string/share_state"
+                    android:textColor="@color/item_description"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <!-- Instagram/Threads-style action row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp">
+
+                <LinearLayout
                     android:id="@+id/btnMilestoneLike"
-                    style="@style/feed_action_text"
-                    android:background="@drawable/bg_social_action_soft"
-                    android:drawableStart="@drawable/ic_feed_like"
-                    android:text="@string/like" />
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="16dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackgroundBorderless">
 
-                <TextView
+                    <ImageView
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:src="@drawable/ic_feed_like"
+                        app:tint="@color/icon_inactive"
+                        android:contentDescription="@string/like" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:fontFamily="@font/inter_medium"
+                        android:textColor="@color/item_description"
+                        android:textSize="13sp"
+                        android:text="@string/like" />
+                </LinearLayout>
+
+                <LinearLayout
                     android:id="@+id/btnMilestoneComment"
-                    style="@style/feed_action_text"
-                    android:layout_marginStart="8dp"
-                    android:background="@drawable/bg_social_action_soft"
-                    android:drawableStart="@drawable/ic_feed_comment"
-                    android:text="@string/comment" />
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="16dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackgroundBorderless">
+
+                    <ImageView
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:src="@drawable/ic_feed_comment"
+                        app:tint="@color/icon_inactive"
+                        android:contentDescription="@string/comment" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:fontFamily="@font/inter_medium"
+                        android:textColor="@color/item_description"
+                        android:textSize="13sp"
+                        android:text="@string/comment" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/btnMilestoneShare"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="16dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackgroundBorderless">
+
+                    <ImageView
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:src="@drawable/ic_feed_share"
+                        app:tint="@color/icon_inactive"
+                        android:contentDescription="@string/share" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:fontFamily="@font/inter_medium"
+                        android:textColor="@color/item_description"
+                        android:textSize="13sp"
+                        android:text="@string/share" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+                <ImageButton
+                    android:id="@+id/btnMilestoneMenu"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/menu"
+                    android:padding="6dp"
+                    app:srcCompat="@drawable/ic_more_horizontal"
+                    app:tint="@color/icon_inactive" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/layoutMilestoneInlineComments"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="vertical"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <LinearLayout
+                    android:id="@+id/layoutMilestoneCommentPreviewList"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
 
                 <TextView
-                    android:id="@+id/btnMilestoneShare"
-                    style="@style/feed_action_text"
-                    android:layout_marginStart="8dp"
+                    android:id="@+id/btnMilestoneViewAllComments"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:fontFamily="@font/inter_bold"
+                    android:paddingVertical="6dp"
+                    android:textColor="@color/brand_primary"
+                    android:textSize="13sp"
+                    android:visibility="gone"
+                    tools:text="View all comments (8)"
+                    tools:visibility="visible" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="46dp"
+                    android:layout_marginTop="8dp"
                     android:background="@drawable/bg_social_action_soft"
-                    android:drawableStart="@drawable/ic_feed_share"
-                    android:text="@string/share" />
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="8dp">
+
+                    <EditText
+                        android:id="@+id/editMilestoneInlineComment"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:background="@android:color/transparent"
+                        android:fontFamily="@font/inter_regular"
+                        android:hint="Write a comment..."
+                        android:inputType="textCapSentences|textMultiLine"
+                        android:maxLines="2"
+                        android:textColor="@color/item_title"
+                        android:textColorHint="@color/item_description"
+                        android:textSize="13sp" />
+
+                    <ImageButton
+                        android:id="@+id/btnMilestoneSendInlineComment"
+                        android:layout_width="38dp"
+                        android:layout_height="38dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="@string/comment"
+                        android:padding="9dp"
+                        app:srcCompat="@drawable/ic_send"
+                        app:tint="@color/brand_primary" />
+                </LinearLayout>
             </LinearLayout>
         </LinearLayout>
     </FrameLayout>

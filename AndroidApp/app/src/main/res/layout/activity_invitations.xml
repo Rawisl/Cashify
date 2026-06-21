@@ -4,7 +4,8 @@
     android:id="@+id/drawerLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="true">
+    android:fitsSystemWindows="true"
+    app:statusBarBackground="@color/bg_budget_screen">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -70,12 +71,57 @@
             </com.google.android.material.appbar.MaterialToolbar>
         </com.google.android.material.appbar.AppBarLayout>
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvInvitations"
+        <!-- FrameLayout lets the empty state overlay sit behind the list -->
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:clipToPadding="false"
-            android:padding="16dp" />
+            android:layout_height="match_parent">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvInvitations"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:padding="16dp" />
+
+            <!-- Empty state — shown when there are no pending invitations -->
+            <LinearLayout
+                android:id="@+id/layoutInvitationsEmpty"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="32dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="✉️"
+                    android:textSize="52sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:fontFamily="@font/outfit_bold"
+                    android:gravity="center"
+                    android:text="No invitations yet"
+                    android:textColor="@color/screen_title"
+                    android:textSize="20sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:fontFamily="@font/inter_regular"
+                    android:gravity="center"
+                    android:lineSpacingExtra="4dp"
+                    android:text="When someone invites you to a workspace, it will appear here."
+                    android:textColor="@color/item_description"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+        </FrameLayout>
 
     </LinearLayout>
 

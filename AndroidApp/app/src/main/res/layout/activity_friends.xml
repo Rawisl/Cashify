@@ -5,7 +5,8 @@
     android:id="@+id/drawerLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="true">
+    android:fitsSystemWindows="true"
+    app:statusBarBackground="@color/bg_budget_screen">
 
     <FrameLayout
         android:layout_width="match_parent"
@@ -17,75 +18,83 @@
             android:layout_height="match_parent"
             android:orientation="vertical">
 
-            <com.google.android.material.appbar.MaterialToolbar
-                android:id="@+id/toolbarFriends"
+            <com.google.android.material.appbar.AppBarLayout
                 android:layout_width="match_parent"
-                android:layout_height="40dp"
-                android:background="@drawable/bg_workspace_header_light"
-                app:navigationIcon="@drawable/ic_menu_padded"
-                app:navigationIconTint="@color/brand_primary">
+                android:layout_height="wrap_content"
+                android:background="@android:color/transparent"
+                app:elevation="0dp">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:text="@string/social_profile_friends"
-                    android:textAppearance="@style/ToolbarTitleFont"
-                    android:textColor="@color/brand_primary"
-                    android:paddingBottom="5dp" />
+                <com.google.android.material.appbar.MaterialToolbar
+                    android:id="@+id/toolbarFriends"
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp"
+                    android:background="@drawable/bg_workspace_header_light"
+                    android:paddingStart="6dp"
+                    android:paddingEnd="12dp"
+                    app:navigationIcon="@drawable/ic_menu_padded"
+                    app:navigationIconTint="@color/brand_primary">
 
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
-                    android:layout_gravity="end|center_vertical"
-                    android:layout_marginEnd="8dp"
-                    android:gravity="center"
-                    android:orientation="horizontal"
-                    android:layoutDirection="rtl">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:paddingBottom="5dp"
+                        android:text="@string/social_profile_friends"
+                        android:textAppearance="@style/ToolbarTitleFont"
+                        android:textColor="@color/brand_primary" />
 
-                    <ImageButton
-                        android:id="@+id/btnMessages"
-                        android:layout_width="38dp"
-                        android:layout_height="38dp"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="@string/message"
-                        android:padding="10dp"
-                        app:srcCompat="@drawable/ic_messages_regular"
-                        app:tint="@color/brand_primary" />
-
-                    <FrameLayout
-                        android:layout_width="38dp"
-                        android:layout_height="38dp"
-                        android:layoutDirection="ltr">
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:layout_gravity="end|center_vertical"
+                        android:gravity="center"
+                        android:layoutDirection="rtl"
+                        android:orientation="horizontal">
 
                         <ImageButton
-                            android:id="@+id/btnNotifications"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
+                            android:id="@+id/btnMessages"
+                            android:layout_width="38dp"
+                            android:layout_height="38dp"
                             android:background="?attr/selectableItemBackgroundBorderless"
-                            android:contentDescription="@string/notification"
+                            android:contentDescription="@string/message"
                             android:padding="10dp"
-                            android:scaleType="center"
-                            android:src="@drawable/ic_notification_regular"
+                            app:srcCompat="@drawable/ic_messages_regular"
                             app:tint="@color/brand_primary" />
 
-                        <TextView
-                            android:id="@+id/tvNotificationBadge"
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
-                            android:layout_gravity="top|end"
-                            android:layout_marginTop="4dp"
-                            android:layout_marginEnd="3dp"
-                            android:background="@drawable/bg_badge_red"
-                            android:gravity="center"
-                            android:text="@string/one"
-                            android:textColor="@color/white"
-                            android:textSize="10sp"
-                            android:textStyle="bold"
-                            android:visibility="gone" />
-                    </FrameLayout>
-                </LinearLayout>
-            </com.google.android.material.appbar.MaterialToolbar>
+                        <FrameLayout
+                            android:layout_width="38dp"
+                            android:layout_height="38dp"
+                            android:layoutDirection="ltr">
+
+                            <ImageButton
+                                android:id="@+id/btnNotifications"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:background="?attr/selectableItemBackgroundBorderless"
+                                android:contentDescription="@string/notification"
+                                android:padding="10dp"
+                                android:scaleType="center"
+                                android:src="@drawable/ic_notification_regular"
+                                app:tint="@color/brand_primary" />
+
+                            <TextView
+                                android:id="@+id/tvNotificationBadge"
+                                android:layout_width="18dp"
+                                android:layout_height="18dp"
+                                android:layout_gravity="top|end"
+                                android:layout_marginTop="4dp"
+                                android:layout_marginEnd="3dp"
+                                android:background="@drawable/bg_badge_red"
+                                android:gravity="center"
+                                android:text="@string/one"
+                                android:textColor="@color/white"
+                                android:textSize="10sp"
+                                android:textStyle="bold"
+                                android:visibility="gone" />
+                        </FrameLayout>
+                    </LinearLayout>
+                </com.google.android.material.appbar.MaterialToolbar>
+            </com.google.android.material.appbar.AppBarLayout>
 
             <androidx.core.widget.NestedScrollView
                 android:layout_width="match_parent"
@@ -99,18 +108,21 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:paddingStart="18dp"
+                    android:paddingStart="20dp"
                     android:paddingTop="18dp"
-                    android:paddingEnd="18dp"
+                    android:paddingEnd="20dp"
                     android:paddingBottom="24dp">
+
+
 
                     <androidx.cardview.widget.CardView
                         android:id="@+id/cardSearch"
                         android:layout_width="match_parent"
                         android:layout_height="50dp"
+                        android:layout_marginTop="20dp"
                         app:cardBackgroundColor="#FFFFFF"
                         app:cardCornerRadius="25dp"
-                        app:cardElevation="0dp">
+                        app:cardElevation="1dp">
 
                         <EditText
                             android:id="@+id/edtSearch"
@@ -119,6 +131,7 @@
                             android:background="@null"
                             android:drawableStart="@android:drawable/ic_menu_search"
                             android:drawablePadding="10dp"
+                            android:fontFamily="@font/inter_regular"
                             android:hint="@string/searching_friend"
                             android:imeOptions="actionSearch"
                             android:inputType="text"
@@ -135,7 +148,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="72dp"
                         android:layout_marginTop="16dp"
-                        android:background="@drawable/bg_creator_panel"
+                        android:background="@drawable/bg_budget_glass_card"
                         android:clickable="true"
                         android:focusable="true"
                         android:gravity="center_vertical"
@@ -149,7 +162,7 @@
                             android:background="@drawable/bg_social_metric_chip"
                             android:padding="10dp"
                             android:src="@drawable/ic_request"
-                            app:tint="#1A237E" />
+                            app:tint="@color/brand_primary" />
 
                         <LinearLayout
                             android:layout_width="0dp"
@@ -163,7 +176,7 @@
                                 android:layout_height="wrap_content"
                                 android:fontFamily="@font/inter_bold"
                                 android:text="@string/request"
-                                android:textColor="#1A237E"
+                                android:textColor="@color/item_title"
                                 android:textSize="16sp" />
 
                             <TextView
@@ -173,7 +186,7 @@
                                 android:layout_marginTop="2dp"
                                 android:fontFamily="@font/inter_regular"
                                 android:text="@string/waiting_request"
-                                android:textColor="#607D8B"
+                                android:textColor="@color/item_description"
                                 android:textSize="13sp" />
                         </LinearLayout>
 
@@ -187,7 +200,7 @@
                             android:paddingStart="12dp"
                             android:paddingEnd="12dp"
                             android:text="@string/open"
-                            android:textColor="#1A237E"
+                            android:textColor="@color/brand_primary"
                             android:textSize="13sp" />
                     </LinearLayout>
 
@@ -202,9 +215,9 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:fontFamily="@font/inter_bold"
+                            android:fontFamily="@font/outfit_bold"
                             android:text="@string/friend_suggestion"
-                            android:textColor="#1A237E"
+                            android:textColor="@color/screen_title"
                             android:textSize="20sp" />
 
                         <TextView
@@ -213,7 +226,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:fontFamily="@font/inter_medium"
-                            android:textColor="#607D8B"
+                            android:textColor="@color/item_description"
                             android:textSize="13sp"
                             tools:text="@string/friend_number" />
                     </LinearLayout>
@@ -235,12 +248,12 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
-                        android:background="@drawable/bg_creator_panel"
+                        android:background="@drawable/bg_budget_glass_card"
                         android:fontFamily="@font/inter_regular"
                         android:gravity="center"
                         android:padding="18dp"
                         android:text="@string/no_friend_suggestion"
-                        android:textColor="#607D8B"
+                        android:textColor="@color/item_description"
                         android:textSize="13sp"
                         android:visibility="gone" />
 
@@ -248,9 +261,9 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="26dp"
-                        android:fontFamily="@font/inter_bold"
+                        android:fontFamily="@font/outfit_bold"
                         android:text="@string/connect"
-                        android:textColor="#1A237E"
+                        android:textColor="@color/screen_title"
                         android:textSize="20sp" />
 
                     <androidx.recyclerview.widget.RecyclerView
@@ -268,12 +281,12 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
-                        android:background="@drawable/bg_creator_panel"
+                        android:background="@drawable/bg_budget_glass_card"
                         android:fontFamily="@font/inter_regular"
                         android:gravity="center"
                         android:padding="18dp"
                         android:text="@string/no_connect"
-                        android:textColor="#607D8B"
+                        android:textColor="@color/item_description"
                         android:textSize="13sp"
                         android:visibility="gone" />
                 </LinearLayout>

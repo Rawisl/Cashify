@@ -2,8 +2,7 @@ package com.example.cashify.ui.feed;
 
 import android.content.Context;
 import android.content.res.ColorStateList;
-import android.graphics.drawable.ColorDrawable;
-import android.graphics.drawable.Drawable;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -15,12 +14,10 @@ import android.text.style.ForegroundColorSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.PopupWindow;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -30,12 +27,16 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
-import androidx.core.graphics.drawable.DrawableCompat;
+import androidx.core.widget.TextViewCompat;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
 
 import com.example.cashify.R;
+import com.example.cashify.ui.common.AvatarImageView;
+import com.example.cashify.utils.ApiClient;
+import com.example.cashify.utils.ApiService;
+import com.example.cashify.utils.DialogHelper;
 import com.example.cashify.utils.ImageHelper;
 import com.example.cashify.utils.UploadNotificationHelper;
 import com.google.android.material.appbar.MaterialToolbar;
@@ -54,8 +55,6 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import com.example.cashify.utils.DialogHelper;
-
 
 public class CommunityFeedFragment extends Fragment {
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -63,9 +62,7 @@ public class CommunityFeedFragment extends Fragment {
     private EditText editPostContent;
     private TextView txtComposerCount;
     private TextView txtComposerHint;
-    private TextView btnAudience;
-    private TextView btnAudienceFriends;
-    private TextView btnAudiencePrivate;
+    private TextView btnAudiencePill;
     private TextView actionMilestone;
     private TextView actionThoughts;
     private TextView actionAnalysis;
@@ -81,7 +78,7 @@ public class CommunityFeedFragment extends Fragment {
     private ProgressBar progressPosting;
     private FrameLayout imagePreviewContainer;
     private ImageView imgPostPreview;
-    private ImageView imgComposerAvatar;
+    private AvatarImageView imgComposerAvatar;
     private ChipGroup chipGroupTopics;
 
     private Uri selectedImageUri;
@@ -91,16 +88,16 @@ public class CommunityFeedFragment extends Fragment {
     private String selectedCategoryKey = "thoughts";
     private final Set<String> selectedTopicHashtags = new LinkedHashSet<>();
     private boolean applyingHashtagStyle = false;
-    private PopupWindow audiencePopup;
+    private boolean syncingHashtags = false;
 
     private View milestonePreviewContainer;
     private TextView tvPreviewIcon, tvPreviewTitle, tvPreviewMonth, tvPreviewAmount;
     private ProgressBar pbPreviewProgress;
-    private String generatedMilestoneJson = null; // Cục JSON để dành lúc bấm Đăng
+    private String generatedMilestoneJson = null;
 
     private final ActivityResultLauncher<String> pickImageLauncher =
             registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
-                if (uri == null) return;
+                if (uri == null || !isAdded()) return;
 
                 long fileSize = getFileSizeFromUri(uri);
                 if (fileSize > 10 * 1024 * 1024) {
@@ -112,16 +109,18 @@ public class CommunityFeedFragment extends Fragment {
                             "Cancel",
                             DialogHelper.DialogType.DANGER,
                             true,
-                            () -> actionPhoto.performClick(), // Dùng performClick thay vì gọi pickImageLauncher
+                            () -> {
+                                if (actionPhoto != null) actionPhoto.performClick();
+                            },
                             null
                     );
                     return;
                 }
 
                 selectedImageUri = uri;
-                imgPostPreview.setImageURI(uri);
-                imagePreviewContainer.setVisibility(View.VISIBLE);
-                txtComposerHint.setText("Image added. You can add a description or post now.");
+                if (imgPostPreview != null) imgPostPreview.setImageURI(uri);
+                if (imagePreviewContainer != null) imagePreviewContainer.setVisibility(View.VISIBLE);
+                if (txtComposerHint != null) txtComposerHint.setText("Image added. Ready to share.");
                 updateSubmitState();
             });
 
@@ -151,9 +150,7 @@ public class CommunityFeedFragment extends Fragment {
         editPostContent = view.findViewById(R.id.editPostContent);
         txtComposerCount = view.findViewById(R.id.txtComposerCount);
         txtComposerHint = view.findViewById(R.id.txtComposerHint);
-        btnAudience = view.findViewById(R.id.btnAudience);
-        btnAudienceFriends = view.findViewById(R.id.btnAudienceFriends);
-        btnAudiencePrivate = view.findViewById(R.id.btnAudiencePrivate);
+        btnAudiencePill = view.findViewById(R.id.btnAudiencePill);
         actionMilestone = view.findViewById(R.id.actionMilestone);
         actionThoughts = view.findViewById(R.id.actionThoughts);
         actionAnalysis = view.findViewById(R.id.actionAnalysis);
@@ -181,7 +178,9 @@ public class CommunityFeedFragment extends Fragment {
 
     private void setupToolbar(View view) {
         MaterialToolbar toolbar = view.findViewById(R.id.toolbarCreatePost);
-        toolbar.setNavigationOnClickListener(v -> navigateBack());
+        if (toolbar != null) {
+            toolbar.setNavigationOnClickListener(v -> navigateBack());
+        }
     }
 
     private void setupComposer(View view) {
@@ -189,79 +188,84 @@ public class CommunityFeedFragment extends Fragment {
         TextView txtComposerName = view.findViewById(R.id.txtComposerName);
         if (user != null) {
             String composerName = cleanDisplayName(user.getDisplayName());
-            txtComposerName.setText(composerName);
+            if (txtComposerName != null) {
+                txtComposerName.setText(composerName);
+            }
             ImageHelper.loadAvatar(user.getPhotoUrl(), imgComposerAvatar,
                     firstNonEmpty(composerName, user.getEmail(), user.getUid()));
             FirebaseFirestore.getInstance().collection("users").document(user.getUid()).get()
-                    .addOnSuccessListener(doc -> bindCurrentUserProfile(doc, txtComposerName));
+                    .addOnSuccessListener(doc -> {
+                        if (isAdded()) bindCurrentUserProfile(doc, txtComposerName);
+                    });
         }
 
-        editPostContent.addTextChangedListener(new TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+        if (editPostContent != null) {
+            editPostContent.addTextChangedListener(new TextWatcher() {
+                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                txtComposerCount.setText(String.format(Locale.US, "%d/280", s.length()));
-                updateSubmitState();
-            }
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    if (txtComposerCount != null) {
+                        txtComposerCount.setText(String.format(Locale.US, "%d/280", s.length()));
+                    }
+                    if (!syncingHashtags) syncSelectedHashtagsFromEditor(s.toString());
+                    updateSubmitState();
+                }
 
-            @Override
-            public void afterTextChanged(Editable s) {
-                applyHashtagStyle(s);
-            }
-        });
+                @Override
+                public void afterTextChanged(Editable s) {
+                    applyHashtagStyle(s);
+                }
+            });
 
-        editPostContent.setOnFocusChangeListener((v, hasFocus) -> {
-            if (hasFocus) {
-                txtComposerHint.setText(milestoneMode
-                        ? "Bài cột mốc sẽ hay hơn khi có một chiến thắng thật rõ."
-                        : "Bắt đầu một câu chuyện tài chính nhỏ.");
-            }
-        });
+            editPostContent.setOnFocusChangeListener((v, hasFocus) -> {
+                if (hasFocus && txtComposerHint != null) {
+                    txtComposerHint.setText(milestoneMode
+                            ? "Milestone posts are better with a clear win."
+                            : "Start a small financial story.");
+                }
+            });
+        }
 
-        // HỨNG "BƯU KIỆN" TỪ BUDGET FRAGMENT TRUYỀN SANG
         if (getArguments() != null && getArguments().containsKey("milestone_limit")) {
             long limit = getArguments().getLong("milestone_limit");
             long spent = getArguments().getLong("milestone_spent");
             String periodType = getArguments().getString("milestone_period");
             String periodLabel = getArguments().getString("milestone_label");
 
-            // Server không làm thì Client làm: Tự tính toán
             long remaining = limit - spent;
-            int progress = (int) ((spent * 100) / limit);
-            int uiProgress = progress > 100 ? 100 : progress;
+            int progress = limit > 0 ? (int) ((spent * 100) / limit) : 0;
+            int uiProgress = Math.min(progress, 100);
 
             String amountLabel = remaining >= 0
-                    ? "Còn dư: " + com.example.cashify.utils.CurrencyFormatter.formatCompactVND(remaining)
-                    : "Vượt mức: " + com.example.cashify.utils.CurrencyFormatter.formatCompactVND(Math.abs(remaining));
+                    ? "Left: " + com.example.cashify.utils.CurrencyFormatter.formatCompactVND(remaining)
+                    : "Over: " + com.example.cashify.utils.CurrencyFormatter.formatCompactVND(Math.abs(remaining));
             String iconText = progress + "%";
-            String title = "Tổng kết " + ("MONTH".equals(periodType) ? "Ngân sách tháng" : "Ngân sách tuần");
+            String title = "Summary " + ("MONTH".equals(periodType) ? "Monthly Budget" : "Weekly Budget");
             String defaultDescription = remaining >= 0
                     ? "You've managed your spending very well this period. Great job! 🚀"
                     : "You've gone over budget this period. Try to stay on track next time. 🥲";
 
-            // Hiển thị lên giao diện thẻ Bo góc
             milestoneMode = true;
-            milestonePreviewContainer.setVisibility(View.VISIBLE);
-            tvPreviewIcon.setText(iconText);
-            tvPreviewTitle.setText(title);
-            tvPreviewMonth.setText(periodLabel);
-            tvPreviewAmount.setText(amountLabel);
-            pbPreviewProgress.setProgress(uiProgress);
+            if (milestonePreviewContainer != null) milestonePreviewContainer.setVisibility(View.VISIBLE);
+            if (tvPreviewIcon != null) tvPreviewIcon.setText(iconText);
+            if (tvPreviewTitle != null) tvPreviewTitle.setText(title);
+            if (tvPreviewMonth != null) tvPreviewMonth.setText(periodLabel);
+            if (tvPreviewAmount != null) tvPreviewAmount.setText(amountLabel);
+            if (pbPreviewProgress != null) pbPreviewProgress.setProgress(uiProgress);
 
-            // Tắt nút Thêm Ảnh đi vì đã có cột mốc
-            actionPhoto.setVisibility(View.GONE);
-            actionMilestone.setVisibility(View.GONE);
+            if (actionPhoto != null) actionPhoto.setVisibility(View.GONE);
+            if (actionMilestone != null) actionMilestone.setVisibility(View.GONE);
 
-            // Gợi ý cho người dùng viết caption
-            txtComposerHint.setText("Your milestone is ready! Post your thought above.");
+            if (txtComposerHint != null) {
+                txtComposerHint.setText("Your milestone is ready! Post your thought above.");
+            }
 
-            // Đóng gói JSON sẵn, đợi bấm Đăng là phi lên C#
             try {
                 org.json.JSONObject obj = new org.json.JSONObject();
                 obj.put("iconText", iconText);
                 obj.put("title", title);
-                obj.put("description", defaultDescription); // Đề phòng user lười k gõ gì
+                obj.put("description", defaultDescription);
                 obj.put("month", periodLabel);
                 obj.put("amount", amountLabel);
                 obj.put("progress", uiProgress);
@@ -269,49 +273,50 @@ public class CommunityFeedFragment extends Fragment {
             } catch (Exception ignored) {}
         }
 
-        // HỨNG DỮ LIỆU ĐỂ MỞ CHẾ ĐỘ CHỈNH SỬA
         if (getArguments() != null && getArguments().containsKey("edit_post_id")) {
-            String editId = getArguments().getString("edit_post_id");
             String oldContent = getArguments().getString("edit_post_content");
             String oldMilestone = getArguments().getString("edit_milestone_data");
 
-            // Fill data cũ vào
-            editPostContent.setText(oldContent);
-            btnSubmitPost.setText("Lưu cập nhật");
-            txtComposerHint.setText("Chỉnh sửa nội dung bài viết của bạn.");
+            if (editPostContent != null) editPostContent.setText(oldContent);
+            if (btnSubmitPost != null) btnSubmitPost.setText("Save Update");
+            if (txtComposerHint != null) txtComposerHint.setText("Editing your post.");
 
-            // Nếu là bài Cột mốc thì dựng lại thẻ Preview
             if (oldMilestone != null && !oldMilestone.isEmpty()) {
                 milestoneMode = true;
                 generatedMilestoneJson = oldMilestone;
                 try {
                     org.json.JSONObject json = new org.json.JSONObject(oldMilestone);
-                    milestonePreviewContainer.setVisibility(View.VISIBLE);
-                    tvPreviewIcon.setText(json.optString("iconText", getString(R.string.cup)));
-                    tvPreviewTitle.setText(json.optString("title", "Cột mốc"));
-                    tvPreviewMonth.setText(json.optString("month", ""));
-                    tvPreviewAmount.setText(json.optString("amount", ""));
-                    pbPreviewProgress.setProgress(json.optInt("progress", 0));
+                    if (milestonePreviewContainer != null) milestonePreviewContainer.setVisibility(View.VISIBLE);
+                    if (tvPreviewIcon != null) tvPreviewIcon.setText(json.optString("iconText", "🏆"));
+                    if (tvPreviewTitle != null) tvPreviewTitle.setText(json.optString("title", "Milestone"));
+                    if (tvPreviewMonth != null) tvPreviewMonth.setText(json.optString("month", ""));
+                    if (tvPreviewAmount != null) tvPreviewAmount.setText(json.optString("amount", ""));
+                    if (pbPreviewProgress != null) pbPreviewProgress.setProgress(json.optInt("progress", 0));
 
-                    actionPhoto.setVisibility(View.GONE);
-                    actionMilestone.setVisibility(View.GONE);
+                    if (actionPhoto != null) actionPhoto.setVisibility(View.GONE);
+                    if (actionMilestone != null) actionMilestone.setVisibility(View.GONE);
                 } catch (Exception ignored) {}
             }
         }
 
-        updateAudienceButton();
-        updateAudienceDock();
-        btnAudience.setOnClickListener(v -> selectAudience("Public"));
-        btnAudienceFriends.setOnClickListener(v -> selectAudience("Friends"));
-        btnAudiencePrivate.setOnClickListener(v -> selectAudience("Private"));
-        actionPhoto.setOnClickListener(v -> pickImageLauncher.launch("image/*"));
-        actionMilestone.setOnClickListener(v -> selectCategory("Milestone", "milestone", true, R.id.chipSaving));
-        actionThoughts.setOnClickListener(v -> selectCategory("Thoughts", "thoughts", false, R.id.chipBudgeting));
-        actionAnalysis.setOnClickListener(v -> selectCategory("Analysis", "analysis", false, R.id.chipInvesting));
-        actionShare.setOnClickListener(v -> selectCategory("Share", "share", false, R.id.chipDebt));
+        updateAudiencePill();
+        if (btnAudiencePill != null) {
+            btnAudiencePill.setOnClickListener(v -> showAudiencePopup());
+        }
+        if (actionPhoto != null) actionPhoto.setOnClickListener(v -> {
+            if (isAdded()) pickImageLauncher.launch("image/*");
+        });
+        
+        if (actionMilestone != null) actionMilestone.setOnClickListener(v -> selectCategory("Milestone", "milestone", true, R.id.chipSaving));
+        if (actionThoughts != null) actionThoughts.setOnClickListener(v -> selectCategory("Thoughts", "thoughts", false, R.id.chipBudgeting));
+        if (actionAnalysis != null) actionAnalysis.setOnClickListener(v -> selectCategory("Analysis", "analysis", false, R.id.chipInvesting));
+        if (actionShare != null) actionShare.setOnClickListener(v -> selectCategory("Share", "share", false, R.id.chipDebt));
+        
         setupTopicHashtags();
-        view.findViewById(R.id.btnRemoveImage).setOnClickListener(v -> clearSelectedImage());
-        btnSubmitPost.setOnClickListener(v -> submitPost());
+        View btnRemoveImage = view.findViewById(R.id.btnRemoveImage);
+        if (btnRemoveImage != null) btnRemoveImage.setOnClickListener(v -> clearSelectedImage());
+        if (btnSubmitPost != null) btnSubmitPost.setOnClickListener(v -> submitPost());
+        
         applyInitialCategoryArgument();
         updateCategoryTiles();
         updateCategoryDesign();
@@ -320,218 +325,95 @@ public class CommunityFeedFragment extends Fragment {
 
     private void applyInitialCategoryArgument() {
         Bundle args = getArguments();
-        if (args == null) {
-            return;
-        }
+        if (args == null) return;
         String categoryKey = args.getString("categoryKey", "");
         if ("milestone".equals(categoryKey)) {
-            selectCategory("Cá»™t má»‘c", "milestone", true, R.id.chipSaving);
+            selectCategory("Milestone", "milestone", true, R.id.chipSaving);
         } else if ("analysis".equals(categoryKey)) {
-            selectCategory("PhÃ¢n tÃ­ch", "analysis", false, R.id.chipInvesting);
+            selectCategory("Analysis", "analysis", false, R.id.chipInvesting);
         } else if ("share".equals(categoryKey)) {
-            selectCategory("Chia sáº»", "share", false, R.id.chipDebt);
+            selectCategory("Share", "share", false, R.id.chipDebt);
         } else if ("thoughts".equals(categoryKey)) {
-            selectCategory("Suy nghÄ©", "thoughts", false, R.id.chipBudgeting);
+            selectCategory("Thoughts", "thoughts", false, R.id.chipBudgeting);
         }
     }
 
     private void selectAudience(String audience) {
         selectedAudience = audience;
-        updateAudienceButton();
-        updateAudienceDock();
+        updateAudiencePill();
     }
 
-    private void showAudienceMenu(View anchor) {
-        if (audiencePopup != null && audiencePopup.isShowing()) {
-            audiencePopup.dismiss();
-            return;
-        }
-
-        LinearLayout menu = new LinearLayout(requireContext());
-        menu.setOrientation(LinearLayout.VERTICAL);
-        int padding = dp(8);
-        menu.setPadding(padding, padding, padding, padding);
-        menu.setBackgroundResource(R.drawable.bg_privacy_menu);
-
-        addAudienceMenuItem(menu, "Public", R.drawable.ic_privacy_public);
-        addAudienceMenuItem(menu, "Friends", R.drawable.ic_friends);
-        addAudienceMenuItem(menu, "Only Me", R.drawable.ic_privacy_lock);
-
-        audiencePopup = new PopupWindow(
-                menu,
-                Math.max(anchor.getWidth(), dp(190)),
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                true
-        );
-        audiencePopup.setBackgroundDrawable(new ColorDrawable(android.graphics.Color.TRANSPARENT));
-        audiencePopup.setOutsideTouchable(true);
-        audiencePopup.setElevation(dp(6));
-        audiencePopup.showAsDropDown(anchor, 0, dp(6));
+    private void updateAudiencePill() {
+        if (btnAudiencePill == null || !isAdded()) return;
+        String label = audienceLabel();
+        btnAudiencePill.setText(label);
+        btnAudiencePill.setContentDescription(label + " audience dropdown");
     }
 
-    private void addAudienceMenuItem(LinearLayout menu, String label, int iconRes) {
-        TextView item = new TextView(requireContext());
-        item.setText(label);
-        item.setTextSize(14);
-        item.setTextColor(ContextCompat.getColor(requireContext(), R.color.item_title));
-        item.setGravity(android.view.Gravity.CENTER_VERTICAL);
-        item.setMinHeight(dp(46));
-        item.setPadding(dp(12), 0, dp(12), 0);
-        item.setCompoundDrawablePadding(dp(10));
-        item.setCompoundDrawablesRelativeWithIntrinsicBounds(tintedDrawable(iconRes), null, null, null);
-        if (label.equals(selectedAudience)) {
-            item.setBackgroundResource(R.drawable.bg_privacy_menu_item_selected);
-            item.setTextColor(ContextCompat.getColor(requireContext(), R.color.brand_primary));
-            item.setTypeface(item.getTypeface(), android.graphics.Typeface.BOLD);
-        }
-        item.setOnClickListener(v -> {
-            selectedAudience = label;
-            updateAudienceButton();
-            updateAudienceDock();
-            if (audiencePopup != null) {
-                audiencePopup.dismiss();
+    private void showAudiencePopup() {
+        if (btnAudiencePill == null || !isAdded()) return;
+        android.widget.PopupMenu popup = new android.widget.PopupMenu(requireContext(), btnAudiencePill);
+        popup.getMenu().add(0, 1, 0, "Everyone");
+        popup.getMenu().add(0, 2, 1, "Friends");
+        popup.getMenu().add(0, 3, 2, "Only Me");
+        popup.setOnMenuItemClickListener(item -> {
+            switch (item.getItemId()) {
+                case 1: selectAudience("Public"); break;
+                case 2: selectAudience("Friends"); break;
+                case 3: selectAudience("Private"); break;
             }
+            return true;
         });
-        menu.addView(item, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-        ));
-    }
-
-    private void updateAudienceButton() {
-        btnAudience.setText(selectedAudience);
-        btnAudience.setTextColor(ContextCompat.getColor(requireContext(), R.color.brand_primary));
-        btnAudience.setCompoundDrawablePadding(dp(8));
-        btnAudience.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                tintedDrawable(iconForAudience(selectedAudience)),
-                null,
-                tintedDrawable(R.drawable.ic_angle_down_regular),
-                null
-        );
-        btnAudience.setCompoundDrawableTintList(ColorStateList.valueOf(
-                ContextCompat.getColor(requireContext(), R.color.brand_primary)));
-        btnAudience.setContentDescription("Privacy: " + selectedAudience);
-    }
-
-    private int iconForAudience(String audience) {
-        if ("Public".equals(audience)) {
-            return R.drawable.ic_privacy_public;
-        }
-        if ("Only Me".equals(audience)) {
-            return R.drawable.ic_privacy_lock;
-        }
-        return R.drawable.ic_friends;
-    }
-
-    private Drawable tintedDrawable(int iconRes) {
-        Drawable drawable = ContextCompat.getDrawable(requireContext(), iconRes);
-        if (drawable == null) {
-            return null;
-        }
-        Drawable wrapped = DrawableCompat.wrap(drawable.mutate());
-        DrawableCompat.setTint(wrapped, ContextCompat.getColor(requireContext(), R.color.brand_primary));
-        return wrapped;
-    }
-
-    private void updateAudienceDock() {
-        updateAudienceOption(btnAudience, "Public", R.drawable.ic_privacy_public);
-        updateAudienceOption(btnAudienceFriends, "Friends", R.drawable.ic_friends);
-        updateAudienceOption(btnAudiencePrivate, "Only Me", R.drawable.ic_privacy_lock);
-    }
-
-    private void updateAudienceOption(TextView view, String label, int iconRes) {
-        boolean selected = label.equals(selectedAudience);
-        int textColor = ContextCompat.getColor(requireContext(), selected ? R.color.white : R.color.item_title);
-        int iconColor = ContextCompat.getColor(requireContext(), selected ? R.color.white : R.color.item_title);
-
-        view.setText("Only Me".equals(label) ? "Private" : label);
-        view.setTextColor(textColor);
-        view.setBackgroundResource(selected
-                ? R.drawable.bg_publish_editorial
-                : R.drawable.bg_privacy_option_inactive);
-        view.setCompoundDrawablePadding(dp(6));
-        view.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                tintedDrawable(iconRes, iconColor),
-                null,
-                null,
-                null
-        );
-        view.setCompoundDrawableTintList(ColorStateList.valueOf(iconColor));
-    }
-
-    private Drawable tintedDrawable(int iconRes, int color) {
-        Drawable drawable = ContextCompat.getDrawable(requireContext(), iconRes);
-        if (drawable == null) {
-            return null;
-        }
-        Drawable wrapped = DrawableCompat.wrap(drawable.mutate());
-        DrawableCompat.setTint(wrapped, color);
-        return wrapped;
+        popup.show();
     }
 
     private int dp(int value) {
+        if (!isAdded()) return 0;
         return Math.round(value * getResources().getDisplayMetrics().density);
     }
 
     private void setMilestoneMode(boolean enabled) {
         milestoneMode = enabled;
-        txtComposerHint.setText(enabled
-                ? "Chế độ cột mốc: chia sẻ mục tiêu, chuỗi ngày tốt hoặc một chiến thắng nhỏ."
-                : "Bắt đầu một câu chuyện tài chính nhỏ.");
-        editPostContent.setHint(enabled
-                ? "Bạn vừa đạt cột mốc nào?"
-                : "Bạn muốn chia sẻ chuyện tiền bạc gì hôm nay?");
+        if (!enabled && milestonePreviewContainer != null) {
+            milestonePreviewContainer.setVisibility(View.GONE);
+            if (actionPhoto != null) actionPhoto.setVisibility(View.VISIBLE);
+            if (actionMilestone != null) actionMilestone.setVisibility(View.VISIBLE);
+        }
         updateCategoryTiles();
         updateCategoryDesign();
         updateSubmitState();
-    }
-
-    private void selectCategory(String category, boolean milestone, int chipId) {
-        selectCategory(category, categoryKeyFromLabel(category), milestone, chipId);
     }
 
     private void selectCategory(String category, String categoryKey, boolean milestone, int chipId) {
         selectedCategory = category;
         selectedCategoryKey = categoryKey;
         setMilestoneMode(milestone);
-    }
-
-    private String categoryKeyFromLabel(String category) {
-        if (category == null) {
-            return "thoughts";
+        if (chipGroupTopics != null && chipId != View.NO_ID) {
+            chipGroupTopics.check(chipId);
         }
-        if (category.contains("Milestone")) {
-            return "milestone";
-        }
-        if (category.contains("Analysis")) {
-            return "analysis";
-        }
-        if (category.contains("Share")) {
-            return "share";
-        }
-        return "thoughts";
     }
 
     private void setupTopicHashtags() {
-        if (chipGroupTopics == null) {
-            return;
-        }
-        setupTopicChipStyle();
+        if (chipGroupTopics == null) return;
+        updateTopicChipStyle();
         chipGroupTopics.setOnCheckedStateChangeListener((group, checkedIds) -> {
-            Set<String> nextHashtags = hashtagsForCheckedIds(checkedIds);
-            syncTopicHashtags(nextHashtags);
+            if (syncingHashtags) {
+                updateTopicChipStyle();
+                return;
+            }
+            selectedTopicHashtags.clear();
+            for (Integer checkedId : checkedIds) {
+                if (checkedId != null) {
+                    selectedTopicHashtags.add(hashtagForTopic(checkedId));
+                }
+            }
             updateTopicChipStyle();
+            syncHashtagsInEditor();
         });
     }
 
-    private void setupTopicChipStyle() {
-        styleTopicChip(R.id.chipBudgeting, "#FFF0C9", "#F2C15E", "#7A4D09");
-        styleTopicChip(R.id.chipSaving, "#E2F5DA", "#A7D99B", "#31523B");
-        styleTopicChip(R.id.chipDebt, "#FFE1E5", "#F2A9B4", "#7B3640");
-        styleTopicChip(R.id.chipInvesting, "#E2ECFF", "#AFC5F7", "#294A88");
-    }
-
     private void updateTopicChipStyle() {
+        if (chipGroupTopics == null || !isAdded()) return;
         styleTopicChip(R.id.chipBudgeting, "#FFF0C9", "#F2C15E", "#7A4D09");
         styleTopicChip(R.id.chipSaving, "#E2F5DA", "#A7D99B", "#31523B");
         styleTopicChip(R.id.chipDebt, "#FFE1E5", "#F2A9B4", "#7B3640");
@@ -540,16 +422,14 @@ public class CommunityFeedFragment extends Fragment {
 
     private void styleTopicChip(int chipId, String selectedBackgroundColor, String selectedStrokeColor, String selectedTextColor) {
         Chip chip = chipGroupTopics.findViewById(chipId);
-        if (chip == null) {
-            return;
-        }
+        if (chip == null) return;
         boolean checked = chip.isChecked();
         int backgroundColor = checked
-                ? android.graphics.Color.parseColor(selectedBackgroundColor)
+                ? Color.parseColor(selectedBackgroundColor)
                 : ContextCompat.getColor(requireContext(), R.color.bg_main);
-        int strokeColor = android.graphics.Color.parseColor(checked ? selectedStrokeColor : "#E8DCCB");
+        int strokeColor = Color.parseColor(checked ? selectedStrokeColor : "#E8DCCB");
         int textColor = checked
-                ? android.graphics.Color.parseColor(selectedTextColor)
+                ? Color.parseColor(selectedTextColor)
                 : ContextCompat.getColor(requireContext(), R.color.brand_primary);
         chip.setCheckedIconVisible(false);
         chip.setChipBackgroundColor(ColorStateList.valueOf(backgroundColor));
@@ -557,120 +437,311 @@ public class CommunityFeedFragment extends Fragment {
         chip.setTextColor(textColor);
     }
 
-    private Set<String> hashtagsForCheckedIds(List<Integer> checkedIds) {
-        Set<String> hashtags = new LinkedHashSet<>();
-        if (checkedIds == null) {
-            return hashtags;
-        }
-        for (Integer checkedId : checkedIds) {
-            if (checkedId != null) {
-                hashtags.add(hashtagForTopic(checkedId));
+    private String hashtagForTopic(int checkedId) {
+        if (checkedId == R.id.chipSaving) return "#Saving";
+        if (checkedId == R.id.chipDebt) return "#Debt";
+        if (checkedId == R.id.chipInvesting) return "#Investing";
+        return "#Budget";
+    }
+
+    private boolean isTopicHashtag(String tag) {
+        return "#Budget".equals(tag)
+                || "#Saving".equals(tag)
+                || "#Debt".equals(tag)
+                || "#Investing".equals(tag);
+    }
+
+    private void syncSelectedHashtagsFromEditor(String text) {
+        if (chipGroupTopics == null || text == null) return;
+        Matcher matcher = Pattern.compile("#[A-Za-z0-9_]+").matcher(text);
+        boolean changed = false;
+        while (matcher.find()) {
+            String tag = matcher.group();
+            if (isTopicHashtag(tag) && !selectedTopicHashtags.contains(tag)) {
+                selectedTopicHashtags.add(tag);
+                changed = true;
             }
         }
-        return hashtags;
+        if (changed) {
+            syncingHashtags = true;
+            try {
+                setTopicChipChecked(R.id.chipBudgeting, selectedTopicHashtags.contains("#Budget"));
+                setTopicChipChecked(R.id.chipSaving, selectedTopicHashtags.contains("#Saving"));
+                setTopicChipChecked(R.id.chipDebt, selectedTopicHashtags.contains("#Debt"));
+                setTopicChipChecked(R.id.chipInvesting, selectedTopicHashtags.contains("#Investing"));
+            } finally {
+                syncingHashtags = false;
+            }
+            updateTopicChipStyle();
+        }
     }
 
-    private String hashtagForTopic(int checkedId) {
-        if (checkedId == R.id.chipSaving) {
-            return "#TietKiem";
-        } else if (checkedId == R.id.chipDebt) {
-            return "#No";
-        } else if (checkedId == R.id.chipInvesting) {
-            return "#DauTu";
+    private void setTopicChipChecked(int chipId, boolean checked) {
+        if (chipGroupTopics == null) return;
+        Chip chip = chipGroupTopics.findViewById(chipId);
+        if (chip != null && chip.isChecked() != checked) {
+            chip.setChecked(checked);
         }
-        return "#NganSach";
     }
 
-    private void syncTopicHashtags(Set<String> nextHashtags) {
-        String current = editPostContent.getText().toString();
-        for (String hashtag : selectedTopicHashtags) {
-            current = removeHashtagToken(current, hashtag);
-        }
+    private void syncHashtagsInEditor() {
+        if (editPostContent == null) return;
+        syncingHashtags = true;
+        try {
+            String text = editPostContent.getText().toString();
+            int cursor = editPostContent.getSelectionStart();
 
-        String next = current.replaceAll("\\s+$", "");
-        if (!nextHashtags.isEmpty()) {
-            String hashtagLine = String.join(" ", nextHashtags);
-            next = next.isEmpty() ? hashtagLine : next + "\n" + hashtagLine;
-        }
+            Matcher matcher = Pattern.compile("(?<!\\S)#(?:Budget|Saving|Debt|Investing)(?![A-Za-z0-9_])\\s*").matcher(text);
+            StringBuffer buffer = new StringBuffer();
+            while (matcher.find()) {
+                String tag = matcher.group().trim();
+                if (selectedTopicHashtags.contains(tag)) {
+                    matcher.appendReplacement(buffer, Matcher.quoteReplacement(matcher.group()));
+                } else {
+                    matcher.appendReplacement(buffer, "");
+                }
+            }
+            matcher.appendTail(buffer);
+            text = buffer.toString().replaceAll("[ \\t]{2,}", " ").trim();
 
-        editPostContent.setText(next);
-        editPostContent.setSelection(editPostContent.length());
-        selectedTopicHashtags.clear();
-        selectedTopicHashtags.addAll(nextHashtags);
-        updateSubmitState();
+            for (String tag : selectedTopicHashtags) {
+                if (!Pattern.compile("(?<!\\S)" + Pattern.quote(tag) + "(?![A-Za-z0-9_])").matcher(text).find()) {
+                    if (text.length() > 0 && !text.endsWith(" ")) {
+                        text += " ";
+                    }
+                    text += tag;
+                }
+            }
+
+            editPostContent.setText(text);
+            editPostContent.setSelection(Math.min(Math.max(cursor, 0), editPostContent.getText().length()));
+        } finally {
+            syncingHashtags = false;
+        }
     }
 
-    private String removeHashtagToken(String text, String hashtag) {
-        String next = text
-                .replace(hashtag + " ", "")
-                .replace(" " + hashtag, "")
-                .replace("\n" + hashtag, "\n")
-                .replace(hashtag, "");
-        return next
-                .replaceAll("[ \\t]+\\n", "\n")
-                .replaceAll("\\n{3,}", "\n\n");
+    private String audienceLabel() {
+        switch (selectedAudience) {
+            case "Friends": return "Friends";
+            case "Private": return "Only Me";
+            default: return "Everyone";
+        }
     }
 
     private void applyHashtagStyle(Editable editable) {
-        if (applyingHashtagStyle || editable == null) {
-            return;
-        }
+        if (applyingHashtagStyle || editable == null) return;
         applyingHashtagStyle = true;
         ForegroundColorSpan[] existing = editable.getSpans(0, editable.length(), ForegroundColorSpan.class);
-        for (ForegroundColorSpan span : existing) {
-            editable.removeSpan(span);
-        }
+        for (ForegroundColorSpan span : existing) editable.removeSpan(span);
 
         Matcher matcher = Pattern.compile("#[A-Za-z0-9_]+").matcher(editable.toString());
         while (matcher.find()) {
-            String hashtag = editable.subSequence(matcher.start(), matcher.end()).toString();
-            editable.setSpan(
-                    new ForegroundColorSpan(colorForHashtag(hashtag)),
-                    matcher.start(),
-                    matcher.end(),
-                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-            );
+            String hashtag = editable.toString().substring(matcher.start(), matcher.end());
+            editable.setSpan(new ForegroundColorSpan(colorForHashtag(hashtag)),
+                    matcher.start(), matcher.end(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
         applyingHashtagStyle = false;
     }
 
     private int colorForHashtag(String hashtag) {
-        if ("#TietKiem".equals(hashtag)) {
-            return android.graphics.Color.parseColor("#74A982");
+        String lower = hashtag == null ? "" : hashtag.toLowerCase(Locale.US);
+        if (lower.equals("#budget") || lower.equals("#budgeting")) {
+            return Color.parseColor("#D9A43A");
         }
-        if ("#No".equals(hashtag)) {
-            return android.graphics.Color.parseColor("#D98782");
+        if (lower.equals("#saving") || lower.equals("#savings") || lower.equals("#save")) {
+            return Color.parseColor("#6FBF73");
         }
-        if ("#DauTu".equals(hashtag)) {
-            return android.graphics.Color.parseColor("#8794DB");
+        if (lower.equals("#debt") || lower.equals("#debtfree")) {
+            return Color.parseColor("#E7808E");
         }
-        return android.graphics.Color.parseColor("#D29A6F");
+        if (lower.equals("#investing") || lower.equals("#investment") || lower.equals("#invest")) {
+            return Color.parseColor("#7FA2F2");
+        }
+        return Color.parseColor("#1A237E");
+    }
+
+    private void clearSelectedImage() {
+        selectedImageUri = null;
+        if (imgPostPreview != null) imgPostPreview.setImageDrawable(null);
+        if (imagePreviewContainer != null) imagePreviewContainer.setVisibility(View.GONE);
+        updateSubmitState();
+    }
+
+    private void submitPost() {
+        if (editPostContent == null || !isAdded()) return;
+        String content = editPostContent.getText().toString().trim();
+        
+        if (!selectedTopicHashtags.isEmpty()) {
+            StringBuilder sb = new StringBuilder(content);
+            for (String tag : selectedTopicHashtags) {
+                if (!content.contains(tag)) {
+                    if (sb.length() > 0) sb.append(" ");
+                    sb.append(tag);
+                }
+            }
+            content = sb.toString().trim();
+        }
+
+        String milestoneData = (milestoneMode && generatedMilestoneJson != null) ? generatedMilestoneJson : null;
+        String type = milestoneData != null ? "MILESTONE_POST" : "USER_POST";
+        String audienceParam = "FRIENDS";
+        if ("Public".equals(selectedAudience)) audienceParam = "PUBLIC";
+        else if ("Private".equals(selectedAudience) || "Only Me".equals(selectedAudience)) audienceParam = "PRIVATE";
+
+        setPosting(true);
+        final String finalContent = content;
+        final String finalAudience = audienceParam;
+        final String finalMilestoneData = milestoneData;
+        final String finalType = type;
+
+        if (selectedImageUri != null) {
+            File imageFile = getFileFromUri(selectedImageUri);
+            if (imageFile == null) { setPosting(false); return; }
+
+            UploadNotificationHelper notif = new UploadNotificationHelper(requireContext());
+            com.example.cashify.utils.CloudinaryHelper.uploadImage(imageFile, new com.example.cashify.utils.CloudinaryHelper.UploadCallback() {
+                @Override public void onProgress(int percent) { notif.update(percent); }
+                @Override public void onSuccess(String imageUrl) {
+                    notif.done();
+                    if (isAdded() && getActivity() != null) {
+                        getActivity().runOnUiThread(() -> callBackendToCreatePost(finalContent, finalType, imageUrl, finalMilestoneData, finalAudience));
+                    }
+                }
+                @Override public void onFailure(String error) {
+                    notif.error();
+                    if (isAdded() && getActivity() != null) {
+                        getActivity().runOnUiThread(() -> setPosting(false));
+                    }
+                }
+            });
+        } else {
+            callBackendToCreatePost(finalContent, finalType, "", finalMilestoneData, finalAudience);
+        }
+    }
+
+    private void callBackendToCreatePost(String content, String type, String imageUrl, String milestoneData, String audienceParam) {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) { setPosting(false); return; }
+
+        user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
+            String token = "Bearer " + getTokenResult.getToken();
+            ApiService apiService = ApiClient.getClient().create(ApiService.class);
+            ApiService.CreatePostRequest request = new ApiService.CreatePostRequest(content, type, imageUrl, milestoneData, audienceParam);
+
+            apiService.createPost(token, request).enqueue(new retrofit2.Callback<Object>() {
+                @Override
+                public void onResponse(@NonNull retrofit2.Call<Object> call, @NonNull retrofit2.Response<Object> response) {
+                    if (!isAdded() || getActivity() == null) return;
+                    getActivity().runOnUiThread(() -> {
+                        setPosting(false);
+                        if (response.isSuccessful()) {
+                            Toast.makeText(getContext(), "Post created!", Toast.LENGTH_SHORT).show();
+                            resetComposer();
+                            navigateBack();
+                        } else {
+                            Toast.makeText(getContext(), "Error: " + response.code(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+                @Override public void onFailure(@NonNull retrofit2.Call<Object> call, @NonNull Throwable t) {
+                    if (!isAdded() || getActivity() == null) return;
+                    getActivity().runOnUiThread(() -> {
+                        setPosting(false);
+                        Toast.makeText(getContext(), "Network error.", Toast.LENGTH_SHORT).show();
+                    });
+                }
+            });
+        });
+    }
+
+    private void setPosting(boolean posting) {
+        if (progressPosting != null) progressPosting.setVisibility(posting ? View.VISIBLE : View.GONE);
+        if (btnSubmitPost != null) btnSubmitPost.setEnabled(!posting);
+        if (editPostContent != null) editPostContent.setEnabled(!posting);
+    }
+
+    private void updateSubmitState() {
+        if (editPostContent == null || btnSubmitPost == null) return;
+        boolean hasContent = editPostContent.getText().toString().trim().length() > 0;
+        boolean hasMilestone = milestoneMode && generatedMilestoneJson != null;
+        boolean canSubmit = hasContent || selectedImageUri != null || hasMilestone;
+        btnSubmitPost.setEnabled(canSubmit);
+        btnSubmitPost.setAlpha(canSubmit ? 1f : 0.55f);
+    }
+
+    private void navigateBack() {
+        if (!isAdded()) return;
+        NavController navController = NavHostFragment.findNavController(this);
+        if (!navController.popBackStack()) {
+            if (getActivity() != null) getActivity().getOnBackPressedDispatcher().onBackPressed();
+        }
+    }
+
+    private void bindCurrentUserProfile(DocumentSnapshot doc, TextView txtComposerName) {
+        if (doc == null || !doc.exists()) return;
+        String displayName = cleanDisplayName(doc.getString("displayName"));
+        String username = cleanDisplayName(doc.getString("username"));
+        if (txtComposerName != null) {
+            txtComposerName.setText(!"User".equals(displayName) ? displayName : username);
+        }
+        ImageHelper.loadAvatar(doc.getString("avatarUrl"), imgComposerAvatar, firstNonEmpty(displayName, username, doc.getId()));
+    }
+
+    private String cleanDisplayName(String value) {
+        if (value == null || value.trim().isEmpty() || value.contains("@")) return "User";
+        return value.trim();
+    }
+
+    private String firstNonEmpty(String... values) {
+        for (String v : values) if (v != null && !v.trim().isEmpty()) return v.trim();
+        return "";
+    }
+
+    private long getFileSizeFromUri(Uri uri) {
+        if (!isAdded()) return 0;
+        try (android.database.Cursor cursor = requireContext().getContentResolver().query(uri, new String[]{android.provider.OpenableColumns.SIZE}, null, null, null)) {
+            if (cursor != null && cursor.moveToFirst()) return cursor.getLong(0);
+        } catch (Exception e) { return 0; }
+        return 0;
+    }
+
+    private File getFileFromUri(Uri uri) {
+        if (!isAdded()) return null;
+        try {
+            java.io.InputStream inputStream = requireContext().getContentResolver().openInputStream(uri);
+            if (inputStream == null) return null;
+            File tempFile = new File(requireContext().getCacheDir(), "upload_" + System.currentTimeMillis() + ".jpg");
+            java.io.OutputStream outputStream = new java.io.FileOutputStream(tempFile);
+            byte[] buffer = new byte[1024];
+            int length;
+            while ((length = inputStream.read(buffer)) > 0) outputStream.write(buffer, 0, length);
+            outputStream.close(); inputStream.close();
+            return tempFile;
+        } catch (Exception e) { return null; }
+    }
+
+    private void resetComposer() {
+        if (editPostContent != null) editPostContent.setText("");
+        clearSelectedImage();
+        generatedMilestoneJson = null;
+        if (milestoneMode) setMilestoneMode(false);
+        selectedTopicHashtags.clear();
+        if (chipGroupTopics != null) chipGroupTopics.clearCheck();
     }
 
     private void updateCategoryTiles() {
-        updateCategoryTile(actionMilestone, "Milestone", R.drawable.bg_category_tile_milestone,
-                "#4B2A11", "#8A6237");
-        updateCategoryTile(actionThoughts, "Thoughts", R.drawable.bg_category_tile_thoughts,
-                "#5A3422", "#B07D62");
-        updateCategoryTile(actionAnalysis, "Analysis", R.drawable.bg_category_tile_analysis,
-                "#3E260F", "#8A6237");
-        updateCategoryTile(actionShare, "Share", R.drawable.bg_category_tile_share,
-                "#5C3920", "#D4A373");
+        if (!isAdded()) return;
+        updateCategoryTile(actionMilestone, "Milestone", R.drawable.bg_category_tile_milestone, "#4B2A11", "#8A6237");
+        updateCategoryTile(actionThoughts, "Thoughts", R.drawable.bg_category_tile_thoughts, "#5A3422", "#B07D62");
+        updateCategoryTile(actionAnalysis, "Analysis", R.drawable.bg_category_tile_analysis, "#3E260F", "#8A6237");
+        updateCategoryTile(actionShare, "Share", R.drawable.bg_category_tile_share, "#5C3920", "#D4A373");
     }
 
     private void updateCategoryDesign() {
-        if (panelCategoryMode == null) {
-            return;
-        }
+        if (panelCategoryMode == null || !isAdded()) return;
 
-        int panelBg;
-        int iconRes;
-        String kicker;
-        String title;
-        String description;
-        String prompt;
-        String composerHint;
-        String submitText;
+        int panelBg, iconRes;
+        String kicker, title, description, prompt, composerHint, submitText;
 
         switch (selectedCategoryKey) {
             case "milestone":
@@ -717,402 +788,25 @@ public class CommunityFeedFragment extends Fragment {
         }
 
         panelCategoryMode.setBackgroundResource(panelBg);
-        imgModeIcon.setImageResource(iconRes);
-        txtModeKicker.setText(kicker);
-        txtModeTitle.setText(title);
-        txtModeDescription.setText(description);
-        txtModePrompt.setText(prompt);
-        editPostContent.setHint(composerHint);
-        txtComposerHint.setText(prompt);
-        btnSubmitPost.setText(submitText);
+        if (imgModeIcon != null) imgModeIcon.setImageResource(iconRes);
+        if (txtModeKicker != null) txtModeKicker.setText(kicker);
+        if (txtModeTitle != null) txtModeTitle.setText(title);
+        if (txtModeDescription != null) txtModeDescription.setText(description);
+        if (txtModePrompt != null) txtModePrompt.setText(prompt);
+        if (editPostContent != null) editPostContent.setHint(composerHint);
+        if (txtComposerHint != null) txtComposerHint.setText(prompt);
+        if (btnSubmitPost != null) btnSubmitPost.setText(submitText);
     }
 
     private void updateCategoryTile(TextView tile, String category, int normalBg,
                                     String normalTextColor, String normalIconColor) {
+        if (tile == null) return;
         boolean selected = category.equals(selectedCategory);
         tile.setBackgroundResource(selected ? R.drawable.bg_category_tile_selected : normalBg);
         tile.setText(selected ? "✓ " + category : category);
-        tile.setTextColor(android.graphics.Color.parseColor(selected ? "#FFFFFFFF" : normalTextColor));
-        tile.setCompoundDrawableTintList(ColorStateList.valueOf(
-                android.graphics.Color.parseColor(selected ? "#FFFFFFFF" : normalIconColor)));
+        tile.setTextColor(Color.parseColor(selected ? "#FFFFFFFF" : normalTextColor));
+        TextViewCompat.setCompoundDrawableTintList(tile, ColorStateList.valueOf(
+                Color.parseColor(selected ? "#FFFFFFFF" : normalIconColor)));
     }
 
-    private void clearSelectedImage() {
-        selectedImageUri = null;
-        imgPostPreview.setImageDrawable(null);
-        imagePreviewContainer.setVisibility(View.GONE);
-        txtComposerHint.setText("Image removed.");
-        updateSubmitState();
-    }
-
-    // =========================================================================
-    // XỬ LÝ ĐĂNG BÀI: TÍCH HỢP CLOUDINARY & C# BACKEND
-    // =========================================================================
-    private void submitPost() {
-        String content = editPostContent.getText().toString().trim();
-        String type = milestoneMode ? "MILESTONE_POST" : "USER_POST";
-        String milestoneData = generatedMilestoneJson;
-        String editPostId = getArguments() != null ? getArguments().getString("edit_post_id") : null;
-
-        // 1. VALIDATE LÊN ĐẦU: Chặn ngay nếu không có chữ/ảnh/cột mốc (Dù là tạo mới hay sửa bài)
-        if (content.isEmpty() && selectedImageUri == null && milestoneData == null) {
-            Toast.makeText(requireContext(), "Please write something, add an image, or add a milestone first.", Toast.LENGTH_SHORT).show();
-            editPostContent.requestFocus();
-            InputMethodManager imm = (InputMethodManager) requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);
-            if (imm != null) {
-                imm.showSoftInput(editPostContent, InputMethodManager.SHOW_IMPLICIT);
-            }
-            return;
-        }
-
-        String audienceParam = "FRIENDS"; // Mặc định
-        if ("Public".equals(selectedAudience)) {
-            audienceParam = "PUBLIC";
-        } else if ("Only Me".equals(selectedAudience)) {
-            audienceParam = "PRIVATE";
-        }
-
-        setPosting(true);
-
-        final String finalContentToSubmit = content;
-        final String finalAudienceToSubmit = audienceParam;
-
-        // ==========================================
-        // LUỒNG 1: NẾU LÀ CHẾ ĐỘ SỬA BÀI
-        // ==========================================
-        if (editPostId != null) {
-            FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-            if (user == null) { setPosting(false); return; }
-
-            user.getIdToken(true).addOnSuccessListener(tokenResult -> {
-                String token = "Bearer " + tokenResult.getToken();
-                com.example.cashify.utils.ApiService.EditPostRequest req = new com.example.cashify.utils.ApiService.EditPostRequest();
-                req.PostId = editPostId;
-
-                // Dùng biến final ở đây
-                req.NewContent = finalContentToSubmit;
-                req.Audience = finalAudienceToSubmit;
-
-                com.example.cashify.utils.ApiClient.getClient().create(com.example.cashify.utils.ApiService.class)
-                        .editPost(token, req).enqueue(new retrofit2.Callback<Object>() {
-                            @Override public void onResponse(@NonNull retrofit2.Call<Object> call, @NonNull retrofit2.Response<Object> response) {
-                                setPosting(false);
-                                if (response.isSuccessful()) {
-                                    Toast.makeText(requireContext(), "Post updated successfully!", Toast.LENGTH_SHORT).show();
-                                    navigateBack();
-                                } else Toast.makeText(requireContext(), "Server error!", Toast.LENGTH_SHORT).show();
-                            }
-                            @Override public void onFailure(@NonNull retrofit2.Call<Object> call, @NonNull Throwable t) {
-                                setPosting(false);
-                            }
-                        });
-            });
-            return;
-        }
-
-        // ==========================================
-        // LUỒNG 2: NẾU LÀ TẠO BÀI ĐĂNG MỚI
-        // ==========================================
-        if (selectedImageUri != null) {
-            txtComposerHint.setText("Uploading image...");
-            File imageFile = getFileFromUri(selectedImageUri);
-
-            if (imageFile == null) {
-                setPosting(false);
-                Toast.makeText(requireContext(), "Could not read the image file!", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            UploadNotificationHelper notif = new UploadNotificationHelper(requireContext());
-
-            com.example.cashify.utils.CloudinaryHelper.uploadImage(imageFile, new com.example.cashify.utils.CloudinaryHelper.UploadCallback() {
-                @Override
-                public void onProgress(int percent) {
-                    notif.update(percent); // hiện trên status bar, không đụng UI fragment
-                }
-
-                @Override
-                public void onSuccess(String imageUrl) {
-                    notif.done();
-                    requireActivity().runOnUiThread(() ->
-                            callBackendToCreatePost(finalContentToSubmit, type, imageUrl, milestoneData, finalAudienceToSubmit)
-                    );
-                }
-
-                @Override
-                public void onFailure(String error) {
-                    notif.error();
-                    requireActivity().runOnUiThread(() -> {
-                        setPosting(false);
-
-                        boolean isFileTooLarge = error.contains("10MB");
-
-                        DialogHelper.showCustomDialog(
-                                requireContext(),
-                                isFileTooLarge ? "Image too large" : "Upload failed",
-                                isFileTooLarge
-                                        ? "The selected image exceeds 10MB. Please choose a smaller one and try again."
-                                        : error,
-                                isFileTooLarge ? "Choose another image" : "Retry",
-                                "Cancel",
-                                DialogHelper.DialogType.DANGER,
-                                true,
-                                () -> {
-                                    if (isFileTooLarge) {
-                                        pickImageLauncher.launch("image/*"); // Mở picker lại
-                                    } else {
-                                        submitPost(); // Thử upload lại
-                                    }
-                                },
-                                null
-                        );
-                    });
-                }
-            });
-        } else {
-            // Dùng biến final ở đây
-            callBackendToCreatePost(finalContentToSubmit, type, "", milestoneData, finalAudienceToSubmit);
-        }
-    }
-
-    // Nhớ update lại hàm callBackendToCreatePost để nó nhận tham số Audience nha sếp
-    private void callBackendToCreatePost(String content, String type, String imageUrl, String milestoneData, String audienceParam) {
-        requireActivity().runOnUiThread(() -> txtComposerHint.setText("Saving post..."));
-
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user == null) {
-            requireActivity().runOnUiThread(() -> {
-                setPosting(false);
-                Toast.makeText(requireContext(), "Not signed in!", Toast.LENGTH_SHORT).show();
-            });
-            return;
-        }
-
-        user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
-            String token = "Bearer " + getTokenResult.getToken();
-            com.example.cashify.utils.ApiService apiService = com.example.cashify.utils.ApiClient.getClient().create(com.example.cashify.utils.ApiService.class);
-
-            com.example.cashify.utils.ApiService.CreatePostRequest request =
-                    new com.example.cashify.utils.ApiService.CreatePostRequest(content, type, imageUrl, milestoneData, audienceParam);
-
-            apiService.createPost(token, request).enqueue(new retrofit2.Callback<Object>() {
-                @Override
-                public void onResponse(@NonNull retrofit2.Call<Object> call, @NonNull retrofit2.Response<Object> response) {
-                    requireActivity().runOnUiThread(() -> {
-                        setPosting(false);
-                        if (response.isSuccessful()) {
-                            Toast.makeText(requireContext(), "Post created successfully!", Toast.LENGTH_SHORT).show();
-                            resetComposer();
-                            navigateBack();
-                        } else {
-                            Toast.makeText(requireContext(), "Failed to create post: " + response.code(), Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                }
-
-                @Override
-                public void onFailure(@NonNull retrofit2.Call<Object> call, @NonNull Throwable t) {
-                    requireActivity().runOnUiThread(() -> {
-                        setPosting(false);
-                        Toast.makeText(requireContext(), "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-                    });
-                }
-            });
-        }).addOnFailureListener(e -> {
-            requireActivity().runOnUiThread(() -> {
-                setPosting(false);
-                Toast.makeText(requireContext(), "Firebase authentication failed", Toast.LENGTH_SHORT).show();
-            });
-        });
-    }
-
-    // Hàm gọi C# API để lưu Post vào Firestore
-    private void callBackendToCreatePost(String content, String type, String imageUrl, String milestoneData) {
-        requireActivity().runOnUiThread(() -> txtComposerHint.setText("Saving post..."));
-
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user == null) {
-            requireActivity().runOnUiThread(() -> {
-                setPosting(false);
-                Toast.makeText(requireContext(), "Not signed in!", Toast.LENGTH_SHORT).show();
-            });
-            return;
-        }
-
-        user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
-            String token = "Bearer " + getTokenResult.getToken();
-            com.example.cashify.utils.ApiService apiService = com.example.cashify.utils.ApiClient.getClient().create(com.example.cashify.utils.ApiService.class);
-
-            String audienceParam = "FRIENDS"; // Mặc định là Bạn bè
-            if ("Public".equals(selectedAudience)) {
-                audienceParam = "PUBLIC";
-            } else if ("Only Me".equals(selectedAudience)) {
-                audienceParam = "PRIVATE";
-            }
-
-            // Khởi tạo Request Model (Nhớ đảm bảo ApiService đã có class này)
-            com.example.cashify.utils.ApiService.CreatePostRequest request =
-                    new com.example.cashify.utils.ApiService.CreatePostRequest(content, type, imageUrl, milestoneData,audienceParam);
-
-            apiService.createPost(token, request).enqueue(new retrofit2.Callback<Object>() {
-                @Override
-                public void onResponse(@NonNull retrofit2.Call<Object> call, @NonNull retrofit2.Response<Object> response) {
-                    requireActivity().runOnUiThread(() -> {
-                        setPosting(false);
-                        if (response.isSuccessful()) {
-                            Toast.makeText(requireContext(), "Post created successfully!", Toast.LENGTH_SHORT).show();
-                            resetComposer();
-                            navigateBack(); // Quay lại trang Feed
-                        } else {
-                            Toast.makeText(requireContext(), "Failed to create post: " + response.code(), Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                }
-
-                @Override
-                public void onFailure(@NonNull retrofit2.Call<Object> call, @NonNull Throwable t) {
-                    requireActivity().runOnUiThread(() -> {
-                        setPosting(false);
-                        Toast.makeText(requireContext(), "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-                    });
-                }
-            });
-        }).addOnFailureListener(e -> {
-            requireActivity().runOnUiThread(() -> {
-                setPosting(false);
-                Toast.makeText(requireContext(), "Firebase authentication failed", Toast.LENGTH_SHORT).show();
-            });
-        });
-    }
-
-    // Hàm phụ trợ: Chuyển Uri của Android thành File vật lý để OkHttp (CloudinaryHelper) đọc được
-    private File getFileFromUri(Uri uri) {
-        try {
-            java.io.InputStream inputStream = requireContext().getContentResolver().openInputStream(uri);
-            if (inputStream == null) return null;
-
-            File tempFile = new File(requireContext().getCacheDir(), "upload_img_" + System.currentTimeMillis() + ".jpg");
-            java.io.OutputStream outputStream = new java.io.FileOutputStream(tempFile);
-            byte[] buffer = new byte[1024];
-            int length;
-            while ((length = inputStream.read(buffer)) > 0) {
-                outputStream.write(buffer, 0, length);
-            }
-            outputStream.close();
-            inputStream.close();
-            return tempFile;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    private long getFileSizeFromUri(Uri uri) {
-        try (android.database.Cursor cursor = requireContext().getContentResolver().query(
-                uri, new String[]{android.provider.OpenableColumns.SIZE}, null, null, null)) {
-            if (cursor != null && cursor.moveToFirst()) {
-                int sizeIndex = cursor.getColumnIndex(android.provider.OpenableColumns.SIZE);
-                if (sizeIndex != -1 && !cursor.isNull(sizeIndex)) {
-                    return cursor.getLong(sizeIndex);
-                }
-            }
-        } catch (Exception e) {
-            return 0; // Không đọc được thì cho qua, CloudinaryHelper sẽ chặn sau
-        }
-        return 0;
-    }
-
-    private String getSelectedTopic() {
-        int checkedId = chipGroupTopics.getCheckedChipId();
-        if (checkedId == View.NO_ID) {
-            return "Budget";
-        }
-        Chip chip = chipGroupTopics.findViewById(checkedId);
-        return chip == null ? "Budget" : chip.getText().toString();
-    }
-
-    private void resetComposer() {
-        editPostContent.setText("");
-        clearSelectedImage();
-        if (milestoneMode) {
-            setMilestoneMode(false);
-        }
-        selectedTopicHashtags.clear();
-        chipGroupTopics.clearCheck();
-        txtComposerHint.setText("Ready for your next post.");
-    }
-
-    private void setPosting(boolean posting) {
-        progressPosting.setVisibility(posting ? View.VISIBLE : View.GONE);
-        btnSubmitPost.setEnabled(!posting);
-        actionPhoto.setEnabled(!posting);
-        actionMilestone.setEnabled(!posting);
-        btnAudience.setEnabled(!posting);
-        editPostContent.setEnabled(!posting);
-        btnSubmitPost.setText(posting ? "Posting..." : publishTextForCategory());
-    }
-
-    private String publishTextForCategory() {
-        switch (selectedCategoryKey) {
-            case "milestone":
-                return "Post Milestone";
-            case "analysis":
-                return "Post Analysis";
-            case "share":
-                return "Post Share";
-            case "thoughts":
-            default:
-                return "Post Thought";
-        }
-    }
-
-    private void updateSubmitState() {
-        boolean hasText = editPostContent != null && editPostContent.getText().toString().trim().length() > 0;
-        boolean hasImage = selectedImageUri != null;
-        boolean hasMilestone = generatedMilestoneJson != null; // Kiểm tra có Milestone không
-
-        // SỬA: Chỉ cần 1 trong 3 cái có dữ liệu là nút Đăng sẽ sáng lên
-        boolean canSubmit = hasText || hasImage || hasMilestone;
-
-        btnSubmitPost.setEnabled(canSubmit);
-        btnSubmitPost.setAlpha(canSubmit ? 1f : 0.55f);
-        int count = editPostContent == null ? 0 : editPostContent.length();
-        int color = count > 250 ? R.color.status_red : R.color.item_description;
-        txtComposerCount.setTextColor(ContextCompat.getColor(requireContext(), color));
-    }
-
-    private void navigateBack() {
-        NavController navController = NavHostFragment.findNavController(this);
-        if (!navController.popBackStack()) {
-            requireActivity().getOnBackPressedDispatcher().onBackPressed();
-        }
-    }
-
-    private void bindCurrentUserProfile(DocumentSnapshot doc, TextView txtComposerName) {
-        if (doc == null || !doc.exists()) {
-            return;
-        }
-        String displayName = cleanDisplayName(doc.getString("displayName"));
-        String username = cleanDisplayName(doc.getString("username"));
-        txtComposerName.setText(!displayName.equals("Người dùng Cashify") ? displayName : username);
-
-        String avatarUrl = doc.getString("avatarUrl");
-        ImageHelper.loadAvatar(avatarUrl, imgComposerAvatar,
-                firstNonEmpty(displayName, username, doc.getId()));
-    }
-
-    private String cleanDisplayName(String value) {
-        if (value == null || value.trim().isEmpty() || value.contains("@")) {
-            return "Người dùng Cashify";
-        }
-        return value.trim();
-    }
-
-    private String firstNonEmpty(String... values) {
-        if (values == null) return "";
-        for (String value : values) {
-            if (value != null && !value.trim().isEmpty()) return value.trim();
-        }
-        return "";
-    }
 }

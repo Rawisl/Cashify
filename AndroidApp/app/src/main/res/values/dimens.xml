@@ -5,7 +5,7 @@
          center Add Transaction button size, and center button spring scale. -->
     <dimen name="bottom_nav_height">72dp</dimen>
     <dimen name="bottom_nav_horizontal_margin">15dp</dimen>
-    <dimen name="bottom_nav_workspace_horizontal_margin">20dp</dimen>
+    <dimen name="bottom_nav_workspace_horizontal_margin">15dp</dimen>
     <dimen name="bottom_nav_system_margin">20dp</dimen>
     <dimen name="bottom_nav_icon_size">26dp</dimen>
     <dimen name="bottom_nav_item_padding_top">0dp</dimen>
@@ -13,15 +13,15 @@
     <dimen name="bottom_nav_item_vertical_offset">10dp</dimen>
     <dimen name="bottom_nav_selected_icon_float_offset">5dp</dimen>
 
-    <dimen name="bottom_nav_social_height">64dp</dimen>
-    <dimen name="bottom_nav_social_horizontal_margin">20dp</dimen>
-    <dimen name="bottom_nav_social_icon_size">24dp</dimen>
-    <dimen name="bottom_nav_social_elevation">8dp</dimen>
+    <dimen name="bottom_nav_social_height">72dp</dimen>
+    <dimen name="bottom_nav_social_horizontal_margin">15dp</dimen>
+    <dimen name="bottom_nav_social_icon_size">26dp</dimen>
+    <dimen name="bottom_nav_social_elevation">10dp</dimen>
     <dimen name="bottom_nav_social_horizontal_padding">8dp</dimen>
-    <dimen name="bottom_nav_social_vertical_padding">6dp</dimen>
-    <dimen name="bottom_nav_social_item_min_height">52dp</dimen>
-    <dimen name="bottom_nav_social_item_padding_top">3dp</dimen>
-    <dimen name="bottom_nav_social_item_padding_bottom">2dp</dimen>
+    <dimen name="bottom_nav_social_vertical_padding">0dp</dimen>
+    <dimen name="bottom_nav_social_item_min_height">56dp</dimen>
+    <dimen name="bottom_nav_social_item_padding_top">0dp</dimen>
+    <dimen name="bottom_nav_social_item_padding_bottom">0dp</dimen>
     <dimen name="bottom_nav_social_label_top_margin">3dp</dimen>
     <fraction name="bottom_nav_social_inactive_alpha">78%</fraction>
 

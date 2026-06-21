@@ -3,26 +3,22 @@ package com.example.cashify.ui.workspace;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
-import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
-import androidx.navigation.NavController;
-import androidx.navigation.Navigation;
-import androidx.navigation.fragment.NavHostFragment;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
 import com.example.cashify.data.model.Category;
 import com.example.cashify.data.model.Transaction;
-import com.example.cashify.data.model.Workspace;
 import com.example.cashify.ui.transactions.TransactionViewModel;
 import com.example.cashify.utils.CurrencyFormatter;
+import com.example.cashify.utils.ImageHelper;
 import com.google.android.material.imageview.ShapeableImageView;
 import com.google.firebase.firestore.FirebaseFirestore;
 
@@ -40,36 +36,37 @@ public class WorkspaceTransactionAdapter extends RecyclerView.Adapter<RecyclerVi
     private final String workspaceId;
     private String currentUserId;
     private String ownerId;
-
-    // Đổi kiểu List thành HistoryItem để chứa được cả Header Ngày
     private List<TransactionViewModel.HistoryItem> items = new ArrayList<>();
 
-    // Bộ nhớ đệm (Cache) tốc độ cao
-    private final Map<String, String> userNameCache = new HashMap<>();
+    private final Map<String, CreatorProfile> creatorProfileCache = new HashMap<>();
     private final Map<String, Category> categoryCache = new HashMap<>();
-
     private final OnTransactionClickListener listener;
 
     public interface OnTransactionClickListener {
         void onClick(Transaction transaction);
     }
 
-    public WorkspaceTransactionAdapter(Context context, String workspaceId, String currentUserId, String ownerId, List<TransactionViewModel.HistoryItem> list, OnTransactionClickListener listener) {
+    public WorkspaceTransactionAdapter(
+            Context context,
+            String workspaceId,
+            String currentUserId,
+            String ownerId,
+            List<TransactionViewModel.HistoryItem> list,
+            OnTransactionClickListener listener
+    ) {
         this.context = context;
         this.workspaceId = workspaceId;
         this.currentUserId = currentUserId;
         this.ownerId = ownerId;
-        if(list != null) this.items = list;
+        if (list != null) this.items = list;
         this.listener = listener;
     }
 
-    // Hàm này giúp update Owner ngay lập tức khi quỹ đổi chủ
     public void setOwnerId(String ownerId) {
         this.ownerId = ownerId;
         notifyDataSetChanged();
     }
 
-    // Hàm set data mới từ ViewModel đổ xuống
     public void setHistoryData(List<TransactionViewModel.HistoryItem> newList) {
         this.items = newList != null ? newList : new ArrayList<>();
         notifyDataSetChanged();
@@ -86,149 +83,186 @@ public class WorkspaceTransactionAdapter extends RecyclerView.Adapter<RecyclerVi
         LayoutInflater inflater = LayoutInflater.from(context);
         if (viewType == TransactionViewModel.HistoryItem.TYPE_DATE_HEADER) {
             return new DateViewHolder(inflater.inflate(R.layout.item_date_header, parent, false));
-        } else {
-            return new TransactionViewHolder(inflater.inflate(R.layout.item_workspace_transaction, parent, false));
         }
+        return new TransactionViewHolder(inflater.inflate(R.layout.item_workspace_transaction, parent, false));
     }
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         TransactionViewModel.HistoryItem item = items.get(position);
         if (holder instanceof DateViewHolder) {
-            // =====================================
-            // XỬ LÝ GIAO DIỆN HEADER (NGÀY THÁNG)
-            // =====================================
-            DateViewHolder dHolder = (DateViewHolder) holder;
-            if (dHolder.tvDate != null) {
-                dHolder.tvDate.setText(item.getDate());
-            }
-        } else if (holder instanceof TransactionViewHolder) {
-            // =====================================
-            // XỬ LÝ GIAO DIỆN GIAO DỊCH (TRANSACTION)
-            // =====================================
-            TransactionViewHolder tHolder = (TransactionViewHolder) holder;
-            Transaction t = item.getTransaction();
+            DateViewHolder dateHolder = (DateViewHolder) holder;
+            dateHolder.tvDate.setText(item.getDate());
+            return;
+        }
 
-            if (t == null) return;
-            String bindKey = t.id != null ? t.id : String.valueOf(position);
-            tHolder.itemView.setTag(bindKey);
+        TransactionViewHolder transactionHolder = (TransactionViewHolder) holder;
+        Transaction transaction = item.getTransaction();
+        if (transaction == null) return;
 
-            // 1. FORMAT THỜI GIAN VÀ EMOJI THANH TOÁN
-            SimpleDateFormat sdf = new SimpleDateFormat("h:mm a", Locale.ENGLISH);
-            String timeStr = sdf.format(new Date(t.timestamp));
-            String paymentIcon;
-            if (t.paymentMethod == null) {
-                paymentIcon = "💵";
-            } else {
-                switch (t.paymentMethod) {
-                    case "Card": paymentIcon = "💳"; break;
-                    case "Bank": paymentIcon = "🏦"; break;
-                    default:     paymentIcon = "💵"; break;
-                }
-            }
+        String bindKey = transaction.id != null ? transaction.id : String.valueOf(position);
+        transactionHolder.itemView.setTag(bindKey);
 
-            // 2. XỬ LÝ SỐ TIỀN & MÀU CHỮ
-            if (t.type == 0) {
-                tHolder.tvAmount.setText(CurrencyFormatter.formatFullAmount(-t.amount));
-                tHolder.tvAmount.setTextColor(ContextCompat.getColor(context, R.color.status_red));
-            } else {
-                tHolder.tvAmount.setText("+" + CurrencyFormatter.formatFullAmount(t.amount));
-                tHolder.tvAmount.setTextColor(ContextCompat.getColor(context, R.color.status_green));
-            }
+        SimpleDateFormat timeFormat = new SimpleDateFormat("h:mm a", Locale.ENGLISH);
+        String timeText = timeFormat.format(new Date(transaction.timestamp));
+        String paymentMethod = transaction.paymentMethod == null || transaction.paymentMethod.trim().isEmpty()
+                ? "Cash"
+                : transaction.paymentMethod.trim();
 
-            // 3. LOAD TÊN NGƯỜI TẠO (TRÁNH LAG BẰNG CACHE)
-            if (t.userId != null) {
-                if (userNameCache.containsKey(t.userId)) {
-                    tHolder.tvCreatorName.setText("By: " + userNameCache.get(t.userId));
-                } else {
-                    tHolder.tvCreatorName.setText("Loading...");
-                    FirebaseFirestore.getInstance().collection("users").document(t.userId).get()
-                            .addOnSuccessListener(doc -> {
-                                if (!bindKey.equals(tHolder.itemView.getTag())) return;
-                                String name = doc.getString("displayName");
-                                if (name == null || name.isEmpty()) name = "Unknown Member";
-                                userNameCache.put(t.userId, name);
-                                tHolder.tvCreatorName.setText("By: " + name);
-                            });
-                }
-            } else {
-                tHolder.tvCreatorName.setText("By: Unknown");
-            }
+        bindAmount(transactionHolder, transaction);
+        bindCreator(transactionHolder, transaction, bindKey);
+        bindCategory(transactionHolder, transaction, bindKey, timeText, paymentMethod);
+        bindPermissions(holder.itemView, transaction);
+    }
 
-            // 4. LOAD CATEGORY (ICON, TÊN, MÀU SẮC)
-            if (t.firestoreCategoryId != null && workspaceId != null) {
-                if (categoryCache.containsKey(t.firestoreCategoryId)) {
-                    updateCategoryUI(tHolder, t, categoryCache.get(t.firestoreCategoryId), timeStr, paymentIcon);
-                } else {
-                    updateCategoryUI(tHolder, t, null, timeStr, paymentIcon);
-                    FirebaseFirestore.getInstance()
-                            .collection("workspaces").document(workspaceId)
-                            .collection("categories").document(t.firestoreCategoryId)
-                            .get()
-                            .addOnSuccessListener(doc -> {
-                                if (!bindKey.equals(tHolder.itemView.getTag())) return;
-                                Category cat = doc.toObject(Category.class);
-                                if (cat != null) {
-                                    categoryCache.put(t.firestoreCategoryId, cat);
-                                    updateCategoryUI(tHolder, t, cat, timeStr, paymentIcon);
-                                }
-                            });
-                }
-            } else {
-                updateCategoryUI(tHolder, t, null, timeStr, paymentIcon);
-            }
-
-            // 5. BẮT SỰ KIỆN CLICK KÈM PHÂN QUYỀN
-            // Logic: Mình tạo ra -> Được sửa. HOẶC Mình là Trưởng nhóm -> Được sửa hết.
-            boolean canEdit = (currentUserId != null && currentUserId.equals(t.userId))
-                    || (currentUserId != null && currentUserId.equals(ownerId));
-
-            // Làm mờ đi 1 xíu để phân biệt giao dịch nào mình không đụng được
-            holder.itemView.setAlpha(canEdit ? 1.0f : 0.6f);
-
-            holder.itemView.setOnClickListener(v -> {
-                if (canEdit) {
-                    if (listener != null) listener.onClick(t); // Mở màn hình Sửa/Xóa bình thường
-                } else {
-                    // Cảnh báo mượt mà thay vì báo lỗi
-                    android.widget.Toast.makeText(context, "Access denied! Only the creator or owner can edit this.", android.widget.Toast.LENGTH_SHORT).show();
-                }
-            });
+    private void bindAmount(TransactionViewHolder holder, Transaction transaction) {
+        if (transaction.type == 1) {
+            holder.tvAmount.setText("+" + CurrencyFormatter.formatCompactAmount(transaction.amount));
+            holder.tvAmount.setTextColor(ContextCompat.getColor(context, R.color.status_green));
+            holder.tvCreatorName.setText("Income");
+        } else {
+            holder.tvAmount.setText(CurrencyFormatter.formatCompactAmount(-transaction.amount));
+            holder.tvAmount.setTextColor(ContextCompat.getColor(context, R.color.status_red));
+            holder.tvCreatorName.setText("Expense");
         }
     }
 
-    // Hàm phụ trợ cập nhật giao diện Category
-    private void updateCategoryUI(TransactionViewHolder holder, Transaction t, Category cat, String timeStr, String paymentIcon) {
-        String catName = (cat != null) ? cat.name : "Unknown";
+    private void bindCreator(TransactionViewHolder holder, Transaction transaction, String bindKey) {
+        String signedAmount = transaction.type == 1
+                ? "+" + CurrencyFormatter.formatCompactAmount(transaction.amount)
+                : CurrencyFormatter.formatCompactAmount(-transaction.amount);
 
-        String title = (t.note != null && !t.note.isEmpty()) ? t.note : catName;
-        holder.tvMainTitle.setText(title);
+        if (transaction.userId == null || transaction.userId.trim().isEmpty()) {
+            bindCreatorProfile(holder, transaction, new CreatorProfile("Unknown Member", null), signedAmount);
+            return;
+        }
 
-        holder.tvSubtitle.setText(String.format("%s • %s • %s", catName, timeStr, paymentIcon));
+        CreatorProfile cachedProfile = creatorProfileCache.get(transaction.userId);
+        if (cachedProfile != null) {
+            bindCreatorProfile(holder, transaction, cachedProfile, signedAmount);
+            return;
+        }
 
-        if (cat != null) {
-            String iconName = cat.iconName != null ? cat.iconName : "";
-            int iconResId = context.getResources().getIdentifier(iconName, "drawable", context.getPackageName());
-            holder.ivCategoryIcon.setImageResource(iconResId != 0 ? iconResId : R.drawable.ic_food);
+        bindCreatorProfile(holder, transaction, CreatorProfile.loading(), signedAmount);
+        FirebaseFirestore.getInstance()
+                .collection("users")
+                .document(transaction.userId)
+                .get()
+                .addOnSuccessListener(doc -> {
+                    if (!bindKey.equals(holder.itemView.getTag())) return;
+                    String name = firstNonEmpty(doc.getString("displayName"), doc.getString("email"), "Unknown Member");
+                    String avatarUrl = doc.getString("avatarUrl");
+                    CreatorProfile profile = new CreatorProfile(name, avatarUrl);
+                    creatorProfileCache.put(transaction.userId, profile);
+                    bindCreatorProfile(holder, transaction, profile, signedAmount);
+                })
+                .addOnFailureListener(e -> {
+                    if (!bindKey.equals(holder.itemView.getTag())) return;
+                    bindCreatorProfile(holder, transaction, new CreatorProfile("Unknown Member", null), signedAmount);
+                });
+    }
 
-            try {
-                int originColor = Color.parseColor(cat.colorCode != null ? cat.colorCode : "#000000");
-                int pastelColor = Color.argb(51, Color.red(originColor), Color.green(originColor), Color.blue(originColor));
-                holder.ivCategoryIcon.setBackgroundTintList(ColorStateList.valueOf(pastelColor));
-                holder.ivCategoryIcon.setImageTintList(ColorStateList.valueOf(originColor));
-            } catch (Exception e) {
-                fallbackIconColor(holder, t.type);
-            }
-        } else {
+    private void bindCreatorProfile(
+            TransactionViewHolder holder,
+            Transaction transaction,
+            CreatorProfile profile,
+            String signedAmount
+    ) {
+        String action = transaction.type == 1 ? "added" : "spent";
+        holder.tvMainTitle.setText(profile.name + " " + action + " " + signedAmount);
+        ImageHelper.loadAvatar(profile.avatarUrl, holder.ivCreatorAvatar, profile.name);
+    }
+
+    private void bindCategory(
+            TransactionViewHolder holder,
+            Transaction transaction,
+            String bindKey,
+            String timeText,
+            String paymentMethod
+    ) {
+        if (transaction.firestoreCategoryId == null || workspaceId == null) {
+            updateCategoryUI(holder, transaction, null, timeText, paymentMethod);
+            return;
+        }
+
+        Category cachedCategory = categoryCache.get(transaction.firestoreCategoryId);
+        if (cachedCategory != null) {
+            updateCategoryUI(holder, transaction, cachedCategory, timeText, paymentMethod);
+            return;
+        }
+
+        updateCategoryUI(holder, transaction, null, timeText, paymentMethod);
+        FirebaseFirestore.getInstance()
+                .collection("workspaces")
+                .document(workspaceId)
+                .collection("categories")
+                .document(transaction.firestoreCategoryId)
+                .get()
+                .addOnSuccessListener(doc -> {
+                    if (!bindKey.equals(holder.itemView.getTag())) return;
+                    Category category = doc.toObject(Category.class);
+                    if (category == null) return;
+                    categoryCache.put(transaction.firestoreCategoryId, category);
+                    updateCategoryUI(holder, transaction, category, timeText, paymentMethod);
+                });
+    }
+
+    private void updateCategoryUI(
+            TransactionViewHolder holder,
+            Transaction transaction,
+            Category category,
+            String timeText,
+            String paymentMethod
+    ) {
+        String categoryName = category != null ? category.name : "Unknown";
+        String note = transaction.note != null && !transaction.note.trim().isEmpty()
+                ? transaction.note.trim()
+                : categoryName;
+        holder.tvSubtitle.setText(String.format(Locale.getDefault(), "%s - %s - %s", categoryName, timeText, paymentMethod));
+        holder.tvSubtitle.setContentDescription(note);
+
+        if (category == null) {
             holder.ivCategoryIcon.setImageResource(R.drawable.ic_other);
-            fallbackIconColor(holder, t.type);
+            fallbackIconColor(holder, transaction.type);
+            return;
+        }
+
+        String iconName = category.iconName != null ? category.iconName : "";
+        int iconResId = context.getResources().getIdentifier(iconName, "drawable", context.getPackageName());
+        holder.ivCategoryIcon.setImageResource(iconResId != 0 ? iconResId : R.drawable.ic_food);
+
+        try {
+            int originColor = Color.parseColor(category.colorCode != null ? category.colorCode : "#000000");
+            int pastelColor = Color.argb(51, Color.red(originColor), Color.green(originColor), Color.blue(originColor));
+            holder.ivCategoryIcon.setBackgroundTintList(ColorStateList.valueOf(pastelColor));
+            holder.ivCategoryIcon.setImageTintList(ColorStateList.valueOf(originColor));
+        } catch (Exception ignored) {
+            fallbackIconColor(holder, transaction.type);
         }
     }
 
     private void fallbackIconColor(TransactionViewHolder holder, int type) {
-        int colorRes = (type == 1) ? R.color.status_background_green : R.color.status_background_red;
+        int colorRes = type == 1 ? R.color.status_background_green : R.color.status_background_red;
         holder.ivCategoryIcon.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(context, colorRes)));
         holder.ivCategoryIcon.setImageTintList(ColorStateList.valueOf(Color.GRAY));
+    }
+
+    private void bindPermissions(View itemView, Transaction transaction) {
+        boolean canEdit = (currentUserId != null && currentUserId.equals(transaction.userId))
+                || (currentUserId != null && currentUserId.equals(ownerId));
+
+        itemView.setAlpha(canEdit ? 1.0f : 0.6f);
+        itemView.setOnClickListener(v -> {
+            if (canEdit) {
+                if (listener != null) listener.onClick(transaction);
+            } else {
+                android.widget.Toast.makeText(
+                        context,
+                        "Access denied! Only the creator or owner can edit this.",
+                        android.widget.Toast.LENGTH_SHORT
+                ).show();
+            }
+        });
     }
 
     @Override
@@ -236,11 +270,17 @@ public class WorkspaceTransactionAdapter extends RecyclerView.Adapter<RecyclerVi
         return items.size();
     }
 
-    // ==========================================
-    // CÁC LỚP VIEWHOLDER CHO HEADER VÀ ITEM
-    // ==========================================
+    private static String firstNonEmpty(String... values) {
+        if (values == null) return "";
+        for (String value : values) {
+            if (value != null && !value.trim().isEmpty()) return value.trim();
+        }
+        return "";
+    }
+
     static class DateViewHolder extends RecyclerView.ViewHolder {
         TextView tvDate;
+
         DateViewHolder(@NonNull View itemView) {
             super(itemView);
             tvDate = itemView.findViewById(R.id.tvDateHeader);
@@ -248,16 +288,35 @@ public class WorkspaceTransactionAdapter extends RecyclerView.Adapter<RecyclerVi
     }
 
     static class TransactionViewHolder extends RecyclerView.ViewHolder {
+        ImageView ivCreatorAvatar;
         ShapeableImageView ivCategoryIcon;
-        TextView tvMainTitle, tvSubtitle, tvCreatorName, tvAmount;
+        TextView tvMainTitle;
+        TextView tvSubtitle;
+        TextView tvCreatorName;
+        TextView tvAmount;
 
         TransactionViewHolder(@NonNull View itemView) {
             super(itemView);
+            ivCreatorAvatar = itemView.findViewById(R.id.ivCreatorAvatar);
             ivCategoryIcon = itemView.findViewById(R.id.ivCategoryIcon);
             tvMainTitle = itemView.findViewById(R.id.tvMainTitle);
             tvSubtitle = itemView.findViewById(R.id.tvSubtitle);
             tvCreatorName = itemView.findViewById(R.id.tvCreatorName);
             tvAmount = itemView.findViewById(R.id.tvAmount);
+        }
+    }
+
+    private static class CreatorProfile {
+        final String name;
+        final String avatarUrl;
+
+        CreatorProfile(String name, String avatarUrl) {
+            this.name = name == null || name.trim().isEmpty() ? "Unknown Member" : name.trim();
+            this.avatarUrl = avatarUrl;
+        }
+
+        static CreatorProfile loading() {
+            return new CreatorProfile("Loading member", null);
         }
     }
 }

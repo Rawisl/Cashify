@@ -15,6 +15,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.widget.PopupMenu;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.drawable.DrawableCompat;
 import androidx.core.widget.NestedScrollView;
@@ -24,6 +25,7 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
+import androidx.navigation.fragment.NavHostFragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
@@ -78,6 +80,7 @@ public class SocialNewsfeedFragment extends Fragment {
     private static final int FEED_PAGE_SIZE = 10;
     private final List<FeedItem> feedItems = new ArrayList<>();
     private final Set<String> loadedPostIds = new HashSet<>();
+    private final Set<String> loadedCommentPreviewPostIds = new HashSet<>();
     private boolean isLoadingFeed = false;
     private boolean isRefreshingFeed = false;
     private boolean isLastFeedPage = false;
@@ -120,10 +123,33 @@ public class SocialNewsfeedFragment extends Fragment {
         scrollNewsfeed = view.findViewById(R.id.scrollNewsfeed);
 
         if (rvFeed != null) {
-            feedAdapter = new CommunityFeedAdapter(item -> {
-                Intent intent = new Intent(requireContext(), PostDetailActivity.class);
-                intent.putExtra(PostDetailActivity.EXTRA_POST_ID, item.getId());
-                startActivity(intent);
+            feedAdapter = new CommunityFeedAdapter(item -> expandInlineComments(item), this::showPostMenu);
+            feedAdapter.setOnAvatarClickListener(this::openMemberProfile);
+            feedAdapter.setOnPostInteractionListener(new CommunityFeedAdapter.OnPostInteractionListener() {
+                @Override
+                public void onLikeClicked(FeedItem item) {
+                    togglePostLike(item);
+                }
+
+                @Override
+                public void onCommentsExpanded(FeedItem item) {
+                    expandInlineComments(item);
+                }
+
+                @Override
+                public void onCommentSubmitted(FeedItem item, String content) {
+                    submitInlineComment(item, content);
+                }
+
+                @Override
+                public void onShareClicked(FeedItem item) {
+                    shareInlinePost(item);
+                }
+
+                @Override
+                public void onViewAllComments(FeedItem item) {
+                    openPostDetail(item.getId());
+                }
             });
             rvFeed.setLayoutManager(new LinearLayoutManager(requireContext()));
             rvFeed.setAdapter(feedAdapter);
@@ -315,6 +341,11 @@ public class SocialNewsfeedFragment extends Fragment {
 
         boolean hasImage = !imageUrl.isEmpty();
         boolean expandable = content != null && content.length() > 120;
+        int likeCount = safeInt(doc.getLong("likeCount"));
+        int commentCount = safeInt(doc.getLong("commentCount"));
+        int shareCount = safeInt(doc.getLong("shareCount"));
+        boolean likedByMe = Boolean.TRUE.equals(doc.getBoolean("likedByMe"))
+                || Boolean.TRUE.equals(doc.getBoolean("isLiked"));
 
         if (type != null && type.toLowerCase().contains("milestone")) {
             String milestoneData = doc.getString("milestoneData") != null ? doc.getString("milestoneData") : "";
@@ -339,7 +370,11 @@ public class SocialNewsfeedFragment extends Fragment {
                     milestoneDescription.length() > 120,
                     milestoneData,
                     authorAvatarUrl,
-                    initials(authorName)
+                    initials(authorName),
+                    likeCount,
+                    commentCount,
+                    shareCount,
+                    likedByMe
             );
         } else {
             return new FeedItem.NormalPost(
@@ -353,7 +388,11 @@ public class SocialNewsfeedFragment extends Fragment {
                     ContextCompat.getColor(requireContext(), R.color.brand_primary),
                     initials(authorName),
                     expandable,
-                    authorAvatarUrl
+                    authorAvatarUrl,
+                    likeCount,
+                    commentCount,
+                    shareCount,
+                    likedByMe
             );
         }
     }
@@ -416,6 +455,9 @@ public class SocialNewsfeedFragment extends Fragment {
             String avatarUrl = str(map, "authorAvatarUrl");
 
             boolean isLiked = Boolean.TRUE.equals(map.get("isLiked"));
+            int likeCount = (int) Math.max(0, num(map, "likeCount"));
+            int commentCount = (int) Math.max(0, num(map, "commentCount"));
+            int shareCount = (int) Math.max(0, num(map, "shareCount"));
             boolean hasImage   = !imageUrl.isEmpty();
             boolean expandable = content.length() > 120;
 
@@ -459,7 +501,11 @@ public class SocialNewsfeedFragment extends Fragment {
                         milestoneDescription.length() > 120,
                         milestoneData,
                         avatarUrl,
-                        initials(name)
+                        initials(name),
+                        likeCount,
+                        commentCount,
+                        shareCount,
+                        isLiked
                 ));
             } else {
                 result.add(new FeedItem.NormalPost(
@@ -473,7 +519,11 @@ public class SocialNewsfeedFragment extends Fragment {
                         ContextCompat.getColor(requireContext(), R.color.brand_primary),
                         initials(name),
                         expandable,
-                        avatarUrl
+                        avatarUrl,
+                        likeCount,
+                        commentCount,
+                        shareCount,
+                        isLiked
                 ));
             }
         }
@@ -543,12 +593,14 @@ public class SocialNewsfeedFragment extends Fragment {
             showFeedEnd(false);
 
             // Setup button to navigate to FriendsActivity
-            View btnFindFriends = layoutNoFriends != null ? layoutNoFriends.findViewById(R.id.btnFindFriends) : null;
-            if (btnFindFriends != null) {
-                btnFindFriends.setOnClickListener(v -> {
-                    Intent intent = new Intent(requireContext(), com.example.cashify.ui.FriendsActivity.FriendsActivity.class);
-                    startActivity(intent);
-                });
+            if (layoutNoFriends != null) {
+                View btnFindFriends = layoutNoFriends.findViewById(R.id.btnFindFriends);
+                if (btnFindFriends != null) {
+                    btnFindFriends.setOnClickListener(v -> {
+                        Intent intent = new Intent(requireContext(), com.example.cashify.ui.FriendsActivity.FriendsActivity.class);
+                        startActivity(intent);
+                    });
+                }
             }
         }
     }
@@ -562,6 +614,10 @@ public class SocialNewsfeedFragment extends Fragment {
     private long num(Map<String, Object> map, String key) {
         Object v = map.get(key);
         return v instanceof Number ? ((Number) v).longValue() : 0L;
+    }
+
+    private int safeInt(Long value) {
+        return value == null ? 0 : (int) Math.max(0, value);
     }
 
     private String initials(String name) {
@@ -724,6 +780,279 @@ public class SocialNewsfeedFragment extends Fragment {
         Intent intent = new Intent(getActivity(), PostDetailActivity.class);
         intent.putExtra(PostDetailActivity.EXTRA_POST_ID, postId);
         startActivity(intent);
+    }
+
+    private void expandInlineComments(FeedItem item) {
+        if (item == null || feedAdapter == null) return;
+        feedAdapter.expandComments(item.getId());
+        if (!loadedCommentPreviewPostIds.contains(item.getId())) {
+            loadCommentPreview(item);
+        }
+    }
+
+    private void loadCommentPreview(FeedItem item) {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null || item == null) return;
+
+        user.getIdToken(false).addOnSuccessListener(tokenResult -> {
+            String token = "Bearer " + tokenResult.getToken();
+            ApiClient.getClient().create(ApiService.class)
+                    .getComments(item.getId(), token)
+                    .enqueue(new Callback<List<Object>>() {
+                        @Override
+                        public void onResponse(@NonNull Call<List<Object>> call,
+                                               @NonNull Response<List<Object>> response) {
+                            if (!isAdded() || feedAdapter == null) return;
+                            List<Comment> comments = mapComments(response.body());
+                            loadedCommentPreviewPostIds.add(item.getId());
+                            feedAdapter.setCommentPreview(item.getId(), comments);
+                            if (response.isSuccessful() && response.body() != null
+                                    && item.getCommentCount() != comments.size()) {
+                                item.setCommentCount(Math.max(item.getCommentCount(), comments.size()));
+                                refreshFeedAdapter();
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(@NonNull Call<List<Object>> call, @NonNull Throwable t) {
+                            if (!isAdded() || feedAdapter == null) return;
+                            loadedCommentPreviewPostIds.add(item.getId());
+                            feedAdapter.setCommentPreview(item.getId(), new ArrayList<>());
+                        }
+                    });
+        });
+    }
+
+    private void submitInlineComment(FeedItem item, String content) {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null || item == null || content == null || content.trim().isEmpty()) return;
+
+        int previousCount = item.getCommentCount();
+        item.setCommentCount(previousCount + 1);
+        refreshFeedAdapter();
+
+        user.getIdToken(false).addOnSuccessListener(tokenResult -> {
+            String token = "Bearer " + tokenResult.getToken();
+            ApiClient.getClient().create(ApiService.class)
+                    .addComment(token, new ApiService.AddCommentRequest(item.getId(), content.trim()))
+                    .enqueue(new Callback<Object>() {
+                        @Override
+                        public void onResponse(@NonNull Call<Object> call, @NonNull Response<Object> response) {
+                            if (!isAdded()) return;
+                            if (!response.isSuccessful()) {
+                                item.setCommentCount(previousCount);
+                                refreshFeedAdapter();
+                                Toast.makeText(requireContext(), "Could not add comment", Toast.LENGTH_SHORT).show();
+                                return;
+                            }
+                            loadedCommentPreviewPostIds.remove(item.getId());
+                            loadCommentPreview(item);
+                        }
+
+                        @Override
+                        public void onFailure(@NonNull Call<Object> call, @NonNull Throwable t) {
+                            if (!isAdded()) return;
+                            item.setCommentCount(previousCount);
+                            refreshFeedAdapter();
+                            Toast.makeText(requireContext(), "Could not add comment", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+        });
+    }
+
+    private void togglePostLike(FeedItem item) {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null || item == null) return;
+
+        boolean previousLiked = item.isLikedByMe();
+        int previousCount = item.getLikeCount();
+        boolean targetLiked = !previousLiked;
+        item.setLikedByMe(targetLiked);
+        item.setLikeCount(targetLiked ? previousCount + 1 : Math.max(0, previousCount - 1));
+        refreshFeedAdapter();
+
+        user.getIdToken(false).addOnSuccessListener(tokenResult -> {
+            String token = "Bearer " + tokenResult.getToken();
+            ApiClient.getClient().create(ApiService.class)
+                    .toggleLike(token, new ApiService.LikeActionRequest(item.getId(), targetLiked))
+                    .enqueue(new Callback<Object>() {
+                        @Override
+                        public void onResponse(@NonNull Call<Object> call, @NonNull Response<Object> response) {
+                            if (!isAdded() || response.isSuccessful()) return;
+                            item.setLikedByMe(previousLiked);
+                            item.setLikeCount(previousCount);
+                            refreshFeedAdapter();
+                        }
+
+                        @Override
+                        public void onFailure(@NonNull Call<Object> call, @NonNull Throwable t) {
+                            if (!isAdded()) return;
+                            item.setLikedByMe(previousLiked);
+                            item.setLikeCount(previousCount);
+                            refreshFeedAdapter();
+                        }
+                    });
+        });
+    }
+
+    private void shareInlinePost(FeedItem item) {
+        if (item == null) return;
+        // Do NOT increment locally — the count comes from the backend and stays accurate.
+        // Incrementing on every tap (even if the user dismisses) made the number only go up forever.
+        Intent intent = new Intent(Intent.ACTION_SEND);
+        intent.setType("text/plain");
+        intent.putExtra(Intent.EXTRA_TEXT, postShareText(item));
+        startActivity(Intent.createChooser(intent, "Share post"));
+    }
+
+    private void showPostMenu(FeedItem item) {
+        if (!isAdded() || item == null || rvFeed == null) return;
+        PopupMenu menu = new PopupMenu(requireContext(), rvFeed);
+        boolean ownPost = isCurrentUserPost(item);
+        menu.getMenu().add("Hide post");
+        if (ownPost) {
+            menu.getMenu().add("Edit post");
+            menu.getMenu().add("Delete post");
+        } else {
+            menu.getMenu().add("Report post");
+        }
+        menu.setOnMenuItemClickListener(menuItem -> {
+            String title = String.valueOf(menuItem.getTitle());
+            if ("Hide post".equals(title)) {
+                removeFeedItem(item.getId());
+                return true;
+            }
+            if ("Edit post".equals(title)) {
+                openEditPost(item);
+                return true;
+            }
+            if ("Delete post".equals(title)) {
+                deletePost(item);
+                return true;
+            }
+            if ("Report post".equals(title)) {
+                Toast.makeText(requireContext(), "Thanks, we will review this post.", Toast.LENGTH_SHORT).show();
+                return true;
+            }
+            return false;
+        });
+        menu.show();
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Comment> mapComments(List<Object> raw) {
+        List<Comment> comments = new ArrayList<>();
+        if (raw == null) return comments;
+        for (Object obj : raw) {
+            if (!(obj instanceof Map)) continue;
+            Map<String, Object> map = (Map<String, Object>) obj;
+            comments.add(new Comment(
+                    firstNonEmpty(str(map, "commentId"), str(map, "id")),
+                    firstNonEmpty(str(map, "authorId"), str(map, "userId")),
+                    firstNonEmpty(str(map, "authorAvatarUrl"), str(map, "avatarUrl")),
+                    firstNonEmpty(str(map, "authorName"), str(map, "username"), "Cashify User"),
+                    firstNonEmpty(str(map, "content"), str(map, "text")),
+                    com.example.cashify.utils.TimeFormatter.format(num(map, "timestamp")),
+                    (int) Math.max(0, num(map, "likeCount"))
+            ));
+        }
+        return comments;
+    }
+
+    private void refreshFeedAdapter() {
+        if (feedAdapter != null) {
+            feedAdapter.submitList(new ArrayList<>(feedItems));
+            feedAdapter.notifyDataSetChanged();
+        }
+    }
+
+    private boolean isCurrentUserPost(FeedItem item) {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        return user != null && item != null && user.getUid().equals(item.getUserId());
+    }
+
+    private void removeFeedItem(String postId) {
+        if (postId == null) return;
+        for (int i = 0; i < feedItems.size(); i++) {
+            if (postId.equals(feedItems.get(i).getId())) {
+                feedItems.remove(i);
+                loadedPostIds.remove(postId);
+                refreshFeedAdapter();
+                showFeedEmpty(feedItems.isEmpty());
+                return;
+            }
+        }
+    }
+
+    private void openEditPost(FeedItem item) {
+        if (getActivity() == null || item == null) return;
+        Bundle args = new Bundle();
+        args.putString("edit_post_id", item.getId());
+        args.putString("edit_post_content", postContent(item));
+        if (item instanceof FeedItem.MilestonePost) {
+            args.putString("edit_milestone_data", ((FeedItem.MilestonePost) item).milestoneJson);
+        }
+
+        NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment);
+        if (navController.getGraph().findNode(R.id.nav_post_feed) != null) {
+            navController.navigate(R.id.nav_post_feed, args);
+        }
+    }
+
+    private void deletePost(FeedItem item) {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null || item == null) return;
+
+        user.getIdToken(false).addOnSuccessListener(tokenResult -> {
+            String token = "Bearer " + tokenResult.getToken();
+            ApiClient.getClient().create(ApiService.class)
+                    .deletePost(token, new ApiService.DeletePostRequest(item.getId()))
+                    .enqueue(new Callback<Object>() {
+                        @Override
+                        public void onResponse(@NonNull Call<Object> call, @NonNull Response<Object> response) {
+                            if (!isAdded()) return;
+                            if (response.isSuccessful()) {
+                                removeFeedItem(item.getId());
+                            } else {
+                                Toast.makeText(requireContext(), "Could not delete post", Toast.LENGTH_SHORT).show();
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(@NonNull Call<Object> call, @NonNull Throwable t) {
+                            if (!isAdded()) return;
+                            Toast.makeText(requireContext(), "Could not delete post", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+        });
+    }
+
+    private String postContent(FeedItem item) {
+        if (item instanceof FeedItem.NormalPost) {
+            return ((FeedItem.NormalPost) item).text;
+        }
+        if (item instanceof FeedItem.MilestonePost) {
+            FeedItem.MilestonePost milestone = (FeedItem.MilestonePost) item;
+            return firstNonEmpty(milestone.description, milestone.title);
+        }
+        return "";
+    }
+
+    private String postShareText(FeedItem item) {
+        String author = item instanceof FeedItem.NormalPost
+                ? ((FeedItem.NormalPost) item).userName
+                : item instanceof FeedItem.MilestonePost ? ((FeedItem.MilestonePost) item).userName : "Cashify";
+        return author + " on Cashify\n" + postContent(item);
+    }
+
+    private void openMemberProfile(String userId) {
+        if (!isAdded() || userId == null || userId.trim().isEmpty()) {
+            return;
+        }
+        Bundle args = new Bundle();
+        args.putString("USER_ID", userId);
+        NavController navController = NavHostFragment.findNavController(this);
+        navController.navigate(R.id.action_newsfeed_to_other_profile, args);
     }
 
     private void openCreatePost() {
