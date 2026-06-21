@@ -64,6 +64,12 @@ public class SuggestedFriendsActivity extends AppCompatActivity {
             @Override public void onDecline(User user) { friendsViewModel.declineFriendRequest(user); }
             @Override public void onUnfriend(User user) { friendsViewModel.unfriend(user); }
             @Override public void onMessage(User user) { /* Chat navigation if needed */ }
+            @Override public void onAvatarClick(User user) {
+                android.content.Intent intent = new android.content.Intent(SuggestedFriendsActivity.this, com.example.cashify.ui.main.MainActivity.class);
+                intent.putExtra("OPEN_USER_PROFILE", user.getUid());
+                intent.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(intent);
+            }
         });
 
         rvSuggestedFriends.setLayoutManager(new LinearLayoutManager(this));

@@ -51,23 +51,13 @@
                         android:layoutDirection="rtl"
                         android:orientation="horizontal">
 
-                        <ImageButton
-                            android:id="@+id/btnMessages"
-                            android:layout_width="38dp"
-                            android:layout_height="38dp"
-                            android:background="?attr/selectableItemBackgroundBorderless"
-                            android:contentDescription="@string/message"
-                            android:padding="10dp"
-                            app:srcCompat="@drawable/ic_messages_regular"
-                            app:tint="@color/brand_primary" />
-
                         <FrameLayout
                             android:layout_width="38dp"
                             android:layout_height="38dp"
                             android:layoutDirection="ltr">
 
                             <ImageButton
-                                android:id="@+id/btnNotifications"
+                                android:id="@+id/imgBellIcon"
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent"
                                 android:background="?attr/selectableItemBackgroundBorderless"
@@ -78,20 +68,36 @@
                                 app:tint="@color/brand_primary" />
 
                             <TextView
-                                android:id="@+id/tvNotificationBadge"
+                                android:id="@+id/tvBellBadge"
                                 android:layout_width="18dp"
                                 android:layout_height="18dp"
                                 android:layout_gravity="top|end"
                                 android:layout_marginTop="4dp"
-                                android:layout_marginEnd="3dp"
+                                android:layout_marginEnd="4dp"
                                 android:background="@drawable/bg_badge_red"
                                 android:gravity="center"
-                                android:text="@string/one"
                                 android:textColor="@color/white"
                                 android:textSize="10sp"
-                                android:textStyle="bold"
-                                android:visibility="gone" />
+                                android:visibility="gone"
+                                tools:text="9" />
                         </FrameLayout>
+
+                        <FrameLayout
+                            android:layout_width="38dp"
+                            android:layout_height="38dp"
+                            android:layoutDirection="ltr">
+
+                            <ImageButton
+                                android:id="@+id/btnMessages"
+                                android:layout_width="38dp"
+                                android:layout_height="38dp"
+                                android:background="?attr/selectableItemBackgroundBorderless"
+                                android:contentDescription="@string/message"
+                                android:padding="10dp"
+                                app:srcCompat="@drawable/ic_messages"
+                                app:tint="@color/brand_primary" />
+                        </FrameLayout>
+
                     </LinearLayout>
                 </com.google.android.material.appbar.MaterialToolbar>
             </com.google.android.material.appbar.AppBarLayout>

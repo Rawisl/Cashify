@@ -197,6 +197,17 @@ public class MainActivity extends BaseActivity {
                 getIntent().removeExtra("ACTION_CREATE_MILESTONE");
             });
         }
+
+        if (getIntent().hasExtra("OPEN_USER_PROFILE")) {
+            String profileId = getIntent().getStringExtra("OPEN_USER_PROFILE");
+            navigateWhenHome(controller -> {
+                Bundle args = new Bundle();
+                args.putString("USER_ID", profileId);
+                controller.navigate(R.id.nav_social_container);
+                controller.navigate(R.id.action_newsfeed_to_other_profile, args);
+                getIntent().removeExtra("OPEN_USER_PROFILE");
+            });
+        }
     }
 
     private void navigateWhenHome(NavAction action) {

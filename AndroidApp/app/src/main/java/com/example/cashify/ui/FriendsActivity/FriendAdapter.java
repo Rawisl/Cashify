@@ -26,6 +26,7 @@ public class FriendAdapter extends RecyclerView.Adapter<FriendAdapter.ViewHolder
         void onDecline(User user);
         void onUnfriend(User user);
         void onMessage(User user);
+        void onAvatarClick(User user);
     }
 
     private List<User> users;
@@ -50,6 +51,10 @@ public class FriendAdapter extends RecyclerView.Adapter<FriendAdapter.ViewHolder
 
         holder.tvFriendName.setText(user.getNameToShow());
         ImageHelper.loadAvatar(user.getAvatarUrl(), holder.imgAvatar, user.getNameToShow());
+
+        holder.imgAvatar.setOnClickListener(v -> {
+            if (listener != null) listener.onAvatarClick(user);
+        });
 
         // Reset UI state for recycled views
         hideAllButtons(holder);

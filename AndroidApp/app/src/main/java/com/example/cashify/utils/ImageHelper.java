@@ -82,7 +82,7 @@ public class ImageHelper {
         paint.setColor(palette.background);
         canvas.drawRect(rect, paint);
 
-        String initials = initials(identity);
+        String initials = getInitials(identity);
         paint.setStyle(Paint.Style.FILL);
         paint.setColor(Color.WHITE);
 
@@ -98,13 +98,13 @@ public class ImageHelper {
         return new BitmapDrawable(context.getResources(), bitmap);
     }
 
-    private static boolean isEmptyAvatarUrl(Object url) {
+    public static boolean isEmptyAvatarUrl(Object url) {
         if (url == null) return true;
         if (url instanceof String) return ((String) url).trim().isEmpty();
         return false;
     }
 
-    private static String initials(String identity) {
+    public static String getInitials(String identity) {
         if (identity == null || identity.trim().isEmpty()) return "HI";
         String clean = identity.trim();
         int at = clean.indexOf('@');

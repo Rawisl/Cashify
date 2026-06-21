@@ -10,7 +10,10 @@ public abstract class FeedItem {
     private String userId; // Mandatory for Edit/Delete permission validation
     private int likeCount;
     private int commentCount;
+    private int shareCount;
     private boolean isLiked;
+    private boolean isCommented;
+    private boolean isShared;
 
     protected FeedItem(String id, String userId) {
         this.id = id;
@@ -22,14 +25,20 @@ public abstract class FeedItem {
     public String getUserId() { return userId; }
     public int getLikeCount() { return likeCount; }
     public int getCommentCount() { return commentCount; }
+    public int getShareCount() { return shareCount; }
     public boolean isLiked() { return isLiked; }
+    public boolean isCommented() { return isCommented; }
+    public boolean isShared() { return isShared; }
 
     // --- Setters ---
     public void setId(String id) { this.id = id; } // Cho phép gán ID dễ dàng ở PostDetailActivity
     public void setUserId(String userId) { this.userId = userId != null ? userId : ""; }
     public void setLikeCount(int likeCount) { this.likeCount = likeCount; }
     public void setCommentCount(int commentCount) { this.commentCount = commentCount; }
+    public void setShareCount(int shareCount) { this.shareCount = shareCount; }
     public void setLiked(boolean liked) { isLiked = liked; }
+    public void setCommented(boolean commented) { isCommented = commented; }
+    public void setShared(boolean shared) { isShared = shared; }
 
     public abstract int getType();
 
@@ -45,13 +54,16 @@ public abstract class FeedItem {
         // BẮT BUỘC PHẢI SO SÁNH CẢ TRẠNG THÁI TƯƠNG TÁC
         return likeCount == feedItem.likeCount &&
                 commentCount == feedItem.commentCount &&
+                shareCount == feedItem.shareCount &&
                 isLiked == feedItem.isLiked &&
+                isCommented == feedItem.isCommented &&
+                isShared == feedItem.isShared &&
                 Objects.equals(id, feedItem.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, likeCount, commentCount, isLiked);
+        return Objects.hash(id, likeCount, commentCount, shareCount, isLiked, isCommented, isShared);
     }
 
     // =========================================================================

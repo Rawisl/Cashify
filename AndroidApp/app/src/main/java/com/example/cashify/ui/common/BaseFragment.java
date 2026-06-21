@@ -48,7 +48,14 @@ public abstract class BaseFragment extends Fragment {
             });
         }
 
-        //Setup Notification Badge ăn theo MainViewModel
+        if (btnBell != null) {
+            btnBell.setOnClickListener(v -> {
+                com.example.cashify.ui.notifications.NotificationBottomSheet bottomSheet = new com.example.cashify.ui.notifications.NotificationBottomSheet();
+                bottomSheet.show(getParentFragmentManager(), "NotificationBottomSheet");
+            });
+        }
+
+        //Setup Notification Badge ẩn theo MainViewModel
         if (tvBadge != null && mainViewModel != null) {
             mainViewModel.getUnreadNotificationCount().observe(getViewLifecycleOwner(), count -> {
                 if (count != null && count > 0) {

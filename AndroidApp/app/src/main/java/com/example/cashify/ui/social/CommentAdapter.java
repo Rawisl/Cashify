@@ -21,6 +21,7 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentV
 
     private final List<Comment> commentList;
     private final OnCommentActionListener listener;
+    private OnAvatarClickListener avatarClickListener;
     private final String currentUserId;
     private String postOwnerId;
     private boolean isAdmin = false;
@@ -29,6 +30,10 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentV
         void onEditComment(int position);
         void onDeleteComment(int position);
         void onHideComment(int position);
+    }
+
+    public interface OnAvatarClickListener {
+        void onAvatarClick(String userId);
     }
 
     public CommentAdapter(List<Comment> commentList, OnCommentActionListener listener,
@@ -43,6 +48,10 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentV
     public void setAdmin(boolean admin) {
         this.isAdmin = admin;
         notifyDataSetChanged();
+    }
+
+    public void setOnAvatarClickListener(OnAvatarClickListener listener) {
+        this.avatarClickListener = listener;
     }
 
     public void updatePostOwnerId(String postOwnerId) {
@@ -91,6 +100,12 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentV
             tvContent.setText(comment.getContent());
 
             ImageHelper.loadAvatar(comment.getAvatarUrl(), imgAvatar, comment.getUsername());
+            
+            imgAvatar.setOnClickListener(v -> {
+                if (avatarClickListener != null && comment.getAuthorId() != null) {
+                    avatarClickListener.onAvatarClick(comment.getAuthorId());
+                }
+            });
 
             imgCommentMenu.setOnClickListener(v -> showCommentBottomSheet(comment, position));
         }

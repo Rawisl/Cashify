@@ -65,15 +65,24 @@ public class ProfileAchievementAdapter extends RecyclerView.Adapter<ProfileAchie
         // =========================================================================
         if (badge.bgColor != null && !badge.bgColor.isEmpty()) {
             try {
-                int color = Color.parseColor(badge.bgColor);
-                holder.layoutBadgeBg.setBackgroundTintList(ColorStateList.valueOf(color));
+                int solidColor = Color.parseColor(badge.bgColor);
+                // Create a 20% darker version of the solid color for the stroke
+                float[] hsv = new float[3];
+                Color.colorToHSV(solidColor, hsv);
+                hsv[2] *= 0.8f;
+                int strokeColor = Color.HSVToColor(hsv);
+
+                android.graphics.drawable.GradientDrawable gd = new android.graphics.drawable.GradientDrawable();
+                gd.setShape(android.graphics.drawable.GradientDrawable.OVAL);
+                gd.setColor(solidColor);
+                int strokeWidth = (int) (2 * holder.itemView.getContext().getResources().getDisplayMetrics().density);
+                gd.setStroke(strokeWidth, strokeColor);
+                holder.layoutBadgeBg.setBackground(gd);
             } catch (IllegalArgumentException e) {
-                // Fallback to default XML drawable color if hex parsing fails
-                holder.layoutBadgeBg.setBackgroundTintList(null);
+                holder.layoutBadgeBg.setBackgroundResource(R.drawable.bg_profile_achievement_circle_gold);
             }
         } else {
-            // Reset to default if no color is provided (crucial for View Recycling)
-            holder.layoutBadgeBg.setBackgroundTintList(null);
+            holder.layoutBadgeBg.setBackgroundResource(R.drawable.bg_profile_achievement_circle_gold);
         }
     }
 
