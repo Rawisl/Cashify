@@ -119,6 +119,14 @@ public class PostDetailActivity extends AppCompatActivity {
 
     private void setupCombinedRecyclerView() {
         postAdapter = new SocialNewsfeedAdapter(item -> showPostBottomSheet());
+        
+        postAdapter.setOnAvatarClickListener(userId -> {
+            if (userId != null && !userId.equals(FirebaseAuth.getInstance().getCurrentUser().getUid())) {
+                Intent intent = new Intent(this, com.example.cashify.ui.main.MainActivity.class);
+                intent.putExtra("OPEN_USER_PROFILE", userId);
+                startActivity(intent);
+            }
+        });
 
         postAdapter.setOnLikeClickListener((pId, isLiked, callback) ->
                 viewModel.toggleLike(pId, authHeader, isLiked)
@@ -129,6 +137,14 @@ public class PostDetailActivity extends AppCompatActivity {
             @Override public void onDeleteComment(int pos) { viewModel.deleteComment(postId, commentList.get(pos).getId(), authHeader); }
             @Override public void onHideComment(int pos) { commentList.remove(pos); commentAdapter.notifyItemRemoved(pos); }
         }, currentUserId, postOwnerId);
+        
+        commentAdapter.setOnAvatarClickListener(userId -> {
+            if (userId != null && !userId.equals(FirebaseAuth.getInstance().getCurrentUser().getUid())) {
+                Intent intent = new Intent(this, com.example.cashify.ui.main.MainActivity.class);
+                intent.putExtra("OPEN_USER_PROFILE", userId);
+                startActivity(intent);
+            }
+        });
 
         ConcatAdapter concatAdapter = new ConcatAdapter(postAdapter, commentAdapter);
 

@@ -178,12 +178,57 @@ public class SocialNewsfeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vi
         }
     }
 
+    private void handleCommentClick(FeedItem post, ImageView imgCommentIcon, TextView tvCommentCount) {
+        if (!post.isCommented()) {
+            post.setCommented(true);
+            HeartAnimation.playRubberBand(imgCommentIcon);
+            applyCommentState(imgCommentIcon, tvCommentCount, true);
+        }
+        if (!isDetailMode && postClickListener != null) {
+            postClickListener.onPostClick(post);
+        }
+    }
+
+    private void handleShareClick(FeedItem post, ImageView imgShareIcon, TextView tvShareCount) {
+        if (!post.isShared()) {
+            post.setShareCount(post.getShareCount() + 1);
+            post.setShared(true);
+            tvShareCount.setText(String.valueOf(post.getShareCount()));
+            HeartAnimation.playRubberBand(imgShareIcon);
+            applyShareState(imgShareIcon, tvShareCount, true);
+        }
+        Toast.makeText(imgShareIcon.getContext(), "Post link copied", Toast.LENGTH_SHORT).show();
+    }
+
+    private void applyCommentState(ImageView imgCommentIcon, TextView tvCommentCount, boolean isCommented) {
+        if (imgCommentIcon == null) return;
+        if (isCommented) {
+            int skyBlue = android.graphics.Color.parseColor("#3498DB");
+            imgCommentIcon.setColorFilter(skyBlue);
+            if (tvCommentCount != null) tvCommentCount.setTextColor(skyBlue);
+        } else {
+            imgCommentIcon.setColorFilter(ContextCompat.getColor(imgCommentIcon.getContext(), R.color.icon_inactive));
+            if (tvCommentCount != null) tvCommentCount.setTextColor(ContextCompat.getColor(tvCommentCount.getContext(), R.color.icon_inactive));
+        }
+    }
+
+    private void applyShareState(ImageView imgShareIcon, TextView tvShareCount, boolean isShared) {
+        if (imgShareIcon == null) return;
+        if (isShared) {
+            imgShareIcon.setColorFilter(ContextCompat.getColor(imgShareIcon.getContext(), R.color.item_title));
+            if (tvShareCount != null) tvShareCount.setTextColor(ContextCompat.getColor(tvShareCount.getContext(), R.color.item_title));
+        } else {
+            imgShareIcon.setColorFilter(ContextCompat.getColor(imgShareIcon.getContext(), R.color.icon_inactive));
+            if (tvShareCount != null) tvShareCount.setTextColor(ContextCompat.getColor(tvShareCount.getContext(), R.color.icon_inactive));
+        }
+    }
+
     // =========================================================================
     // NORMAL POST VIEWHOLDER
     // =========================================================================
     class NormalPostViewHolder extends RecyclerView.ViewHolder {
-        private final ImageView imgAvatar, imgPostImage, decorIcon, imgLikeHeart;
-        private final TextView txtAvatar, name, time, title, content, seeMore, decorCaption, tvLikeCount; // THÊM 'title'
+        private final ImageView imgAvatar, imgPostImage, decorIcon, imgLikeHeart, imgCommentIcon, imgShareIcon;
+        private final TextView txtAvatar, name, time, title, content, seeMore, decorCaption, tvLikeCount; 
         private final TextView tvCommentCount, tvShareCount;
         private final View imagePlaceholder, btnLike, btnComment, btnShare;
         private final ImageButton menuButton;
@@ -212,9 +257,11 @@ public class SocialNewsfeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vi
 
             btnComment = itemView.findViewById(R.id.btnComment);
             tvCommentCount = itemView.findViewById(R.id.tvCommentCount);
+            imgCommentIcon = itemView.findViewById(R.id.imgCommentIcon);
 
             btnShare = itemView.findViewById(R.id.btnShare);
             tvShareCount = itemView.findViewById(R.id.tvShareCount);
+            imgShareIcon = itemView.findViewById(R.id.imgShareIcon);
         }
 
         void bind(FeedItem.NormalPost post, boolean expanded) {
@@ -248,15 +295,15 @@ public class SocialNewsfeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vi
             time.setText(post.time);
 
             // LOGIC HIỂN THỊ TIÊU ĐỀ: Nếu rỗng thì ẩn hẳn đi để không bị trống một mảng trắng
-            if (post.title != null && !post.title.trim().isEmpty()) {
+            if (post.title != null && !post.title.isEmpty()) {
                 title.setVisibility(View.VISIBLE);
                 title.setText(post.title);
             } else {
                 title.setVisibility(View.GONE);
             }
 
-            // HIỂN THỊ NỘI DUNG TỪ BIẾN description (trước đây là text)
-            content.setText(post.description);
+            content.setText(colorizeHashtags(post.description));
+            content.setVisibility(post.description == null || post.description.trim().isEmpty() ? View.GONE : View.VISIBLE);
             content.setMaxLines(isDetailMode ? Integer.MAX_VALUE : (expanded ? Integer.MAX_VALUE : 3));
 
             // Xử lý nút Xem thêm...
@@ -289,6 +336,7 @@ public class SocialNewsfeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vi
 
             tvLikeCount.setText(String.valueOf(post.getLikeCount()));
             if(tvCommentCount != null) tvCommentCount.setText(String.valueOf(post.getCommentCount()));
+            if(tvShareCount != null) tvShareCount.setText(String.valueOf(post.getShareCount()));
 
             if (post.isLiked()) {
                 likedItemIds.add(post.getId());
@@ -298,18 +346,19 @@ public class SocialNewsfeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vi
 
             boolean currentlyLiked = likedItemIds.contains(post.getId());
             applyLikeState(imgLikeHeart, tvLikeCount, currentlyLiked);
+            applyCommentState(imgCommentIcon, tvCommentCount, post.isCommented());
+            applyShareState(imgShareIcon, tvShareCount, post.isShared());
 
             btnLike.setOnClickListener(v -> handleLikeClick(post, imgLikeHeart, tvLikeCount));
-
-            if(btnComment != null) btnComment.setOnClickListener(v -> { if (!isDetailMode && postClickListener != null) postClickListener.onPostClick(post); });
-            if(btnShare != null) btnShare.setOnClickListener(v -> Toast.makeText(itemView.getContext(), "Post link copied", Toast.LENGTH_SHORT).show());
+            if(btnComment != null && imgCommentIcon != null) btnComment.setOnClickListener(v -> handleCommentClick(post, imgCommentIcon, tvCommentCount));
+            if(btnShare != null && imgShareIcon != null) btnShare.setOnClickListener(v -> handleShareClick(post, imgShareIcon, tvShareCount));
         }
     }
     // =========================================================================
     // MILESTONE POST VIEWHOLDER
     // =========================================================================
     class MilestoneViewHolder extends RecyclerView.ViewHolder {
-        private final ImageView imgAvatar, imgLikeHeart;
+        private final ImageView imgAvatar, imgLikeHeart, imgCommentIcon, imgShareIcon;
         private final TextView txtAvatar, name, time, icon, title, description, month, amount, tvLikeCount;
         private final TextView tvCommentCount, tvShareCount;
         private final ProgressBar pbProgress;
@@ -340,9 +389,11 @@ public class SocialNewsfeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vi
 
             btnComment = itemView.findViewById(R.id.btnMilestoneComment);
             tvCommentCount = itemView.findViewById(R.id.tvCommentCount);
+            imgCommentIcon = itemView.findViewById(R.id.imgCommentIcon);
 
             btnShare = itemView.findViewById(R.id.btnMilestoneShare);
             tvShareCount = itemView.findViewById(R.id.tvShareCount);
+            imgShareIcon = itemView.findViewById(R.id.imgShareIcon);
 
             View shineView = itemView.findViewById(R.id.viewMilestoneShine);
             shineHelper = new ShineAnimationHelper(shineView, itemView);
@@ -360,7 +411,7 @@ public class SocialNewsfeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vi
             time.setText(milestone.time);
             month.setText(milestone.month);
             title.setText(milestone.title);
-            description.setText(milestone.description);
+            description.setText(colorizeHashtags(milestone.description));
 
             description.setVisibility(milestone.description == null || milestone.description.trim().isEmpty() ? View.GONE : View.VISIBLE);
 
@@ -399,6 +450,7 @@ public class SocialNewsfeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vi
 
             tvLikeCount.setText(String.valueOf(milestone.getLikeCount()));
             if(tvCommentCount != null) tvCommentCount.setText(String.valueOf(milestone.getCommentCount()));
+            if(tvShareCount != null) tvShareCount.setText(String.valueOf(milestone.getShareCount()));
 
             if (milestone.isLiked()) {
                 likedItemIds.add(milestone.getId());
@@ -408,10 +460,12 @@ public class SocialNewsfeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vi
 
             boolean currentlyLiked = likedItemIds.contains(milestone.getId());
             applyLikeState(imgLikeHeart, tvLikeCount, currentlyLiked);
+            applyCommentState(imgCommentIcon, tvCommentCount, milestone.isCommented());
+            applyShareState(imgShareIcon, tvShareCount, milestone.isShared());
 
             btnLike.setOnClickListener(v -> handleLikeClick(milestone, imgLikeHeart, tvLikeCount));
-            if(btnComment != null) btnComment.setOnClickListener(v -> { if (!isDetailMode && postClickListener != null) postClickListener.onPostClick(milestone); });
-            if(btnShare != null) btnShare.setOnClickListener(v -> Toast.makeText(itemView.getContext(), "Post link copied", Toast.LENGTH_SHORT).show());
+            if(btnComment != null && imgCommentIcon != null) btnComment.setOnClickListener(v -> handleCommentClick(milestone, imgCommentIcon, tvCommentCount));
+            if(btnShare != null && imgShareIcon != null) btnShare.setOnClickListener(v -> handleShareClick(milestone, imgShareIcon, tvShareCount));
 
             shineHelper.start();
         }
@@ -446,6 +500,23 @@ public class SocialNewsfeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vi
                 toggleExpanded(itemId, position);
             }
         });
+    }
+
+    private android.text.SpannableString colorizeHashtags(String text) {
+        if (text == null) return new android.text.SpannableString("");
+        android.text.SpannableString spannable = new android.text.SpannableString(text);
+        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("(?i)#[\\p{L}\\p{N}_]+").matcher(text);
+        
+        String[] pastelColors = new String[] { "#F3B61F", "#FF6B6B", "#4BA3E3", "#6BCB77" };
+        int colorIndex = 0;
+        
+        while (matcher.find()) {
+            int color = android.graphics.Color.parseColor(pastelColors[colorIndex % pastelColors.length]);
+            colorIndex++;
+            spannable.setSpan(new android.text.style.ForegroundColorSpan(color), matcher.start(), matcher.end(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            spannable.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), matcher.start(), matcher.end(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+        return spannable;
     }
 
     private static final DiffUtil.ItemCallback<FeedItem> DIFF_CALLBACK = new DiffUtil.ItemCallback<FeedItem>() {

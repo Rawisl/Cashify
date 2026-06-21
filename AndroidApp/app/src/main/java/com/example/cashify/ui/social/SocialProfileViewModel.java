@@ -9,9 +9,11 @@ import com.example.cashify.data.remote.ApiDto;
 import com.example.cashify.utils.ApiClient;
 import com.example.cashify.utils.ApiService;
 import com.example.cashify.utils.TimeFormatter;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
+import com.example.cashify.data.remote.FirebaseManager;
 import com.google.firebase.firestore.Query;
 
 import org.json.JSONObject;
@@ -47,6 +49,9 @@ public class SocialProfileViewModel extends ViewModel {
     private final MutableLiveData<Integer> _friendCount = new MutableLiveData<>(0);
     public LiveData<Integer> getFriendCount() { return _friendCount; }
 
+    private final MutableLiveData<Boolean> _isFriend = new MutableLiveData<>(false);
+    public LiveData<Boolean> isFriend() { return _isFriend; }
+
     private final MutableLiveData<List<FeedItem>> _wallPosts = new MutableLiveData<>(new ArrayList<>());
     public LiveData<List<FeedItem>> getWallPosts() { return _wallPosts; }
 
@@ -72,6 +77,16 @@ public class SocialProfileViewModel extends ViewModel {
                     int count = (snapshot != null) ? snapshot.size() : 0;
                     _friendCount.postValue(count);
                 });
+
+        // Check if current user is a friend
+        String currentUserId = FirebaseAuth.getInstance().getCurrentUser() != null ? FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
+        if (currentUserId != null && !currentUserId.equals(uid)) {
+            db.collection("users").document(uid).collection("friends").document(currentUserId)
+                    .addSnapshotListener((doc, e) -> {
+                        boolean friend = (doc != null && doc.exists());
+                        _isFriend.postValue(friend);
+                    });
+        }
     }
 
     // Lắng nghe Achievements
@@ -321,5 +336,35 @@ public class SocialProfileViewModel extends ViewModel {
         String f = parts[0].substring(0, 1);
         String s = parts.length > 1 ? parts[parts.length - 1].substring(0, 1) : "";
         return (f + s).toUpperCase(Locale.getDefault());
+    }
+
+    public void sendFriendRequest(String targetUid) {
+        if (targetUid == null || targetUid.isEmpty()) return;
+
+        FirebaseManager.getInstance().processFriendAction(targetUid, "request", new FirebaseManager.DataCallback<Void>() {
+            @Override
+            public void onSuccess(Void data) {
+                // Background success
+            }
+            @Override
+            public void onError(String message) {
+                _errorMessage.postValue(message);
+            }
+        });
+    }
+
+    public void unfriendUser(String targetUid) {
+        if (targetUid == null || targetUid.isEmpty()) return;
+
+        FirebaseManager.getInstance().processFriendAction(targetUid, "remove", new FirebaseManager.DataCallback<Void>() {
+            @Override
+            public void onSuccess(Void data) {
+                // Background success
+            }
+            @Override
+            public void onError(String message) {
+                _errorMessage.postValue(message);
+            }
+        });
     }
 }

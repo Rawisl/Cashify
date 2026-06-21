@@ -123,6 +123,14 @@ public class FriendsActivity extends BaseActivity {
             public void onMessage(User user) {
                 openChat(user);
             }
+
+            @Override
+            public void onAvatarClick(User user) {
+                android.content.Intent intent = new android.content.Intent(FriendsActivity.this, com.example.cashify.ui.main.MainActivity.class);
+                intent.putExtra("OPEN_USER_PROFILE", user.getUid());
+                intent.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(intent);
+            }
         };
 
         // Initialize with empty list, delegate data management to the Adapter
@@ -146,6 +154,14 @@ public class FriendsActivity extends BaseActivity {
             @Override
             public void onSeeAll() {
                 openSuggestedFriends();
+            }
+
+            @Override
+            public void onAvatarClick(User user) {
+                android.content.Intent intent = new android.content.Intent(FriendsActivity.this, com.example.cashify.ui.main.MainActivity.class);
+                intent.putExtra("OPEN_USER_PROFILE", user.getUid());
+                intent.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(intent);
             }
         };
 

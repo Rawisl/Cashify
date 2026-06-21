@@ -7,6 +7,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -48,6 +49,7 @@ public class NotificationBottomSheet extends BottomSheetDialogFragment {
     private FirebaseFirestore db;
     private String currentUid;
     private ListenerRegistration snapshotListener; // CRITICAL: Used to prevent memory leaks
+    private View tvEmptyNotifications;
 
     @Nullable
     @Override
@@ -70,6 +72,8 @@ public class NotificationBottomSheet extends BottomSheetDialogFragment {
     private void initViews(View view) {
         RecyclerView rvNotifications = view.findViewById(R.id.rvNotifications);
         rvNotifications.setLayoutManager(new LinearLayoutManager(getContext()));
+        
+        tvEmptyNotifications = view.findViewById(R.id.tvEmptyNotifications);
 
         // Initialize Adapter and delegate click events
         adapter = new NotificationAdapter(requireContext(), this::handleNotificationClick);
@@ -104,6 +108,10 @@ public class NotificationBottomSheet extends BottomSheetDialogFragment {
                             }
                         }
                         adapter.setData(list);
+                        
+                        if (tvEmptyNotifications != null) {
+                            tvEmptyNotifications.setVisibility(list.isEmpty() ? View.VISIBLE : View.GONE);
+                        }
                     }
                 });
     }

@@ -20,6 +20,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
+import com.example.cashify.data.remote.FirebaseManager;
 import com.example.cashify.ui.auth.EditProfileActivity;
 import com.example.cashify.ui.common.BaseFragment;
 import com.example.cashify.ui.main.MainActivity;
@@ -29,6 +30,9 @@ import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
+import com.google.firebase.firestore.Query;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -124,8 +128,11 @@ public class SocialProfileFragment extends BaseFragment {
                 view.findViewById(R.id.imgBellIcon).setVisibility(View.VISIBLE);
             }
         } else {
-            if (tvGreeting != null) tvGreeting.setVisibility(View.GONE);
-            toolbar.setTitle(R.string.social_profile_title);
+            if (tvGreeting != null) {
+                tvGreeting.setText(R.string.social_profile_title);
+                tvGreeting.setVisibility(View.VISIBLE);
+            }
+            toolbar.setTitle("");
             toolbar.setNavigationIcon(R.drawable.ic_arrow_left_back);
             if (view.findViewById(R.id.imgBellIcon) != null) {
                 view.findViewById(R.id.imgBellIcon).setVisibility(View.GONE);
@@ -170,7 +177,7 @@ public class SocialProfileFragment extends BaseFragment {
     private void setupActions(View view) {
         int ownVisibility = viewingOwnProfile ? View.VISIBLE : View.GONE;
         view.findViewById(R.id.btnEditProfile).setVisibility(ownVisibility);
-        view.findViewById(R.id.fabProfileCreatePost).setVisibility(ownVisibility);
+        view.findViewById(R.id.fabProfileCreatePost).setVisibility(View.GONE);
         view.findViewById(R.id.btnStartGrowing).setVisibility(ownVisibility);
         view.findViewById(R.id.actionSetMilestone).setVisibility(ownVisibility);
         view.findViewById(R.id.actionFirstEntry).setVisibility(ownVisibility);
@@ -183,6 +190,20 @@ public class SocialProfileFragment extends BaseFragment {
             view.findViewById(R.id.btnStartGrowing).setOnClickListener(createThoughts);
             view.findViewById(R.id.actionFirstEntry).setOnClickListener(createThoughts);
             view.findViewById(R.id.actionSetMilestone).setOnClickListener(v -> openCreatePost("milestone"));
+        } else {
+            view.findViewById(R.id.btnMessage).setOnClickListener(v -> {
+                Intent intent = new Intent(requireContext(), com.example.cashify.ui.FriendsActivity.FriendChatActivity.class);
+                intent.putExtra(com.example.cashify.ui.FriendsActivity.FriendChatActivity.EXTRA_FRIEND_UID, currentUserId);
+                startActivity(intent);
+            });
+
+            view.findViewById(R.id.btnUnfriend).setOnClickListener(v -> {
+                viewModel.unfriendUser(currentUserId);
+            });
+
+            view.findViewById(R.id.btnAddFriend).setOnClickListener(v -> {
+                viewModel.sendFriendRequest(currentUserId);
+            });
         }
 
         view.findViewById(R.id.btnShareProfile).setOnClickListener(v -> shareProfile());
@@ -237,22 +258,22 @@ public class SocialProfileFragment extends BaseFragment {
             tvBio.setText(bio);
             tvJoinedDate.setText(joinedLabel(doc));
 
-            // ui-consistency: updateStreakState với visual (background, color, alpha)
-            Object streakObj = doc.get("streakDays");
-            long streak = streakObj instanceof Number ? ((Number) streakObj).longValue() : 0;
-            updateStreakState((int) Math.max(0, streak));
-
             ImageHelper.loadAvatar(doc.getString("avatarUrl"), imgAvatar,
                     firstNonEmpty(displayName, currentUserId));
+            
+            updateDynamicBadges();
         });
 
-        viewModel.getFriendCount().observe(getViewLifecycleOwner(), count ->
-                tvFriendCount.setText(Math.max(0, count) + " friends"));
+        viewModel.getFriendCount().observe(getViewLifecycleOwner(), count -> {
+            tvFriendCount.setText(Math.max(0, count) + " friends");
+            updateDynamicBadges();
+        });
 
-        viewModel.getAchievements().observe(getViewLifecycleOwner(), badges -> {
-            if (badges == null) return;
-            tvTrophyCount.setText(badges.size() + " Trophies");
-            badgeAdapter.updateData(badges);
+        viewModel.isFriend().observe(getViewLifecycleOwner(), isFriend -> {
+            if (!viewingOwnProfile && getView() != null) {
+                getView().findViewById(R.id.btnMessage).setVisibility(isFriend ? View.VISIBLE : View.GONE);
+                getView().findViewById(R.id.btnAddFriend).setVisibility(isFriend ? View.GONE : View.VISIBLE);
+            }
         });
 
         viewModel.getWallPosts().observe(getViewLifecycleOwner(), posts -> {
@@ -267,12 +288,19 @@ public class SocialProfileFragment extends BaseFragment {
                     break;
                 }
             }
-            // ui-consistency: earnedCount param
-            bindPinnedAchievement(firstMilestone, posts.size(), 0);
-            showEmptyState(posts.isEmpty());
-            if (layoutActionCards != null) {
-                layoutActionCards.setVisibility(posts.isEmpty() ? View.VISIBLE : View.GONE);
+
+            boolean isEmpty = posts.isEmpty();
+            showEmptyState(isEmpty);
+            if (!isEmpty) {
+                ProfileAchievementState state = evaluateAchievements(new ArrayList<>(posts));
+                bindPinnedAchievement(firstMilestone, posts.size(), state.earnedCount);
+                updateStreakState(state.currentStreakDays);
             }
+            if (layoutActionCards != null) {
+                layoutActionCards.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
+            }
+            
+            updateDynamicBadges();
         });
 
         viewModel.getIsDeleteSuccess().observe(getViewLifecycleOwner(), success -> {
@@ -284,6 +312,14 @@ public class SocialProfileFragment extends BaseFragment {
 
         viewModel.getErrorMessage().observe(getViewLifecycleOwner(), error -> {
             if (error != null && !error.isEmpty()) toast(error);
+        });
+
+        viewModel.isFriend().observe(getViewLifecycleOwner(), isFriend -> {
+            if (!viewingOwnProfile && getView() != null) {
+                getView().findViewById(R.id.btnMessage).setVisibility(isFriend ? View.VISIBLE : View.GONE);
+                getView().findViewById(R.id.btnUnfriend).setVisibility(isFriend ? View.VISIBLE : View.GONE);
+                getView().findViewById(R.id.btnAddFriend).setVisibility(isFriend ? View.GONE : View.VISIBLE);
+            }
         });
     }
 
@@ -377,14 +413,43 @@ public class SocialProfileFragment extends BaseFragment {
     private void updateStreakState(int currentStreakDays) {
         if (tvStreakCount == null) return;
         int days = Math.max(0, currentStreakDays);
-        boolean active = days >= 2;
-        tvStreakCount.setText(days + " days");
+        boolean active = days > 0;
+        tvStreakCount.setText(days + (days == 1 ? " day" : " days"));
         tvStreakCount.setBackgroundResource(active
                 ? R.drawable.bg_profile_streak_fire_circle
                 : R.drawable.bg_profile_streak_fire_circle_inactive);
         tvStreakCount.setTextColor(androidx.core.content.ContextCompat.getColor(
                 requireContext(), active ? R.color.status_red : R.color.item_description));
         tvStreakCount.setAlpha(active ? 1f : 0.65f);
+    }
+    
+    private void updateDynamicBadges() {
+        java.util.List<ProfileAchievementAdapter.BadgeMeta> badges = new java.util.ArrayList<>();
+        int postCount = viewModel.getWallPosts().getValue() != null ? viewModel.getWallPosts().getValue().size() : 0;
+        int friendCount = viewModel.getFriendCount().getValue() != null ? viewModel.getFriendCount().getValue() : 0;
+        
+        long streakDays = 0;
+        if (viewModel.getWallPosts().getValue() != null && !viewModel.getWallPosts().getValue().isEmpty()) {
+            streakDays = evaluateAchievements(new ArrayList<>(viewModel.getWallPosts().getValue())).currentStreakDays;
+        }
+        int fireCount = (int) Math.max(0, streakDays);
+
+        if (postCount > 0) {
+            badges.add(new ProfileAchievementAdapter.BadgeMeta("First Post", "📝", "#FFF59D"));
+        }
+        if (friendCount >= 10) {
+            badges.add(new ProfileAchievementAdapter.BadgeMeta("Diplomat", "🤝", "#A5D6A7"));
+        }
+        if (fireCount >= 3) {
+            badges.add(new ProfileAchievementAdapter.BadgeMeta("Consistency", "🔥", "#EF9A9A"));
+        }
+
+        if (tvTrophyCount != null) {
+            tvTrophyCount.setText(badges.size() + (badges.size() == 1 ? " achievement" : " achievements"));
+        }
+        if (badgeAdapter != null) {
+            badgeAdapter.updateData(badges);
+        }
     }
 
     

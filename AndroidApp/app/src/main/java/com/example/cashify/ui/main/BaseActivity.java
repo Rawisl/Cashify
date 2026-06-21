@@ -251,6 +251,13 @@ public abstract class BaseActivity extends AppCompatActivity {
             });
         }
 
+        if (bellIcon != null) {
+            bellIcon.setOnClickListener(v -> {
+                com.example.cashify.ui.notifications.NotificationBottomSheet bottomSheet = new com.example.cashify.ui.notifications.NotificationBottomSheet();
+                bottomSheet.show(getSupportFragmentManager(), "NotificationBottomSheet");
+            });
+        }
+
         MainViewModel mainViewModel = new ViewModelProvider(this).get(MainViewModel.class);
         if (badgeView != null) {
             mainViewModel.getUnreadNotificationCount().observe(this, count -> {

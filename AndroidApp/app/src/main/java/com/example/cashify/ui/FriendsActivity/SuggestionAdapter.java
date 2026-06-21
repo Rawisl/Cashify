@@ -27,6 +27,7 @@ public class SuggestionAdapter extends RecyclerView.Adapter<SuggestionAdapter.Vi
         void onAddFriend(User user);
         void onCancelRequest(User user);
         void onSeeAll();
+        void onAvatarClick(User user);
     }
 
     private List<User> users;
@@ -76,6 +77,10 @@ public class SuggestionAdapter extends RecyclerView.Adapter<SuggestionAdapter.Vi
         userHolder.tvFriendName.setText(user.getNameToShow());
         userHolder.tvStatus.setText(user.getEmail() != null ? user.getEmail() : "Cashify User");
         ImageHelper.loadAvatar(user.getAvatarUrl(), userHolder.imgAvatar, user.getNameToShow());
+
+        userHolder.imgAvatar.setOnClickListener(v -> {
+            if (listener != null) listener.onAvatarClick(user);
+        });
 
         // Status: 2 = Request Sent (Pending)
         boolean isRequestPending = user.getFriendStatus() == 2;

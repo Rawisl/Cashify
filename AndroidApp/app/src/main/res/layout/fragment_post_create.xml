@@ -50,95 +50,41 @@
                         android:scaleType="centerCrop"
                         android:src="@drawable/bg_default_avatar_pastel" />
 
-                    <TextView
-                        android:id="@+id/txtComposerName"
+                    <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="12dp"
                         android:layout_weight="1"
-                        android:ellipsize="end"
-                        android:fontFamily="@font/inter_bold"
-                        android:maxLines="1"
-                        android:text="@string/hello_creator"
-                        android:textColor="@color/brand_primary"
-                        android:textSize="22sp" />
+                        android:orientation="vertical">
 
-                    <ImageView
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:background="@drawable/bg_mini_pill"
-                        android:padding="10dp"
-                        android:src="@drawable/ic_notification_regular"
-                        app:tint="@color/brand_primary" />
-                </LinearLayout>
+                        <TextView
+                            android:id="@+id/txtComposerName"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:ellipsize="end"
+                            android:fontFamily="@font/inter_bold"
+                            android:maxLines="1"
+                            android:text="@string/hello_creator"
+                            android:textColor="@color/brand_primary"
+                            android:textSize="18sp" />
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="58dp"
-                    android:layout_marginTop="18dp"
-                    android:background="@drawable/bg_privacy_editorial_dock"
-                    android:elevation="1dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingStart="10dp"
-                    android:paddingEnd="10dp">
-
-                    <TextView
-                        android:id="@+id/btnAudience"
-                        android:layout_width="0dp"
-                        android:layout_height="42dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_publish_editorial"
-                        android:clickable="true"
-                        android:drawableStart="@drawable/ic_privacy_public"
-                        android:drawablePadding="6dp"
-                        android:drawableTint="@color/white"
-                        android:focusable="true"
-                        android:fontFamily="@font/inter_bold"
-                        android:gravity="center"
-                        android:paddingStart="6dp"
-                        android:paddingEnd="6dp"
-                        android:text="@string/public_state"
-                        android:textColor="@color/white"
-                        android:textSize="13sp" />
-
-                    <TextView
-                        android:id="@+id/btnAudienceFriends"
-                        android:layout_width="0dp"
-                        android:layout_height="42dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_privacy_option_inactive"
-                        android:clickable="true"
-                        android:drawableStart="@drawable/ic_friends"
-                        android:drawablePadding="6dp"
-                        android:drawableTint="@color/item_title"
-                        android:focusable="true"
-                        android:fontFamily="@font/inter_medium"
-                        android:gravity="center"
-                        android:paddingStart="6dp"
-                        android:paddingEnd="6dp"
-                        android:text="@string/social_profile_friends"
-                        android:textColor="@color/item_title"
-                        android:textSize="13sp" />
-
-                    <TextView
-                        android:id="@+id/btnAudiencePrivate"
-                        android:layout_width="0dp"
-                        android:layout_height="42dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_privacy_option_inactive"
-                        android:clickable="true"
-                        android:drawableStart="@drawable/ic_privacy_lock"
-                        android:drawablePadding="6dp"
-                        android:drawableTint="@color/item_title"
-                        android:focusable="true"
-                        android:fontFamily="@font/inter_medium"
-                        android:gravity="center"
-                        android:paddingStart="6dp"
-                        android:paddingEnd="6dp"
-                        android:text="@string/private_state"
-                        android:textColor="@color/item_title"
-                        android:textSize="13sp" />
+                        <TextView
+                            android:id="@+id/btnAudienceSelector"
+                            android:layout_width="wrap_content"
+                            android:layout_height="24dp"
+                            android:layout_marginTop="4dp"
+                            android:background="@drawable/bg_social_warm_chip"
+                            android:drawableEnd="@drawable/ic_arrow_drop_down"
+                            android:drawablePadding="4dp"
+                            android:drawableTint="#1A237E"
+                            android:fontFamily="@font/inter_bold"
+                            android:gravity="center"
+                            android:paddingStart="9dp"
+                            android:paddingEnd="4dp"
+                            android:text="@string/public_state"
+                            android:textColor="#1A237E"
+                            android:textSize="11sp" />
+                    </LinearLayout>
                 </LinearLayout>
 
                 <LinearLayout
@@ -243,9 +189,9 @@
                         android:inputType="textCapSentences"
                         android:maxLength="80"
                         android:padding="0dp"
-                        android:textColor="@color/brand_primary"
+                        android:textColor="#333333"
                         android:textColorHint="@color/btn_disabled_text"
-                        android:textSize="22sp" />
+                        android:textSize="18sp" />
 
                     <View
                         android:id="@+id/dividerTitle"
@@ -260,17 +206,17 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:background="@android:color/transparent"
-                        android:fontFamily="@font/inter_regular"
+                        android:fontFamily="@font/inter_medium"
                         android:gravity="top|start"
                         android:hint="@string/post_content"
                         android:inputType="textMultiLine|textCapSentences"
-                        android:lineSpacingExtra="5dp"
+                        android:lineSpacingExtra="6dp"
                         android:maxLength="280"
                         android:minHeight="120dp"
                         android:padding="0dp"
                         android:textColor="@color/item_title"
                         android:textColorHint="@color/btn_disabled_text"
-                        android:textSize="18sp" />
+                        android:textSize="17sp" />
 
                     <View
                         android:layout_width="match_parent"

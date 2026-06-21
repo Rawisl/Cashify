@@ -215,8 +215,10 @@ public class SocialNewsfeedFragment extends BaseFragment {
 
         viewModel.getProfile().observe(getViewLifecycleOwner(), doc -> {
             FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-            if (user != null && createAvatar != null) {
-                ImageHelper.loadAvatar(user.getPhotoUrl(), createAvatar, user.getDisplayName());
+            if (user != null) {
+                if (createAvatar != null) {
+                    ImageHelper.loadAvatar(user.getPhotoUrl(), createAvatar, user.getDisplayName());
+                }
             }
         });
 
@@ -294,8 +296,12 @@ public class SocialNewsfeedFragment extends BaseFragment {
     }
 
     private void runPressAnimation(View view, Runnable action) {
-        view.animate().scaleX(0.98f).scaleY(0.98f).setDuration(70)
-                .withEndAction(() -> view.animate().scaleX(1f).scaleY(1f).setDuration(90).withEndAction(action).start()).start();
+        view.animate().scaleX(0.85f).scaleY(0.85f).setDuration(100)
+                .withEndAction(() -> {
+                    view.animate().scaleX(1f).scaleY(1f).setDuration(250)
+                            .setInterpolator(new android.view.animation.OvershootInterpolator(2f))
+                            .withEndAction(action).start();
+                }).start();
     }
 
     

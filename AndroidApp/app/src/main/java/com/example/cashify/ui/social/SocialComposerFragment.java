@@ -64,13 +64,12 @@ public class SocialComposerFragment extends Fragment {
     private SocialComposerViewModel viewModel;
     private EditText editPostContent;
     private EditText editPostTitle;
-    private TextView txtComposerCount, txtComposerHint, btnAudience;
-    private TextView btnAudienceFriends, btnAudiencePrivate;
+    private TextView txtComposerCount, txtComposerHint, btnAudienceSelector;
     private TextView actionMilestone, actionThoughts, actionAnalysis, actionShare, actionPhoto;
     private LinearLayout panelCategoryMode;
     private ImageView imgModeIcon, imgPostPreview, imgComposerAvatar;
     private TextView txtModeKicker, txtModeTitle, txtModeDescription, txtModePrompt;
-    private MaterialButton btnSubmitPost;
+    private android.view.MenuItem postMenuItem;
     private ProgressBar progressPosting;
     private FrameLayout imagePreviewContainer;
     private ChipGroup chipGroupTopics;
@@ -133,16 +132,17 @@ public class SocialComposerFragment extends Fragment {
         setupObservers();
 
         ImageView btnRemoveMilestonePreview = view.findViewById(R.id.btnRemoveMilestonePreview);
-        btnRemoveMilestonePreview.setOnClickListener(v -> {
-            milestonePreviewContainer.setVisibility(View.GONE);
-            milestoneMode = false;
-            generatedMilestoneJson = null;
-            actionPhoto.setVisibility(View.VISIBLE);
+        if (btnRemoveMilestonePreview != null) {
+            btnRemoveMilestonePreview.setOnClickListener(v -> {
+                milestonePreviewContainer.setVisibility(View.GONE);
+                milestoneMode = false;
+                generatedMilestoneJson = null;
+                actionPhoto.setVisibility(View.VISIBLE);
 
-            // ĐÃ XÓA: Lệnh gọi un-hide actionMilestone dư thừa
-            txtComposerHint.setText("What financial story would you like to share today?");
-            updateSubmitState();
-        });
+                if (txtComposerHint != null) txtComposerHint.setText("What financial story would you like to share today?");
+                updateSubmitState();
+            });
+        }
     }
 
     @Override
@@ -156,9 +156,7 @@ public class SocialComposerFragment extends Fragment {
         editPostTitle = view.findViewById(R.id.editPostTitle);
         txtComposerCount = view.findViewById(R.id.txtComposerCount);
         txtComposerHint = null; // Removed from UI
-        btnAudience = view.findViewById(R.id.btnAudience);
-        btnAudienceFriends = view.findViewById(R.id.btnAudienceFriends);
-        btnAudiencePrivate = view.findViewById(R.id.btnAudiencePrivate);
+        btnAudienceSelector = view.findViewById(R.id.btnAudienceSelector);
         actionMilestone = view.findViewById(R.id.actionMilestone);
         actionThoughts = view.findViewById(R.id.actionThoughts);
         actionAnalysis = view.findViewById(R.id.actionAnalysis);
@@ -170,7 +168,6 @@ public class SocialComposerFragment extends Fragment {
         txtModeTitle = view.findViewById(R.id.txtModeTitle);
         txtModeDescription = view.findViewById(R.id.txtModeDescription);
         txtModePrompt = view.findViewById(R.id.txtModePrompt);
-        btnSubmitPost = null; // Removed from UI
         progressPosting = null; // Removed from UI
         imagePreviewContainer = view.findViewById(R.id.imagePreviewContainer);
         imgPostPreview = view.findViewById(R.id.imgPostPreview);
@@ -190,9 +187,10 @@ public class SocialComposerFragment extends Fragment {
     private void setupToolbar(View view) {
         MaterialToolbar toolbar = view.findViewById(R.id.toolbarCreatePost);
         toolbar.setNavigationOnClickListener(v -> navigateBack());
-        
-        toolbar.getMenu().add(android.view.Menu.NONE, 1, android.view.Menu.NONE, "Post")
-               .setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_ALWAYS);
+        postMenuItem = toolbar.getMenu().add(android.view.Menu.NONE, 1, android.view.Menu.NONE, "POST");
+        postMenuItem.setIcon(R.drawable.ic_send);
+        postMenuItem.setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_ALWAYS | android.view.MenuItem.SHOW_AS_ACTION_WITH_TEXT);
+
         toolbar.setOnMenuItemClickListener(item -> {
             if (item.getItemId() == 1) {
                 if (editPostContent != null && editPostContent.getText().toString().trim().length() > 0 ||
@@ -242,10 +240,9 @@ public class SocialComposerFragment extends Fragment {
         handleIncomingArguments();
 
         updateAudienceButton();
-        updateAudienceDock();
-        btnAudience.setOnClickListener(v -> showAudienceMenu(v));
-        btnAudienceFriends.setOnClickListener(v -> selectAudience("Friends"));
-        btnAudiencePrivate.setOnClickListener(v -> selectAudience("Private"));
+        if (btnAudienceSelector != null) {
+            btnAudienceSelector.setOnClickListener(v -> showAudienceMenu(v));
+        }
 
         actionPhoto.setOnClickListener(v -> pickImageLauncher.launch("image/*"));
         actionMilestone.setOnClickListener(v -> {
@@ -259,9 +256,6 @@ public class SocialComposerFragment extends Fragment {
 
         setupTopicHashtags();
         view.findViewById(R.id.btnRemoveImage).setOnClickListener(v -> clearSelectedImage());
-        if (btnSubmitPost != null) {
-            btnSubmitPost.setOnClickListener(v -> submitPost());
-        }
 
         applyInitialCategoryArgument();
         updateCategoryTiles();
@@ -360,8 +354,7 @@ public class SocialComposerFragment extends Fragment {
                     if (actionPhoto != null) actionPhoto.setVisibility(View.GONE);
                 } catch (Exception ignored) {}
             }
-
-            btnSubmitPost.setText("Save changes");
+            if (postMenuItem != null) postMenuItem.setTitle("SAVE");
             txtComposerHint.setText("What's on your mind? Edit your post here...");
         }
     }
@@ -416,7 +409,6 @@ public class SocialComposerFragment extends Fragment {
     private void selectAudience(String audience) {
         selectedAudience = audience;
         updateAudienceButton();
-        updateAudienceDock();
     }
 
     private void showAudienceMenu(View anchor) {
@@ -465,21 +457,15 @@ public class SocialComposerFragment extends Fragment {
         item.setOnClickListener(v -> {
             selectedAudience = label;
             updateAudienceButton();
-            updateAudienceDock();
             if (audiencePopup != null) audiencePopup.dismiss();
         });
         menu.addView(item, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
     }
 
     private void updateAudienceButton() {
-        btnAudience.setText(selectedAudience);
-        btnAudience.setTextColor(ContextCompat.getColor(requireContext(), R.color.brand_primary));
-        btnAudience.setCompoundDrawablePadding(dp(8));
-        btnAudience.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                tintedDrawable(iconForAudience(selectedAudience)), null,
-                tintedDrawable(R.drawable.ic_angle_down_regular), null
-        );
-        btnAudience.setCompoundDrawableTintList(ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.brand_primary)));
+        if (btnAudienceSelector != null) {
+            btnAudienceSelector.setText(selectedAudience);
+        }
     }
 
     private int iconForAudience(String audience) {
@@ -494,25 +480,6 @@ public class SocialComposerFragment extends Fragment {
         Drawable wrapped = DrawableCompat.wrap(drawable.mutate());
         DrawableCompat.setTint(wrapped, ContextCompat.getColor(requireContext(), R.color.brand_primary));
         return wrapped;
-    }
-
-    private void updateAudienceDock() {
-        updateAudienceOption(btnAudience, "Public", R.drawable.ic_privacy_public);
-        updateAudienceOption(btnAudienceFriends, "Friends", R.drawable.ic_friends);
-        updateAudienceOption(btnAudiencePrivate, "Only Me", R.drawable.ic_privacy_lock);
-    }
-
-    private void updateAudienceOption(TextView view, String label, int iconRes) {
-        boolean selected = label.equals(selectedAudience);
-        int textColor = ContextCompat.getColor(requireContext(), selected ? R.color.white : R.color.item_title);
-        int iconColor = ContextCompat.getColor(requireContext(), selected ? R.color.white : R.color.item_title);
-
-        view.setText("Only Me".equals(label) ? "Private" : label);
-        view.setTextColor(textColor);
-        view.setBackgroundResource(selected ? R.drawable.bg_publish_editorial : R.drawable.bg_privacy_option_inactive);
-        view.setCompoundDrawablePadding(dp(6));
-        view.setCompoundDrawablesRelativeWithIntrinsicBounds(tintedDrawable(iconRes, iconColor), null, null, null);
-        view.setCompoundDrawableTintList(ColorStateList.valueOf(iconColor));
     }
 
     private Drawable tintedDrawable(int iconRes, int color) {
@@ -699,8 +666,8 @@ public class SocialComposerFragment extends Fragment {
         txtModeDescription.setText(description);
         txtModePrompt.setText(prompt);
         editPostContent.setHint(composerHint);
-        txtComposerHint.setText(prompt);
-        btnSubmitPost.setText(submitText);
+        if (txtComposerHint != null) txtComposerHint.setText(prompt);
+        if (postMenuItem != null) postMenuItem.setTitle(submitText.toUpperCase());
     }
 
     private void updateCategoryTile(TextView tile, String category, int normalBg, String normalTextColor, String normalIconColor) {
@@ -717,7 +684,7 @@ public class SocialComposerFragment extends Fragment {
         imgPostPreview.setImageDrawable(null);
         imagePreviewContainer.setVisibility(View.GONE);
         if (!milestoneMode) actionPhoto.setVisibility(View.VISIBLE);
-        txtComposerHint.setText("Image removed.");
+        if (txtComposerHint != null) txtComposerHint.setText("Image removed.");
         updateSubmitState();
     }
 
@@ -811,13 +778,13 @@ public class SocialComposerFragment extends Fragment {
 
     private void setPosting(boolean posting) {
         if (progressPosting != null) progressPosting.setVisibility(posting ? View.VISIBLE : View.GONE);
-        if (btnSubmitPost != null) {
-            btnSubmitPost.setEnabled(!posting);
-            btnSubmitPost.setText(posting ? "Posting..." : publishTextForCategory());
+        if (postMenuItem != null) {
+            postMenuItem.setEnabled(!posting);
+            postMenuItem.setTitle(posting ? "POSTING..." : publishTextForCategory().toUpperCase());
         }
         if (actionPhoto != null) actionPhoto.setEnabled(!posting);
         if (actionMilestone != null) actionMilestone.setEnabled(!posting);
-        if (btnAudience != null) btnAudience.setEnabled(!posting);
+        if (btnAudienceSelector != null) btnAudienceSelector.setEnabled(!posting);
         if (editPostContent != null) editPostContent.setEnabled(!posting);
     }
 
@@ -840,9 +807,11 @@ public class SocialComposerFragment extends Fragment {
 
         boolean canSubmit = hasText || hasTitle || hasImage || hasMilestone;
 
-        if (btnSubmitPost != null) {
-            btnSubmitPost.setEnabled(canSubmit);
-            btnSubmitPost.setAlpha(canSubmit ? 1f : 0.55f);
+        if (postMenuItem != null) {
+            postMenuItem.setEnabled(canSubmit);
+            if (postMenuItem.getIcon() != null) {
+                postMenuItem.getIcon().setAlpha(canSubmit ? 255 : 128);
+            }
         }
         int count = editPostContent == null ? 0 : editPostContent.length();
         int color = count > 250 ? R.color.status_red : R.color.item_description;

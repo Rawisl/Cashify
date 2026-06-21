@@ -117,7 +117,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="14dp"
             android:fontFamily="@font/inter_bold"
-            android:textColor="@color/brand_primary"
+            android:textColor="#333333"
             android:textSize="18sp"
             android:visibility="gone"
             tools:text="Title"
@@ -128,10 +128,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:fontFamily="@font/inter_regular"
+            android:fontFamily="@font/inter_medium"
             android:lineSpacingExtra="6dp"
             android:textColor="@color/item_title"
-            android:textSize="16sp"
+            android:textSize="17sp"
             android:maxLines="5"
             android:ellipsize="end"
             tools:text="@string/subquote" />
@@ -204,24 +204,6 @@
             android:orientation="horizontal"
             android:paddingStart="4dp"
             android:paddingEnd="4dp">
-
-            <TextView
-                android:id="@+id/tvPostEngagementSummary"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:fontFamily="@font/inter_regular"
-                android:text="@string/like_comment"
-                android:textColor="@color/item_description"
-                android:textSize="12sp" />
-
-            <TextView
-                android:id="@+id/tvPostShareSummary"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="@font/inter_regular"
-                android:textColor="@color/item_description"
-                android:textSize="12sp" />
         </LinearLayout>
 
         <LinearLayout
@@ -279,6 +261,7 @@
                 android:paddingEnd="12dp">
 
                 <ImageView
+                    android:id="@+id/imgCommentIcon"
                     android:layout_width="22dp"
                     android:layout_height="22dp"
                     android:src="@drawable/ic_comment"
@@ -310,6 +293,7 @@
                 android:paddingEnd="12dp">
 
                 <ImageView
+                    android:id="@+id/imgShareIcon"
                     android:layout_width="22dp"
                     android:layout_height="22dp"
                     android:src="@drawable/ic_share"

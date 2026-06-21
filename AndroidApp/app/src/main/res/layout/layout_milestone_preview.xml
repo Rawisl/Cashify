@@ -35,8 +35,14 @@
                 android:gravity="center"
                 android:includeFontPadding="false"
                 android:textColor="#B8892B"
-                android:textSize="22sp"
-                tools:text="🐝" />
+                android:fontFamily="@font/inter_bold"
+                android:maxLines="1"
+                app:autoSizeTextType="uniform"
+                app:autoSizeMinTextSize="10sp"
+                app:autoSizeMaxTextSize="20sp"
+                app:autoSizeStepGranularity="1sp"
+                android:textSize="18sp"
+                tools:text="107%" />
 
             <LinearLayout
                 android:layout_width="0dp"
