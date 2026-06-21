@@ -6,6 +6,7 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
+import com.example.cashify.data.remote.ApiDto;
 import com.example.cashify.utils.ApiClient;
 import com.example.cashify.utils.ApiService;
 
@@ -19,8 +20,8 @@ public class PostDetailViewModel extends ViewModel {
 
     private final ApiService apiService = ApiClient.getClient().create(ApiService.class);
 
-    private final MutableLiveData<ApiService.SocialPostDetailResponse> postDetail = new MutableLiveData<>();
-    public LiveData<ApiService.SocialPostDetailResponse> getPostDetail() { return postDetail; }
+    private final MutableLiveData<ApiDto.SocialPostDetailResponse> postDetail = new MutableLiveData<>();
+    public LiveData<ApiDto.SocialPostDetailResponse> getPostDetail() { return postDetail; }
 
     private final MutableLiveData<List<Object>> comments = new MutableLiveData<>();
     public LiveData<List<Object>> getComments() { return comments; }
@@ -37,20 +38,20 @@ public class PostDetailViewModel extends ViewModel {
     // Tải bài viết
     public void loadPost(String postId, String token) {
         isLoading.setValue(true);
-        apiService.getPostDetail(postId, token).enqueue(new Callback<ApiService.SocialPostDetailResponse>() {
+        apiService.getPostDetail(postId, token).enqueue(new Callback<ApiDto.SocialPostDetailResponse>() {
             @Override
-            public void onResponse(@NonNull Call<ApiService.SocialPostDetailResponse> call, @NonNull Response<ApiService.SocialPostDetailResponse> response) {
+            public void onResponse(@NonNull Call<ApiDto.SocialPostDetailResponse> call, @NonNull Response<ApiDto.SocialPostDetailResponse> response) {
                 isLoading.setValue(false);
                 if (response.isSuccessful() && response.body() != null) {
                     postDetail.setValue(response.body());
                 } else {
-                    errorMessage.setValue("Bài viết không tồn tại.");
+                    errorMessage.setValue("Post does not exist");
                 }
             }
             @Override
-            public void onFailure(@NonNull Call<ApiService.SocialPostDetailResponse> call, @NonNull Throwable t) {
+            public void onFailure(@NonNull Call<ApiDto.SocialPostDetailResponse> call, @NonNull Throwable t) {
                 isLoading.setValue(false);
-                errorMessage.setValue("Lỗi mạng: " + t.getMessage());
+                errorMessage.setValue("Internet error: " + t.getMessage());
             }
         });
     }
@@ -66,14 +67,14 @@ public class PostDetailViewModel extends ViewModel {
             }
             @Override
             public void onFailure(@NonNull Call<List<Object>> call, @NonNull Throwable t) {
-                Log.e("PostDetailVM", "Lỗi load comments: " + t.getMessage());
+                Log.e("PostDetailVM", "Failed to load comments: " + t.getMessage());
             }
         });
     }
 
     // Like Bài
     public void toggleLike(String postId, String token, boolean isLiked) {
-        apiService.toggleLike(token, new ApiService.LikeActionRequest(postId, isLiked)).enqueue(new Callback<Object>() {
+        apiService.toggleLike(token, new ApiDto.LikeActionRequest(postId, isLiked)).enqueue(new Callback<Object>() {
             @Override public void onResponse(@NonNull Call<Object> call, @NonNull Response<Object> response) {}
             @Override public void onFailure(@NonNull Call<Object> call, @NonNull Throwable t) {}
         });
@@ -81,52 +82,49 @@ public class PostDetailViewModel extends ViewModel {
 
     // Gửi bình luận
     public void addComment(String postId, String token, String content) {
-        apiService.addComment(token, new ApiService.AddCommentRequest(postId, content)).enqueue(new Callback<Object>() {
+        apiService.addComment(token, new ApiDto.AddCommentRequest(postId, content)).enqueue(new Callback<Object>() {
             @Override
             public void onResponse(@NonNull Call<Object> call, @NonNull Response<Object> response) {
                 if (response.isSuccessful()) loadComments(postId, token); // Reload lại list
-                else errorMessage.setValue("Lỗi gửi bình luận");
+                else errorMessage.setValue("Failed to send comment");
             }
             @Override
             public void onFailure(@NonNull Call<Object> call, @NonNull Throwable t) {
-                errorMessage.setValue("Lỗi mạng: " + t.getMessage());
+                errorMessage.setValue("Network error: " + t.getMessage());
             }
         });
     }
 
-    // ==========================================
-    // API XÓA / SỬA THẬT SỰ Ở ĐÂY SẾP ƠI
-    // ==========================================
     public void deletePost(String postId, String token) {
         isLoading.setValue(true);
-        apiService.deletePost(token, new ApiService.DeletePostRequest(postId)).enqueue(new Callback<Object>() {
+        apiService.deletePost(token, new ApiDto.DeletePostRequest(postId)).enqueue(new Callback<Object>() {
             @Override
             public void onResponse(@NonNull Call<Object> call, @NonNull Response<Object> response) {
                 isLoading.setValue(false);
                 if (response.isSuccessful()) isActionSuccess.setValue(true); // Báo về UI để đóng màn hình
-                else errorMessage.setValue("Lỗi xóa bài");
+                else errorMessage.setValue("Failed to delete post");
             }
             @Override
             public void onFailure(@NonNull Call<Object> call, @NonNull Throwable t) {
                 isLoading.setValue(false);
-                errorMessage.setValue("Lỗi mạng");
+                errorMessage.setValue("Network error");
             }
         });
     }
 
     public void deleteComment(String postId, String commentId, String token) {
-        apiService.deleteComment(token, new ApiService.DeleteCommentRequest(postId, commentId)).enqueue(new Callback<Object>() {
+        apiService.deleteComment(token, new ApiDto.DeleteCommentRequest(postId, commentId)).enqueue(new Callback<Object>() {
             @Override
             public void onResponse(@NonNull Call<Object> call, @NonNull Response<Object> response) {
                 if (response.isSuccessful()) loadComments(postId, token);
-                else errorMessage.setValue("Lỗi xóa bình luận");
+                else errorMessage.setValue("Failed to delete comment");
             }
             @Override public void onFailure(@NonNull Call<Object> call, @NonNull Throwable t) {}
         });
     }
 
     public void editComment(String postId, String commentId, String newContent, String token) {
-        ApiService.EditCommentRequest req = new ApiService.EditCommentRequest();
+        ApiDto.EditCommentRequest req = new ApiDto.EditCommentRequest();
         req.PostId = postId;
         req.CommentId = commentId;
         req.NewContent = newContent;
@@ -135,7 +133,7 @@ public class PostDetailViewModel extends ViewModel {
             @Override
             public void onResponse(@NonNull Call<Object> call, @NonNull Response<Object> response) {
                 if (response.isSuccessful()) loadComments(postId, token);
-                else errorMessage.setValue("Lỗi sửa bình luận");
+                else errorMessage.setValue("Failed to update comment");
             }
             @Override public void onFailure(@NonNull Call<Object> call, @NonNull Throwable t) {}
         });
@@ -146,7 +144,7 @@ public class PostDetailViewModel extends ViewModel {
     public void editPost(String postId, String newContent, String token) {
         isLoading.setValue(true);
 
-        ApiService.EditPostRequest req = new ApiService.EditPostRequest();
+        ApiDto.EditPostRequest req = new ApiDto.EditPostRequest();
         req.PostId = postId;
         req.NewContent = newContent;
 
@@ -157,14 +155,14 @@ public class PostDetailViewModel extends ViewModel {
                 if (response.isSuccessful()) {
                     loadPost(postId, token); // Sửa xong thì load lại bài mới
                 } else {
-                    errorMessage.setValue("Lỗi sửa bài viết");
+                    errorMessage.setValue("Failed to update post");
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<Object> call, @NonNull Throwable t) {
                 isLoading.setValue(false);
-                errorMessage.setValue("Lỗi mạng: " + t.getMessage());
+                errorMessage.setValue("Network error: " + t.getMessage());
             }
         });
     }

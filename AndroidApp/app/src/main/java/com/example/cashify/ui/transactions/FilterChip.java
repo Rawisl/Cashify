@@ -6,22 +6,26 @@ public class FilterChip {
         DATE, TYPE, METHOD, CATEGORY
     }
 
-    private String label;        // Nhãn mặc định (vd: "Thời gian")
-    private String activeLabel;  // Nhãn khi đã chọn (vd: "Hôm nay")
-    private FilterType type;     // Loại filter
-    private boolean isActive;    // Trạng thái chip có đang được filter hay không
-    private int iconRes;         // ID ảnh Icon từ drawable (0 nếu không dùng)
+    private String label;        // Default label (e.g., "Time")
+    private String activeLabel;  // Label when active (e.g., "Today")
+    private FilterType type;     // Type of filter
+    private boolean isActive;    // Active state of the chip
+    private int iconRes;         // Drawable resource ID (0 if not used)
 
-    // 1. Constructor 2 tham số (Dùng cho initDefaultChips không truyền ảnh)
+    /**
+     * Constructor for text-only chips (no custom icon).
+     */
     public FilterChip(String label, FilterType type) {
         this.label = label;
         this.activeLabel = label;
         this.type = type;
         this.isActive = false;
-        this.iconRes = 0; // 0 nghĩa là mặc định không dùng ảnh drawable
+        this.iconRes = 0; // 0 indicates no specific drawable
     }
 
-    // 2. Constructor 3 tham số (Dùng khi bạn muốn gán sẵn 1 icon cụ thể)
+    /**
+     * Constructor for chips with a specific icon.
+     */
     public FilterChip(String label, FilterType type, int iconRes) {
         this.label = label;
         this.activeLabel = label;
@@ -30,7 +34,9 @@ public class FilterChip {
         this.iconRes = iconRes;
     }
 
-    // --- GETTERS VÀ SETTERS ---
+    // =========================================================================
+    // GETTERS & SETTERS
+    // =========================================================================
 
     public String getFilLabel() {
         return label;

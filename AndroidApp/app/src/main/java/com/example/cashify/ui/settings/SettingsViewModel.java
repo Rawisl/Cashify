@@ -1,55 +1,85 @@
 package com.example.cashify.ui.settings;
 
 import android.content.Context;
+import android.util.Log;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
+import com.example.cashify.data.local.AppDatabase;
 import com.example.cashify.data.model.User;
 import com.example.cashify.data.remote.FirebaseManager;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
 
+import java.util.concurrent.Executors;
+
+/**
+ * SettingsViewModel.java
+ * Handles user profile real-time updates, local database cleanup, and secure logout.
+ */
 public class SettingsViewModel extends ViewModel {
-    //(Bộ não xử lý hiện Avatar, Tên, Logout)
-    //Real-time là vua: Tại sao tớ khuyên dùng addSnapshotListener? Vì nếu bạn dev UI làm thêm cái Dialog đổi tên ở chỗ khác, user vừa bấm "Lưu" xong, quay lại tab Settings là thấy tên mới luôn mà không cần load lại. Cảm giác app rất "mượt".
-    //Xử lý Logout: Nhắc bạn dev UI là khi isLoggedOut về true, ngoài việc chuyển sang LoginActivity, phải dùng Flag Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK để xóa sạch lịch sử các màn hình trước đó. Tránh việc user bấm nút Back mà lại quay ngược vào được app khi đã logout.
+
+    private static final String TAG = "SettingsViewModel";
+
+    // --- State & Data LiveData ---
     private final MutableLiveData<User> _userData = new MutableLiveData<>();
     public LiveData<User> userData = _userData;
 
     private final MutableLiveData<Boolean> _isLoggedOut = new MutableLiveData<>(false);
     public LiveData<Boolean> isLoggedOut = _isLoggedOut;
 
+    private final MutableLiveData<ResultStatus> resetStatus = new MutableLiveData<>();
+    public LiveData<ResultStatus> getResetStatus() { return resetStatus; }
+
+    // Listener to prevent memory leaks
+    private ListenerRegistration userProfileListener;
+
     public SettingsViewModel() {
-        // TODO 1: Khởi tạo Firebase instances cần thiết
         loadUserProfile();
     }
 
-    // ============================================================
-    // TODO 2: TẢI THÔNG TIN NGƯỜI DÙNG
-    // - Lấy UID từ FirebaseAuth.getCurrentUser().
-    // - Truy cập Firestore collection "users" document(uid).
-    // - Dùng .addSnapshotListener() để nếu user có đổi tên ở màn hình khác,
-    //   màn hình Settings cũng tự cập nhật theo (Real-time).
-    // - Update dữ liệu vào _userData.
-    // ============================================================
+    /**
+     * Attaches a real-time listener to the current user's Firestore document.
+     * Instantly reflects any profile changes (e.g., name, avatar) made in other screens.
+     */
     public void loadUserProfile() {
-        // Viết logic lấy data real-time ở đây
+        String uid = FirebaseManager.getInstance().getCurrentUserId();
+        if (uid == null) return;
+
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        // Remove existing listener if any, before attaching a new one
+        if (userProfileListener != null) {
+            userProfileListener.remove();
+        }
+
+        userProfileListener = db.collection("users").document(uid)
+                .addSnapshotListener((snapshot, e) -> {
+                    if (e != null) {
+                        Log.e(TAG, "Failed to listen to user profile changes.", e);
+                        return;
+                    }
+
+                    if (snapshot != null && snapshot.exists()) {
+                        User user = snapshot.toObject(User.class);
+                        _userData.postValue(user);
+                    }
+                });
     }
 
-    // ============================================================
-    // TODO 3: LOGIC ĐĂNG XUẤT (LOGOUT)
-    // - Gọi FirebaseAuth.getInstance().signOut().
-    // - Xóa trắng các thông tin cache nếu cần (SharedPreferences).
-    // - Set _isLoggedOut = true để Fragment biết mà "đá" user về Login.
-    // ============================================================
+    /**
+     * Executes the logout sequence: Signs out from Firebase and Google Auth.
+     */
     public void logout(Context context) {
-        // Đăng xuất khỏi Firebase
         FirebaseManager.getInstance().logout();
 
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                // Use your actual Web Client ID configured in Google Cloud Console
                 .requestIdToken("195049395718-bagas4hvn2onafmdvd0dqdntsj81o9ef.apps.googleusercontent.com")
                 .requestEmail()
                 .build();
@@ -61,9 +91,58 @@ public class SettingsViewModel extends ViewModel {
         });
     }
 
-    // ============================================================
-    // TODO 4: XỬ LÝ QUYỀN RIÊNG TƯ (TÙY CHỌN)
-    // - Có thể thêm logic ẩn/hiện số dư ở đây nếu ghệ muốn
-    //   làm tính năng "con mắt" che số tiền đi cho riêng tư.
-    // ============================================================
+    /**
+     * Safely clears all local Room Database tables, then triggers logout.
+     */
+    public void clearDataAndLogout(Context context) {
+        Executors.newSingleThreadExecutor().execute(() -> {
+            AppDatabase.getInstance(context).clearAllTables();
+            logout(context);
+        });
+    }
+
+    /**
+     * Deletes all personal transactions from Cloud and Local DB.
+     */
+    public void resetAllTransactions(Context context) {
+        FirebaseManager.getInstance().deleteAllTransactionsFromCloud("PERSONAL", new FirebaseManager.DataCallback<Void>() {
+            @Override
+            public void onSuccess(Void data) {
+                Executors.newSingleThreadExecutor().execute(() -> {
+                    AppDatabase.getInstance(context).transactionDao().deleteAllTransactions("PERSONAL");
+                    resetStatus.postValue(new ResultStatus(true, ""));
+                });
+            }
+
+            @Override
+            public void onError(String message) {
+                resetStatus.postValue(new ResultStatus(false, message));
+            }
+        });
+    }
+
+    public void clearResetStatus() {
+        resetStatus.setValue(null);
+    }
+
+    @Override
+    protected void onCleared() {
+        super.onCleared();
+        // Crucial: Detach the Firestore listener when the ViewModel dies to prevent memory leaks
+        if (userProfileListener != null) {
+            userProfileListener.remove();
+            userProfileListener = null;
+        }
+    }
+
+    // --- Helper Class for Status Observation ---
+    public static class ResultStatus {
+        public boolean isSuccess;
+        public String message;
+
+        public ResultStatus(boolean isSuccess, String message) {
+            this.isSuccess = isSuccess;
+            this.message = message;
+        }
+    }
 }

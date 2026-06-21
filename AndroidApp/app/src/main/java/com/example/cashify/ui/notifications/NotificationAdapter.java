@@ -1,5 +1,6 @@
 package com.example.cashify.ui.notifications;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Color;
 import android.text.format.DateUtils;
@@ -20,6 +21,21 @@ import java.util.List;
 
 public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapter.ViewHolder> {
 
+    // =========================================================================
+    // CONSTANTS: Notification Types & Colors
+    // =========================================================================
+    private static final String TYPE_FRIEND_REQUEST = "FRIEND_REQUEST";
+    private static final String TYPE_WORKSPACE_INVITE = "WORKSPACE_INVITE";
+    private static final String TYPE_WORKSPACE_TRANS = "WORKSPACE_TRANS";
+    private static final String TYPE_WORKSPACE_CHAT = "WORKSPACE_CHAT";
+
+    private static final int COLOR_UNREAD_BG = Color.parseColor("#F9FAFC");
+    private static final int COLOR_ICON_FRIEND = Color.parseColor("#E91E63");
+    private static final int COLOR_ICON_INVITE = Color.parseColor("#4C6FFF");
+    private static final int COLOR_ICON_TRANS = Color.parseColor("#FF9800");
+    private static final int COLOR_ICON_CHAT = Color.parseColor("#4CAF50");
+    private static final int COLOR_ICON_DEFAULT = Color.parseColor("#757575");
+
     private List<NotificationItem> list = new ArrayList<>();
     private final Context context;
     private final OnNotificationClickListener listener;
@@ -33,6 +49,7 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
         this.listener = listener;
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     public void setData(List<NotificationItem> newList) {
         this.list = newList != null ? newList : new ArrayList<>();
         notifyDataSetChanged();
@@ -51,37 +68,38 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
 
         holder.tvTitle.setText(notif.getTitle());
         holder.tvMessage.setText(notif.getMessage());
-
-        // Dùng hàm tính thời gian tự chế bên dưới để không bị lỗi
         holder.tvTime.setText(formatTimeAgo(notif.getTimestamp()));
 
+        // Manage Unread State UI
         holder.viewUnreadDot.setVisibility(notif.isRead() ? View.GONE : View.VISIBLE);
-        holder.itemView.setBackgroundColor(notif.isRead() ? Color.TRANSPARENT : Color.parseColor("#F9FAFC"));
+        holder.itemView.setBackgroundColor(notif.isRead() ? Color.TRANSPARENT : COLOR_UNREAD_BG);
 
+        // Map Notification Types to Icons and Colors
         String type = notif.getType() != null ? notif.getType() : "";
         switch (type) {
-            case "FRIEND_REQUEST":
+            case TYPE_FRIEND_REQUEST:
                 holder.imgIcon.setImageResource(R.drawable.ic_friends_solid);
-                holder.imgIcon.setColorFilter(Color.parseColor("#E91E63"));
+                holder.imgIcon.setColorFilter(COLOR_ICON_FRIEND);
                 break;
-            case "WORKSPACE_INVITE":
+            case TYPE_WORKSPACE_INVITE:
                 holder.imgIcon.setImageResource(android.R.drawable.ic_dialog_email);
-                holder.imgIcon.setColorFilter(Color.parseColor("#4C6FFF"));
+                holder.imgIcon.setColorFilter(COLOR_ICON_INVITE);
                 break;
-            case "WORKSPACE_TRANS":
+            case TYPE_WORKSPACE_TRANS:
                 holder.imgIcon.setImageResource(R.drawable.ic_salary);
-                holder.imgIcon.setColorFilter(Color.parseColor("#FF9800"));
+                holder.imgIcon.setColorFilter(COLOR_ICON_TRANS);
                 break;
-            case "WORKSPACE_CHAT":
-                holder.imgIcon.setImageResource(android.R.drawable.ic_menu_send); // Icon thay thế
-                holder.imgIcon.setColorFilter(Color.parseColor("#4CAF50"));
+            case TYPE_WORKSPACE_CHAT:
+                holder.imgIcon.setImageResource(android.R.drawable.ic_menu_send); // Fallback icon
+                holder.imgIcon.setColorFilter(COLOR_ICON_CHAT);
                 break;
             default:
                 holder.imgIcon.setImageResource(R.drawable.ic_notification_regular);
-                holder.imgIcon.setColorFilter(Color.parseColor("#757575"));
+                holder.imgIcon.setColorFilter(COLOR_ICON_DEFAULT);
                 break;
         }
 
+        // Delegate click events
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) listener.onClick(notif);
         });
@@ -89,17 +107,22 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
 
     @Override
     public int getItemCount() {
-        return list != null ? list.size() : 0;
+        return list.size(); // Guaranteed non-null by setData
     }
 
-    // Hàm tự động tính "Vừa xong", "5 phút trước"...
+    /**
+     * Converts a raw timestamp into a human-readable relative time string (e.g., "5 mins ago").
+     */
     private String formatTimeAgo(long timestamp) {
-        if (timestamp == 0) return "";
+        if (timestamp <= 0) return "";
         CharSequence timeAgo = DateUtils.getRelativeTimeSpanString(
                 timestamp, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS);
         return timeAgo.toString();
     }
 
+    // =========================================================================
+    // VIEW HOLDER
+    // =========================================================================
     public static class ViewHolder extends RecyclerView.ViewHolder {
         ImageView imgIcon;
         TextView tvTitle, tvMessage, tvTime;

@@ -11,22 +11,21 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import java.util.ArrayList;
 import java.util.List;
 
+// Repository thao tác với Giao dịch trực tiếp trên mây (Firestore)
 public class RemoteTransactionRepoImpl implements ITransactionRepo {
     private final FirebaseFirestore db;
     private final String COLLECTION_NAME = "transactions";
 
     public RemoteTransactionRepoImpl() {
         this.db = FirebaseFirestore.getInstance();
-
-        // GIẢI QUYẾT TODO 5: OFFLINE CACHE
-        // Android SDK của Firebase mặc định ĐÃ BẬT SẴN tính năng Offline Persistence rồi!
+        // Offline Cache đã được kích hoạt mặc định trên Firebase Android SDK
     }
 
     @Override
     public void getHistory(String workspaceId, OnDataLoadedListener listener) {
         db.collection(COLLECTION_NAME)
-                .whereEqualTo("workspaceId", workspaceId) // Lọc đúng Quỹ
-                .orderBy("timestamp", Query.Direction.DESCENDING) // Xếp mới nhất lên đầu
+                .whereEqualTo("workspaceId", workspaceId)
+                .orderBy("timestamp", Query.Direction.DESCENDING)
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     List<Transaction> transactions = new ArrayList<>();
@@ -45,52 +44,40 @@ public class RemoteTransactionRepoImpl implements ITransactionRepo {
 
     @Override
     public void addTransaction(Transaction transaction, OnActionCompleteListener listener) {
-        // Lấy UID của user đang đăng nhập (Bắt buộc phải có để lưu vào Personal)
         com.google.firebase.auth.FirebaseAuth auth = com.google.firebase.auth.FirebaseAuth.getInstance();
         if (auth.getCurrentUser() == null) {
-            listener.onError(new Exception("Bạn chưa đăng nhập!"));
+            listener.onError(new Exception("Not logged in!"));
             return;
         }
         String uid = auth.getCurrentUser().getUid();
 
         DocumentReference docRef;
 
-        // PHÂN LUỒNG 1: LƯU VÀO VÍ CÁ NHÂN
+        // Phân luồng: Cá nhân (User Collection) vs Quỹ chung (Workspace Collection)
         if (transaction.workspaceId == null || transaction.workspaceId.equals("PERSONAL")) {
             if (transaction.id != null && !transaction.id.isEmpty()) {
-                // Sửa giao dịch cũ (Đường dẫn: users/{uid}/transactions/{id})
-                docRef = db.collection("users").document(uid)
-                        .collection("transactions").document(transaction.id);
+                docRef = db.collection("users").document(uid).collection("transactions").document(transaction.id);
             } else {
-                // Thêm giao dịch mới
                 docRef = db.collection("users").document(uid).collection("transactions").document();
                 transaction.id = docRef.getId();
             }
-        }
-        // PHÂN LUỒNG 2: LƯU VÀO QUỸ NHÓM
-        else {
+        } else {
             if (transaction.id != null && !transaction.id.isEmpty()) {
-                // Sửa giao dịch cũ (Đường dẫn: workspaces/{workspaceId}/transactions/{id})
-                docRef = db.collection("workspaces").document(transaction.workspaceId)
-                        .collection("transactions").document(transaction.id);
+                docRef = db.collection("workspaces").document(transaction.workspaceId).collection("transactions").document(transaction.id);
             } else {
-                // Thêm giao dịch mới
-                docRef = db.collection("workspaces").document(transaction.workspaceId)
-                        .collection("transactions").document();
+                docRef = db.collection("workspaces").document(transaction.workspaceId).collection("transactions").document();
                 transaction.id = docRef.getId();
             }
         }
 
-        // Tống lên Firebase theo đúng đường dẫn đã phân luồng
         docRef.set(transaction)
                 .addOnSuccessListener(aVoid -> listener.onSuccess())
                 .addOnFailureListener(e -> {
-                    android.util.Log.e("FirebaseRepo", "Lỗi lưu giao dịch: ", e);
+                    Log.e("FirebaseRepo", "Transaction save failed: ", e);
                     listener.onError(e);
                 });
     }
 
-    //XỬ LÝ SỔ NỢ / CHIA TIỀN (Dọn đường trước)
     public void updateDebtStatus(String transactionId, boolean isPaid, OnActionCompleteListener listener) {
         db.collection(COLLECTION_NAME).document(transactionId)
                 .update("isPaid", isPaid)

@@ -8,21 +8,18 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+// Repository trung gian cung cấp dữ liệu danh mục cho màn hình Thêm Giao dịch
 public class AddTransactionRepository {
     private final CategoryDao categoryDao;
     private final ExecutorService executor;
 
     public AddTransactionRepository(Context context) {
-        // Khởi tạo Database và Dao
         AppDatabase db = AppDatabase.getInstance(context);
         this.categoryDao = db.categoryDao();
+        // Cấp phát 1 luồng chạy ngầm riêng biệt để tránh kẹt Main Thread khi query DB
         this.executor = Executors.newSingleThreadExecutor();
     }
 
-    /**
-     * Lấy danh sách danh mục dựa trên loại giao dịch (0 = Chi, 1 = Thu).
-     * Được sử dụng để lọc danh mục trong màn hình Category Selection.
-     */
     public void getCategoriesByType(int type, Callback<List<Category>> callback) {
         executor.execute(() -> {
             List<Category> categories = categoryDao.getCategoriesByType(type);
@@ -32,9 +29,6 @@ public class AddTransactionRepository {
         });
     }
 
-    /**
-     * Lấy toàn bộ danh mục (dùng khi không cần lọc).
-     */
     public void getAllCategories(Callback<List<Category>> callback) {
         executor.execute(() -> {
             List<Category> categories = categoryDao.getAllActive();
@@ -44,9 +38,7 @@ public class AddTransactionRepository {
         });
     }
 
-    /**
-     * Interface để trả kết quả về cho ViewModel trên Main Thread (nếu dùng LiveData postValue).
-     */
+    // Interface hứng kết quả trả về cho ViewModel
     public interface Callback<T> {
         void onResult(T result);
     }

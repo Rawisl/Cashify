@@ -27,16 +27,23 @@ public class OnboardingActivity extends AppCompatActivity {
 
         styleLoginText(loginText);
 
-        startButton.setOnClickListener(v -> openLogin());
-        loginText.setOnClickListener(v -> openLogin());
+        // Nút Start -> Đi tới màn hình Đăng ký
+        startButton.setOnClickListener(v -> navigateTo(RegisterActivity.class));
+
+        // Chữ Sign In -> Đi tới màn hình Đăng nhập
+        loginText.setOnClickListener(v -> navigateTo(LoginActivity.class));
     }
 
     private void styleLoginText(TextView textView) {
-        String text = "Already have an account? Sign In";
-        SpannableString spannable = new SpannableString(text);
-        int start = text.indexOf("Sign In");
-        if (start >= 0) {
-            int end = start + "Sign In".length();
+        String prompt = getString(R.string.onboarding_prompt);
+        String action = getString(R.string.action_sign_in);
+        String fullText = prompt + action;
+
+        SpannableString spannable = new SpannableString(fullText);
+        int start = prompt.length();
+        int end = fullText.length();
+
+        if (start >= 0 && end <= fullText.length()) {
             spannable.setSpan(
                     new ForegroundColorSpan(ContextCompat.getColor(this, R.color.brand_primary)),
                     start,
@@ -45,10 +52,17 @@ public class OnboardingActivity extends AppCompatActivity {
             );
             spannable.setSpan(new StyleSpan(Typeface.BOLD), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
+
         textView.setText(spannable);
     }
 
-    private void openLogin() {
-        startActivity(new Intent(this, LoginActivity.class));
+    /**
+     * Hàm điều hướng chung, có xử lý đóng màn hình hiện tại (finish)
+     * để người dùng không thể back lại trang Onboarding sau khi đã đi tiếp.
+     */
+    private void navigateTo(Class<?> destinationActivity) {
+        startActivity(new Intent(this, destinationActivity));
+        //Xóa dòng finish() đi nếu muốn người dùng có thể bấm nút Back để xem lại Onboarding
+        // finish();
     }
 }

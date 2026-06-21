@@ -1,5 +1,6 @@
 package com.example.cashify.ui.category;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
@@ -18,15 +19,17 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.cashify.R;
 import com.example.cashify.data.model.Category;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHolder> {
+
     private List<Category> list;
     private final Context context;
     private final OnCategoryListener listener;
 
     public interface OnCategoryListener {
-        // Chỉ cần báo là muốn xóa hoặc sửa, không cần xử lý logic ở đây
+        // Delegates actions to the View layer (Activity/Fragment)
         void onDeleteClick(Category category);
         void onEditClick(Category category);
         void onRestoreClick(Category category);
@@ -34,8 +37,17 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHo
 
     public CategoryAdapter(Context context, List<Category> list, OnCategoryListener listener) {
         this.context = context;
-        this.list = list;
+        this.list = list != null ? list : new ArrayList<>();
         this.listener = listener;
+    }
+
+    /**
+     * Safely updates the adapter's data set and refreshes the UI.
+     */
+    @SuppressLint("NotifyDataSetChanged")
+    public void updateData(List<Category> newList) {
+        this.list = newList != null ? newList : new ArrayList<>();
+        notifyDataSetChanged();
     }
 
     @NonNull
@@ -45,20 +57,25 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHo
         return new ViewHolder(v);
     }
 
+    @SuppressLint("SetTextI18n")
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Category category = list.get(position);
-        holder.tvName.setText(category.name);
 
-        // --- 1. Dynamic Icon Loading ---
+        // =========================================================================
+        // 1. DYNAMIC ICON LOADING
+        // =========================================================================
         String iconName = (category.iconName != null && !category.iconName.isEmpty()) ? category.iconName : "ic_food";
         int resId = context.getResources().getIdentifier(iconName, "drawable", context.getPackageName());
         holder.imgIcon.setImageResource(resId != 0 ? resId : R.drawable.ic_food);
 
-        // --- 2. Styling (Giữ nguyên logic Pastel của bạn vì nó đẹp) ---
+        // =========================================================================
+        // 2. DYNAMIC COLOR STYLING (Pastel Background + Solid Icon)
+        // =========================================================================
         String colorStr = (category.colorCode != null && !category.colorCode.trim().isEmpty()) ? category.colorCode.trim() : "#4CAF50";
         try {
             int originColor = Color.parseColor(colorStr);
+            // Create a pastel version of the color (20% opacity = 51 alpha)
             int pastelColor = Color.argb(51, Color.red(originColor), Color.green(originColor), Color.blue(originColor));
 
             GradientDrawable shape = new GradientDrawable();
@@ -72,54 +89,58 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHo
             holder.imgIcon.setImageTintList(ColorStateList.valueOf(Color.GRAY));
         }
 
-        // XỬ LÝ LOGIC SOFT DELETE
-        // XỬ LÝ LOGIC SOFT DELETE (ẨN / HIỆN / KHÔI PHỤC)
+        // =========================================================================
+        // 3. UI STATE MANAGEMENT (Active vs. Soft-Deleted)
+        // =========================================================================
         if (category.isDeleted == 1) {
+            // Soft-Deleted State
             holder.tvName.setText(category.name + " (Hidden)");
             holder.tvName.setTextColor(Color.GRAY);
-            holder.itemView.setAlpha(0.5f); // Làm mờ đi 50%
+            holder.itemView.setAlpha(0.5f); // Dim the item to indicate inactive status
 
             holder.btnDelete.setVisibility(View.GONE);
             holder.btnEdit.setVisibility(View.GONE);
-            holder.btnRestore.setVisibility(View.VISIBLE); // HIỆN NÚT KHÔI PHỤC
+            holder.btnRestore.setVisibility(View.VISIBLE);
 
-            holder.itemView.setOnLongClickListener(null); // Không cho bấm giữ
+            // Disable long click when hidden
+            holder.itemView.setOnLongClickListener(null);
 
-            // Bắt sự kiện Khôi phục
+            // Action: Restore
             holder.btnRestore.setOnClickListener(v -> listener.onRestoreClick(category));
 
         } else {
+            // Active State
             holder.tvName.setText(category.name);
-            holder.tvName.setTextColor(ContextCompat.getColor(context, R.color.item_title)); // Dùng màu chuẩn từ XML
+            holder.tvName.setTextColor(ContextCompat.getColor(context, R.color.item_title));
             holder.itemView.setAlpha(1.0f);
 
             holder.btnDelete.setVisibility(View.VISIBLE);
             holder.btnEdit.setVisibility(View.VISIBLE);
-            holder.btnRestore.setVisibility(View.GONE); // ẨN NÚT KHÔI PHỤC
+            holder.btnRestore.setVisibility(View.GONE);
 
+            // Action: Long press to edit
             holder.itemView.setOnLongClickListener(v -> {
                 listener.onEditClick(category);
-                return true;
+                return true; // Consume the long-click event
             });
 
-            // --- 3. Event Listeners (Trạng thái bình thường) ---
+            // Actions: Standard Edit / Delete
             holder.btnEdit.setOnClickListener(v -> listener.onEditClick(category));
             holder.btnDelete.setOnClickListener(v -> listener.onDeleteClick(category));
         }
 
-        // --- 3. Event Listeners (Gửi tín hiệu về cho Activity) ---
-        holder.btnEdit.setOnClickListener(v -> listener.onEditClick(category));
-
-        holder.btnDelete.setOnClickListener(v -> listener.onDeleteClick(category));
+        // Removed the redundant listeners that were duplicated here previously!
     }
 
     @Override
-    public int getItemCount() { return list.size(); }
+    public int getItemCount() {
+        return list.size();
+    }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         ImageView imgIcon;
         TextView tvName;
-        ImageButton btnEdit, btnDelete,btnRestore;
+        ImageButton btnEdit, btnDelete, btnRestore;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);

@@ -10,7 +10,7 @@ public static class WorkspaceEndpoints
     {
         var group = app.MapGroup("/api/v1/workspace");
 
-        //TẠO QUỸ CHUNG(KÈM DATA MẪU VÀ LOG)
+        // CREATE WORKSPACE (WITH DEFAULT DATA AND LOG)
         group.MapPost("/create", async (HttpRequest request, WorkspaceCreateRequest body, FirestoreDb db) =>
         {
             try
@@ -24,7 +24,7 @@ public static class WorkspaceEndpoints
                 var uid = decodedToken.Uid;
 
                 if (string.IsNullOrEmpty(body.Name))
-                    return Results.BadRequest("Tên quỹ không được để trống");
+                    return Results.BadRequest("Fund name cannot be empty");
 
                 var batch = db.StartBatch();
 
@@ -34,7 +34,7 @@ public static class WorkspaceEndpoints
             { "name", body.Name },
             { "ownerId", uid },
             { "members", new List<string> { uid } },
-            { "type", body.Type ?? "Trống" },
+            { "type", body.Type ?? "Empty" },
             { "iconName", body.IconName ?? "ic_other" }
         };
                 batch.Set(wsRef, workspaceData);
@@ -64,21 +64,21 @@ public static class WorkspaceEndpoints
                 batch.Set(logRef, new
                 {
                     actionType = "CREATE_WORKSPACE",
-                    message = "đã khởi tạo quỹ nhóm này",
+                    message = "initialized this group fund",
                     userId = uid,
                     timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
                 });
 
                 await batch.CommitAsync();
-                return Results.Ok(new { message = "Tạo Quỹ thành công!", workspaceId = wsRef.Id });
+                return Results.Ok(new { message = "Fund created successfully!", workspaceId = wsRef.Id });
             }
             catch (Exception ex)
             {
-                return Results.Problem($"Lỗi hệ thống: {ex.Message}");
+                return Results.Problem($"System error: {ex.Message}");
             }
         });
 
-        //RỜI QUỸ / XÓA QUỸ(KHÔNG KÈM NHƯỢNG QUYỀN)
+        // LEAVE OR DELETE WORKSPACE
         group.MapPost("/leave", async (HttpRequest request, WorkspaceLeaveRequest body, FirestoreDb db) =>
         {
             try
@@ -92,14 +92,14 @@ public static class WorkspaceEndpoints
                 var uid = decodedToken.Uid;
 
                 if (string.IsNullOrEmpty(body.WorkspaceId))
-                    return Results.BadRequest("Thiếu WorkspaceId");
+                    return Results.BadRequest("Missing WorkspaceId");
 
-                
+
                 var wsRef = db.Collection("workspaces").Document(body.WorkspaceId);
                 var wsSnap = await wsRef.GetSnapshotAsync();
 
                 if (!wsSnap.Exists)
-                    return Results.NotFound(new { error = "Không tìm thấy Quỹ" });
+                    return Results.NotFound(new { error = "Fund not found" });
 
                 var members = wsSnap.GetValue<List<string>>("members");
                 var ownerId = wsSnap.GetValue<string>("ownerId");
@@ -109,13 +109,13 @@ public static class WorkspaceEndpoints
 
                 var batch = db.StartBatch();
 
-                // KỊCH BẢN CỦA TRƯỞNG NHÓM (OWNER)
+                // SCENARIO 1: OWNER LEAVING
                 if (uid == ownerId)
                 {
                     if (members.Count > 1)
-                        return Results.BadRequest(new { error = "REQUIRE_TRANSFER", message = "Quỹ vẫn còn thành viên. Vui lòng nhượng quyền trước khi rời đi!" });
+                        return Results.BadRequest(new { error = "REQUIRE_TRANSFER", message = "Fund still has members. Please transfer ownership before leaving!" });
 
-                    // Quỹ có 1 mình -> Xóa sạch
+                    // If owner is the only member, delete the workspace entirely
                     string[] subCollections = { "transactions", "categories", "logs", "messages" };
                     foreach (var sub in subCollections)
                     {
@@ -125,23 +125,23 @@ public static class WorkspaceEndpoints
                     }
                     batch.Delete(wsRef);
                 }
-                // KỊCH BẢN THÀNH VIÊN THƯỜNG
+                // SCENARIO 2: REGULAR MEMBER LEAVING
                 else
                 {
                     members.Remove(uid);
                     batch.Update(wsRef, "members", members);
                     var logRef = wsRef.Collection("logs").Document();
-                    batch.Set(logRef, new { actionType = "LEAVE_WORKSPACE", message = "đã rời khỏi quỹ", userId = uid, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() });
+                    batch.Set(logRef, new { actionType = "LEAVE_WORKSPACE", message = "left the fund", userId = uid, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() });
                 }
 
                 await batch.CommitAsync();
-                return Results.Ok(new { message = "Thao tác thành công" });
+                return Results.Ok(new { message = "Operation successful" });
             }
-            catch (Exception ex) { return Results.Problem($"Lỗi hệ thống: {ex.Message}"); }
+            catch (Exception ex) { return Results.Problem($"System error: {ex.Message}"); }
 
         });
 
-        //NHƯỢNG QUYỀN TRƯỞNG NHÓM
+        // TRANSFER OWNERSHIP
         group.MapPost("/transfer-owner", async (HttpRequest request, WorkspaceTransferRequest body, FirestoreDb db) =>
         {
             try
@@ -155,35 +155,36 @@ public static class WorkspaceEndpoints
                 var uid = decodedToken.Uid;
 
                 if (string.IsNullOrEmpty(body.WorkspaceId) || string.IsNullOrEmpty(body.NewOwnerId))
-                    return Results.BadRequest("Thiếu Data");
+                    return Results.BadRequest("Missing Data");
 
-                
+
                 var wsRef = db.Collection("workspaces").Document(body.WorkspaceId);
                 var wsSnap = await wsRef.GetSnapshotAsync();
                 if (!wsSnap.Exists)
-                    return Results.NotFound(new { error = "Không tìm thấy Quỹ" });
+                    return Results.NotFound(new { error = "Fund not found!" });
 
                 var members = wsSnap.GetValue<List<string>>("members");
                 var ownerId = wsSnap.GetValue<string>("ownerId");
 
+                // Only the current owner can transfer ownership
                 if (uid != ownerId)
-                    return Results.StatusCode(403); // Chỉ Owner cũ mới được gọi API này
+                    return Results.StatusCode(403);
                 if (!members.Contains(body.NewOwnerId))
-                    return Results.BadRequest(new { error = "Người nhận không có trong Quỹ" });
+                    return Results.BadRequest(new { error = "Recipient not found in Fund" });
 
                 var batch = db.StartBatch();
                 batch.Update(wsRef, "ownerId", body.NewOwnerId);
 
                 var logRef = wsRef.Collection("logs").Document();
-                batch.Set(logRef, new { actionType = "TRANSFER_OWNER", message = "đã nhường quyền trưởng nhóm", userId = uid, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() });
+                batch.Set(logRef, new { actionType = "TRANSFER_OWNER", message = "transferred group ownership", userId = uid, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() });
 
                 await batch.CommitAsync();
-                return Results.Ok(new { message = "Nhượng quyền thành công" });
+                return Results.Ok(new { message = "Ownership transferred successfully" });
             }
-            catch (Exception ex) { return Results.Problem($"Lỗi hệ thống: {ex.Message}"); }
+            catch (Exception ex) { return Results.Problem($"System error: {ex.Message}"); }
         });
-     
-        //TẠO/SỬA GIAO DỊCH QUỸ CHUNG
+
+        // ADD OR EDIT TRANSACTION (WITH GROUP GAMIFICATION)
         group.MapPost("/transaction/add", async (HttpRequest request, TransactionRequest body, FirestoreDb db) =>
         {
             try
@@ -198,15 +199,15 @@ public static class WorkspaceEndpoints
                 string senderName = decodedToken.Claims.TryGetValue("name", out var nameObj) ? nameObj.ToString()! : "A member";
 
                 if (body.Amount <= 0)
-                    return Results.BadRequest(new { error = "invalid budget" });
+                    return Results.BadRequest(new { error = "Invalid budget amount" });
                 if (string.IsNullOrEmpty(body.WorkspaceId) || body.WorkspaceId == "PERSONAL")
-                    return Results.BadRequest(new { error = "This API is for Group fund" });
+                    return Results.BadRequest(new { error = "This API is strictly for Group funds" });
 
-                
+
                 var wsRef = db.Collection("workspaces").Document(body.WorkspaceId);
                 var wsSnap = await wsRef.GetSnapshotAsync();
                 if (!wsSnap.Exists)
-                    return Results.NotFound(new { error = "Not found group" });
+                    return Results.NotFound(new { error = "Group not found" });
 
                 var members = wsSnap.GetValue<List<string>>("members");
                 var ownerId = wsSnap.GetValue<string>("ownerId");
@@ -217,6 +218,7 @@ public static class WorkspaceEndpoints
                 var transId = !string.IsNullOrEmpty(body.Id) ? body.Id : Guid.NewGuid().ToString();
                 var transRef = wsRef.Collection("transactions").Document(transId);
 
+                // Check edit permissions if updating
                 if (!string.IsNullOrEmpty(body.Id))
                 {
                     var existingTransSnap = await transRef.GetSnapshotAsync();
@@ -229,41 +231,106 @@ public static class WorkspaceEndpoints
                 }
 
                 var transactionData = new Dictionary<string, object>
-        {
-            { "id", transId }, { "amount", body.Amount }, { "categoryId", body.CategoryId },
-            { "note", body.Note ?? "" }, { "timestamp", body.Timestamp }, { "paymentMethod", body.PaymentMethod ?? "Cash" },
-            { "type", body.Type }, { "workspaceId", body.WorkspaceId }, { "userId", uid }, { "firestoreCategoryId", body.FirestoreCategoryId ?? "" }
-        };
+                {
+                    { "id", transId }, { "amount", body.Amount }, { "categoryId", body.CategoryId },
+                    { "note", body.Note ?? "" }, { "timestamp", body.Timestamp }, { "paymentMethod", body.PaymentMethod ?? "Cash" },
+                    { "type", body.Type }, { "workspaceId", body.WorkspaceId }, { "userId", uid }, { "firestoreCategoryId", body.FirestoreCategoryId ?? "" }
+                };
 
                 var batch = db.StartBatch();
                 batch.Set(transRef, transactionData);
 
-                // BẮN THÔNG BÁO CHO CÁC THÀNH VIÊN KHÁC
-                string actionName = string.IsNullOrEmpty(body.Id) ? "Adding" : "Updating";
+                // ==========================================
+                // GAMIFICATION: TRACK "THE CARRY" AND "BIGGEST SPENDER"
+                // ==========================================
+                var statsRef = wsRef.Collection("workspace_stats").Document("summary");
+                var statsSnap = await statsRef.GetSnapshotAsync();
+
+                var statsUpdate = new Dictionary<string, object>();
+
+                // Flags to notify client of new achievements
+                bool isNewCarry = false;
+                bool isNewSpender = false;
+
+                // Only award achievements on new inserts
+                if (string.IsNullOrEmpty(body.Id))
+                {
+                    if (body.Type == 1) // Income
+                    {
+                        long currentMaxIncome = statsSnap.Exists && statsSnap.ContainsField("maxSingleIncome") ? Convert.ToInt64(statsSnap.GetValue<object>("maxSingleIncome")) : 0;
+                        if (body.Amount > currentMaxIncome && body.Amount >= 1000000)
+                        {
+                            statsUpdate["maxSingleIncome"] = body.Amount;
+                            statsUpdate["theCarryId"] = uid;
+                            statsUpdate["theCarryName"] = senderName;
+                            isNewCarry = true; // Trigger flag
+                        }
+                    }
+                    else if (body.Type == 0) // Expense
+                    {
+                        long currentMaxSpend = statsSnap.Exists && statsSnap.ContainsField("maxSingleSpend") ? Convert.ToInt64(statsSnap.GetValue<object>("maxSingleSpend")) : 0;
+                        if (body.Amount > currentMaxSpend && body.Amount >= 5000000)
+                        {
+                            statsUpdate["maxSingleSpend"] = body.Amount;
+                            statsUpdate["biggestSpenderId"] = uid;
+                            statsUpdate["biggestSpenderName"] = senderName;
+                            isNewSpender = true; // Trigger flag
+                        }
+                    }
+                }
+
+                if (statsUpdate.Count > 0)
+                {
+                    batch.Set(statsRef, statsUpdate, SetOptions.MergeAll);
+                }
+
+
+                // ==========================================
+                // SEND IN-APP NOTIFICATIONS TO OTHER MEMBERS
+                // ==========================================
+                string actionName = string.IsNullOrEmpty(body.Id) ? "added" : "updated";
                 foreach (var memberId in members)
                 {
-                    if (memberId != uid) // Không tự gửi thông báo cho chính mình
+                    if (memberId != uid) // Skip sending to self
                     {
                         var notifRef = db.Collection("users").Document(memberId).Collection("notifications").Document();
                         batch.Set(notifRef, new
                         {
                             type = "WORKSPACE_TRANS",
-                            title = "Group fund fluctation",
-                            message = $"{senderName} has just {actionName} a transaction in group fund.",
+                            title = "Group fund fluctuation",
+                            message = $"{senderName} has just {actionName} a transaction in the group fund.",
                             timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
                             isRead = false,
-                            referenceId = body.WorkspaceId // Bấm vào sẽ bay sang trang Quỹ này
+                            referenceId = body.WorkspaceId
                         });
                     }
                 }
 
+                var logRef = wsRef.Collection("logs").Document();
+                string logAction = string.IsNullOrEmpty(body.Id) ? "ADD_TRANSACTION" : "EDIT_TRANSACTION";
+                string logMessage = string.IsNullOrEmpty(body.Id) ? $"added a transaction of {body.Amount}" : "updated a transaction";
+
+                batch.Set(logRef, new
+                {
+                    actionType = logAction,
+                    message = logMessage,
+                    userId = uid,
+                    timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+                });
+
                 await batch.CommitAsync();
-                return Results.Ok(new { message = "Lưu giao dịch Quỹ thành công", id = transId });
+                return Results.Ok(new
+                {
+                    message = "Group transaction saved successfully",
+                    id = transId,
+                    isNewCarry = isNewCarry,
+                    isNewSpender = isNewSpender
+                });
             }
-            catch (Exception ex) { return Results.Problem($"Lỗi hệ thống: {ex.Message}"); }
+            catch (Exception ex) { return Results.Problem($"System error: {ex.Message}"); }
         });
 
-        //XÓA GIAO DỊCH QUỸ CHUNG (KÈM PHÂN QUYỀN)
+        // DELETE TRANSACTION (WITH ANTI-CHEAT GAMIFICATION)
         group.MapPost("/transaction/delete", async (HttpRequest request, TransactionDeleteRequest body, FirestoreDb db) =>
         {
             try
@@ -280,7 +347,7 @@ public static class WorkspaceEndpoints
                 if (string.IsNullOrEmpty(body.WorkspaceId) || string.IsNullOrEmpty(body.TransactionId))
                     return Results.BadRequest("Data lacking");
 
-                
+
                 var wsRef = db.Collection("workspaces").Document(body.WorkspaceId);
                 var wsSnap = await wsRef.GetSnapshotAsync();
                 if (!wsSnap.Exists)
@@ -301,13 +368,115 @@ public static class WorkspaceEndpoints
                 if (uid != creatorId && uid != ownerId)
                     return Results.StatusCode(403);
 
+                // ==========================================
+                // ANTI-CHEAT: CHECK IF DELETED TRANSACTION WAS A RECORD
+                // ==========================================
+                long deletedAmount = transSnap.ContainsField("amount") ? Convert.ToInt64(transSnap.GetValue<object>("amount")) : 0;
+                int deletedType = transSnap.ContainsField("type") ? Convert.ToInt32(transSnap.GetValue<object>("type")) : 0;
+
+                var statsRef = wsRef.Collection("workspace_stats").Document("summary");
+                var statsSnap = await statsRef.GetSnapshotAsync();
+
+                bool needRecalculateSpend = false;
+                bool needRecalculateIncome = false;
+
+                if (statsSnap.Exists)
+                {
+                    if (deletedType == 0) // Expense
+                    {
+                        long currentMaxSpend = statsSnap.ContainsField("maxSingleSpend") ? Convert.ToInt64(statsSnap.GetValue<object>("maxSingleSpend")) : 0;
+                        if (deletedAmount == currentMaxSpend)
+                            needRecalculateSpend = true;
+                    }
+                    else if (deletedType == 1) // Income
+                    {
+                        long currentMaxIncome = statsSnap.ContainsField("maxSingleIncome") ? Convert.ToInt64(statsSnap.GetValue<object>("maxSingleIncome")) : 0;
+                        if (deletedAmount == currentMaxIncome)
+                            needRecalculateIncome = true;
+                    }
+                }
+
                 var batch = db.StartBatch();
                 batch.Delete(transRef);
 
-                var logRef = wsRef.Collection("logs").Document();
-                batch.Set(logRef, new { actionType = "DELETE_TRANSACTION", message = "has delete a transaction", userId = uid, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() });
+                // ==========================================
+                // ANTI-CHEAT: FIND NEW RECORD HOLDER IF NEEDED
+                // ==========================================
+                var statsUpdate = new Dictionary<string, object>();
 
-                // BẮN THÔNG BÁO CHO CÁC THÀNH VIÊN KHÁC 
+                if (needRecalculateSpend || needRecalculateIncome)
+                {
+                    // Re-evaluate all transactions of the same type
+                    var allTransSnap = await wsRef.Collection("transactions").WhereEqualTo("type", deletedType).GetSnapshotAsync();
+
+                    long newMax = 0;
+                    string newHolderId = "";
+
+                    foreach (var doc in allTransSnap.Documents)
+                    {
+                        if (doc.Id == body.TransactionId)
+                            continue; // Skip the deleted transaction
+
+                        long amt = Convert.ToInt64(doc.GetValue<object>("amount"));
+                        if (amt > newMax)
+                        {
+                            newMax = amt;
+                            newHolderId = doc.GetValue<string>("userId");
+                        }
+                    }
+
+                    // Fetch new record holder's name
+                    string newHolderName = "A member";
+                    if (!string.IsNullOrEmpty(newHolderId))
+                    {
+                        var newHolderSnap = await db.Collection("users").Document(newHolderId).GetSnapshotAsync();
+                        if (newHolderSnap.Exists && newHolderSnap.ContainsField("displayName"))
+                            newHolderName = newHolderSnap.GetValue<string>("displayName");
+                    }
+
+                    if (needRecalculateSpend)
+                    {
+                        if (newMax >= 5000000)
+                        {
+                            statsUpdate["maxSingleSpend"] = newMax;
+                            statsUpdate["biggestSpenderId"] = newHolderId;
+                            statsUpdate["biggestSpenderName"] = newHolderName;
+                        }
+                        else
+                        {
+                            // Revoke achievement if no one meets the threshold
+                            statsUpdate["maxSingleSpend"] = 0;
+                            statsUpdate["biggestSpenderId"] = "";
+                            statsUpdate["biggestSpenderName"] = "";
+                        }
+                    }
+                    else if (needRecalculateIncome)
+                    {
+                        if (newMax >= 1000000)
+                        {
+                            statsUpdate["maxSingleIncome"] = newMax;
+                            statsUpdate["theCarryId"] = newHolderId;
+                            statsUpdate["theCarryName"] = newHolderName;
+                        }
+                        else
+                        {
+                            statsUpdate["maxSingleIncome"] = 0;
+                            statsUpdate["theCarryId"] = "";
+                            statsUpdate["theCarryName"] = "";
+                        }
+                    }
+                }
+
+                if (statsUpdate.Count > 0)
+                {
+                    batch.Set(statsRef, statsUpdate, SetOptions.MergeAll);
+                }
+
+                // Save audit log
+                var logRef = wsRef.Collection("logs").Document();
+                batch.Set(logRef, new { actionType = "DELETE_TRANSACTION", message = "deleted a transaction", userId = uid, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() });
+
+                // SEND IN-APP NOTIFICATIONS
                 foreach (var memberId in members)
                 {
                     if (memberId != uid)
@@ -316,8 +485,8 @@ public static class WorkspaceEndpoints
                         batch.Set(notifRef, new
                         {
                             type = "WORKSPACE_TRANS",
-                            title = "Transcation deleted",
-                            message = $"{senderName} has just deleted a transaction from group fund.",
+                            title = "Transaction deleted",
+                            message = $"{senderName} has just deleted a transaction from the group fund.",
                             timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
                             isRead = false,
                             referenceId = body.WorkspaceId
@@ -326,12 +495,12 @@ public static class WorkspaceEndpoints
                 }
 
                 await batch.CommitAsync();
-                return Results.Ok(new { message = "Deleted transaction successflly" });
+                return Results.Ok(new { message = "Transaction deleted successfully" });
             }
             catch (Exception ex) { return Results.Problem($"System error: {ex.Message}"); }
         });
 
-        //GỬI LỜI MỜI VÀO QUỸ (WORKSPACE INVITATIONS)
+        // SEND WORKSPACE INVITATIONS
         group.MapPost("/invite/send", async (HttpRequest request, WorkspaceInviteSendRequest body, FirestoreDb db) =>
         {
             try
@@ -347,7 +516,7 @@ public static class WorkspaceEndpoints
                 if (string.IsNullOrEmpty(body.WorkspaceId) || body.TargetUids == null || body.TargetUids.Count == 0)
                     return Results.BadRequest("Data lacking");
 
-                
+
                 var batch = db.StartBatch();
                 var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
@@ -375,7 +544,7 @@ public static class WorkspaceEndpoints
                         timestamp = timestamp
                     });
 
-                    // BẮN THÔNG BÁO MỜI VÀO QUỸ
+                    // SEND IN-APP NOTIFICATION
                     var notifRef = db.Collection("users").Document(targetUid).Collection("notifications").Document();
                     batch.Set(notifRef, new
                     {
@@ -389,12 +558,12 @@ public static class WorkspaceEndpoints
                 }
 
                 await batch.CommitAsync();
-                return Results.Ok(new { message = "Invitation sent succesfully!" });
+                return Results.Ok(new { message = "Invitation sent successfully!" });
             }
             catch (Exception ex) { return Results.Problem($"System error: {ex.Message}"); }
         });
 
-        //ĐỒNG Ý LỜI MỜI VÀO QUỸ
+        // ACCEPT INVITATION
         group.MapPost("/invite/accept", async (HttpRequest request, WorkspaceInviteHandleRequest body, FirestoreDb db) =>
         {
             try
@@ -407,7 +576,7 @@ public static class WorkspaceEndpoints
                 if (string.IsNullOrEmpty(body.WorkspaceId) || string.IsNullOrEmpty(body.InvitationId))
                     return Results.BadRequest("Data lacking");
 
-                
+
 
                 var inviteRef = db.Collection("users").Document(uid).Collection("workspace_invitations").Document(body.InvitationId);
 
@@ -417,22 +586,30 @@ public static class WorkspaceEndpoints
                 if (!wsSnap.Exists)
                 {
                     await inviteRef.DeleteAsync();
-                    return Results.BadRequest(new { error = "WORKSPACE_DELETED", message = "Group has been deleted or not existed" });
+                    return Results.BadRequest(new { error = "WORKSPACE_DELETED", message = "Group has been deleted or does not exist" });
                 }
 
                 var batch = db.StartBatch();
-
                 batch.Update(wsRef, "members", FieldValue.ArrayUnion(uid));
-
                 batch.Delete(inviteRef);
 
+                // Save audit log for joining
+                var logRef = wsRef.Collection("logs").Document();
+                batch.Set(logRef, new
+                {
+                    actionType = "JOIN_WORKSPACE",
+                    message = "joined the fund",
+                    userId = uid,
+                    timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+                });
+
                 await batch.CommitAsync();
-                return Results.Ok(new { message = "Join group successfully!" });
+                return Results.Ok(new { message = "Joined group successfully!" });
             }
             catch (Exception ex) { return Results.Problem($"System error: {ex.Message}"); }
         });
 
-        //TỪ CHỐI LỜI MỜI VÀO QUỸ
+        // DECLINE INVITATION
         group.MapPost("/invite/decline", async (HttpRequest request, WorkspaceInviteHandleRequest body, FirestoreDb db) =>
         {
             try
@@ -445,9 +622,7 @@ public static class WorkspaceEndpoints
                 if (string.IsNullOrEmpty(body.InvitationId))
                     return Results.BadRequest("Data lacking");
 
-                
-
-                // Chỉ việc xé giấy mời vứt đi
+                // Delete the invitation
                 var inviteRef = db.Collection("users").Document(uid).Collection("workspace_invitations").Document(body.InvitationId);
                 await inviteRef.DeleteAsync();
 
@@ -456,7 +631,7 @@ public static class WorkspaceEndpoints
             catch (Exception ex) { return Results.Problem($"System error: {ex.Message}"); }
         });
 
-        //ĐUỔI THÀNH VIÊN (KICK MEMBER)
+        // KICK MEMBER
         group.MapPost("/member/kick", async (HttpRequest request, WorkspaceKickRequest body, FirestoreDb db) =>
         {
             try
@@ -470,14 +645,14 @@ public static class WorkspaceEndpoints
                 var uid = decodedToken.Uid;
 
                 if (string.IsNullOrEmpty(body.WorkspaceId) || string.IsNullOrEmpty(body.TargetUid))
-                    return Results.BadRequest("Thiếu thông tin ID");
+                    return Results.BadRequest("Missing WorkspaceId");
 
-                
+
                 var wsRef = db.Collection("workspaces").Document(body.WorkspaceId);
                 var wsSnap = await wsRef.GetSnapshotAsync();
 
                 if (!wsSnap.Exists)
-                    return Results.NotFound(new { error = "Không tìm thấy Quỹ" });
+                    return Results.NotFound(new { error = "Fund not found" });
 
                 var ownerId = wsSnap.GetValue<string>("ownerId");
                 var members = wsSnap.GetValue<List<string>>("members");
@@ -486,10 +661,10 @@ public static class WorkspaceEndpoints
                     return Results.StatusCode(403);
 
                 if (body.TargetUid == ownerId)
-                    return Results.BadRequest(new { error = "Không thể tự kick chính mình." });
+                    return Results.BadRequest(new { error = "You cannot kick yourself." });
 
                 if (members == null || !members.Contains(body.TargetUid))
-                    return Results.BadRequest(new { error = "Người này không còn trong quỹ." });
+                    return Results.BadRequest(new { error = "This member is no longer in the fund." });
 
                 var batch = db.StartBatch();
                 members.Remove(body.TargetUid);
@@ -499,21 +674,87 @@ public static class WorkspaceEndpoints
                 batch.Set(logRef, new
                 {
                     actionType = "KICK_MEMBER",
-                    message = "đã bị mời ra khỏi quỹ",
-                    userId = body.TargetUid,
+                    message = "kicked a member",
+                    userId = uid,
                     timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
                 });
 
                 await batch.CommitAsync();
-                return Results.Ok(new { message = "Đã đuổi thành viên thành công" });
+                return Results.Ok(new { message = "Member kicked successfully" });
             }
             catch (Exception ex)
             {
-                return Results.Problem($"Lỗi hệ thống: {ex.Message}");
+                return Results.Problem($"System error: {ex.Message}");
             }
         });
 
-        //XÓA MỀM DANH MỤC CHO OWNER
+        // ADD NEW CATEGORY
+        group.MapPost("/category/add", async (HttpRequest request, AddCategoryRequest body, FirestoreDb db) =>
+        {
+            try
+            {
+                var authHeader = request.Headers["Authorization"].FirstOrDefault();
+                if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
+                    return Results.Unauthorized();
+
+                var token = authHeader.Substring("Bearer ".Length);
+                var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token)).Uid;
+
+                // Basic validation
+                if (string.IsNullOrEmpty(body.WorkspaceId) || string.IsNullOrEmpty(body.Name))
+                    return Results.BadRequest("Missing required category information");
+
+                var wsRef = db.Collection("workspaces").Document(body.WorkspaceId);
+                var wsSnap = await wsRef.GetSnapshotAsync();
+
+                if (!wsSnap.Exists)
+                    return Results.NotFound("Fund not found");
+
+                // Security: Only Owner can modify category structure
+                if (uid != wsSnap.GetValue<string>("ownerId"))
+                    return Results.StatusCode(403);
+
+                var batch = db.StartBatch();
+
+                // 1. Initialize new document
+                var newCatRef = wsRef.Collection("categories").Document();
+
+                var categoryData = new Dictionary<string, object>
+        {
+            { "name", body.Name },
+            { "iconName", string.IsNullOrEmpty(body.IconName) ? "ic_other" : body.IconName },
+            { "colorCode", string.IsNullOrEmpty(body.ColorCode) ? "#313B60" : body.ColorCode },
+            { "type", body.Type },
+            { "isDefault", 0 },
+            { "isDeleted", 0 },
+            { "workspaceId", body.WorkspaceId } // Sync with Android model structure
+        };
+
+                batch.Set(newCatRef, categoryData);
+
+                // 2. Save audit log
+                var logRef = wsRef.Collection("logs").Document();
+                batch.Set(logRef, new
+                {
+                    actionType = "ADD_CATEGORY",
+                    message = $"created a new category \"{body.Name}\"",
+                    userId = uid,
+                    timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+                });
+
+                // 3. Execute batch
+                await batch.CommitAsync();
+
+                return Results.Ok(new
+                {
+                    message = "Category added successfully!",
+                    categoryId = newCatRef.Id // Return ID for client usage
+                });
+            }
+            catch (Exception ex) { return Results.Problem($"System error: {ex.Message}"); }
+        });
+
+        // SOFT DELETE CATEGORY
         group.MapPost("/category/delete", async (HttpRequest request, CategoryDeleteRequest body, FirestoreDb db) =>
         {
             try
@@ -526,35 +767,35 @@ public static class WorkspaceEndpoints
                 var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token)).Uid;
 
                 if (string.IsNullOrEmpty(body.WorkspaceId) || string.IsNullOrEmpty(body.CategoryId))
-                    return Results.BadRequest("Thiếu Data");
+                    return Results.BadRequest("Missing Data");
 
-                
+
                 var wsRef = db.Collection("workspaces").Document(body.WorkspaceId);
                 var wsSnap = await wsRef.GetSnapshotAsync();
 
                 if (!wsSnap.Exists)
-                    return Results.NotFound("Không tìm thấy quỹ");
+                    return Results.NotFound("Fund not found");
 
-                // CHỈ TRƯỞNG NHÓM MỚI ĐƯỢC XÓA DANH MỤC
+                // ONLY OWNER CAN DELETE CATEGORY
                 if (uid != wsSnap.GetValue<string>("ownerId"))
                     return Results.StatusCode(403);
 
                 var batch = db.StartBatch();
                 var catRef = wsRef.Collection("categories").Document(body.CategoryId);
 
-                // XÓA MỀM
+                // SOFT DELETE
                 batch.Update(catRef, "isDeleted", 1);
 
                 var logRef = wsRef.Collection("logs").Document();
-                batch.Set(logRef, new { actionType = "DELETE_CATEGORY", message = "đã ẩn một danh mục", userId = uid, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() });
+                batch.Set(logRef, new { actionType = "DELETE_CATEGORY", message = "hid a category", userId = uid, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() });
 
                 await batch.CommitAsync();
-                return Results.Ok(new { message = "Ẩn danh mục thành công" });
+                return Results.Ok(new { message = "Category hidden successfully!" });
             }
-            catch (Exception ex) { return Results.Problem($"Lỗi hệ thống: {ex.Message}"); }
+            catch (Exception ex) { return Results.Problem($"System error: {ex.Message}"); }
         });
 
-        //CHỈNH SỬA DANH MỤC QUỸ
+        // EDIT CATEGORY
         group.MapPost("/category/edit", async (HttpRequest request, EditCategoryRequest body, FirestoreDb db) =>
         {
             try
@@ -567,35 +808,46 @@ public static class WorkspaceEndpoints
                 var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token)).Uid;
 
                 if (string.IsNullOrEmpty(body.WorkspaceId) || string.IsNullOrEmpty(body.CategoryId) || string.IsNullOrEmpty(body.Name))
-                    return Results.BadRequest("Thiếu thông tin chỉnh sửa");
+                    return Results.BadRequest("Missing edit information");
 
-                
+
                 var wsRef = db.Collection("workspaces").Document(body.WorkspaceId);
                 var wsSnap = await wsRef.GetSnapshotAsync();
 
                 if (!wsSnap.Exists)
-                    return Results.NotFound("Không tìm thấy quỹ");
+                    return Results.NotFound("Fund not found");
 
-                // Bảo mật: Chỉ Trưởng nhóm (Owner) mới được quyền chỉnh sửa cấu trúc danh mục nhóm
+                // Security: Only Owner can edit categories
                 if (uid != wsSnap.GetValue<string>("ownerId"))
                     return Results.StatusCode(403);
 
                 var catRef = wsRef.Collection("categories").Document(body.CategoryId);
+                var batch = db.StartBatch();
 
-                await catRef.UpdateAsync(new Dictionary<string, object>
-        {
-            { "name", body.Name },
-            { "iconName", body.IconName },
-            { "colorCode", body.ColorCode },
-            { "type", body.Type }
-        });
+                batch.Update(catRef, new Dictionary<string, object>
+                {
+                    { "name", body.Name },
+                    { "iconName", body.IconName },
+                    { "colorCode", body.ColorCode },
+                    { "type", body.Type }
+                });
 
-                return Results.Ok(new { message = "Cập nhật danh mục thành công!" });
+                var logRef = wsRef.Collection("logs").Document();
+                batch.Set(logRef, new
+                {
+                    actionType = "EDIT_CATEGORY",
+                    message = $"updated category \"{body.Name}\"",
+                    userId = uid,
+                    timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+                });
+
+                await batch.CommitAsync();
+                return Results.Ok(new { message = "Category updated successfully!" });
             }
-            catch (Exception ex) { return Results.Problem($"Lỗi hệ thống: {ex.Message}"); }
+            catch (Exception ex) { return Results.Problem($"System error: {ex.Message}"); }
         });
 
-        //KHÔI PHỤC DANH MỤC BỊ ẨN QUỸ
+        // RESTORE CATEGORY
         group.MapPost("/category/restore", async (HttpRequest request, RestoreCategoryRequest body, FirestoreDb db) =>
         {
             try
@@ -608,28 +860,38 @@ public static class WorkspaceEndpoints
                 var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token)).Uid;
 
                 if (string.IsNullOrEmpty(body.WorkspaceId) || string.IsNullOrEmpty(body.CategoryId))
-                    return Results.BadRequest("Thiếu Data");
+                    return Results.BadRequest("Missing Data");
 
-                
+
                 var wsRef = db.Collection("workspaces").Document(body.WorkspaceId);
                 var wsSnap = await wsRef.GetSnapshotAsync();
 
                 if (!wsSnap.Exists)
-                    return Results.NotFound("Không tìm thấy quỹ");
+                    return Results.NotFound("Fund not found!");
                 if (uid != wsSnap.GetValue<string>("ownerId"))
                     return Results.StatusCode(403);
 
                 var catRef = wsRef.Collection("categories").Document(body.CategoryId);
+                var batch = db.StartBatch();
 
-                // Trả trạng thái xóa mềm về lại 0 để hiển thị lên bảng tin Android
-                await catRef.UpdateAsync("isDeleted", 0);
+                batch.Update(catRef, "isDeleted", 0);
 
-                return Results.Ok(new { message = "Khôi phục danh mục thành công!" });
+                var logRef = wsRef.Collection("logs").Document();
+                batch.Set(logRef, new
+                {
+                    actionType = "RESTORE_CATEGORY",
+                    message = "restored a category",
+                    userId = uid,
+                    timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+                });
+
+                await batch.CommitAsync();
+                return Results.Ok(new { message = "Category restored successfully!" });
             }
-            catch (Exception ex) { return Results.Problem($"Lỗi hệ thống: {ex.Message}"); }
+            catch (Exception ex) { return Results.Problem($"System error: {ex.Message}"); }
         });
 
-        //GỬI TIN NHẮN VÀO QUỸ CHUNG (KÈM BẮN THÔNG BÁO)
+        // SEND WORKSPACE MESSAGE (WITH NOTIFICATION)
         group.MapPost("/message/send", async (HttpRequest request, WorkspaceMessageSendRequest body, FirestoreDb db) =>
         {
             try
@@ -643,18 +905,20 @@ public static class WorkspaceEndpoints
                 var uid = decodedToken.Uid;
 
                 if (string.IsNullOrEmpty(body.WorkspaceId) ||
-    (string.IsNullOrWhiteSpace(body.Text) && string.IsNullOrWhiteSpace(body.ImageUrl)))
+                (string.IsNullOrWhiteSpace(body.Text) &&
+                string.IsNullOrWhiteSpace(body.ImageUrl)))
                     return Results.BadRequest(new { error = "Data lacking" });
 
                 var wsRef = db.Collection("workspaces").Document(body.WorkspaceId);
                 var wsSnap = await wsRef.GetSnapshotAsync();
 
                 if (!wsSnap.Exists)
-                    return Results.NotFound(new { error = "Không tìm thấy Quỹ" });
+                    return Results.NotFound(new { error = "Fund not found" });
 
                 var members = wsSnap.GetValue<List<string>>("members");
+                // Must be a member to chat
                 if (members == null || !members.Contains(uid))
-                    return Results.StatusCode(403); // Phải là thành viên mới được chat
+                    return Results.StatusCode(403);
 
                 var workspaceName = wsSnap.ContainsField("name") ? wsSnap.GetValue<string>("name") : "Group";
 
@@ -666,7 +930,7 @@ public static class WorkspaceEndpoints
                 var msgRef = wsRef.Collection("messages").Document();
                 var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
-                // Lưu tin nhắn
+                // Save message
                 var messageData = new Dictionary<string, object>
                 {
                     { "senderId", uid },
@@ -679,7 +943,7 @@ public static class WorkspaceEndpoints
                 };
                 batch.Set(msgRef, messageData);
 
-                // Rải thông báo cho các thành viên khác
+                // Distribute notifications to other members
                 foreach (var memberId in members)
                 {
                     if (memberId != uid)
@@ -698,12 +962,12 @@ public static class WorkspaceEndpoints
                 }
 
                 await batch.CommitAsync();
-                return Results.Ok(new { message = "Gửi tin nhắn thành công", messageId = msgRef.Id });
+                return Results.Ok(new { message = "Message sent successfully", messageId = msgRef.Id });
             }
-            catch (Exception ex) { return Results.Problem($"Lỗi hệ thống: {ex.Message}"); }
+            catch (Exception ex) { return Results.Problem($"System error: {ex.Message}"); }
         });
 
-        //THU HỒI TIN NHẮN QUỸ (ĐÃ CÓ TRONG MẪU CỦA ÔNG, TUI CHUẨN HÓA LẠI CHÚT)
+        // RECALL WORKSPACE MESSAGE
         group.MapPost("/message/recall", async (HttpRequest request, MessageRecallRequest body, FirestoreDb db) =>
         {
             try
@@ -712,42 +976,46 @@ public static class WorkspaceEndpoints
                 if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
                     return Results.Unauthorized();
 
-                var token = authHeader.Substring("Bearer ".Length);
-                var decodedToken = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token);
-                var uid = decodedToken.Uid;
+                var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(authHeader.Substring("Bearer ".Length))).Uid;
 
-                if (string.IsNullOrEmpty(body.WorkspaceId) || string.IsNullOrEmpty(body.MessageId))
-                    return Results.BadRequest(new { error = "Thiếu Data" });
+                if (string.IsNullOrWhiteSpace(body.WorkspaceId) || string.IsNullOrWhiteSpace(body.MessageId))
+                    return Results.BadRequest(new { message = "Invalid information" });
 
-                var wsRef = db.Collection("workspaces").Document(body.WorkspaceId);
-                var wsSnap = await wsRef.GetSnapshotAsync();
+                // 1. Point to the specific message document
+                var messageRef = db.Collection("workspaces")
+                                   .Document(body.WorkspaceId)
+                                   .Collection("messages")
+                                   .Document(body.MessageId);
 
-                if (!wsSnap.Exists)
-                    return Results.NotFound(new { error = "Không tìm thấy Quỹ" });
+                var messageSnap = await messageRef.GetSnapshotAsync();
+                if (!messageSnap.Exists)
+                    return Results.NotFound(new { message = "Message not found" });
 
-                var ownerId = wsSnap.GetValue<string>("ownerId");
-                var msgRef = wsRef.Collection("messages").Document(body.MessageId);
-                var msgSnap = await msgRef.GetSnapshotAsync();
+                // 2. Security Check (Ownership)
+                var senderId = messageSnap.ContainsField("senderId") ? messageSnap.GetValue<string>("senderId") : "";
+                var workspaceSnap = await db.Collection("workspaces").Document(body.WorkspaceId).GetSnapshotAsync();
+                var ownerId = workspaceSnap.ContainsField("ownerId") ? workspaceSnap.GetValue<string>("ownerId") : "";
 
-                if (!msgSnap.Exists)
-                    return Results.NotFound(new { error = "Tin nhắn không tồn tại" });
+                // Allow sender OR Owner to recall
+                if (senderId != uid && ownerId != uid)
+                    return Results.Json(new { message = "You do not have permission to unsend this message" }, statusCode: 403);
 
-                var senderId = msgSnap.GetValue<string>("senderId");
+                // 3. Clear message content and set recall flag
+                var updates = new Dictionary<string, object>
+        {
+            { "text", "" },
+            { "imageUrl", "" },
+            { "isRecalled", true }
+        };
 
-                // Tác giả HOẶC Trưởng nhóm mới được thu hồi
-                if (uid != senderId && uid != ownerId)
-                    return Results.StatusCode(403);
-
-                // Cập nhật text thành rỗng và ghim cờ isRecalled
-                await msgRef.UpdateAsync(new Dictionary<string, object>
-                {
-                    { "text", "" },
-                    { "isRecalled", true }
-                });
-
-                return Results.Ok(new { message = "Thu hồi tin nhắn thành công" });
+                await messageRef.UpdateAsync(updates);
+                return Results.Ok(new { message = "Group message unsent successfully" });
             }
-            catch (Exception ex) { return Results.Problem($"Lỗi hệ thống: {ex.Message}"); }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Recall workspace message failed: {ex}");
+                return Results.Problem(title: "Failed to unsend message", detail: ex.Message, statusCode: 500);
+            }
         });
     }
 }

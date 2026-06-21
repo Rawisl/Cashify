@@ -12,42 +12,61 @@ import com.example.cashify.data.local.TransactionDao;
 import com.example.cashify.data.local.TransactionWithCategory;
 import com.example.cashify.data.remote.FirebaseManager;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+// Manages personal transactions (Local priority + Cloud sync)
 public class TransactionRepository {
     private final TransactionDao transactionDao;
     private final FirebaseManager firebaseManager;
     private final ExecutorService executor;
 
     public TransactionRepository(Context context){
-        transactionDao=AppDatabase.getInstance(context).transactionDao();
+        transactionDao = AppDatabase.getInstance(context).transactionDao();
         firebaseManager = FirebaseManager.getInstance();
-        executor=Executors.newSingleThreadExecutor();
+        executor = Executors.newSingleThreadExecutor();
     }
+
     public void insert(Transaction transaction) {
         executor.execute(() -> {
             transactionDao.insert(transaction);
-            syncTransactionToCloud(transaction);
+            // Notify Firebase: Sync local insertion and accumulate Gamification stats
+            firebaseManager.syncTransactionWithStats(true, false, transaction, new FirebaseManager.DataCallback<Void>() {
+                @Override
+                public void onSuccess(Void data) { Log.d("SYNC_OK", "Insert and update stats successful!"); }
+                @Override
+                public void onError(String message) { Log.e("SYNC_FAIL", "Insert error: " + message); }
+            });
         });
     }
 
     public void update(Transaction transaction) {
         executor.execute(() -> {
             transactionDao.update(transaction);
-            syncTransactionToCloud(transaction);
+            // Notify Firebase: Only update content, bypass Gamification stats to prevent duplicated counting
+            firebaseManager.syncTransactionWithStats(false, false, transaction, new FirebaseManager.DataCallback<Void>() {
+                @Override
+                public void onSuccess(Void data) { Log.d("SYNC_OK", "Update successful!"); }
+                @Override
+                public void onError(String message) { Log.e("SYNC_FAIL", "Update error: " + message); }
+            });
         });
     }
 
     public void delete(Transaction transaction) {
         executor.execute(() -> {
             transactionDao.delete(transaction);
-            // Logic xóa trên Firebase có thể gọi hàm xóa document riêng trong FirebaseManager
+            // Notify Firebase: Sync deletion and deduct Gamification stats
+            firebaseManager.syncTransactionWithStats(false, true, transaction, new FirebaseManager.DataCallback<Void>() {
+                @Override
+                public void onSuccess(Void data) { Log.d("SYNC_OK", "Delete and deduct stats successful!"); }
+                @Override
+                public void onError(String message) { Log.e("SYNC_FAIL", "Delete error: " + message); }
+            });
         });
     }
+
     public void getAll(String workspaceId, Callback<List<Transaction>> callback){
         executor.execute(() -> callback.onResult(transactionDao.getAll(workspaceId)));
     }
@@ -84,52 +103,22 @@ public class TransactionRepository {
         executor.execute(() -> callback.onResult(transactionDao.getOtherExpenseTotal(workspaceId, start, end)));
     }
 
-    public void getTotalExpenseByCategory(String workspaceId, int catergoryId, long start, long end, Callback<Long> callback){
-        executor.execute(() -> callback.onResult(transactionDao.getTotalExpenseByCategory(workspaceId, catergoryId, start, end)));
+    public void getTotalExpenseByCategory(String workspaceId, int categoryId, long start, long end, Callback<Long> callback){
+        executor.execute(() -> callback.onResult(transactionDao.getTotalExpenseByCategory(workspaceId, categoryId, start, end)));
     }
 
     public void countTransactionByDay(String workspaceId, long startOfDay, long endOfDay, Callback<Integer> callback){
         executor.execute(() -> callback.onResult(transactionDao.countTransactionsByDay(workspaceId, startOfDay, endOfDay)));
     }
 
-    private void syncTransactionToCloud(Transaction t) {
-        Map<String, Object> data = new HashMap<>();
-        data.put("amount", t.amount);
-        data.put("categoryId", t.categoryId);
-        data.put("note", t.note);
-        data.put("timestamp", t.timestamp);
-        data.put("paymentMethod", t.paymentMethod);
-        data.put("type", t.type);
-        data.put("workspaceId", t.workspaceId); // Nên đẩy cả ID này lên mây để dễ quản lý
-
-        String currentWorkspaceId = (t.workspaceId != null) ? t.workspaceId : "PERSONAL";
-
-        firebaseManager.syncLocalToCloud(currentWorkspaceId, "transactions", String.valueOf(t.id), data, new FirebaseManager.DataCallback<Void>() {
-            @Override
-            public void onSuccess(Void result) {
-                Log.d("SYNC_OK", "Transaction " + t.id + " Uploaded to cloud!");
-            }
-            @Override
-            public void onError(String message) {
-                Log.e("SYNC_FAIL", "Error uploading transaction: " + message);
-            }
-        });
-    }
-
     public void getById(String id, Callback<Transaction> callback) {
         executor.execute(() -> {
             Transaction t = transactionDao.getById(id);
-            // Trả kết quả về cho ViewModel
-            if (callback != null) {
-                callback.onResult(t);
-            }
+            if (callback != null) callback.onResult(t);
         });
     }
 
-    //interface giúp trả kqua về UI thread
     public interface Callback<T>{
         void onResult(T result);
     }
-
-
 }

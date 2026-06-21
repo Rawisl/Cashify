@@ -22,22 +22,13 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.cashify.R;
 import com.example.cashify.data.model.Category;
 import com.example.cashify.data.model.Transaction;
-import com.example.cashify.utils.ApiClient;
-import com.example.cashify.utils.ApiService;
 import com.example.cashify.utils.DialogHelper;
 import com.example.cashify.utils.InvoiceParser;
 import com.example.cashify.utils.NumpadBottomSheet;
 import com.example.cashify.utils.CurrencyFormatter;
 import com.example.cashify.utils.ToastHelper;
 
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.ListenerRegistration;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
-
-import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.List;
 import java.util.Locale;
 
 public class AddTransactionActivity extends AppCompatActivity {
@@ -52,8 +43,8 @@ public class AddTransactionActivity extends AppCompatActivity {
 
     private String editTransactionId = null;
     private boolean isEditMode = false;
-    private String workspaceId = null; // Cờ nhận biết Quỹ chung
-    private ListenerRegistration categorySnapshotListener;
+    private String workspaceId = null;
+
     private static final int REQUEST_IMAGE_CAPTURE = 1;
     private com.google.mlkit.vision.text.TextRecognizer recognizer;
 
@@ -66,26 +57,19 @@ public class AddTransactionActivity extends AppCompatActivity {
 
         editTransactionId = getIntent().getStringExtra("TRANSACTION_ID");
         isEditMode = (editTransactionId != null);
-
-        // Lấy ID Quỹ để rẽ nhánh logic
         workspaceId = getIntent().getStringExtra("WORKSPACE_ID");
-        if (workspaceId != null && !workspaceId.trim().isEmpty() && !workspaceId.equals("null") && !workspaceId.equals("PERSONAL")) {
-            viewModel.setCurrentWorkspaceId(workspaceId);
-        }
+
+        if (isWorkspaceMode()) viewModel.setCurrentWorkspaceId(workspaceId);
 
         initViews();
         setupObservers();
         setupListeners();
 
         if (isEditMode) {
-            if (workspaceId != null && !workspaceId.trim().isEmpty() && !workspaceId.equals("null") && !workspaceId.equals("PERSONAL")) {
-                loadTransactionFromFirestoreForEdit(editTransactionId);
-            } else {
-                viewModel.loadTransactionForEdit(editTransactionId);
-            }
+            if (isWorkspaceMode()) viewModel.loadWorkspaceTransactionForEdit(workspaceId, editTransactionId);
+            else viewModel.loadTransactionForEdit(editTransactionId);
         } else {
-            // Gọi load từ hàm Rẽ nhánh mới
-            loadCategoriesForCurrentMode(0);
+            viewModel.fetchCategories(workspaceId, 0); // Tải mặc định tab Chi
         }
 
         recognizer = com.google.mlkit.vision.text.TextRecognition.getClient(
@@ -101,7 +85,6 @@ public class AddTransactionActivity extends AppCompatActivity {
         tabChi = findViewById(R.id.tabChi);
         tabThu = findViewById(R.id.tabThu);
         tvDate = findViewById(R.id.tvDate);
-
         tvTitle = findViewById(R.id.tvTitle);
 
         btnCash = findViewById(R.id.btnPayCash);
@@ -114,48 +97,38 @@ public class AddTransactionActivity extends AppCompatActivity {
         rvCategories.setLayoutManager(new GridLayoutManager(this, 4));
 
         if (tvTitle != null) {
-            if (isEditMode) {
-                tvTitle.setText(workspaceId != null && !workspaceId.trim().isEmpty() && !workspaceId.equals("null") && !workspaceId.equals("PERSONAL") ? "Edit Fund Transaction" : "Edit Transaction");
-                if (btnDelete != null) btnDelete.setVisibility(View.VISIBLE);
-            } else {
-                tvTitle.setText(workspaceId != null && !workspaceId.trim().isEmpty() && !workspaceId.equals("null") && !workspaceId.equals("PERSONAL") ? "Add Fund Transaction" : "Add Transaction");
-                if (btnDelete != null) btnDelete.setVisibility(View.GONE);
-            }
+            tvTitle.setText(isEditMode ? (isWorkspaceMode() ? "Edit Fund Transaction" : "Edit Transaction")
+                    : (isWorkspaceMode() ? "Add Fund Transaction" : "Add Transaction"));
+            if (btnDelete != null) btnDelete.setVisibility(isEditMode ? View.VISIBLE : View.GONE);
         }
     }
 
     private void setupListeners() {
         btnBack.setOnClickListener(v -> finish());
-
-        if (btnDelete != null) {
-            btnDelete.setOnClickListener(v -> showDeleteConfirmation());
-        }
+        if (btnDelete != null) btnDelete.setOnClickListener(v -> showDeleteConfirmation());
 
         tabChi.setOnClickListener(v -> {
             if (!isEditMode) {
                 viewModel.setType(true);
-                loadCategoriesForCurrentMode(0); // Tải lại danh mục Thu/Chi
+                viewModel.fetchCategories(workspaceId, 0);
             }
         });
 
         tabThu.setOnClickListener(v -> {
             if (!isEditMode) {
                 viewModel.setType(false);
-                loadCategoriesForCurrentMode(1); // Tải lại danh mục Thu/Chi
+                viewModel.fetchCategories(workspaceId, 1);
             }
         });
 
         tvDate.setOnClickListener(v -> {
             Calendar c = viewModel.calendar.getValue();
-            new DatePickerDialog(this, (view, y, m, d) -> {
-                viewModel.setDate(y, m, d);
-            }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show();
+            new DatePickerDialog(this, (view, y, m, d) -> viewModel.setDate(y, m, d),
+                    c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show();
         });
 
         ImageView btnScan = findViewById(R.id.btnScan);
-        if (btnScan != null) {
-            btnScan.setOnClickListener(v -> showImageSourceOptions());
-        }
+        if (btnScan != null) btnScan.setOnClickListener(v -> showImageSourceOptions());
 
         btnCash.setOnClickListener(v -> viewModel.setPayment("Cash"));
         btnCard.setOnClickListener(v -> viewModel.setPayment("Card"));
@@ -164,128 +137,43 @@ public class AddTransactionActivity extends AppCompatActivity {
         btnConfirm.setOnClickListener(v -> validateAndSave());
     }
 
-    private void loadCategoriesForCurrentMode(int type) {
-        if (workspaceId != null && !workspaceId.trim().isEmpty() && !workspaceId.equals("null") && !workspaceId.equals("PERSONAL")) {
-
-            // Xóa ống nghe cũ nếu đổi Tab Thu/Chi
-            if (categorySnapshotListener != null) {
-                categorySnapshotListener.remove();
-            }
-
-            // Gắn ống nghe Real-time
-            categorySnapshotListener = FirebaseFirestore.getInstance()
-                    .collection("workspaces").document(workspaceId)
-                    .collection("categories")
-                    .whereEqualTo("type", type)
-                    .addSnapshotListener((snapshots, e) -> {
-                        if (e != null || snapshots == null) return;
-
-                        List<Category> list = new ArrayList<>();
-                        for (QueryDocumentSnapshot doc : snapshots) {
-                            Category c = doc.toObject(Category.class);
-                            c.firestoreId = doc.getId();
-
-                            // 1. SIÊU LỌC: CHỈ LẤY NHỮNG DANH MỤC CHƯA BỊ XÓA MỀM
-                            if (c.isDeleted != 1) {
-                                list.add(c);
-                            }
-                        }
-
-                        viewModel.categories.postValue(list);
-
-                        // 2. FALLBACK AN TOÀN: Nếu Category đang được chọn vô tình bị Owner xóa/ẩn
-                        Category currentlySelected = viewModel.selectedCategory.getValue();
-                        if (currentlySelected != null && currentlySelected.firestoreId != null) {
-                            boolean isStillValid = false;
-                            for (Category activeCat : list) {
-                                if (activeCat.firestoreId.equals(currentlySelected.firestoreId)) {
-                                    isStillValid = true;
-                                    break;
-                                }
-                            }
-
-                            // Danh mục đang chọn đã "bay màu" -> Ép chọn lại cái đầu tiên trong list mới
-                            if (!isStillValid) {
-                                if (!list.isEmpty()) {
-                                    viewModel.selectedCategory.postValue(list.get(0));
-                                } else {
-                                    viewModel.selectedCategory.postValue(null);
-                                }
-                            }
-                        }
-                    });
-        } else {
-            // Chế độ Cá nhân: Giữ nguyên
-            if (categorySnapshotListener != null) categorySnapshotListener.remove();
-            viewModel.loadCategories(type);
-        }
-    }
-
     private void setupObservers() {
+        // Observers UI Data
         viewModel.existingTransaction.observe(this, t -> {
             if (t != null) {
                 edtAmount.setText(CurrencyFormatter.formatFullVND((double) t.amount));
                 edtNote.setText(t.note);
-                if (t.paymentMethod != null) {
-                    viewModel.setPayment(t.paymentMethod);
-                }
+                if (t.paymentMethod != null) viewModel.setPayment(t.paymentMethod);
 
-                // BỔ SUNG: Nếu là Quỹ chung, bảo Adapter highlight Category theo ID String
-                if (workspaceId != null && !workspaceId.equals("PERSONAL") && !workspaceId.equals("null")) {
-                    // Highlight cho Quỹ (ID String)
-                    rvCategories.post(() -> {
-                        if (rvCategories.getAdapter() instanceof CategoryPickerAdapter) {
-                            ((CategoryPickerAdapter) rvCategories.getAdapter()).setSelectedByFirestoreId(t.firestoreCategoryId);
-                        }
-                    });
-                } else {
-                    // HIGHLIGHT CHO CÁ NHÂN (ID Int) - Sếp đang thiếu đoạn này!
-                    rvCategories.post(() -> {
-                        if (rvCategories.getAdapter() instanceof CategoryPickerAdapter) {
-                            ((CategoryPickerAdapter) rvCategories.getAdapter()).setSelectedById(t.categoryId);
-                        }
-                    });
-                }
+                rvCategories.post(() -> {
+                    if (rvCategories.getAdapter() instanceof CategoryPickerAdapter) {
+                        CategoryPickerAdapter adapter = (CategoryPickerAdapter) rvCategories.getAdapter();
+                        if (isWorkspaceMode()) adapter.setSelectedByFirestoreId(t.firestoreCategoryId);
+                        else adapter.setSelectedById(t.categoryId);
+                    }
+                });
             }
         });
 
         viewModel.categories.observe(this, list -> {
-            // 1. Tái chế Adapter như cũ
             if (rvCategories.getAdapter() == null) {
-                CategoryPickerAdapter adapter = new CategoryPickerAdapter(this, list,
-                        cat -> viewModel.selectedCategory.setValue(cat));
+                CategoryPickerAdapter adapter = new CategoryPickerAdapter(this, list, cat -> viewModel.selectedCategory.setValue(cat));
                 rvCategories.setAdapter(adapter);
             } else {
-                CategoryPickerAdapter adapter = (CategoryPickerAdapter) rvCategories.getAdapter();
-                adapter.setNewData(list);
+                ((CategoryPickerAdapter) rvCategories.getAdapter()).setNewData(list);
             }
 
-            // 2. BỔ SUNG ĐOẠN NÀY: Khôi phục lại highlight nếu đang ở chế độ Edit
             Transaction t = viewModel.existingTransaction.getValue();
             if (isEditMode && t != null) {
-                // Dùng post để đảm bảo Adapter đã vẽ xong danh sách mới
                 rvCategories.post(() -> {
                     CategoryPickerAdapter adapter = (CategoryPickerAdapter) rvCategories.getAdapter();
-                    if (workspaceId != null && !workspaceId.equals("PERSONAL") && !workspaceId.equals("null")) {
-                        // Highlight Quỹ chung
-                        adapter.setSelectedByFirestoreId(t.firestoreCategoryId);
-                    } else {
-                        // Highlight Cá nhân
-                        adapter.setSelectedById(t.categoryId);
-                    }
+                    if (isWorkspaceMode()) adapter.setSelectedByFirestoreId(t.firestoreCategoryId);
+                    else adapter.setSelectedById(t.categoryId);
 
-                    // Cập nhật luôn cục selectedCategory trong ViewModel để lúc Save không bị rỗng
                     for (Category cat : list) {
-                        if (workspaceId != null && !workspaceId.equals("PERSONAL")) {
-                            if (cat.firestoreId != null && cat.firestoreId.equals(t.firestoreCategoryId)) {
-                                viewModel.selectedCategory.setValue(cat);
-                                break;
-                            }
-                        } else {
-                            if (cat.id == t.categoryId) {
-                                viewModel.selectedCategory.setValue(cat);
-                                break;
-                            }
+                        if (isWorkspaceMode() ? cat.firestoreId.equals(t.firestoreCategoryId) : cat.id == t.categoryId) {
+                            viewModel.selectedCategory.setValue(cat);
+                            break;
                         }
                     }
                 });
@@ -295,159 +183,89 @@ public class AddTransactionActivity extends AppCompatActivity {
         viewModel.isExpense.observe(this, this::updateTabUI);
 
         viewModel.calendar.observe(this, cal -> {
-            String format = String.format(Locale.ENGLISH, "%02d/%02d/%04d",
-                    cal.get(Calendar.DAY_OF_MONTH), cal.get(Calendar.MONTH) + 1, cal.get(Calendar.YEAR));
-            tvDate.setText(format);
+            tvDate.setText(String.format(Locale.ENGLISH, "%02d/%02d/%04d",
+                    cal.get(Calendar.DAY_OF_MONTH), cal.get(Calendar.MONTH) + 1, cal.get(Calendar.YEAR)));
         });
 
         viewModel.selectedPayment.observe(this, method -> {
             resetPaymentUI(btnCash, R.id.imgCash, R.id.tvCash);
             resetPaymentUI(btnCard, R.id.imgCard, R.id.tvCard);
             resetPaymentUI(btnBank, R.id.imgBank, R.id.tvBank);
-
             if (method.equals("Cash")) setActivePaymentUI(btnCash, R.id.imgCash, R.id.tvCash);
             else if (method.equals("Card")) setActivePaymentUI(btnCard, R.id.imgCard, R.id.tvCard);
             else setActivePaymentUI(btnBank, R.id.imgBank, R.id.tvBank);
         });
 
+        // ---------------------------------------------------------
+        // EVENT OBSERVERS NGHE VIEWMODEL BÁO CÁO
+        // ---------------------------------------------------------
         viewModel.saveSuccess.observe(this, success -> {
             if (success) {
-                ToastHelper.show(this, isEditMode ? "Updated!" : "Saved!");
-                finish();
+                if (isEditMode) finish();
+                else viewModel.triggerPersonalGamification(CurrencyFormatter.parseVNDToDouble(edtAmount.getText().toString()));
             }
+        });
+
+        viewModel.achievementEvent.observe(this, message -> {
+            if (message.contains("deleted")) ToastHelper.show(this, message);
+            else ToastHelper.showAchievement(getApplicationContext(), message);
+        });
+
+        viewModel.closeScreenEvent.observe(this, shouldClose -> {
+            if (shouldClose) finish();
+        });
+
+        viewModel.errorEvent.observe(this, error -> {
+            btnConfirm.setEnabled(true);
+            if (btnDelete != null) btnDelete.setEnabled(true);
+            ToastHelper.show(this, error);
         });
     }
 
     private void validateAndSave() {
-        String amountStr = edtAmount.getText().toString();
-        double amount = CurrencyFormatter.parseVNDToDouble(amountStr);
+        double amount = CurrencyFormatter.parseVNDToDouble(edtAmount.getText().toString());
         String note = edtNote.getText().toString().trim();
+
         if (amount <= 0) {
             edtAmount.setBackgroundResource(R.drawable.bg_input_error);
             ToastHelper.show(this, getString(R.string.error_invalid_money_amount));
             return;
         }
 
-        Category selected = viewModel.selectedCategory.getValue();
-        if (!isEditMode && selected == null) {
+        if (!isEditMode && viewModel.selectedCategory.getValue() == null) {
             ToastHelper.show(this, getString(R.string.error_transaction_empty_category));
             return;
         }
 
-        // =============================================================
-        // RẼ NHÁNH: LƯU LÊN FIRESTORE NẾU LÀ QUỸ
-        // =============================================================
-        // ĐIỀU KIỆN CHUẨN: Chỉ vào Firestore nếu workspaceId KHÁC null và KHÁC "PERSONAL"
-        if (workspaceId != null && !workspaceId.equals("PERSONAL") && !workspaceId.equals("null")) {
-            saveToFirestore(amount, note, selected);
+        btnConfirm.setEnabled(false); // Chống spam click
+
+        if (isWorkspaceMode()) {
+            viewModel.saveWorkspaceTransaction(workspaceId, amount, note, isEditMode, editTransactionId);
         } else {
-            // Chạy Room cho cá nhân
             viewModel.saveOrUpdate(String.valueOf((long) amount), note);
         }
     }
 
-    private void saveToFirestore(double amount, String note, Category selectedCat) {
-        btnConfirm.setEnabled(false); // Chống spam click
-
-        // 1. Nhồi data vào Model thay vì gõ JSON thuần bằng tay dễ lỗi
-        ApiService.TransactionRequest requestData = new ApiService.TransactionRequest();
-        requestData.Id = isEditMode ? editTransactionId : null;
-        requestData.Amount = (long) amount;
-        requestData.Note = note;
-        requestData.Timestamp = viewModel.calendar.getValue().getTimeInMillis();
-        requestData.PaymentMethod = viewModel.selectedPayment.getValue();
-        requestData.Type = Boolean.TRUE.equals(viewModel.isExpense.getValue()) ? 0 : 1;
-        requestData.WorkspaceId = workspaceId;
-        requestData.CategoryId = 0;
-
-        if (selectedCat != null) {
-            requestData.FirestoreCategoryId = selectedCat.firestoreId;
-        } else if (isEditMode && viewModel.existingTransaction.getValue() != null) {
-            requestData.FirestoreCategoryId = viewModel.existingTransaction.getValue().firestoreCategoryId;
-        }
-
-        // 2. Lấy Token & Call API
-        com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser().getIdToken(true)
-                .addOnSuccessListener(getTokenResult -> {
-                    String token = "Bearer " + getTokenResult.getToken();
-
-                    ApiService apiService = ApiClient.getClient().create(ApiService.class);
-                    apiService.addWorkspaceTransaction(token, requestData).enqueue(new retrofit2.Callback<Object>() {
-                        @Override
-                        public void onResponse(retrofit2.Call<Object> call, retrofit2.Response<Object> response) {
-                            if (response.isSuccessful()) {
-                                ToastHelper.show(AddTransactionActivity.this, isEditMode ? "Updated on Server!" : "Saved securely!");
-                                finish();
-                            } else {
-                                btnConfirm.setEnabled(true);
-                                ToastHelper.show(AddTransactionActivity.this, "Server rejected: " + response.code());
-                            }
-                        }
-
-                        @Override
-                        public void onFailure(retrofit2.Call<Object> call, Throwable t) {
-                            btnConfirm.setEnabled(true);
-                            ToastHelper.show(AddTransactionActivity.this, "Network Error: " + t.getMessage());
-                        }
-                    });
-                })
-                .addOnFailureListener(e -> {
-                    btnConfirm.setEnabled(true);
-                    ToastHelper.show(this, "Auth Token Error: " + e.getMessage());
-                });
-    }
-
     private void showDeleteConfirmation() {
-        DialogHelper.showCustomDialog(
-                this,
-                "Delete Transaction",
-                "Are you sure you want to delete this record?",
-                "Delete",
-                "Cancel",
-                DialogHelper.DialogType.DANGER,
-                true,
+        DialogHelper.showCustomDialog(this, "Delete Transaction", "Are you sure you want to delete this record?",
+                "Delete", "Cancel", DialogHelper.DialogType.DANGER, true,
                 () -> {
-                    if (workspaceId != null && !workspaceId.trim().isEmpty() && !workspaceId.equals("null") && !workspaceId.equals("PERSONAL")) {
-                        FirebaseFirestore.getInstance()
-                                .collection("workspaces").document(workspaceId)
-                                .collection("transactions").document(editTransactionId)
-                                .delete()
-                                .addOnSuccessListener(a -> {
-                                    DialogHelper.showSuccess(this, "Done", "Deleted from Cloud!", () -> finish());
-                                });
+                    if (isWorkspaceMode()) {
+                        if (btnDelete != null) btnDelete.setEnabled(false);
+                        viewModel.deleteWorkspaceTransaction(workspaceId, editTransactionId);
                     } else {
                         viewModel.deleteCurrentTransaction();
                     }
-                },
-                null
-        );
+                }, null);
     }
 
-    private void loadTransactionFromFirestoreForEdit(String id) {
-        FirebaseFirestore.getInstance()
-                .collection("workspaces").document(workspaceId)
-                .collection("transactions").document(id)
-                .get()
-                .addOnSuccessListener(doc -> {
-                    Transaction t = doc.toObject(Transaction.class);
-                    if (t != null) {
-                        viewModel.existingTransaction.postValue(t);
-                        // Bật sáng đúng Tab Thu hoặc Chi
-                        viewModel.isExpense.postValue(t.type == 0);
-                        // Kéo đúng danh sách Category của loại đó từ trên mây về
-                        loadCategoriesForCurrentMode(t.type);
-                    }
-                });
-    }
-
+    // Các hàm UI Helper giữ nguyên
     private void updateTabUI(boolean isExpense) {
         int color = isExpense ? R.color.status_red : R.color.status_green;
         tabChi.setBackgroundResource(isExpense ? R.drawable.bg_tab_outline : 0);
         tabChi.setTextColor(ContextCompat.getColor(this, isExpense ? color : R.color.item_description));
-
         tabThu.setBackgroundResource(!isExpense ? R.drawable.bg_tab_outline : 0);
         tabThu.setTextColor(ContextCompat.getColor(this, !isExpense ? color : R.color.item_description));
-
         edtAmount.setTextColor(ContextCompat.getColor(this, color));
     }
 
@@ -474,27 +292,28 @@ public class AddTransactionActivity extends AppCompatActivity {
         numpad.show(getSupportFragmentManager(), "NumpadBottomSheet");
     }
 
+    private boolean isWorkspaceMode() {
+        return workspaceId != null && !workspaceId.trim().isEmpty() && !workspaceId.equals("null") && !workspaceId.equals("PERSONAL");
+    }
+
+    // ==========================================
+    // ML KIT OCR
+    // ==========================================
     private void showImageSourceOptions() {
-        String[] options = {"Capture a receipt", "Select photo from library"};
-        new AlertDialog.Builder(this)
-                .setTitle("Scan the receipt")
-                .setItems(options, (dialog, which) -> {
+        new AlertDialog.Builder(this).setTitle("Scan the receipt")
+                .setItems(new String[]{"Capture a receipt", "Select photo from library"}, (dialog, which) -> {
                     if (which == 0) dispatchTakePictureIntent();
                     else openGalleryIntent();
-                })
-                .show();
+                }).show();
     }
 
     private void openGalleryIntent() {
-        Intent intent = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-        startActivityForResult(intent, 2);
+        startActivityForResult(new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI), 2);
     }
 
     private void dispatchTakePictureIntent() {
         Intent takePictureIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
-        if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
-            startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
-        }
+        if (takePictureIntent.resolveActivity(getPackageManager()) != null) startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
     }
 
     @Override
@@ -502,17 +321,11 @@ public class AddTransactionActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == RESULT_OK && data != null) {
             if (requestCode == REQUEST_IMAGE_CAPTURE) {
-                Bundle extras = data.getExtras();
-                android.graphics.Bitmap imageBitmap = (android.graphics.Bitmap) extras.get("data");
-                processImage(imageBitmap);
+                processImage((android.graphics.Bitmap) data.getExtras().get("data"));
             } else if (requestCode == 2) {
-                android.net.Uri imageUri = data.getData();
                 try {
-                    android.graphics.Bitmap bitmap = android.provider.MediaStore.Images.Media.getBitmap(this.getContentResolver(), imageUri);
-                    processImage(bitmap);
-                } catch (java.io.IOException e) {
-                    ToastHelper.show(this, "Failed to load image!");
-                }
+                    processImage(android.provider.MediaStore.Images.Media.getBitmap(this.getContentResolver(), data.getData()));
+                } catch (Exception e) { ToastHelper.show(this, "Failed to load image!"); }
             }
         }
     }
@@ -520,35 +333,33 @@ public class AddTransactionActivity extends AppCompatActivity {
     private void processImage(android.graphics.Bitmap bitmap) {
         ToastHelper.show(this, "Scanning...");
         btnConfirm.setEnabled(false);
-
-        com.google.mlkit.vision.common.InputImage image =
-                com.google.mlkit.vision.common.InputImage.fromBitmap(bitmap, 0);
-
-        recognizer.process(image)
+        recognizer.process(com.google.mlkit.vision.common.InputImage.fromBitmap(bitmap, 0))
                 .addOnSuccessListener(visionText -> {
                     String ocrText = visionText.getText();
                     if (ocrText == null || ocrText.trim().isEmpty()) {
-                        runOnUiThread(() -> {
-                            btnConfirm.setEnabled(true);
-                            ToastHelper.show(this, "Text not recognized. Try another photo!");
-                        });
-                        return;
-                    }
-                    extractDataFromText(ocrText);
+                        btnConfirm.setEnabled(true);
+                        ToastHelper.show(this, "Text not recognized. Try another photo!");
+                    } else extractDataFromText(ocrText);
                 })
-                .addOnFailureListener(e -> runOnUiThread(() -> {
+                .addOnFailureListener(e -> {
                     btnConfirm.setEnabled(true);
                     ToastHelper.show(this, "OCR failed: " + e.getMessage());
-                }));
+                });
     }
 
     private void extractDataFromText(String ocrText) {
         InvoiceParser.parse(ocrText, new InvoiceParser.ParseCallback() {
             @Override
             public void onSuccess(InvoiceParser.ParsedInvoice result) {
-                runOnUiThread(() -> fillFormAndConfirm(result));
+                runOnUiThread(() -> {
+                    if (result.amount > 0) edtAmount.setText(CurrencyFormatter.formatFullVND((double) result.amount));
+                    if (result.description != null) edtNote.setText(result.description);
+                    if (result.paymentMethod != null) viewModel.setPayment(result.paymentMethod);
+                    viewModel.setType(true);
+                    btnConfirm.setEnabled(true);
+                    ToastHelper.show(AddTransactionActivity.this, "Scanning finished! Please check again.");
+                });
             }
-
             @Override
             public void onFailure(String error) {
                 runOnUiThread(() -> {
@@ -559,55 +370,9 @@ public class AddTransactionActivity extends AppCompatActivity {
         });
     }
 
-    private void fillFormAndConfirm(InvoiceParser.ParsedInvoice result) {
-        if (result.amount > 0)
-            edtAmount.setText(CurrencyFormatter.formatFullVND((double) result.amount));
-        if (result.description != null) edtNote.setText(result.description);
-        if (result.paymentMethod != null) viewModel.setPayment(result.paymentMethod);
-
-        viewModel.setType(true);
-
-        viewModel.categories.observe(this, new androidx.lifecycle.Observer<java.util.List<Category>>() {
-            @Override
-            public void onChanged(java.util.List<Category> categories) {
-                if (categories == null || categories.isEmpty()) return;
-
-                boolean found = false;
-                for (Category cat : categories) {
-                    if (cat.name.equalsIgnoreCase(result.category)) {
-                        viewModel.selectedCategory.setValue(cat);
-                        found = true;
-                        break;
-                    }
-                }
-
-                if (!found) {
-                    for (Category cat : categories) {
-                        if (cat.name.contains("Khác") || cat.name.toLowerCase().contains("other")) {
-                            viewModel.selectedCategory.setValue(cat);
-                            break;
-                        }
-                    }
-                }
-
-                viewModel.categories.removeObserver(this);
-                btnConfirm.setEnabled(true);
-                ToastHelper.show(AddTransactionActivity.this, "Scanning finished! Please check again.");
-            }
-        });
-    }
-
     @Override
     public void finish() {
         super.finish();
         overridePendingTransition(R.anim.stay, R.anim.slide_out_down);
-    }
-    // Nhớ dọn rác ở onDestroy
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (categorySnapshotListener != null) {
-            categorySnapshotListener.remove();
-        }
     }
 }

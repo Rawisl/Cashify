@@ -23,18 +23,15 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.cashify.R;
-import com.example.cashify.data.local.AppDatabase;
-import com.example.cashify.data.remote.FirebaseManager;
 import com.example.cashify.ui.auth.ChangePasswordActivity;
 import com.example.cashify.ui.auth.LoginActivity;
 import com.example.cashify.ui.category.CategoryManagement;
-import com.example.cashify.ui.main.PersonalWorkspaceHeader;
+import com.example.cashify.ui.main.BaseActivity;
 import com.example.cashify.utils.DialogHelper;
 import com.example.cashify.utils.CurrencyManager;
 import com.example.cashify.utils.ToastHelper;
+import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.switchmaterial.SwitchMaterial;
-
-import java.util.concurrent.Executors;
 
 public class SettingsFragment extends Fragment {
 
@@ -50,6 +47,7 @@ public class SettingsFragment extends Fragment {
     private TextView currencySummary;
     private TextView optionCurrencyVnd;
     private TextView optionCurrencyUsd;
+
     private boolean isUpdatingNotificationToggle = false;
     private boolean isLanguageExpanded = false;
     private boolean isCurrencyExpanded = false;
@@ -68,21 +66,30 @@ public class SettingsFragment extends Fragment {
                     }
             );
 
-    public SettingsFragment() {
-        // Required empty public constructor
-    }
+    public SettingsFragment() {}
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_settings, container, false);
-
         settingsViewModel = new ViewModelProvider(this).get(SettingsViewModel.class);
 
+        // --- Notifications ---
         toggleNotification = view.findViewById(R.id.toggle_notification);
         LinearLayout btnNotification = view.findViewById(R.id.btn_notification);
         setupNotificationToggle(btnNotification);
 
+        // Sidebar Navigation
+        MaterialToolbar toolbarPersonal = view.findViewById(R.id.toolbarPersonal);
+        View bellIcon = view.findViewById(R.id.imgBellIcon);
+        TextView bellBadge = view.findViewById(R.id.tvNotificationBadge);
+        TextView tvTitle = view.findViewById(R.id.tvToolbarTitle);
+        if (tvTitle != null) {
+            tvTitle.setText("Settings");
+        }        if (getActivity() instanceof BaseActivity) {
+            ((BaseActivity) getActivity()).setupCommonHeader(toolbarPersonal, bellIcon, bellBadge);
+        }
+
+        // --- Language ---
         languageOptions = view.findViewById(R.id.layout_language_options);
         languageArrow = view.findViewById(R.id.iv_language_arrow);
         LinearLayout btnLanguage = view.findViewById(R.id.btn_language);
@@ -90,6 +97,7 @@ public class SettingsFragment extends Fragment {
         View englishOption = view.findViewById(R.id.option_language_english);
         englishOption.setOnClickListener(v -> setLanguageExpanded(false));
 
+        // --- Currency ---
         currencyOptions = view.findViewById(R.id.layout_currency_options);
         currencyArrow = view.findViewById(R.id.iv_currency_arrow);
         currencySummary = view.findViewById(R.id.tv_currency_summary);
@@ -101,6 +109,7 @@ public class SettingsFragment extends Fragment {
         optionCurrencyUsd.setOnClickListener(v -> setCurrency(CurrencyManager.CURRENCY_USD));
         syncCurrencySelection();
 
+        // --- Navigation Buttons ---
         LinearLayout btnSecurity = view.findViewById(R.id.btn_security);
         btnSecurity.setOnClickListener(v -> {
             Intent intent = new Intent(requireContext(), ChangePasswordActivity.class);
@@ -113,10 +122,10 @@ public class SettingsFragment extends Fragment {
             startActivity(intent);
         });
 
+        //Đẩy logic xóa data về cho ViewModel lo
         LinearLayout btnResetTransaction = view.findViewById(R.id.btn_reset_transaction);
         btnResetTransaction.setOnClickListener(v -> {
             String msg = getString(R.string.confirm_reset) + " all " + getString(R.string.nav_transaction_history) + "?";
-
             DialogHelper.showCustomDialog(
                     requireContext(),
                     getString(R.string.action_reset_transactions),
@@ -125,36 +134,14 @@ public class SettingsFragment extends Fragment {
                     getString(R.string.action_cancel),
                     DialogHelper.DialogType.DANGER,
                     true,
-                    () -> FirebaseManager.getInstance().deleteAllTransactionsFromCloud("PERSONAL", new FirebaseManager.DataCallback<Void>() {
-                        @Override
-                        public void onSuccess(Void data) {
-                            Executors.newSingleThreadExecutor().execute(() -> {
-                                AppDatabase.getInstance(requireContext()).transactionDao().deleteAllTransactions("PERSONAL");
-
-                                requireActivity().runOnUiThread(() ->
-                                        DialogHelper.showSuccess(requireContext(), "Done", "All transactions have been deleted!", null)
-                                );
-                            });
-                        }
-
-                        @Override
-                        public void onError(String message) {
-                            requireActivity().runOnUiThread(() ->
-                                    DialogHelper.showAlert(requireContext(), "Error", "Cloud deleting error: " + message, null)
-                            );
-                        }
-                    }),
+                    () -> settingsViewModel.resetAllTransactions(requireContext()), // Chỉ việc gọi hàm
                     null
             );
         });
 
+        //Đẩy logic clear DB nội bộ về ViewModel
         LinearLayout btnLogout = view.findViewById(R.id.btn_logout);
-        btnLogout.setOnClickListener(v -> new Thread(() -> {
-            AppDatabase db = AppDatabase.getInstance(requireContext());
-            db.clearAllTables();
-
-            requireActivity().runOnUiThread(() -> settingsViewModel.logout(requireContext()));
-        }).start());
+        btnLogout.setOnClickListener(v -> settingsViewModel.clearDataAndLogout(requireContext()));
 
         return view;
     }
@@ -162,15 +149,7 @@ public class SettingsFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        PersonalWorkspaceHeader.bind(this, view);
-
-        settingsViewModel.isLoggedOut.observe(getViewLifecycleOwner(), isLoggedOut -> {
-            if (isLoggedOut != null && isLoggedOut) {
-                Intent intent = new Intent(requireActivity(), LoginActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                startActivity(intent);
-            }
-        });
+        observeViewModel();
     }
 
     @Override
@@ -180,12 +159,35 @@ public class SettingsFragment extends Fragment {
         syncCurrencySelection();
     }
 
+    private void observeViewModel() {
+        // Hóng lệnh đăng xuất
+        settingsViewModel.isLoggedOut.observe(getViewLifecycleOwner(), isLoggedOut -> {
+            if (isLoggedOut != null && isLoggedOut) {
+                Intent intent = new Intent(requireActivity(), LoginActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+            }
+        });
+
+        // Hóng kết quả Reset Transactions (Thành công hay Thất bại)
+        settingsViewModel.getResetStatus().observe(getViewLifecycleOwner(), status -> {
+            if (status == null) return;
+            if (status.isSuccess) {
+                DialogHelper.showSuccess(requireContext(), "Done", "All transactions have been deleted!", null);
+            } else {
+                DialogHelper.showAlert(requireContext(), "Error", "Failed to reset transactions: " + status.message, null);
+            }
+            // Reset lại state để không bị nổ Dialog lại khi xoay màn hình
+            settingsViewModel.clearResetStatus();
+        });
+    }
+
+    // --- CÁC HÀM XỬ LÝ SETTINGS UI  ---
+
     private void setupNotificationToggle(LinearLayout btnNotification) {
         syncToggleWithPreference();
-
         toggleNotification.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isUpdatingNotificationToggle) return;
-
             if (isChecked) {
                 requestNotificationPermission();
             } else {
@@ -193,7 +195,6 @@ public class SettingsFragment extends Fragment {
                 syncToggleWithPreference();
             }
         });
-
         btnNotification.setOnClickListener(v -> toggleNotification.setChecked(!toggleNotification.isChecked()));
     }
 
@@ -202,9 +203,7 @@ public class SettingsFragment extends Fragment {
     }
 
     private boolean isNotificationPreferenceEnabled() {
-        return requireContext()
-                .getSharedPreferences(SETTINGS_PREFS, Context.MODE_PRIVATE)
-                .getBoolean(KEY_NOTIFICATIONS_ENABLED, true);
+        return requireContext().getSharedPreferences(SETTINGS_PREFS, Context.MODE_PRIVATE).getBoolean(KEY_NOTIFICATIONS_ENABLED, true);
     }
 
     private void setNotificationPreference(boolean enabled) {
@@ -214,7 +213,6 @@ public class SettingsFragment extends Fragment {
 
     private void syncToggleWithPreference() {
         if (toggleNotification == null) return;
-
         isUpdatingNotificationToggle = true;
         toggleNotification.setChecked(isNotificationPreferenceEnabled() && isNotificationEnabled());
         isUpdatingNotificationToggle = false;
@@ -222,8 +220,7 @@ public class SettingsFragment extends Fragment {
 
     private void requestNotificationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(requireContext(), android.Manifest.permission.POST_NOTIFICATIONS)
-                    == PackageManager.PERMISSION_GRANTED) {
+            if (ContextCompat.checkSelfPermission(requireContext(), android.Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
                 setNotificationPreference(true);
                 syncToggleWithPreference();
             } else {
@@ -241,32 +238,20 @@ public class SettingsFragment extends Fragment {
         syncToggleWithPreference();
     }
 
-    private void toggleLanguageOptions() {
-        setLanguageExpanded(!isLanguageExpanded);
-    }
+    private void toggleLanguageOptions() { setLanguageExpanded(!isLanguageExpanded); }
 
     private void setLanguageExpanded(boolean expanded) {
         isLanguageExpanded = expanded;
-        if (languageOptions != null) {
-            languageOptions.setVisibility(expanded ? View.VISIBLE : View.GONE);
-        }
-        if (languageArrow != null) {
-            languageArrow.animate().rotation(expanded ? 90f : 0f).setDuration(180).start();
-        }
+        if (languageOptions != null) languageOptions.setVisibility(expanded ? View.VISIBLE : View.GONE);
+        if (languageArrow != null) languageArrow.animate().rotation(expanded ? 90f : 0f).setDuration(180).start();
     }
 
-    private void toggleCurrencyOptions() {
-        setCurrencyExpanded(!isCurrencyExpanded);
-    }
+    private void toggleCurrencyOptions() { setCurrencyExpanded(!isCurrencyExpanded); }
 
     private void setCurrencyExpanded(boolean expanded) {
         isCurrencyExpanded = expanded;
-        if (currencyOptions != null) {
-            currencyOptions.setVisibility(expanded ? View.VISIBLE : View.GONE);
-        }
-        if (currencyArrow != null) {
-            currencyArrow.animate().rotation(expanded ? 90f : 0f).setDuration(180).start();
-        }
+        if (currencyOptions != null) currencyOptions.setVisibility(expanded ? View.VISIBLE : View.GONE);
+        if (currencyArrow != null) currencyArrow.animate().rotation(expanded ? 90f : 0f).setDuration(180).start();
     }
 
     private void setCurrency(String currencyCode) {
@@ -275,7 +260,6 @@ public class SettingsFragment extends Fragment {
             setCurrencyExpanded(false);
             return;
         }
-
         CurrencyManager.setSelectedCurrency(requireContext(), currencyCode);
         syncCurrencySelection();
         setCurrencyExpanded(false);
@@ -284,12 +268,9 @@ public class SettingsFragment extends Fragment {
 
     private void syncCurrencySelection() {
         if (currencySummary == null || optionCurrencyVnd == null || optionCurrencyUsd == null || getContext() == null) return;
-
         String selectedCurrency = CurrencyManager.getSelectedCurrency(requireContext());
         boolean isVnd = CurrencyManager.CURRENCY_VND.equals(selectedCurrency);
-        currencySummary.setText(isVnd
-                ? getString(R.string.settings_item_currency_vnd_desc)
-                : getString(R.string.settings_item_currency_usd_desc));
+        currencySummary.setText(isVnd ? getString(R.string.settings_item_currency_vnd_desc) : getString(R.string.settings_item_currency_usd_desc));
         optionCurrencyVnd.setTextColor(ContextCompat.getColor(requireContext(), isVnd ? R.color.brand_primary : R.color.item_description));
         optionCurrencyUsd.setTextColor(ContextCompat.getColor(requireContext(), isVnd ? R.color.item_description : R.color.brand_primary));
     }

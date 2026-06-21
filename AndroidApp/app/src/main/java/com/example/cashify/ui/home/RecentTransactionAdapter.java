@@ -1,5 +1,6 @@
 package com.example.cashify.ui.home;
 
+import android.annotation.SuppressLint;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.view.LayoutInflater;
@@ -25,11 +26,12 @@ import java.util.Locale;
 
 public class RecentTransactionAdapter extends RecyclerView.Adapter<RecentTransactionAdapter.TransactionViewHolder> {
 
-    // Nhận dữ liệu xịn từ ViewModel
+    // Pre-allocate SimpleDateFormat to prevent massive object creation during onBindViewHolder (60fps)
+    private static final SimpleDateFormat DATE_FORMATTER = new SimpleDateFormat("dd/MM • hh:mm a", Locale.ENGLISH);
+
     private List<TransactionViewModel.HistoryItem> items = new ArrayList<>();
     private OnItemClickListener clickListener;
 
-    // Interface y hệt HistoryAdapter nhưng dùng cho Click thường ở màn Home
     public interface OnItemClickListener {
         void onItemClick(Transaction transaction);
     }
@@ -38,12 +40,15 @@ public class RecentTransactionAdapter extends RecyclerView.Adapter<RecentTransac
         this.clickListener = listener;
     }
 
-    // Hàm update data tự động lọc bỏ header ngày tháng
+    /**
+     * Updates the adapter data while automatically filtering out Date Header items.
+     * Ensures only actual transactions are displayed on the Home screen.
+     */
+    @SuppressLint("NotifyDataSetChanged")
     public void updateData(List<TransactionViewModel.HistoryItem> newData) {
         List<TransactionViewModel.HistoryItem> onlyTransactions = new ArrayList<>();
         if (newData != null) {
             for (TransactionViewModel.HistoryItem item : newData) {
-                // Chỉ nhặt những item là giao dịch để hiển thị trên Home
                 if (item != null && item.getType() == TransactionViewModel.HistoryItem.TYPE_TRANSACTION) {
                     onlyTransactions.add(item);
                 }
@@ -60,6 +65,7 @@ public class RecentTransactionAdapter extends RecyclerView.Adapter<RecentTransac
         return new TransactionViewHolder(view);
     }
 
+    @SuppressLint("SetTextI18n")
     @Override
     public void onBindViewHolder(@NonNull TransactionViewHolder holder, int position) {
         TransactionViewModel.HistoryItem item = items.get(position);
@@ -67,23 +73,20 @@ public class RecentTransactionAdapter extends RecyclerView.Adapter<RecentTransac
 
         if (trans == null) return;
 
-        // 1. Gán Tiêu đề (Ưu tiên Note, nếu rỗng thì dùng Tên danh mục)
+        // 1. Set Title (Prioritize user note, fallback to category name)
         if (holder.tvMainTitle != null) {
             String title = (trans.note != null && !trans.note.isEmpty())
                     ? trans.note
                     : item.getCategoryName();
-
             holder.tvMainTitle.setText(title);
         }
 
-        // 2. Gán Subtitle (Category • Time) - Học y chang HistoryAdapter
+        // 2. Set Subtitle (Timestamp formatting)
         if (holder.tvSubtitle != null) {
-            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM • hh:mm a", Locale.ENGLISH);
-            String time = sdf.format(new Date(trans.timestamp));
-            holder.tvSubtitle.setText(time);
+            holder.tvSubtitle.setText(DATE_FORMATTER.format(new Date(trans.timestamp)));
         }
 
-        // 3. Gán Số tiền và Màu sắc - Mix giữa màu của History và Formatter của Cashify
+        // 3. Set Amount & Text Color based on transaction type
         if (holder.tvAmount != null) {
             if (trans.type == 1) { // Income
                 holder.tvAmount.setText("+" + CurrencyFormatter.formatCompactAmount(trans.amount));
@@ -94,7 +97,7 @@ public class RecentTransactionAdapter extends RecyclerView.Adapter<RecentTransac
             }
         }
 
-        // 4. Gán Icon và Màu nền Icon - Học chuẩn từ HistoryAdapter
+        // 4. Set Category Icon & Dynamic Pastel Background
         if (holder.ivCategoryIcon != null) {
             String iconName = item.getCategoryIcon();
             int iconResId = holder.itemView.getContext().getResources().getIdentifier(
@@ -103,21 +106,23 @@ public class RecentTransactionAdapter extends RecyclerView.Adapter<RecentTransac
 
             try {
                 String colorStr = item.getCategoryColor();
-                if (colorStr == null || colorStr.isEmpty()) colorStr = "#4CAF50"; // Màu cua dự phòng (Xanh lá)
+                if (colorStr == null || colorStr.isEmpty()) colorStr = "#4CAF50"; // Fallback Green
                 int originColor = Color.parseColor(colorStr);
 
+                // Create a 20% opacity (alpha 51) pastel variant for the background
                 int pastelColor = Color.argb(51, Color.red(originColor), Color.green(originColor), Color.blue(originColor));
-                holder.ivCategoryIcon.setBackgroundTintList(ColorStateList.valueOf(pastelColor));
 
+                holder.ivCategoryIcon.setBackgroundTintList(ColorStateList.valueOf(pastelColor));
                 holder.ivCategoryIcon.setImageTintList(ColorStateList.valueOf(originColor));
 
             } catch (Exception e) {
-                holder.ivCategoryIcon.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#EEEEEE"))); // Xám siêu nhẹ
-                holder.ivCategoryIcon.setImageTintList(ColorStateList.valueOf(Color.GRAY)); // Icon xám
+                // Fallback to neutral gray on parsing failure
+                holder.ivCategoryIcon.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#EEEEEE")));
+                holder.ivCategoryIcon.setImageTintList(ColorStateList.valueOf(Color.GRAY));
             }
         }
 
-        // 5. Sự kiện Click
+        // 5. Click Event Delegation
         if (holder.itemContainer != null) {
             holder.itemContainer.setOnClickListener(v -> {
                 if (clickListener != null) {

@@ -3,7 +3,6 @@ package com.example.cashify.ui.workspace;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,33 +10,32 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.widget.NestedScrollView;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
-import com.example.cashify.data.model.Transaction;
-import com.example.cashify.data.model.WorkspaceInvitation;
 import com.example.cashify.ui.transactions.AddTransactionActivity;
-import com.example.cashify.ui.transactions.TransactionViewModel;
 import com.example.cashify.utils.CurrencyFormatter;
 import com.example.cashify.utils.ToastHelper;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.ArrayList;
-import java.util.List;
 
-public class WorkspaceHomeFragment extends Fragment { // Vẫn giữ nguyên extends Fragment
+public class WorkspaceHomeFragment extends Fragment {
 
     private RecyclerView rvMembers, rvTransactions;
     private WorkspaceMemberAdapter memberAdapter;
     private WorkspaceTransactionAdapter historyAdapter;
-    private TextView tvBalance, tvIncome, tvExpense;
+    private TextView tvBalance, tvIncome, tvExpense, tvNotificationBadge; // master: tvNotificationBadge
+    // ui-consistency: card info + empty state
     private TextView tvWorkspaceNameCard, tvWorkspaceMemberCount, tvWorkspaceActivitySummary;
     private View layoutWorkspaceEmptyTransactions;
     private MaterialToolbar toolbar;
+    private NestedScrollView scrollView;
 
     private WorkspaceViewModel workspaceViewModel;
     private String workspaceId;
@@ -52,7 +50,6 @@ public class WorkspaceHomeFragment extends Fragment { // Vẫn giữ nguyên ext
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // 1. LẤY ID TỪ PARENT
         this.workspaceId = "";
         Fragment parent = getParentFragment();
         while (parent != null) {
@@ -65,7 +62,6 @@ public class WorkspaceHomeFragment extends Fragment { // Vẫn giữ nguyên ext
             parent = parent.getParentFragment();
         }
 
-        // 2. CHỈ KHỞI TẠO KHI CÓ ID
         if (this.workspaceId != null && !this.workspaceId.isEmpty()) {
             initViewModel();
             initViews(view);
@@ -77,7 +73,7 @@ public class WorkspaceHomeFragment extends Fragment { // Vẫn giữ nguyên ext
         workspaceViewModel = new ViewModelProvider(requireActivity()).get(WorkspaceViewModel.class);
         workspaceViewModel.loadWorkspaceDetails(workspaceId);
         workspaceViewModel.loadWorkspaceMembers(workspaceId);
-        workspaceViewModel.loadWorkspaceTransactions(workspaceId);
+        workspaceViewModel.startRealtimeSyncTrigger(workspaceId);
     }
 
     private void initViews(View view) {
@@ -85,50 +81,43 @@ public class WorkspaceHomeFragment extends Fragment { // Vẫn giữ nguyên ext
         tvBalance = view.findViewById(R.id.tvWorkspaceBalance);
         tvIncome = view.findViewById(R.id.tvWorkspaceIncome);
         tvExpense = view.findViewById(R.id.tvWorkspaceExpense);
+        // master: notification badge cho setupCommonHeader
+        tvNotificationBadge = view.findViewById(R.id.tvBellBadge);
+        // ui-consistency: card info + empty state
         tvWorkspaceNameCard = view.findViewById(R.id.tvWorkspaceNameCard);
         tvWorkspaceMemberCount = view.findViewById(R.id.tvWorkspaceMemberCount);
         tvWorkspaceActivitySummary = view.findViewById(R.id.tvWorkspaceActivitySummary);
         layoutWorkspaceEmptyTransactions = view.findViewById(R.id.layoutWorkspaceEmptyTransactions);
         rvMembers = view.findViewById(R.id.rvWorkspaceMembers);
         rvTransactions = view.findViewById(R.id.rvWorkspaceTransactions);
+        scrollView = view.findViewById(R.id.workspaceScrollView);
+        View bellIcon = view.findViewById(R.id.imgBellIcon);
 
-        // ============================================================
-        // VỚI TAY RA MÀN HÌNH CHÍNH (MAIN ACTIVITY) ĐỂ MỞ SIDEBAR
-        // ============================================================
-        toolbar.setNavigationOnClickListener(v -> {
-            if (getActivity() != null) {
-                androidx.drawerlayout.widget.DrawerLayout drawer = getActivity().findViewById(R.id.drawerLayout);
-                if (drawer != null) {
-                    drawer.openDrawer(androidx.core.view.GravityCompat.START);
-                }
-            }
-        });
+        if (getActivity() instanceof com.example.cashify.ui.main.BaseActivity) {
+            ((com.example.cashify.ui.main.BaseActivity) getActivity())
+                    .setupCommonHeader(toolbar, bellIcon, tvNotificationBadge);
+        }
 
-        // Setup RecyclerView Members
         rvMembers.setLayoutManager(new LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false));
         memberAdapter = new WorkspaceMemberAdapter(new ArrayList<>());
         rvMembers.setAdapter(memberAdapter);
 
-        // Setup RecyclerView Transactions
         rvTransactions.setLayoutManager(new LinearLayoutManager(requireContext()));
 
         String currentUserUid = FirebaseAuth.getInstance().getCurrentUser() != null ?
                 FirebaseAuth.getInstance().getCurrentUser().getUid() : "";
-        String finalWorkspaceId = this.workspaceId;
 
-        // Khởi tạo Adapter an toàn
         historyAdapter = new WorkspaceTransactionAdapter(
                 requireContext(),
-                finalWorkspaceId,
+                this.workspaceId,
                 currentUserUid,
                 "",
                 new ArrayList<>(),
                 transaction -> {
-                    // Check getContext để không bị văng app
                     if (getContext() != null) {
                         Intent intent = new Intent(getContext(), AddTransactionActivity.class);
                         intent.putExtra("TRANSACTION_ID", transaction.id);
-                        intent.putExtra("WORKSPACE_ID", finalWorkspaceId);
+                        intent.putExtra("WORKSPACE_ID", this.workspaceId);
                         startActivity(intent);
                     }
                 }
@@ -140,43 +129,18 @@ public class WorkspaceHomeFragment extends Fragment { // Vẫn giữ nguyên ext
             bottomSheet.show(getChildFragmentManager(), "AddMemberBottomSheet");
         });
 
-        // ============================================================
-        // MẶC ÁO GIÁP CHỐNG VĂNG APP KHI CHUYỂN TAB ĐANG LOAD DỞ
-        // ============================================================
-        TextView tvNotificationBadge = view.findViewById(R.id.tvNotificationBadge);
-
-        com.example.cashify.data.remote.FirebaseManager.getInstance()
-                .listenToUnreadNotifications(new com.example.cashify.data.remote.FirebaseManager.DataCallback<Integer>() {
-                    @Override
-                    public void onSuccess(Integer count) {
-                        // CHỐT CHẶN: Nếu Fragment bị giấu đi rồi thì nghỉ vẽ
-                        if (!isAdded() || getView() == null) return;
-
-                        if (count != null && count > 0) {
-                            tvNotificationBadge.setVisibility(View.VISIBLE);
-                            tvNotificationBadge.setText(count > 9 ? "9+" : String.valueOf(count));
-                        } else {
-                            tvNotificationBadge.setVisibility(View.GONE);
-                        }
-                    }
-
-                    @Override
-                    public void onError(String message) {
-                        if (!isAdded() || getView() == null) return;
-                        tvNotificationBadge.setVisibility(View.GONE);
-                    }
-                });
-
-        view.findViewById(R.id.btnWorkspaceNotifications).setOnClickListener(v -> {
-            new com.example.cashify.ui.notifications.NotificationBottomSheet()
-                    .show(getChildFragmentManager(), "NotificationBottomSheet");
-        });
+        if (scrollView != null) {
+            scrollView.setOnScrollChangeListener((NestedScrollView.OnScrollChangeListener) (v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
+                if (!v.canScrollVertically(1)) {
+                    workspaceViewModel.loadWorkspaceTransactions(workspaceId, false);
+                }
+            });
+        }
     }
 
     @SuppressLint("SetTextI18n")
     private void observeViewModel() {
-
-        View progressBar = getView().findViewById(R.id.progressBarWorkspace);
+        View progressBar = getView() != null ? getView().findViewById(R.id.progressBarWorkspace) : null;
 
         workspaceViewModel.isLoading.observe(getViewLifecycleOwner(), isLoading -> {
             if (progressBar != null) {
@@ -187,7 +151,8 @@ public class WorkspaceHomeFragment extends Fragment { // Vẫn giữ nguyên ext
         workspaceViewModel.getWorkspaceLiveData().observe(getViewLifecycleOwner(), workspace -> {
             if (workspace != null) {
                 toolbar.setTitle(workspace.getName());
-                tvWorkspaceNameCard.setText(workspace.getName());
+                // ui-consistency: hiện tên workspace trên card
+                if (tvWorkspaceNameCard != null) tvWorkspaceNameCard.setText(workspace.getName());
                 if (historyAdapter != null && workspace.getOwnerId() != null) {
                     historyAdapter.setOwnerId(workspace.getOwnerId());
                 }
@@ -197,64 +162,66 @@ public class WorkspaceHomeFragment extends Fragment { // Vẫn giữ nguyên ext
         workspaceViewModel.getMembersLiveData().observe(getViewLifecycleOwner(), members -> {
             if (members != null && memberAdapter != null) {
                 memberAdapter.setMembers(members);
-                int memberCount = members.size();
-                tvWorkspaceMemberCount.setText(getString(
-                        memberCount == 1 ? R.string.group_member_count : R.string.group_members_count,
-                        memberCount
-                ));
+                // ui-consistency: hiện số lượng member
+                if (tvWorkspaceMemberCount != null) {
+                    int memberCount = members.size();
+                    tvWorkspaceMemberCount.setText(getString(
+                            memberCount == 1 ? R.string.group_member_count : R.string.group_members_count,
+                            memberCount
+                    ));
+                }
             }
         });
 
+        // master: chỉ set data vào adapter, balance tính qua LiveData riêng
+        // ui-consistency: thêm empty state + activity summary
         workspaceViewModel.getTransactionsLiveData().observe(getViewLifecycleOwner(), historyItems -> {
-            historyAdapter.setHistoryData(historyItems);
+            if (historyItems != null && historyAdapter != null) {
+                historyAdapter.setHistoryData(historyItems);
+            }
 
-            long totalIncome = 0;
-            long totalExpense = 0;
+            // ui-consistency: empty state + activity summary
             int transactionCount = 0;
-
             if (historyItems != null) {
-                for (TransactionViewModel.HistoryItem item : historyItems) {
-                    if (item != null && item.getType() == TransactionViewModel.HistoryItem.TYPE_TRANSACTION) {
-                        Transaction t = item.getTransaction();
-                        if (t != null) {
-                            transactionCount++;
-                            if (t.type == 1) totalIncome += t.amount;
-                            else if (t.type == 0) totalExpense += t.amount;
-                        }
+                for (WorkspaceTransactionAdapter.HistoryItem item : historyItems) {
+                    if (item != null && item.getType() == WorkspaceTransactionAdapter.HistoryItem.TYPE_TRANSACTION) {
+                        transactionCount++;
                     }
                 }
             }
 
-            long actualBalance = totalIncome - totalExpense;
-            tvBalance.setText(CurrencyFormatter.formatFullVND(actualBalance));
-            tvIncome.setText(CurrencyFormatter.formatFullVND(totalIncome));
-            tvExpense.setText(CurrencyFormatter.formatFullVND(totalExpense));
-
             boolean hasTransactions = transactionCount > 0;
-            rvTransactions.setVisibility(hasTransactions ? View.VISIBLE : View.GONE);
-            if (layoutWorkspaceEmptyTransactions != null) {
+            if (rvTransactions != null)
+                rvTransactions.setVisibility(hasTransactions ? View.VISIBLE : View.GONE);
+            if (layoutWorkspaceEmptyTransactions != null)
                 layoutWorkspaceEmptyTransactions.setVisibility(hasTransactions ? View.GONE : View.VISIBLE);
-            }
-            if (!hasTransactions) {
-                tvWorkspaceActivitySummary.setText(R.string.group_no_activity);
-            } else if (transactionCount == 1) {
-                tvWorkspaceActivitySummary.setText(R.string.group_activity_one);
-            } else {
-                tvWorkspaceActivitySummary.setText(getString(R.string.group_activity_count, transactionCount));
+            if (tvWorkspaceActivitySummary != null) {
+                if (!hasTransactions) {
+                    tvWorkspaceActivitySummary.setText(R.string.group_no_activity);
+                } else if (transactionCount == 1) {
+                    tvWorkspaceActivitySummary.setText(R.string.group_activity_one);
+                } else {
+                    tvWorkspaceActivitySummary.setText(getString(R.string.group_activity_count, transactionCount));
+                }
             }
         });
 
-        // ============================================================
-        // MẶC ÁO GIÁP CHO PHẦN BÁO LỖI (CHỐNG TOAST BÓNG MA)
-        // ============================================================
-        workspaceViewModel.getErrorMessage().observe(getViewLifecycleOwner(), errorMsg -> {
+        // master: balance từ LiveData riêng (clean hơn tính thủ công)
+        workspaceViewModel.getTotalIncomeLiveData().observe(getViewLifecycleOwner(), income -> {
+            tvIncome.setText(CurrencyFormatter.formatFullVND(income != null ? income : 0L));
+        });
+
+        workspaceViewModel.getTotalExpenseLiveData().observe(getViewLifecycleOwner(), expense -> {
+            tvExpense.setText(CurrencyFormatter.formatFullVND(expense != null ? expense : 0L));
+        });
+
+        workspaceViewModel.getActualBalanceLiveData().observe(getViewLifecycleOwner(), balance -> {
+            tvBalance.setText(CurrencyFormatter.formatFullVND(balance != null ? balance : 0L));
+        });
+
+        workspaceViewModel.errorMessage.observe(getViewLifecycleOwner(), errorMsg -> {
             if (errorMsg != null) {
-                // Phải check getContext() != null thay vì xài requireContext()
-                if (getContext() != null) {
-                    ToastHelper.show(getContext(), errorMsg);
-                }
-                // Xóa thông báo lỗi ngay lập tức để lần sau lật tab nó không tự bung Toast ảo ra nữa
-                workspaceViewModel.resetActionStatus();
+                ToastHelper.show(requireContext(), errorMsg);
             }
         });
     }

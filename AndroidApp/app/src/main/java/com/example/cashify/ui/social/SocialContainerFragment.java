@@ -1,9 +1,13 @@
 package com.example.cashify.ui.social;
 
+import android.graphics.Color;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -12,11 +16,24 @@ import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
 
 import com.example.cashify.R;
-import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 public class SocialContainerFragment extends Fragment {
 
-    private boolean syncingBottomNavSelection = false;
+    // =========================================================================
+    // CONSTANTS: Navigation Bar Colors
+    // =========================================================================
+    private static final int ACTIVE_COLOR = Color.rgb(26, 35, 126);
+    private static final int INACTIVE_COLOR = Color.rgb(96, 125, 139);
+
+    // =========================================================================
+    // UI COMPONENTS
+    // =========================================================================
+    private View navNewsfeed;
+    private View navProfile;
+    private ImageView imgNewsfeed;
+    private ImageView imgProfile;
+    private TextView txtNewsfeed;
+    private TextView txtProfile;
 
     @Nullable
     @Override
@@ -38,36 +55,60 @@ public class SocialContainerFragment extends Fragment {
         if (navHostFragment == null) return;
 
         NavController navController = navHostFragment.getNavController();
-        BottomNavigationView bottomNav = view.findViewById(R.id.bottom_navigation_social);
-        if (bottomNav == null) return;
 
-        bottomNav.setOnItemSelectedListener(item -> {
-            if (syncingBottomNavSelection) {
-                return true;
-            }
+        // Bind UI Elements
+        navNewsfeed = view.findViewById(R.id.navSocialNewsfeed);
+        navProfile = view.findViewById(R.id.navSocialProfile);
+        imgNewsfeed = view.findViewById(R.id.imgSocialNewsfeed);
+        imgProfile = view.findViewById(R.id.imgSocialProfile);
+        txtNewsfeed = view.findViewById(R.id.txtSocialNewsfeed);
+        txtProfile = view.findViewById(R.id.txtSocialProfile);
 
-            int destinationId = item.getItemId();
-            if (navController.getCurrentDestination() != null
-                    && navController.getCurrentDestination().getId() == destinationId) {
-                return true;
-            }
-            navController.popBackStack(destinationId, false);
-            if (navController.getCurrentDestination() == null
-                    || navController.getCurrentDestination().getId() != destinationId) {
-                navController.navigate(destinationId);
-            }
-            return true;
-        });
+        // Setup Click Listeners for Navigation Routing
+        navNewsfeed.setOnClickListener(v -> navigateIfNeeded(navController, R.id.nav_social_newsfeed));
+        navProfile.setOnClickListener(v -> navigateIfNeeded(navController, R.id.nav_social_profile));
 
-        navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
-            int destinationId = destination.getId() == R.id.nav_other_profile
-                    ? R.id.nav_social_profile
-                    : destination.getId();
-            if (bottomNav.getSelectedItemId() != destinationId) {
-                syncingBottomNavSelection = true;
-                bottomNav.setSelectedItemId(destinationId);
-                syncingBottomNavSelection = false;
-            }
-        });
+        // Listen for destination changes to update the active state styling
+        navController.addOnDestinationChangedListener((controller, destination, arguments) ->
+                updateSelectedState(destination.getId()));
+
+        // Set initial state
+        updateSelectedState(navController.getCurrentDestination() == null
+                ? R.id.nav_social_newsfeed
+                : navController.getCurrentDestination().getId());
+    }
+
+    /**
+     * Prevents redundant navigation events if the user clicks the currently active tab.
+     */
+    private void navigateIfNeeded(NavController navController, int destinationId) {
+        if (navController.getCurrentDestination() != null
+                && navController.getCurrentDestination().getId() == destinationId) {
+            return;
+        }
+        navController.navigate(destinationId);
+    }
+
+    private void updateSelectedState(int destinationId) {
+        boolean newsfeedSelected = destinationId == R.id.nav_social_newsfeed;
+        bindNavItem(navNewsfeed, imgNewsfeed, txtNewsfeed, newsfeedSelected);
+        bindNavItem(navProfile, imgProfile, txtProfile, !newsfeedSelected);
+    }
+
+    /**
+     * Applies styling (color, font weight, opacity) based on the active/inactive state of a nav item.
+     */
+    private void bindNavItem(View item, ImageView icon, TextView label, boolean selected) {
+        if (item == null || icon == null || label == null) return;
+
+        int color = selected ? ACTIVE_COLOR : INACTIVE_COLOR;
+        float inactiveAlpha = getResources().getFraction(R.fraction.bottom_nav_social_inactive_alpha, 1, 1);
+
+        item.setSelected(selected);
+        item.setAlpha(selected ? 1f : inactiveAlpha);
+
+        icon.setColorFilter(color);
+        label.setTextColor(color);
+        label.setTypeface(label.getTypeface(), selected ? Typeface.BOLD : Typeface.NORMAL);
     }
 }

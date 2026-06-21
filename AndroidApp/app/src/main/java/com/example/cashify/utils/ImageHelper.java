@@ -12,13 +12,19 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.widget.ImageView;
 
+import androidx.core.content.res.ResourcesCompat;
+
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.load.resource.bitmap.CenterCrop;
 import com.example.cashify.R;
 
-import androidx.core.content.res.ResourcesCompat;
+import java.util.Locale;
 
+/**
+ * Utility class for loading and processing images using Glide.
+ * Automatically generates fallback avatars with user initials if the URL is empty or invalid.
+ */
 public class ImageHelper {
 
     public static void loadAvatar(Object url, ImageView target) {
@@ -46,10 +52,6 @@ public class ImageHelper {
                 .into(target);
     }
 
-    public static Drawable createInitialsAvatar(Context context, String identity) {
-        return createInitialsAvatar(context, identity, 0, 0);
-    }
-
     public static void loadRectImage(String url, ImageView target) {
         if (target == null || target.getContext() == null) return;
         Glide.with(target.getContext())
@@ -61,6 +63,10 @@ public class ImageHelper {
                 .centerCrop()
                 .dontAnimate()
                 .into(target);
+    }
+
+    public static Drawable createInitialsAvatar(Context context, String identity) {
+        return createInitialsAvatar(context, identity, 0, 0);
     }
 
     private static Drawable createInitialsAvatar(Context context, String identity, int viewWidth, int viewHeight) {
@@ -79,6 +85,7 @@ public class ImageHelper {
         String initials = initials(identity);
         paint.setStyle(Paint.Style.FILL);
         paint.setColor(Color.WHITE);
+
         Typeface interBold = ResourcesCompat.getFont(context, R.font.inter_bold);
         paint.setTypeface(interBold != null ? interBold : Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
         paint.setTextAlign(Paint.Align.CENTER);
@@ -106,7 +113,7 @@ public class ImageHelper {
         String[] parts = clean.split("\\s+");
         String first = firstCodePoint(parts[0]);
         String second = parts.length > 1 ? firstCodePoint(parts[parts.length - 1]) : "";
-        String result = (first + second).toUpperCase(java.util.Locale.getDefault());
+        String result = (first + second).toUpperCase(Locale.getDefault());
         return result.isEmpty() ? "HI" : result;
     }
 

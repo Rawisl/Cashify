@@ -1,5 +1,6 @@
 package com.example.cashify.ui.FriendsActivity;
 
+import android.annotation.SuppressLint;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,9 +15,11 @@ import com.example.cashify.ui.common.AvatarImageView;
 import com.example.cashify.utils.ImageHelper;
 import com.google.android.material.button.MaterialButton;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class SuggestionAdapter extends RecyclerView.Adapter<SuggestionAdapter.ViewHolder> {
+
     private static final int TYPE_USER = 0;
     private static final int TYPE_SEE_ALL = 1;
 
@@ -31,12 +34,13 @@ public class SuggestionAdapter extends RecyclerView.Adapter<SuggestionAdapter.Vi
     private boolean showSeeAllCard;
 
     public SuggestionAdapter(List<User> users, ActionListener listener) {
-        this.users = users != null ? users : java.util.Collections.emptyList();
+        this.users = users != null ? users : new ArrayList<>();
         this.listener = listener;
+        this.showSeeAllCard = false;
     }
 
     public SuggestionAdapter(List<User> users, boolean showSeeAllCard, ActionListener listener) {
-        this.users = users != null ? users : java.util.Collections.emptyList();
+        this.users = users != null ? users : new ArrayList<>();
         this.showSeeAllCard = showSeeAllCard;
         this.listener = listener;
     }
@@ -52,6 +56,7 @@ public class SuggestionAdapter extends RecyclerView.Adapter<SuggestionAdapter.Vi
         int layout = viewType == TYPE_SEE_ALL
                 ? R.layout.item_friend_suggestion_see_all
                 : R.layout.item_friend_suggestion;
+
         View view = LayoutInflater.from(parent.getContext()).inflate(layout, parent, false);
         return viewType == TYPE_SEE_ALL ? new SeeAllViewHolder(view) : new UserViewHolder(view);
     }
@@ -67,16 +72,21 @@ public class SuggestionAdapter extends RecyclerView.Adapter<SuggestionAdapter.Vi
 
         User user = users.get(position);
         UserViewHolder userHolder = (UserViewHolder) holder;
+
         userHolder.tvFriendName.setText(user.getNameToShow());
         userHolder.tvStatus.setText(user.getEmail() != null ? user.getEmail() : "Cashify User");
         ImageHelper.loadAvatar(user.getAvatarUrl(), userHolder.imgAvatar, user.getNameToShow());
 
-        boolean pending = user.getFriendStatus() == 2;
-        userHolder.btnAddFriend.setVisibility(pending ? View.GONE : View.VISIBLE);
-        userHolder.tvSentRequest.setVisibility(pending ? View.VISIBLE : View.GONE);
+        // Status: 2 = Request Sent (Pending)
+        boolean isRequestPending = user.getFriendStatus() == 2;
+
+        userHolder.btnAddFriend.setVisibility(isRequestPending ? View.GONE : View.VISIBLE);
+        userHolder.tvSentRequest.setVisibility(isRequestPending ? View.VISIBLE : View.GONE);
+
         userHolder.btnAddFriend.setOnClickListener(v -> {
             if (listener != null) listener.onAddFriend(user);
         });
+
         userHolder.tvSentRequest.setOnClickListener(v -> {
             if (listener != null) listener.onCancelRequest(user);
         });
@@ -87,11 +97,13 @@ public class SuggestionAdapter extends RecyclerView.Adapter<SuggestionAdapter.Vi
         return userCount() + (showSeeAllCard ? 1 : 0);
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     public void updateList(List<User> newList) {
-        users = newList != null ? newList : java.util.Collections.emptyList();
+        this.users = newList != null ? newList : new ArrayList<>();
         notifyDataSetChanged();
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     public void setShowSeeAllCard(boolean showSeeAllCard) {
         this.showSeeAllCard = showSeeAllCard;
         notifyDataSetChanged();
@@ -101,6 +113,10 @@ public class SuggestionAdapter extends RecyclerView.Adapter<SuggestionAdapter.Vi
         return users != null ? users.size() : 0;
     }
 
+    // =========================================================================
+    // VIEW HOLDERS
+    // =========================================================================
+
     static class ViewHolder extends RecyclerView.ViewHolder {
         ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -109,9 +125,7 @@ public class SuggestionAdapter extends RecyclerView.Adapter<SuggestionAdapter.Vi
 
     static class UserViewHolder extends ViewHolder {
         AvatarImageView imgAvatar;
-        TextView tvFriendName;
-        TextView tvStatus;
-        TextView tvSentRequest;
+        TextView tvFriendName, tvStatus, tvSentRequest;
         MaterialButton btnAddFriend;
 
         UserViewHolder(@NonNull View itemView) {

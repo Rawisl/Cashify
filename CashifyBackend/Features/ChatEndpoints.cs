@@ -10,8 +10,9 @@ public static class ChatEndpoints
     {
         var group = app.MapGroup("/api/v1/friend/messages");
 
-        //DANH SÁCH BẠN BÈ CÓ THỂ NHẮN TIN
-        group.MapGet("/chats", async (HttpRequest request, FirestoreDb db) => {
+        // Lấy danh sách bạn bè có thể nhắn tin
+        group.MapGet("/chats", async (HttpRequest request, FirestoreDb db) =>
+        {
             try
             {
                 var authHeader = request.Headers["Authorization"].FirstOrDefault();
@@ -19,7 +20,7 @@ public static class ChatEndpoints
                     return Results.Unauthorized();
 
                 var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(authHeader.Substring("Bearer ".Length))).Uid;
-                
+
                 var friendIds = (await db.Collection("users").Document(uid).Collection("friends").GetSnapshotAsync())
                     .Documents
                     .Select(doc => doc.Id)
@@ -49,12 +50,13 @@ public static class ChatEndpoints
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"Friend chat list failed: {ex}");
-                return Results.Problem(title: "Tải danh sách trò chuyện thất bại", detail: ex.Message, statusCode: 500);
+                return Results.Problem(title: "Failed to load chat list", detail: ex.Message, statusCode: 500);
             }
         });
 
-        //DANH SÁCH CUỘC TRÒ CHUYỆN GẦN ĐÂY
-        group.MapGet("/conversations", async (HttpRequest request, FirestoreDb db) => {
+        // Lấy danh sách các cuộc trò chuyện gần đây (kèm tin nhắn mới nhất và số lượng chưa đọc)
+        group.MapGet("/conversations", async (HttpRequest request, FirestoreDb db) =>
+        {
             try
             {
                 var authHeader = request.Headers["Authorization"].FirstOrDefault();
@@ -62,7 +64,7 @@ public static class ChatEndpoints
                     return Results.Unauthorized();
 
                 var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(authHeader.Substring("Bearer ".Length))).Uid;
-                
+
                 var friendIds = (await db.Collection("users").Document(uid).Collection("friends").GetSnapshotAsync())
                     .Documents
                     .Select(doc => doc.Id)
@@ -104,12 +106,13 @@ public static class ChatEndpoints
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"Direct conversation list failed: {ex}");
-                return Results.Problem(title: "Tải danh sách trò chuyện thất bại", detail: ex.Message, statusCode: 500);
+                return Results.Problem(title: "Failed to load conversation list", detail: ex.Message, statusCode: 500);
             }
         });
 
-        //TẢI TIN NHẮN TRỰC TIẾP VỚI MỘT NGƯỜI BẠN
-        group.MapGet("/{friendUid}", async (HttpRequest request, string friendUid, FirestoreDb db) => {
+        // Tải chi tiết tin nhắn trực tiếp với một người bạn
+        group.MapGet("/{friendUid}", async (HttpRequest request, string friendUid, FirestoreDb db) =>
+        {
             try
             {
                 var authHeader = request.Headers["Authorization"].FirstOrDefault();
@@ -121,15 +124,14 @@ public static class ChatEndpoints
 
                 var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(authHeader.Substring("Bearer ".Length))).Uid;
                 if (string.IsNullOrWhiteSpace(friendUid) || uid == friendUid)
-                    return Results.BadRequest(new { message = "Người nhận không hợp lệ" });
+                    return Results.BadRequest(new { message = "Invalid recipient" });
 
-                
                 var senderFriendSnap = await db.Collection("users").Document(uid).Collection("friends").Document(friendUid).GetSnapshotAsync();
                 var receiverFriendSnap = await db.Collection("users").Document(friendUid).Collection("friends").Document(uid).GetSnapshotAsync();
                 if (!senderFriendSnap.Exists || !receiverFriendSnap.Exists)
                 {
                     Console.Error.WriteLine($"Load direct friend messages rejected: users are not mutual friends ({uid}, {friendUid})");
-                    return Results.Json(new { message = "Chỉ bạn bè mới có thể xem tin nhắn với nhau" }, statusCode: 403);
+                    return Results.Json(new { message = "Only friends can view messages" }, statusCode: 403);
                 }
 
                 var orderedIds = new[] { uid, friendUid }.OrderBy(id => id, StringComparer.Ordinal).ToArray();
@@ -158,12 +160,13 @@ public static class ChatEndpoints
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"Load direct friend messages failed: {ex}");
-                return Results.Problem(title: "Tải tin nhắn thất bại", detail: ex.Message, statusCode: 500);
+                return Results.Problem(title: "Failed to load messages", detail: ex.Message, statusCode: 500);
             }
         });
 
-        //GỬI TIN NHẮN TRỰC TIẾP CHO BẠN BÈ
-        group.MapPost("/send", async (HttpRequest request, DirectFriendMessageRequest body, FirestoreDb db) => {
+        // Gửi tin nhắn trực tiếp cho bạn bè (có kèm bắn thông báo in-app)
+        group.MapPost("/send", async (HttpRequest request, DirectFriendMessageRequest body, FirestoreDb db) =>
+        {
             try
             {
                 var authHeader = request.Headers["Authorization"].FirstOrDefault();
@@ -175,10 +178,9 @@ public static class ChatEndpoints
 
                 var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(authHeader.Substring("Bearer ".Length))).Uid;
                 if (string.IsNullOrWhiteSpace(body.ReceiverId) || uid == body.ReceiverId)
-                    return Results.BadRequest(new { message = "Người nhận không hợp lệ" });
+                    return Results.BadRequest(new { message = "Invalid recipient" });
                 if (string.IsNullOrWhiteSpace(body.Text) && string.IsNullOrWhiteSpace(body.ImageUrl))
-                    return Results.BadRequest(new { message = "Tin nhắn không được để trống" });
-
+                    return Results.BadRequest(new { message = "Message cannot be empty" });
 
                 var senderRef = db.Collection("users").Document(uid);
                 var receiverRef = db.Collection("users").Document(body.ReceiverId);
@@ -186,14 +188,14 @@ public static class ChatEndpoints
                 var receiverSnap = await receiverRef.GetSnapshotAsync();
 
                 if (!senderSnap.Exists || !receiverSnap.Exists)
-                    return Results.NotFound(new { message = "Không tìm thấy người dùng" });
+                    return Results.NotFound(new { message = "User not found" });
 
                 var senderFriendSnap = await senderRef.Collection("friends").Document(body.ReceiverId).GetSnapshotAsync();
                 var receiverFriendSnap = await receiverRef.Collection("friends").Document(uid).GetSnapshotAsync();
                 if (!senderFriendSnap.Exists || !receiverFriendSnap.Exists)
                 {
                     Console.Error.WriteLine($"Send direct friend message rejected: users are not mutual friends ({uid}, {body.ReceiverId})");
-                    return Results.Json(new { message = "Chỉ bạn bè mới có thể nhắn tin cho nhau" }, statusCode: 403);
+                    return Results.Json(new { message = "Only friends can message each other" }, statusCode: 403);
                 }
 
                 var orderedIds = new[] { uid, body.ReceiverId }.OrderBy(id => id, StringComparer.Ordinal).ToArray();
@@ -202,32 +204,110 @@ public static class ChatEndpoints
                 var senderName = senderSnap.ContainsField("displayName") ? senderSnap.GetValue<string>("displayName") : "User";
                 var senderAvatar = senderSnap.ContainsField("avatarUrl") ? senderSnap.GetValue<string>("avatarUrl") : "";
 
+                // Mở Batch để ghi tin nhắn và thông báo cùng lúc
+                var batch = db.StartBatch();
+
+                // Ghi tin nhắn vào phòng chat
+                var msgRef = db.Collection("direct_chats").Document(chatId).Collection("messages").Document();
                 var messageData = new Dictionary<string, object>
-        {
-            { "senderId", uid },
-            { "receiverId", body.ReceiverId },
-            { "senderName", senderName ?? "User" },
-            { "senderAvatar", senderAvatar ?? "" },
-            { "text", body.Text?.Trim() ?? "" },
-            { "timestamp", timestamp },
-            { "isRead", false },
-            { "imageUrl", body.ImageUrl ?? "" },
-            { "isRecalled", false }
-        };
+                {
+                    { "senderId", uid },
+                    { "receiverId", body.ReceiverId },
+                    { "senderName", senderName ?? "User" },
+                    { "senderAvatar", senderAvatar ?? "" },
+                    { "text", body.Text?.Trim() ?? "" },
+                    { "timestamp", timestamp },
+                    { "isRead", false },
+                    { "imageUrl", body.ImageUrl ?? "" },
+                    { "isRecalled", false }
+                };
+                batch.Set(msgRef, messageData);
 
-                await db.Collection("direct_chats")
-                    .Document(chatId)
-                    .Collection("messages")
-                    .Document()
-                    .SetAsync(messageData);
+                // Ghi In-app Notification cho người nhận
+                var notifRef = receiverRef.Collection("notifications").Document();
+                string notifMessage = string.IsNullOrWhiteSpace(body.Text) ? "Sent an image" : body.Text.Trim();
 
-                return Results.Ok(new { message = "Gửi tin nhắn thành công", chatId });
+                batch.Set(notifRef, new
+                {
+                    type = "FRIEND_CHAT",
+                    title = senderName ?? "Friend",
+                    message = notifMessage,
+                    timestamp = timestamp,
+                    isRead = false,
+                    referenceId = uid
+                });
+
+                await batch.CommitAsync();
+
+                return Results.Ok(new { message = "Message sent successfully", chatId });
             }
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"Direct friend message failed: {ex}");
                 return Results.Problem(
-                    title: "Gửi tin nhắn thất bại",
+                    title: "Failed to send message",
+                    detail: ex.Message,
+                    statusCode: 500);
+            }
+        });
+
+        // Thu hồi tin nhắn trực tiếp
+        group.MapPatch("/{friendUid}/{messageId}/recall", async (HttpRequest request, string friendUid, string messageId, FirestoreDb db) => {
+            try
+            {
+                var authHeader = request.Headers["Authorization"].FirstOrDefault();
+                if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
+                {
+                    Console.Error.WriteLine("Recall direct message rejected: missing or invalid bearer token");
+                    return Results.Unauthorized();
+                }
+
+                var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(authHeader.Substring("Bearer ".Length))).Uid;
+
+                if (string.IsNullOrWhiteSpace(friendUid) || string.IsNullOrWhiteSpace(messageId))
+                    return Results.BadRequest(new { message = "Invalid recall information" });
+
+                // Lấy chatId chuẩn theo logic ghép ID
+                var orderedIds = new[] { uid, friendUid }.OrderBy(id => id, StringComparer.Ordinal).ToArray();
+                var chatId = $"{orderedIds[0]}_{orderedIds[1]}";
+
+                // Trỏ tới Document tin nhắn cần thu hồi
+                var messageRef = db.Collection("direct_chats")
+                                   .Document(chatId)
+                                   .Collection("messages")
+                                   .Document(messageId);
+
+                var messageSnap = await messageRef.GetSnapshotAsync();
+
+                if (!messageSnap.Exists)
+                    return Results.NotFound(new { message = "Message to recall not found" });
+
+                // Kiểm tra quyền (Chỉ người gửi mới được thu hồi tin nhắn của chính mình)
+                var senderId = messageSnap.ContainsField("senderId") ? messageSnap.GetValue<string>("senderId") : "";
+                if (senderId != uid)
+                    return Results.Json(new { message = "You do not have permission to recall this message" }, statusCode: 403);
+
+                var isRecalled = messageSnap.ContainsField("isRecalled") && messageSnap.GetValue<bool>("isRecalled");
+                if (isRecalled)
+                    return Results.BadRequest(new { message = "This message was already recalled" });
+
+                // Xóa nội dung và bật cờ
+                var updates = new Dictionary<string, object>
+                {
+                    { "text", "" },
+                    { "imageUrl", "" },
+                    { "isRecalled", true }
+                };
+
+                await messageRef.UpdateAsync(updates);
+
+                return Results.Ok(new { message = "Message recalled successfully", messageId });
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Recall message failed: {ex}");
+                return Results.Problem(
+                    title: "Failed to recall message",
                     detail: ex.Message,
                     statusCode: 500);
             }

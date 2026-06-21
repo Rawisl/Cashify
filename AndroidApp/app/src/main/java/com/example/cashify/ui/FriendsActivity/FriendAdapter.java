@@ -1,5 +1,6 @@
 package com.example.cashify.ui.FriendsActivity;
 
+import android.annotation.SuppressLint;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -46,15 +47,20 @@ public class FriendAdapter extends RecyclerView.Adapter<FriendAdapter.ViewHolder
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         User user = users.get(position);
+
         holder.tvFriendName.setText(user.getNameToShow());
         ImageHelper.loadAvatar(user.getAvatarUrl(), holder.imgAvatar, user.getNameToShow());
+
+        // Reset UI state for recycled views
         hideAllButtons(holder);
 
+        // Map status codes to specific UI states
         switch (user.getFriendStatus()) {
-            case 1:
+            case 1: // Status: Already Friends
                 holder.btnMessage.setVisibility(View.VISIBLE);
                 holder.btnUnfriend.setVisibility(View.VISIBLE);
                 holder.tvStatus.setText("Friends");
+
                 holder.btnMessage.setOnClickListener(v -> {
                     if (listener != null) listener.onMessage(user);
                 });
@@ -62,17 +68,21 @@ public class FriendAdapter extends RecyclerView.Adapter<FriendAdapter.ViewHolder
                     if (listener != null) listener.onUnfriend(user);
                 });
                 break;
-            case 2:
+
+            case 2: // Status: Request Sent (Waiting for their response)
                 holder.tvSentRequest.setVisibility(View.VISIBLE);
                 holder.tvStatus.setText("Waiting for response");
+
                 holder.tvSentRequest.setOnClickListener(v -> {
                     if (listener != null) listener.onCancelRequest(user);
                 });
                 break;
-            case 3:
+
+            case 3: // Status: Request Received (Pending your approval)
                 holder.btnAccept.setVisibility(View.VISIBLE);
                 holder.btnDecline.setVisibility(View.VISIBLE);
                 holder.tvStatus.setText("Friend request sent");
+
                 holder.btnAccept.setOnClickListener(v -> {
                     if (listener != null) listener.onAccept(user);
                 });
@@ -80,9 +90,11 @@ public class FriendAdapter extends RecyclerView.Adapter<FriendAdapter.ViewHolder
                     if (listener != null) listener.onDecline(user);
                 });
                 break;
-            default:
+
+            default: // Status: Not Friends (or status 0)
                 holder.btnAddFriend.setVisibility(View.VISIBLE);
                 holder.tvStatus.setText(user.getEmail() != null ? user.getEmail() : "");
+
                 holder.btnAddFriend.setOnClickListener(v -> {
                     if (listener != null) listener.onAddFriend(user);
                 });
@@ -95,6 +107,7 @@ public class FriendAdapter extends RecyclerView.Adapter<FriendAdapter.ViewHolder
         return users != null ? users.size() : 0;
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     public void updateList(List<User> newList) {
         users = newList != null ? newList : java.util.Collections.emptyList();
         notifyDataSetChanged();
@@ -111,16 +124,9 @@ public class FriendAdapter extends RecyclerView.Adapter<FriendAdapter.ViewHolder
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvFriendName;
-        TextView tvStatus;
-        TextView tvAlreadyFriend;
-        TextView tvSentRequest;
+        TextView tvFriendName, tvStatus, tvAlreadyFriend, tvSentRequest;
         AvatarImageView imgAvatar;
-        MaterialButton btnMessage;
-        MaterialButton btnUnfriend;
-        MaterialButton btnAddFriend;
-        MaterialButton btnAccept;
-        MaterialButton btnDecline;
+        MaterialButton btnMessage, btnUnfriend, btnAddFriend, btnAccept, btnDecline;
 
         ViewHolder(@NonNull View itemView) {
             super(itemView);

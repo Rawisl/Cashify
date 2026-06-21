@@ -1,29 +1,31 @@
 package com.example.cashify.ui.workspace;
 
+import android.annotation.SuppressLint;
+import android.graphics.Typeface;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.cashify.R;
 import com.example.cashify.data.model.ChatMessage;
 import com.example.cashify.utils.ImageHelper;
 import com.google.firebase.auth.FirebaseAuth;
 
+import java.util.ArrayList;
 import java.util.List;
-
-import android.widget.ImageView;
 
 public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder> {
 
     private List<ChatMessage> messageList;
     private final String currentUserId;
     private String ownerId;
-
     private final OnMessageLongClickListener listener;
 
     public interface OnMessageLongClickListener {
@@ -31,12 +33,12 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
     }
 
     public ChatAdapter(List<ChatMessage> messageList, OnMessageLongClickListener listener) {
-        this.messageList = messageList;
+        this.messageList = messageList != null ? messageList : new ArrayList<>();
         this.listener = listener;
         this.currentUserId = FirebaseAuth.getInstance().getUid();
     }
 
-    // ĐÃ FIX: Thêm body cho hàm update OwnerId
+    @SuppressLint("NotifyDataSetChanged")
     public void setOwnerId(String ownerId) {
         this.ownerId = ownerId;
         notifyDataSetChanged();
@@ -49,16 +51,19 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         return new ChatViewHolder(view);
     }
 
+    @SuppressLint("SetTextI18n")
     @Override
     public void onBindViewHolder(@NonNull ChatViewHolder holder, int position) {
         ChatMessage currentMessage = messageList.get(position);
+
         boolean isMine = currentMessage.getSenderId() != null && currentMessage.getSenderId().equals(currentUserId);
-        boolean isOwner = (ownerId != null && ownerId.equals(currentUserId));
+        boolean isOwner = ownerId != null && ownerId.equals(currentUserId);
         boolean canRecall = isMine || isOwner;
 
-        // ==========================================================
-        // THUẬT TOÁN GỘP TIN NHẮN (CHỈ DÀNH CHO NGƯỜI KHÁC)
-        // ==========================================================
+        // =========================================================================
+        // MESSAGE GROUPING ALGORITHM (For Incoming Messages Only)
+        // Groups consecutive messages from the same sender to optimize UI space
+        // =========================================================================
         boolean isFirstInGroup = true;
         boolean isLastInGroup = true;
 
@@ -76,102 +81,112 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             }
         }
 
-        // ==========================================================
-        // HIỂN THỊ GIAO DIỆN
-        // ==========================================================
+        // =========================================================================
+        // UI BINDING
+        // =========================================================================
         if (isMine) {
-            // TIN NHẮN CỦA MÌNH
+            // --- OUTGOING MESSAGES (MINE) ---
             holder.layoutLeft.setVisibility(View.GONE);
             holder.layoutRight.setVisibility(View.VISIBLE);
 
-            // ĐÃ FIX: Gộp logic giao diện và sự kiện vào chung 1 chỗ
             if (currentMessage.isRecalled()) {
+                // Handling Recalled State
                 holder.tvTextRight.setText("You unsent a message");
                 holder.tvTextRight.setVisibility(View.VISIBLE);
+
                 String imageUrlRight = currentMessage.getImageUrl();
                 if (imageUrlRight != null && !imageUrlRight.isEmpty()) {
                     holder.imgMessageRight.setVisibility(View.VISIBLE);
-                    com.bumptech.glide.Glide.with(holder.itemView.getContext())
+                    Glide.with(holder.itemView.getContext())
                             .load(imageUrlRight)
                             .placeholder(R.drawable.ic_camera)
                             .into(holder.imgMessageRight);
                 } else {
-                    com.bumptech.glide.Glide.with(holder.itemView.getContext()).clear(holder.imgMessageRight);
+                    Glide.with(holder.itemView.getContext()).clear(holder.imgMessageRight);
                     holder.imgMessageRight.setVisibility(View.GONE);
                 }
-                holder.tvTextRight.setTypeface(null, android.graphics.Typeface.ITALIC);
+
+                holder.tvTextRight.setTypeface(null, Typeface.ITALIC);
                 holder.tvTextRight.setAlpha(0.6f);
-                holder.layoutRight.setOnLongClickListener(null); // Bị thu hồi rồi thì khóa mõm
+                holder.layoutRight.setOnLongClickListener(null); // Disable interactions for recalled messages
+
             } else {
+                // Handling Normal State
                 holder.tvTextRight.setText(currentMessage.getText());
                 holder.tvTextRight.setVisibility(
                         (currentMessage.getText() == null || currentMessage.getText().isEmpty())
                                 ? View.GONE : View.VISIBLE);
+
                 String imageUrlRight = currentMessage.getImageUrl();
                 if (imageUrlRight != null && !imageUrlRight.isEmpty()) {
                     holder.imgMessageRight.setVisibility(View.VISIBLE);
-                    com.bumptech.glide.Glide.with(holder.itemView.getContext())
+                    Glide.with(holder.itemView.getContext())
                             .load(imageUrlRight)
                             .placeholder(R.drawable.ic_camera)
                             .into(holder.imgMessageRight);
                 } else {
-                    com.bumptech.glide.Glide.with(holder.itemView.getContext()).clear(holder.imgMessageRight);
+                    Glide.with(holder.itemView.getContext()).clear(holder.imgMessageRight);
                     holder.imgMessageRight.setVisibility(View.GONE);
                 }
-                holder.tvTextRight.setTypeface(null, android.graphics.Typeface.NORMAL);
+
+                holder.tvTextRight.setTypeface(null, Typeface.NORMAL);
                 holder.tvTextRight.setAlpha(1.0f);
 
-                // Mở khóa Long Click
+                // Enable Long Click for Context Menu
                 holder.layoutRight.setOnLongClickListener(v -> {
-                    if (listener != null) {
-                        listener.onLongClick(currentMessage);
-                    }
+                    if (listener != null) listener.onLongClick(currentMessage);
                     return true;
                 });
             }
         } else {
-            // TIN NHẮN CỦA NGƯỜI KHÁC
+            // --- INCOMING MESSAGES (THEIRS) ---
             holder.layoutRight.setVisibility(View.GONE);
             holder.layoutLeft.setVisibility(View.VISIBLE);
 
             if (currentMessage.isRecalled()) {
+                // Handling Recalled State
                 String senderName = currentMessage.getSenderName() != null ? currentMessage.getSenderName() : "Unknown";
                 holder.tvTextLeft.setText(senderName + " unsent a message");
                 holder.tvTextLeft.setVisibility(View.VISIBLE);
+
                 String imageUrlLeft = currentMessage.getImageUrl();
                 if (imageUrlLeft != null && !imageUrlLeft.isEmpty()) {
                     holder.imgMessageLeft.setVisibility(View.VISIBLE);
-                    com.bumptech.glide.Glide.with(holder.itemView.getContext())
+                    Glide.with(holder.itemView.getContext())
                             .load(imageUrlLeft)
                             .placeholder(R.drawable.ic_camera)
                             .into(holder.imgMessageLeft);
                 } else {
-                    com.bumptech.glide.Glide.with(holder.itemView.getContext()).clear(holder.imgMessageLeft);
+                    Glide.with(holder.itemView.getContext()).clear(holder.imgMessageLeft);
                     holder.imgMessageLeft.setVisibility(View.GONE);
                 }
-                holder.tvTextLeft.setTypeface(null, android.graphics.Typeface.ITALIC);
+
+                holder.tvTextLeft.setTypeface(null, Typeface.ITALIC);
                 holder.tvTextLeft.setAlpha(0.6f);
             } else {
+                // Handling Normal State
                 holder.tvTextLeft.setText(currentMessage.getText());
                 holder.tvTextLeft.setVisibility(
                         (currentMessage.getText() == null || currentMessage.getText().isEmpty())
                                 ? View.GONE : View.VISIBLE);
+
                 String imageUrlLeft = currentMessage.getImageUrl();
                 if (imageUrlLeft != null && !imageUrlLeft.isEmpty()) {
                     holder.imgMessageLeft.setVisibility(View.VISIBLE);
-                    com.bumptech.glide.Glide.with(holder.itemView.getContext())
+                    Glide.with(holder.itemView.getContext())
                             .load(imageUrlLeft)
                             .placeholder(R.drawable.ic_camera)
                             .into(holder.imgMessageLeft);
                 } else {
-                    com.bumptech.glide.Glide.with(holder.itemView.getContext()).clear(holder.imgMessageLeft);
+                    Glide.with(holder.itemView.getContext()).clear(holder.imgMessageLeft);
                     holder.imgMessageLeft.setVisibility(View.GONE);
                 }
-                holder.tvTextLeft.setTypeface(null, android.graphics.Typeface.NORMAL);
+
+                holder.tvTextLeft.setTypeface(null, Typeface.NORMAL);
                 holder.tvTextLeft.setAlpha(1.0f);
             }
 
-            // ĐÃ FIX GOD MODE: Xử lý Long Click gộp chung luôn
+            // Bind Long Click Event (with God Mode fallback for Admins/Owners)
             if (!currentMessage.isRecalled() && canRecall) {
                 holder.layoutLeft.setOnLongClickListener(v -> {
                     if (listener != null) listener.onLongClick(currentMessage);
@@ -181,7 +196,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                 holder.layoutLeft.setOnLongClickListener(null);
             }
 
-            // TÊN & AVATAR
+            // Name & Avatar Visibility Logic (Based on Grouping)
             if (isFirstInGroup) {
                 holder.tvNameLeft.setVisibility(View.VISIBLE);
                 holder.tvNameLeft.setText(currentMessage.getSenderName() != null ? currentMessage.getSenderName() : "Unknown");
@@ -203,18 +218,19 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         return messageList != null ? messageList.size() : 0;
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     public void setMessages(List<ChatMessage> messages) {
-        this.messageList = messages != null ? messages : java.util.Collections.emptyList();
+        this.messageList = messages != null ? messages : new ArrayList<>();
         notifyDataSetChanged();
     }
 
+    // =========================================================================
+    // VIEW HOLDER
+    // =========================================================================
     public static class ChatViewHolder extends RecyclerView.ViewHolder {
         LinearLayout layoutLeft, layoutRight;
         TextView tvTextLeft, tvNameLeft, tvTextRight;
-        ImageView imgAvatarLeft;
-
-        ImageView imgMessageLeft, imgMessageRight;
-
+        ImageView imgAvatarLeft, imgMessageLeft, imgMessageRight;
 
         public ChatViewHolder(@NonNull View itemView) {
             super(itemView);

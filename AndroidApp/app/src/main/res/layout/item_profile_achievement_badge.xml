@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="80dp"
+    android:layout_height="wrap_content"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:paddingEnd="12dp">
+
+    <LinearLayout
+        android:id="@+id/layoutBadgeBg"
+        android:layout_width="62dp"
+        android:layout_height="62dp"
+        android:background="@drawable/bg_profile_achievement_circle_gold"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:elevation="2dp">
+
+        <TextView
+            android:id="@+id/tvBadgeIcon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🏆"
+            android:textSize="28sp"
+            android:includeFontPadding="false"/>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvBadgeTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:fontFamily="@font/inter_medium"
+        android:gravity="center"
+        android:maxLines="2"
+        android:ellipsize="end"
+        android:text="Achievement"
+        android:textColor="@color/brand_primary"
+        android:textSize="10sp" />
+</LinearLayout>

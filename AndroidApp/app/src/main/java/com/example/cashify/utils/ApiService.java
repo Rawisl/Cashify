@@ -1,7 +1,10 @@
 package com.example.cashify.utils;
 
+import com.example.cashify.data.model.User;
+import com.example.cashify.data.model.ChatMessage;
+import com.example.cashify.data.model.DirectConversation;
+import com.example.cashify.data.remote.ApiDto;
 import com.example.cashify.utils.InvoiceParser.ParsedInvoice;
-import com.google.gson.annotations.SerializedName;
 
 import java.util.List;
 
@@ -9,446 +12,128 @@ import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.GET;
 import retrofit2.http.Header;
+import retrofit2.http.PATCH;
 import retrofit2.http.POST;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
 
 public interface ApiService {
+
+    // --- SYSTEM ---
     @GET("/api/v1/cloudinary/sign")
-    Call<CloudinarySignatureResponse> getCloudinarySignature(@Header("Authorization") String token);
+    Call<ApiDto.CloudinarySignatureResponse> getCloudinarySignature(@Header("Authorization") String token);
 
     @POST("/api/v1/scan-bill")
-    Call<ParsedInvoice> scanBill(@Header("Authorization") String token, @Body ScanRequest request);
+    Call<ParsedInvoice> scanBill(@Header("Authorization") String token, @Body ApiDto.ScanRequest request);
 
-    //WORKSPACE API
-    //Thao tác CƠ BẢN của người dùng
+    // --- WORKSPACE ---
     @POST("/api/v1/workspace/create")
-    Call<WorkspaceCreateResponse> createWorkspace(@Header("Authorization") String token, @Body WorkspaceCreateRequest request);
+    Call<ApiDto.WorkspaceCreateResponse> createWorkspace(@Header("Authorization") String token, @Body ApiDto.WorkspaceCreateRequest request);
 
     @POST("/api/v1/workspace/leave")
-    Call<Object> leaveWorkspace(@Header("Authorization") String token, @Body WorkspaceActionRequest request);
+    Call<Object> leaveWorkspace(@Header("Authorization") String token, @Body ApiDto.WorkspaceActionRequest request);
 
     @POST("/api/v1/workspace/transfer-owner")
-    Call<Object> transferOwnership(@Header("Authorization") String token, @Body WorkspaceActionRequest request);
+    Call<Object> transferOwnership(@Header("Authorization") String token, @Body ApiDto.WorkspaceActionRequest request);
 
-    //thao tác với LỜI MỜI
     @POST("/api/v1/workspace/invite/send")
-    Call<Object> sendWorkspaceInvites(@Header("Authorization") String token, @Body WorkspaceInviteSendRequest request);
+    Call<Object> sendWorkspaceInvites(@Header("Authorization") String token, @Body ApiDto.WorkspaceInviteSendRequest request);
 
     @POST("/api/v1/workspace/invite/accept")
-    Call<Object> acceptWorkspaceInvite(@Header("Authorization") String token, @Body WorkspaceInviteHandleRequest request);
+    Call<Object> acceptWorkspaceInvite(@Header("Authorization") String token, @Body ApiDto.WorkspaceInviteHandleRequest request);
 
     @POST("/api/v1/workspace/invite/decline")
-    Call<Object> declineWorkspaceInvite(@Header("Authorization") String token, @Body WorkspaceInviteHandleRequest request);
+    Call<Object> declineWorkspaceInvite(@Header("Authorization") String token, @Body ApiDto.WorkspaceInviteHandleRequest request);
 
-    //Thao tác trên GIAO DỊCH QUỸ
     @POST("/api/v1/workspace/transaction/add")
-    Call<Object> addWorkspaceTransaction(@Header("Authorization") String token, @Body TransactionRequest request);
+    Call<Object> addWorkspaceTransaction(@Header("Authorization") String token, @Body ApiDto.TransactionRequest request);
 
     @POST("/api/v1/workspace/transaction/delete")
-    Call<Object> deleteWorkspaceTransaction(@Header("Authorization") String token, @Body WorkspaceActionRequest request);
-    @POST("/api/v1/workspace/member/kick")
-    Call<Object> kickMember(@Header("Authorization") String token, @Body WorkspaceActionRequest request);
+    Call<Object> deleteWorkspaceTransaction(@Header("Authorization") String token, @Body ApiDto.WorkspaceActionRequest request);
 
-    //Thao tác trên DANH MỤC QUỸ
+    @POST("/api/v1/workspace/member/kick")
+    Call<Object> kickMember(@Header("Authorization") String token, @Body ApiDto.WorkspaceActionRequest request);
+
+    @POST("/api/v1/workspace/category/add")
+    Call<Object> addCategory(@Header("Authorization") String token, @Body ApiDto.AddCategoryRequest request);
+
     @POST("/api/v1/workspace/category/delete")
-    Call<Object> deleteCategory(@Header("Authorization") String token, @Body WorkspaceActionRequest request);
+    Call<Object> deleteCategory(@Header("Authorization") String token, @Body ApiDto.WorkspaceActionRequest request);
 
     @POST("/api/v1/workspace/category/edit")
-    Call<Object> editCategory(@Header("Authorization") String token, @Body EditCategoryRequest request);
+    Call<Object> editCategory(@Header("Authorization") String token, @Body ApiDto.EditCategoryRequest request);
 
     @POST("/api/v1/workspace/category/restore")
-    Call<Object> restoreCategory(@Header("Authorization") String token, @Body WorkspaceActionRequest request);
+    Call<Object> restoreCategory(@Header("Authorization") String token, @Body ApiDto.WorkspaceActionRequest request);
 
-    //thao tác trên TIN NHẮN
     @POST("/api/v1/workspace/message/recall")
-    Call<Object> recallMessage(@Header("Authorization") String token, @Body WorkspaceActionRequest request);
+    Call<Object> recallMessage(@Header("Authorization") String token, @Body ApiDto.WorkspaceActionRequest request);
 
     @POST("/api/v1/workspace/message/send")
-    Call<Object> sendWorkspaceMessage(@Header("Authorization") String token, @Body WorkspaceMessageSendRequest request);
+    Call<Object> sendWorkspaceMessage(@Header("Authorization") String token, @Body ApiDto.WorkspaceMessageSendRequest request);
 
-    //FRIENDS API
-
-    //thao tác CƠ BẢN trên FRIENDS (gửi, từ chối, đồng ý lời mời,...)
-    // Dùng @Path để linh hoạt gọi /api/v1/friend/request, /accept, /remove
+    // --- FRIENDS ---
     @POST("/api/v1/friend/{actionType}")
-    Call<Object> processFriendAction(@Path("actionType") String actionType, @Header("Authorization") String token, @Body FriendActionRequest request);
+    Call<Object> processFriendAction(@Path("actionType") String actionType, @Header("Authorization") String token, @Body ApiDto.FriendActionRequest request);
 
     @GET("/api/v1/friend/suggestions")
-    Call<java.util.List<com.example.cashify.data.model.User>> getFriendSuggestions(@Header("Authorization") String token);
+    Call<List<User>> getFriendSuggestions(@Header("Authorization") String token);
 
-    //thao tác TIN NHẮN FRIENDS
     @GET("/api/v1/friend/messages/chats")
-    Call<java.util.List<com.example.cashify.data.model.User>> getFriendMessageChats(@Header("Authorization") String token);
+    Call<List<User>> getFriendMessageChats(@Header("Authorization") String token);
 
     @GET("/api/v1/friend/messages/conversations")
-    Call<java.util.List<com.example.cashify.data.model.DirectConversation>> getDirectFriendConversations(@Header("Authorization") String token);
+    Call<List<DirectConversation>> getDirectFriendConversations(@Header("Authorization") String token);
 
     @GET("/api/v1/friend/messages/{friendUid}")
-    Call<java.util.List<com.example.cashify.data.model.ChatMessage>> getDirectFriendMessages(@Path("friendUid") String friendUid, @Header("Authorization") String token);
+    Call<List<ChatMessage>> getDirectFriendMessages(@Path("friendUid") String friendUid, @Header("Authorization") String token);
 
     @POST("/api/v1/friend/messages/send")
-    Call<Object> sendDirectFriendMessage(@Header("Authorization") String token, @Body DirectFriendMessageRequest request);
+    Call<Object> sendDirectFriendMessage(@Header("Authorization") String token, @Body ApiDto.DirectFriendMessageRequest request);
 
-    //SOCIAL API
+    @PATCH("/api/v1/friend/messages/{friendUid}/{messageId}/recall")
+    Call<Object> recallFriendMessage(@Header("Authorization") String token, @Path("friendUid") String friendUid, @Path("messageId") String messageId);
 
-    //thao tác CƠ BẢN trên newsfeed
-    //load feed
+    // --- SOCIAL FEED & POSTS ---
     @POST("/api/v1/post/feed")
-    Call<java.util.List<Object>> getFeed(@Header("Authorization") String token, @Body FeedRequest request);
+    Call<List<Object>> getFeed(@Header("Authorization") String token, @Body ApiDto.FeedRequest request);
 
-    //load comment của bài viết
     @GET("/api/v1/post/{postId}/comments")
-    Call<List<Object>> getComments(
-            @Path("postId") String postId,
-            @Header("Authorization") String auth
-    );
+    Call<List<Object>> getComments(@Path("postId") String postId, @Header("Authorization") String auth);
 
-    //tạo/sửa/xóa post
     @POST("/api/v1/post/create")
-    Call<Object> createPost(@Header("Authorization") String token, @Body CreatePostRequest request);
+    Call<Object> createPost(@Header("Authorization") String token, @Body ApiDto.CreatePostRequest request);
 
     @POST("/api/v1/post/edit")
-    Call<Object> editPost(@Header("Authorization") String token, @Body EditPostRequest request);
+    Call<Object> editPost(@Header("Authorization") String token, @Body ApiDto.EditPostRequest request);
 
     @POST("/api/v1/post/delete")
-    Call<Object> deletePost(@Header("Authorization") String token, @Body DeletePostRequest request);
+    Call<Object> deletePost(@Header("Authorization") String token, @Body ApiDto.DeletePostRequest request);
 
-    //các tương tác trên post
+    @GET("/api/v1/achievements/available")
+    Call<List<ApiDto.AchievementSuggestion>> getAvailableAchievements(@Header("Authorization") String token);
+
     @POST("/api/v1/post/like")
-    Call<Object> toggleLike(
-            @Header("Authorization") String auth,
-            @Body LikeActionRequest body
-    );
+    Call<Object> toggleLike(@Header("Authorization") String auth, @Body ApiDto.LikeActionRequest body);
 
     @POST("/api/v1/comment/add")
-    Call<Object> addComment(
-            @Header("Authorization") String auth,
-            @Body AddCommentRequest body
-    );
+    Call<Object> addComment(@Header("Authorization") String auth, @Body ApiDto.AddCommentRequest body);
 
     @POST("/api/v1/comment/edit")
-    Call<Object> editComment(@Header("Authorization") String token, @Body EditCommentRequest request);
+    Call<Object> editComment(@Header("Authorization") String token, @Body ApiDto.EditCommentRequest request);
 
     @POST("/api/v1/comment/delete")
-    Call<Object> deleteComment(@Header("Authorization") String token, @Body DeleteCommentRequest request);
+    Call<Object> deleteComment(@Header("Authorization") String token, @Body ApiDto.DeleteCommentRequest request);
 
-    //api hỗ trợ load profile
     @POST("/api/v1/user/batch-profiles")
-    Call<Object> getBatchProfiles(@Body BatchProfileRequest request);
+    Call<Object> getBatchProfiles(@Body ApiDto.BatchProfileRequest request);
 
     @GET("/api/v1/post/{postId}")
-    Call<SocialPostDetailResponse> getPostDetail(
-            @Path("postId") String postId,
-            @Header("Authorization") String token
-    );
+    Call<ApiDto.SocialPostDetailResponse> getPostDetail(@Path("postId") String postId, @Header("Authorization") String token);
 
-    //load bài viết trên trang cá nhân riêng
     @GET("/api/v1/post/wall/{targetUid}")
-    Call<List<Object>> getWall(
-            @Header("Authorization") String token,
-            @Path("targetUid") String targetUid,
-            @Query("limit") int limit,
-            @Query("lastTimestamp") long lastTimestamp
-    );
+    Call<List<Object>> getWall(@Header("Authorization") String token, @Path("targetUid") String targetUid, @Query("limit") int limit, @Query("lastTimestamp") long lastTimestamp);
 
     @POST("/api/v1/post/milestone-auto")
-    Call<Object> generateAutoMilestone(@Header("Authorization") String token, @Body AutoMilestoneRequest request);
-
-    // --- CÁC CLASS MODEL DÙNG ĐỂ HỨNG DATA ---
-
-    class CloudinarySignatureResponse {
-        public String signature;
-        public long timestamp;
-        public String apiKey;
-        public String cloudName;
-        public String folder;
-    }
-
-    class ScanRequest {
-        public String OcrText;
-        public ScanRequest(String ocrText) { this.OcrText = ocrText; }
-    }
-
-    class TransactionRequest {
-        public String Id;
-        public long Amount;
-        public String Note;
-        public long Timestamp;
-        public String PaymentMethod;
-        public int Type;
-        public String WorkspaceId;
-        public String FirestoreCategoryId;
-        public int CategoryId;
-    }
-
-    class WorkspaceCreateRequest {
-        public String Name, Type, IconName;
-        public WorkspaceCreateRequest(String name, String type, String icon) { Name = name; Type = type; IconName = icon; }
-    }
-
-    class WorkspaceCreateResponse {
-        public String workspaceId;
-        public String message;
-    }
-
-    // Gộp chung các Request có cấu trúc na ná nhau cho gọn
-    class WorkspaceActionRequest {
-        public String WorkspaceId, NewOwnerId, TargetUid, TransactionId, CategoryId, MessageId;
-    }
-
-    class EditCategoryRequest {
-        public String WorkspaceId;
-        public String CategoryId;
-        public String Name;
-        public String IconName;
-        public String ColorCode;
-        public int Type;
-
-        public EditCategoryRequest(String workspaceId, String categoryId, String name, String iconName, String colorCode, int type) {
-            WorkspaceId = workspaceId;
-            CategoryId = categoryId;
-            Name = name;
-            IconName = iconName;
-            ColorCode = colorCode;
-            Type = type;
-        }
-    }
-
-    class FriendActionRequest {
-        public String TargetUid;
-        public FriendActionRequest(String targetUid) { TargetUid = targetUid; }
-    }
-
-    class DirectFriendMessageRequest {
-        public String ReceiverId;
-        public String Text;
-
-        public String ImageUrl;
-        public DirectFriendMessageRequest(String receiverId, String text) {
-            ReceiverId = receiverId;
-            Text = text;
-            this.ImageUrl = "";
-        }
-
-        public DirectFriendMessageRequest(String receiverId, String text, String imageUrl) {
-            ReceiverId = receiverId;
-            Text = text;
-            this.ImageUrl = imageUrl != null ? imageUrl : "";
-        }
-    }
-
-    class WorkspaceInviteSendRequest {
-        public String WorkspaceId;
-        public String WorkspaceName;
-        public java.util.List<String> TargetUids;
-        public WorkspaceInviteSendRequest(String wId, String wName, java.util.List<String> uids) {
-            this.WorkspaceId = wId; this.WorkspaceName = wName; this.TargetUids = uids;
-        }
-    }
-
-    class WorkspaceInviteHandleRequest {
-        public String WorkspaceId;
-        public String InvitationId;
-        public WorkspaceInviteHandleRequest(String wId, String iId) {
-            this.WorkspaceId = wId; this.InvitationId = iId;
-        }
-    }
-
-    class FeedRequest {
-        public int Limit;
-        public long LastTimestamp;
-        public String Scope;
-
-        public FeedRequest() {}
-
-        public FeedRequest(int limit, long lastTimestamp, String scope) {
-            Limit = limit;
-            LastTimestamp = lastTimestamp;
-            Scope = scope;
-        }
-    }
-
-    class CreatePostRequest {
-        public String Content;
-        public String ImageUrl;
-        public String Type;
-        public String MilestoneData; // Tui thêm lại biến này để đồng bộ với Fragment
-        public String Visibility;
-        public String Audience;
-        public String Title;
-        public String AmountText;
-        public int Progress;
-
-        // Constructor rỗng (Phòng hờ thư viện JSON cần dùng)
-        public CreatePostRequest() {}
-
-        // Constructor 4 tham số để dùng bên Fragment
-        public CreatePostRequest(String content, String type, String imageUrl, String milestoneData, String audience) {
-            this.Content = content;
-            this.Type = type;
-            this.ImageUrl = imageUrl;
-            this.MilestoneData = milestoneData;
-            this.Audience = audience;
-        }
-    }
-
-    class EditPostRequest {
-        public String PostId;
-        public String NewContent;
-        public String NewImageUrl;
-        public String Visibility;
-        public String Audience;
-
-        public EditPostRequest() {}
-    }
-
-    class DeletePostRequest {
-        public String PostId;
-
-        public DeletePostRequest() {}
-
-        public DeletePostRequest(String postId) {
-            PostId = postId;
-        }
-    }
-
-    class LikeActionRequest {
-        @SerializedName("postId")
-        public String PostId;
-
-        @SerializedName("liked")
-        public boolean Liked;
-
-        public LikeActionRequest() {}
-
-        public LikeActionRequest(String postId, boolean liked) {
-            PostId = postId;
-            Liked = liked;
-        }
-    }
-
-    class AddCommentRequest {
-        @SerializedName("postId")
-
-        public String PostId;
-        @SerializedName("content")
-
-        public String Content;
-
-        public AddCommentRequest() {}
-
-        public AddCommentRequest(String postId, String content) {
-            this.PostId = postId;
-            this.Content = content;
-        }
-    }
-
-    class EditCommentRequest {
-        public String PostId;
-        public String CommentId;
-        public String NewContent;
-
-        public EditCommentRequest() {}
-    }
-
-    class DeleteCommentRequest {
-        public String PostId;
-        public String CommentId;
-
-        public DeleteCommentRequest(String postId, String commentId) {
-            this.PostId = postId;
-            this.CommentId = commentId;
-        }
-    }
-
-    class BatchProfileRequest {
-        public java.util.List<String> Uids;
-
-        public BatchProfileRequest() {}
-
-        public BatchProfileRequest(java.util.List<String> uids) {
-            Uids = uids;
-        }
-    }
-
-    public static class SocialPostDetailResponse {
-        @SerializedName("userId")
-        public String authorId;
-
-        @SerializedName("authorName")
-        public String authorName;
-
-        @SerializedName("authorAvatarUrl")
-        public String authorAvatarUrl;
-
-        @SerializedName("content")
-        public String content;
-
-        @SerializedName("imageUrl")
-        public String imageUrl;
-
-        @SerializedName("likeCount")
-        public int likeCount;
-
-        @SerializedName("commentCount")
-        public int commentCount;
-
-        @SerializedName("timestamp")
-        public long timestamp;
-
-        @SerializedName("isLiked")
-        public boolean likedByMe;
-
-        @SerializedName("type")
-        public String type;
-
-        @SerializedName("milestoneData")
-        public String milestoneData;
-    }
-
-    class SocialCommentResponse {
-        public String id;
-        public String authorId;
-        public String authorName;
-        public String authorAvatarUrl;
-        public String content;
-        public long timestamp;
-        public int likeCount;
-    }
-
-    class SocialReactionResponse {
-        public int likeCount;
-        public int commentCount;
-        public boolean likedByMe;
-    }
-
-    class WorkspaceMessageSendRequest {
-        public String WorkspaceId;
-        public String Text;
-
-        public String ImageUrl;
-
-        public WorkspaceMessageSendRequest(String workspaceId, String text) {
-            this.WorkspaceId = workspaceId;
-            this.Text = text;
-            this.ImageUrl = "";
-        }
-
-        public WorkspaceMessageSendRequest(String workspaceId, String text, String imageUrl) {
-            this.WorkspaceId = workspaceId;
-            this.Text = text;
-            this.ImageUrl = imageUrl != null ? imageUrl : "";
-        }
-    }
-    class AutoMilestoneRequest {
-        public long LimitAmount;
-        public long SpentAmount;
-        public String PeriodType;
-        public String PeriodLabel;
-
-        public AutoMilestoneRequest(long limit, long spent, String type, String label) {
-            this.LimitAmount = limit; this.SpentAmount = spent; this.PeriodType = type; this.PeriodLabel = label;
-        }
-    }
+    Call<Object> generateAutoMilestone(@Header("Authorization") String token, @Body ApiDto.AutoMilestoneRequest request);
 }

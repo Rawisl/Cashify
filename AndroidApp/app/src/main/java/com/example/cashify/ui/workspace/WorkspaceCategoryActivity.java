@@ -8,23 +8,18 @@ import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
 import com.example.cashify.data.model.Category;
-import com.example.cashify.data.remote.FirebaseManager;
 import com.example.cashify.ui.category.CategoryAdapter;
-import com.example.cashify.ui.category.CategoryManagement;
 import com.example.cashify.utils.DialogHelper;
 import com.example.cashify.utils.ToastHelper;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.ListenerRegistration;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,8 +35,7 @@ public class WorkspaceCategoryActivity extends AppCompatActivity {
     private List<Category> filteredThu = new ArrayList<>();
 
     private String workspaceId;
-    private FirebaseFirestore db;
-    private ListenerRegistration categoryListener;
+    private WorkspaceCategoryViewModel viewModel; // BỔ SUNG VIEWMODEL
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,14 +43,19 @@ public class WorkspaceCategoryActivity extends AppCompatActivity {
         setContentView(R.layout.activity_category);
 
         workspaceId = getIntent().getStringExtra("WORKSPACE_ID");
-        db = FirebaseFirestore.getInstance();
+
+        // Khởi tạo ViewModel
+        viewModel = new ViewModelProvider(this).get(WorkspaceCategoryViewModel.class);
 
         initViews();
         setupRecyclerViews();
         setupActions();
 
-        // Lắng nghe data trực tiếp từ Firestore thay vì ViewModel
-        observeFirestoreData();
+        // Quan sát dữ liệu an toàn qua ViewModel
+        observeViewModel();
+
+        // Kích hoạt việc tải danh sách từ Firebase
+        viewModel.loadCategories(workspaceId);
     }
 
     private void initViews() {
@@ -64,13 +63,13 @@ public class WorkspaceCategoryActivity extends AppCompatActivity {
         rvThu = findViewById(R.id.recyclerThuVao);
         edtSearch = findViewById(R.id.edtSearchCategory);
         ImageView btnBack = findViewById(R.id.btnBack);
+
         if (btnBack != null) btnBack.setOnClickListener(v -> finish());
         findViewById(R.id.layoutHeaderChi).setOnClickListener(v -> toggleRecyclerView(rvChi, findViewById(R.id.tvArrowChi)));
         findViewById(R.id.layoutHeaderThu).setOnClickListener(v -> toggleRecyclerView(rvThu, findViewById(R.id.tvArrowThu)));
 
         rvChi.setVisibility(View.VISIBLE);
         rvThu.setVisibility(View.VISIBLE);
-
     }
 
     private void setupRecyclerViews() {
@@ -78,20 +77,11 @@ public class WorkspaceCategoryActivity extends AppCompatActivity {
             @Override
             public void onDeleteClick(Category category) {
                 DialogHelper.showCustomDialog(
-                        WorkspaceCategoryActivity.this, "Hide Category", "Are you sure you want to hide '" + category.name + "'? Future transactions cannot use this.", "Hide", "Cancel", DialogHelper.DialogType.DANGER, true,
-                        () -> {
-                            // GỌI CÁP XUỐNG C# ĐỂ KIỂM DUYỆT VÀ SOFT DELETE
-                            FirebaseManager.getInstance().deleteCategory(workspaceId, category.firestoreId, new com.example.cashify.data.remote.FirebaseManager.DataCallback<Void>() {
-                                @Override
-                                public void onSuccess(Void data) {
-                                    runOnUiThread(() -> ToastHelper.show(WorkspaceCategoryActivity.this, "Category hidden successfully"));
-                                }
-                                @Override
-                                public void onError(String message) {
-                                    runOnUiThread(() -> ToastHelper.show(WorkspaceCategoryActivity.this, message));
-                                }
-                            });
-                        }, null
+                        WorkspaceCategoryActivity.this, "Hide Category",
+                        "Are you sure you want to hide '" + category.name + "'? Future transactions cannot use this.",
+                        "Hide", "Cancel", DialogHelper.DialogType.DANGER, true,
+                        () -> viewModel.deleteCategory(workspaceId, category.firestoreId),
+                        null
                 );
             }
 
@@ -102,29 +92,11 @@ public class WorkspaceCategoryActivity extends AppCompatActivity {
 
             @Override
             public void onRestoreClick(Category category) {
-                // Sửa chữ "this" thành "WorkspaceCategoryActivity.this"
                 DialogHelper.showCustomDialog(
-                        WorkspaceCategoryActivity.this,
-                        "Restore Category",
+                        WorkspaceCategoryActivity.this, "Restore Category",
                         "Are you sure you want to restore " + category.name + "?",
-                        "Restore",
-                        "Cancel",
-                        DialogHelper.DialogType.NORMAL, // Nút màu Xanh lá cho việc Khôi phục
-                        true,
-                        () -> {
-                            // GỌI THẲNG XUỐNG FIREBASE MANAGER, KHÔNG XÀI VIEWMODEL Ở ĐÂY NỮA
-                            FirebaseManager.getInstance().restoreCategory(workspaceId, category.firestoreId, new FirebaseManager.DataCallback<Void>() {
-                                @Override
-                                public void onSuccess(Void data) {
-                                    runOnUiThread(() -> ToastHelper.show(WorkspaceCategoryActivity.this, "Category restored successfully"));
-                                }
-
-                                @Override
-                                public void onError(String message) {
-                                    runOnUiThread(() -> ToastHelper.show(WorkspaceCategoryActivity.this, "Error: " + message));
-                                }
-                            });
-                        },
+                        "Restore", "Cancel", DialogHelper.DialogType.NORMAL, true,
+                        () -> viewModel.restoreCategory(workspaceId, category.firestoreId),
                         null
                 );
             }
@@ -137,36 +109,34 @@ public class WorkspaceCategoryActivity extends AppCompatActivity {
         adapterThu = new CategoryAdapter(this, filteredThu, listener);
         rvThu.setLayoutManager(new LinearLayoutManager(this));
         rvThu.setAdapter(adapterThu);
-
-        // Bồ gọi lại hàm setupSwipeToDelete của bồ ở đây nhé
     }
 
-    private void observeFirestoreData() {
-        if (workspaceId == null) return;
-        // GÁN NÓ VÀO BIẾN ĐỂ LÁT NỮA HỦY
-        categoryListener = db.collection("workspaces").document(workspaceId).collection("categories")
-                .addSnapshotListener((snapshots, e) -> {
-                    if (e != null) {
-                        // Tùy chọn: Log ra logcat thay vì Toast để user đỡ hoảng nếu lỡ có rớt mạng xíu
-                        android.util.Log.e("FIRESTORE", "Listen failed.", e);
-                        // ToastHelper.show(this, "Error loading categories");
-                        return;
-                    }
+    private void observeViewModel() {
+        // Hóng danh sách danh mục Real-time
+        viewModel.getCategoriesLiveData().observe(this, categories -> {
+            listChiOriginal.clear();
+            listThuOriginal.clear();
 
-                    listChiOriginal.clear();
-                    listThuOriginal.clear();
+            if (categories != null) {
+                for (Category cat : categories) {
+                    if (cat.type == 0) listChiOriginal.add(cat);
+                    else listThuOriginal.add(cat);
+                }
+            }
+            filterCategories(edtSearch.getText().toString());
+        });
 
-                    if (snapshots != null) {
-                        for (QueryDocumentSnapshot doc : snapshots) {
-                            Category cat = doc.toObject(Category.class);
-                            cat.firestoreId = doc.getId(); // Gán Document ID vào model
-
-                            if (cat.type == 0) listChiOriginal.add(cat);
-                            else listThuOriginal.add(cat);
-                        }
-                    }
-                    filterCategories(edtSearch.getText().toString());
-                });
+        // Hóng kết quả Xóa/Khôi phục để hiện Toast
+        viewModel.getActionResult().observe(this, result -> {
+            if (result != null) {
+                if (result.isSuccess) {
+                    ToastHelper.show(this, result.message);
+                } else {
+                    ToastHelper.show(this, "Error: " + result.message);
+                }
+                viewModel.clearActionResult();
+            }
+        });
     }
 
     private void setupActions() {
@@ -186,8 +156,10 @@ public class WorkspaceCategoryActivity extends AppCompatActivity {
         String pattern = query.toLowerCase().trim();
         filteredChi.clear();
         filteredThu.clear();
+
         for (Category c : listChiOriginal)
             if (c.name.toLowerCase().contains(pattern)) filteredChi.add(c);
+
         for (Category c : listThuOriginal)
             if (c.name.toLowerCase().contains(pattern)) filteredThu.add(c);
 
@@ -209,7 +181,6 @@ public class WorkspaceCategoryActivity extends AppCompatActivity {
         }
     }
 
-    //Cứu nút FAB khỏi bị kẹt lúc cuộn
     private void rescueFloatingActionButton() {
         try {
             FloatingActionButton fab = findViewById(R.id.fab_add_category);
@@ -220,16 +191,6 @@ public class WorkspaceCategoryActivity extends AppCompatActivity {
                     ((com.google.android.material.behavior.HideBottomViewOnScrollBehavior<FloatingActionButton>) behavior).slideUp(fab);
                 }
             }
-        } catch (Exception ignored) {
-        }
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        // Hủy lắng nghe Firestore khi thoát màn hình để tránh leak memory và lỗi lúc Logout
-        if (categoryListener != null) {
-            categoryListener.remove();
-        }
+        } catch (Exception ignored) {}
     }
 }

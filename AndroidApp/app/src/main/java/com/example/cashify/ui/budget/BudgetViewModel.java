@@ -1,6 +1,9 @@
 package com.example.cashify.ui.budget;
 
 import android.app.Application;
+import android.os.Handler;
+import android.os.Looper;
+
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
@@ -8,8 +11,12 @@ import androidx.lifecycle.MutableLiveData;
 
 import com.example.cashify.data.model.Budget;
 import com.example.cashify.data.local.BudgetWithSpent;
+import com.example.cashify.data.remote.ApiDto;
 import com.example.cashify.data.repository.BudgetRepository;
+import com.example.cashify.utils.ApiClient;
+import com.example.cashify.utils.ApiService;
 import com.example.cashify.utils.CurrencyFormatter;
+import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -54,12 +61,29 @@ public class BudgetViewModel extends AndroidViewModel {
         if (activeWeekIndex > 5) activeWeekIndex = 5;
     }
 
-    // --- HÀM TẠO NHÃN DÁN ĐỂ TÁCH BIỆT DỮ LIỆU ---
+    // =========================================================================
+    // MAIN THREAD POSTERS (CRITICAL FIX FOR CRASH)
+    // Ensures all callbacks triggering UI elements (like Toasts) run on the UI thread
+    // =========================================================================
+    private void postSuccess(BudgetActionCallback callback, String message) {
+        new Handler(Looper.getMainLooper()).post(() -> {
+            if (callback != null) callback.onSuccess(message);
+        });
+    }
+
+    private void postError(BudgetActionCallback callback, String error) {
+        new Handler(Looper.getMainLooper()).post(() -> {
+            if (callback != null) callback.onError(error);
+        });
+    }
+
+    // =========================================================================
+    // PERIOD GENERATION & TIME MATH
+    // =========================================================================
     private String getActualPeriod(String periodType, boolean isLinkedMode) {
         return isLinkedMode ? periodType + "_LINKED" : periodType;
     }
 
-    // --- LOGIC: TÍNH TOÁN THỜI GIAN  ---
     private long[] calculateTimeRange(String periodType) {
         Calendar cal = Calendar.getInstance();
         cal.set(Calendar.MILLISECOND, 0);
@@ -96,12 +120,13 @@ public class BudgetViewModel extends AndroidViewModel {
         return (activeYear < currentYear) || (activeYear == currentYear && activeMonth < currentMonth);
     }
 
-    // --- HÀM CHO FRAGMENT CẬP NHẬT THỜI GIAN ---
+    // =========================================================================
+    // STATE UPDATERS FOR FRAGMENT
+    // =========================================================================
     public void updateSelectedMonth(int year, int month) {
         this.activeYear = year;
         this.activeMonth = month;
-        // Reset về tuần 1 mỗi khi đổi tháng
-        this.activeWeekIndex = 1;
+        this.activeWeekIndex = 1; // Reset to week 1 on month change
     }
 
     public void updateSelectedWeek(int weekIndex) {
@@ -134,7 +159,9 @@ public class BudgetViewModel extends AndroidViewModel {
         return options;
     }
 
-    // --- LOGIC: LOAD VÀ GOM DỮ LIỆU ---
+    // =========================================================================
+    // DATA FETCHING & AGGREGATION
+    // =========================================================================
     public void loadBudgetsData(boolean isLinkedMode, String periodType, String monthFormat, String weekFormat) {
         long[] timeRange = calculateTimeRange(periodType);
         long startTime = timeRange[0];
@@ -157,16 +184,16 @@ public class BudgetViewModel extends AndroidViewModel {
             repository.getMasterBudget(startTime, endTime, actualPeriod, master -> {
                 repository.getMasterSpentAmount(startTime, endTime, masterSpent -> {
                     repository.getTotalCategoryLimits(actualPeriod, startTime, endTime, totalCatLimits -> {
+
                         BudgetUIState state = new BudgetUIState();
                         List<BudgetWithSpent> displayList = new ArrayList<>();
-
                         List<Integer> plannedCategoryIds = new ArrayList<>();
 
                         if (plannedData != null) {
                             for (BudgetWithSpent b : plannedData) {
                                 if (b.categoryId != -1) {
                                     displayList.add(b);
-                                    plannedCategoryIds.add(b.categoryId); // Ghi nhớ ID này lại
+                                    plannedCategoryIds.add(b.categoryId);
                                 }
                             }
                         }
@@ -202,10 +229,12 @@ public class BudgetViewModel extends AndroidViewModel {
         });
     }
 
-    // --- LOGIC: KIỂM TRA CHẶN TIỀN TRƯỚC KHI LƯU ---
+    // =========================================================================
+    // BUDGET VALIDATION & SAVING
+    // =========================================================================
     public void validateAndSaveBudget(int categoryId, double limitAmount, String periodType, boolean isLinkedMode, BudgetActionCallback callback) {
         if (checkIsReadOnly()) {
-            callback.onError("Past months are read-only!");
+            postError(callback, "Past months are read-only!");
             return;
         }
 
@@ -218,8 +247,11 @@ public class BudgetViewModel extends AndroidViewModel {
             String weekPeriod = getActualPeriod("WEEK", true);
             if (periodType.equals("MONTH") && categoryId == -1) {
                 repository.getSumOtherWeeklyMasterLimits(startTime, endTime, 0, weekPeriod, sumWeeklyMasters -> {
-                    if (limitAmount < sumWeeklyMasters) callback.onError("Monthly Master Budget cannot be less than total Weekly Master Budgets (" + CurrencyFormatter.formatCompactVND(sumWeeklyMasters) + ")!");
-                    else executeActualSave(categoryId, limitAmount, actualPeriod, startTime, endTime, callback);
+                    if (limitAmount < sumWeeklyMasters) {
+                        postError(callback, "Monthly Master Budget cannot be less than total Weekly Master Budgets (" + CurrencyFormatter.formatCompactVND(sumWeeklyMasters) + ")!");
+                    } else {
+                        executeActualSave(categoryId, limitAmount, actualPeriod, startTime, endTime, callback);
+                    }
                 });
                 return;
             }
@@ -232,13 +264,16 @@ public class BudgetViewModel extends AndroidViewModel {
                 repository.getMasterBudget(monthStart, monthEnd, monthPeriod, masterMonth -> {
                     long monthLimit = (masterMonth != null) ? masterMonth.limitAmount : 0;
                     if (monthLimit == 0 && limitAmount > 0) {
-                        callback.onError("Please set the Monthly Master Budget first!");
+                        postError(callback, "Please set the Monthly Master Budget first!");
                         return;
                     }
                     if (monthLimit > 0) {
                         repository.getSumOtherWeeklyMasterLimits(monthStart, monthEnd, startTime, weekPeriod, sumOthers -> {
-                            if (sumOthers + limitAmount > monthLimit) callback.onError("Total Weekly Master Budgets exceed the Monthly Master (" + CurrencyFormatter.formatCompactVND(monthLimit) + ")!");
-                            else executeActualSave(categoryId, limitAmount, actualPeriod, startTime, endTime, callback);
+                            if (sumOthers + limitAmount > monthLimit) {
+                                postError(callback, "Total Weekly Master Budgets exceed the Monthly Master (" + CurrencyFormatter.formatCompactVND(monthLimit) + ")!");
+                            } else {
+                                executeActualSave(categoryId, limitAmount, actualPeriod, startTime, endTime, callback);
+                            }
                         });
                         return;
                     }
@@ -248,11 +283,11 @@ public class BudgetViewModel extends AndroidViewModel {
             }
         }
 
-        // LOGIC ĐỘC LẬP
+        // INDEPENDENT MODE LOGIC
         if (categoryId == -1) {
             repository.getTotalCategoryLimits(actualPeriod, startTime, endTime, totalCatLimits -> {
                 if (limitAmount < totalCatLimits && !(isLinkedMode && periodType.equals("MONTH"))) {
-                    callback.onError("Master Budget cannot be less than the total category budgets!");
+                    postError(callback, "Master Budget cannot be less than the total category budgets!");
                 } else {
                     executeActualSave(categoryId, limitAmount, actualPeriod, startTime, endTime, callback);
                 }
@@ -260,13 +295,13 @@ public class BudgetViewModel extends AndroidViewModel {
         } else {
             repository.getMasterBudget(startTime, endTime, actualPeriod, master -> {
                 if (master == null || master.limitAmount == 0) {
-                    callback.onError("Please set the Master Budget first!");
+                    postError(callback, "Please set the Master Budget first!");
                     return;
                 }
                 repository.getTotalCategoryLimitExcluding(categoryId, actualPeriod, startTime, endTime, totalOthers -> {
                     if (totalOthers + limitAmount > master.limitAmount) {
                         String overAmount = CurrencyFormatter.formatCompactVND((totalOthers + limitAmount) - master.limitAmount);
-                        callback.onError("Total category budgets exceed the Master Budget (" + overAmount + ")!");
+                        postError(callback, "Total category budgets exceed the Master Budget (" + overAmount + ")!");
                     } else {
                         executeActualSave(categoryId, limitAmount, actualPeriod, startTime, endTime, callback);
                     }
@@ -285,64 +320,71 @@ public class BudgetViewModel extends AndroidViewModel {
 
         repository.getBudgetByCategory(categoryId, startTime, endTime, actualPeriod, existing -> {
             if (existing != null) budget.id = existing.id;
+
             if (existing != null) repository.update(budget);
             else repository.insert(budget);
-            callback.onSuccess("Saved successfully!");
+
+            postSuccess(callback, "Saved successfully!");
         });
     }
 
-    // --- LOGIC: XÓA ---
+    // =========================================================================
+    // DELETION LOGIC
+    // =========================================================================
     public void deleteBudget(int categoryId, String periodType, boolean isLinkedMode, BudgetActionCallback callback) {
         if (checkIsReadOnly()) {
-            callback.onError("Past months are read-only!");
+            postError(callback, "Past months are read-only!");
             return;
         }
+
         String actualPeriod = getActualPeriod(periodType, isLinkedMode);
         long[] timeRange = calculateTimeRange(periodType);
 
         repository.getBudgetByCategory(categoryId, timeRange[0], timeRange[1], actualPeriod, budget -> {
             if (budget != null) {
                 repository.delete(budget);
-                callback.onSuccess("Budget deleted successfully!");
+                postSuccess(callback, "Budget deleted successfully!");
             }
         });
     }
 
+    // =========================================================================
+    // MILESTONE SHARING
+    // =========================================================================
     public void shareMilestoneToFeed(String periodType, BudgetActionCallback callback) {
         BudgetUIState state = uiState.getValue();
         if (state == null || state.masterBudget == null || state.masterBudget.limitAmount <= 0) {
-            callback.onError("Bạn chưa thiết lập ngân sách tổng!");
+            postError(callback, "Please set a master budget first.");
             return;
         }
 
         String periodLabel = periodType.equals("MONTH") ? state.monthLabel : state.weekLabel;
 
-        com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser().getIdToken(false)
+        FirebaseAuth.getInstance().getCurrentUser().getIdToken(false)
                 .addOnSuccessListener(tokenResult -> {
                     String token = "Bearer " + tokenResult.getToken();
 
-                    // Client chỉ đưa cho Server số thô thám
-                    com.example.cashify.utils.ApiService.AutoMilestoneRequest req =
-                            new com.example.cashify.utils.ApiService.AutoMilestoneRequest(
+                    ApiDto.AutoMilestoneRequest req =
+                            new ApiDto.AutoMilestoneRequest(
                                     state.masterBudget.limitAmount,
                                     state.masterSpent,
                                     periodType,
                                     periodLabel
                             );
 
-                    com.example.cashify.utils.ApiClient.getClient().create(com.example.cashify.utils.ApiService.class)
+                    ApiClient.getClient().create(ApiService.class)
                             .generateAutoMilestone(token, req).enqueue(new retrofit2.Callback<Object>() {
                                 @Override
                                 public void onResponse(@NonNull retrofit2.Call<Object> call, @NonNull retrofit2.Response<Object> response) {
-                                    if (response.isSuccessful()) callback.onSuccess("Đã khoe cột mốc lên bảng tin!");
-                                    else callback.onError("Lỗi tạo bài: " + response.code());
+                                    if (response.isSuccessful()) postSuccess(callback, "Milestone shared to feed!");
+                                    else postError(callback, "Failed to create post: " + response.code());
                                 }
 
                                 @Override
                                 public void onFailure(@NonNull retrofit2.Call<Object> call, @NonNull Throwable t) {
-                                    callback.onError("Lỗi mạng: " + t.getMessage());
+                                    postError(callback, "Network error: " + t.getMessage());
                                 }
                             });
-                }).addOnFailureListener(e -> callback.onError("Lỗi xác thực Firebase!"));
+                }).addOnFailureListener(e -> postError(callback, "Firebase authentication error!"));
     }
 }

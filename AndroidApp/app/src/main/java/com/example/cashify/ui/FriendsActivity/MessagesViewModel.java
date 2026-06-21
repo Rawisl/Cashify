@@ -12,19 +12,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MessagesViewModel extends ViewModel {
+
     private final MutableLiveData<List<DirectConversation>> conversations = new MutableLiveData<>(new ArrayList<>());
     private final MutableLiveData<Boolean> loading = new MutableLiveData<>(false);
     private final MutableLiveData<String> error = new MutableLiveData<>();
 
     private ListenerRegistration conversationListener;
 
-
     public LiveData<List<DirectConversation>> getConversations() { return conversations; }
     public LiveData<Boolean> getLoading() { return loading; }
     public LiveData<String> getError() { return error; }
 
     public void startListening() {
-        if (conversationListener != null) return; // Đã cắm rồi thì không cắm lại
+        // Prevent multiple real-time listener registrations
+        if (conversationListener != null) return;
+
         loading.setValue(true);
         conversationListener = FirebaseManager.getInstance()
                 .listenToDirectConversations(new FirebaseManager.DataCallback<List<DirectConversation>>() {
@@ -33,6 +35,7 @@ public class MessagesViewModel extends ViewModel {
                         conversations.postValue(data != null ? data : new ArrayList<>());
                         loading.postValue(false);
                     }
+
                     @Override
                     public void onError(String message) {
                         error.postValue(message);
@@ -44,6 +47,10 @@ public class MessagesViewModel extends ViewModel {
     @Override
     protected void onCleared() {
         super.onCleared();
-        if (conversationListener != null) conversationListener.remove();
+        // CRITICAL: Remove Firestore listener to prevent memory leaks when ViewModel is destroyed
+        if (conversationListener != null) {
+            conversationListener.remove();
+            conversationListener = null;
+        }
     }
 }

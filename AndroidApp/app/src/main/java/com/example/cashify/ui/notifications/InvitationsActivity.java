@@ -6,57 +6,51 @@ import android.os.Bundle;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
-import android.widget.ImageButton;
 import android.widget.TextView;
 
 import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cashify.R;
 import com.example.cashify.data.model.WorkspaceInvitation;
-import com.example.cashify.data.remote.FirebaseManager;
-import com.example.cashify.ui.main.BaseActivity;
-import com.example.cashify.ui.main.MainActivity;
-import com.example.cashify.utils.ToastHelper;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
-import com.example.cashify.R;
-import com.example.cashify.data.model.WorkspaceInvitation;
-import com.example.cashify.data.remote.FirebaseManager;
 import com.example.cashify.ui.main.BaseActivity;
 import com.example.cashify.ui.main.MainActivity;
 import com.example.cashify.utils.ToastHelper;
 import com.google.android.material.appbar.MaterialToolbar;
 
-import java.util.List;
-
-public class InvitationsActivity extends BaseActivity { // Đổi sang kế thừa BaseActivity
+public class InvitationsActivity extends BaseActivity {
 
     private InvitationAdapter adapter;
-    private FirebaseManager firebaseManager;
-    private View layoutInvitationsEmpty;
-    private RecyclerView rvInvitations;
+    private InvitationsViewModel viewModel;
+    private View layoutInvitationsEmpty;   // UI-consistency: empty state
+    private RecyclerView rvInvitations;    // UI-consistency: field level để dùng trong observeViewModel
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        applyLightSystemBars();
+        applyLightSystemBars();            // UI-consistency
         setContentView(R.layout.activity_invitations);
-
-        firebaseManager = FirebaseManager.getInstance();
-
-        // 1. GỌI HÀM CỦA CHA ĐỂ SETUP SIDEBAR
         setupBaseSidebar();
         if (drawerLayout != null) {
-            drawerLayout.setStatusBarBackgroundColor(ContextCompat.getColor(this, R.color.bg_budget_screen));
+            drawerLayout.setStatusBarBackgroundColor(
+                ContextCompat.getColor(this, R.color.bg_budget_screen)); // UI-consistency
         }
+        viewModel = new ViewModelProvider(this).get(InvitationsViewModel.class); // master
+        setupHeader();
+        setupRecyclerView();
+        observeViewModel();
+    }
 
+    private void setupHeader() {
         MaterialToolbar toolbar = findViewById(R.id.toolbarInvitations);
+        View btnNotifications = findViewById(R.id.btnNotifications);
+        TextView tvNotificationBadge = findViewById(R.id.tvBellBadge);
+        setupCommonHeader(toolbar, btnNotifications, tvNotificationBadge);
 
-        // 2. MỞ CỬA SIDEBAR THAY VÌ FINISH()
+        // UI-consistency: nav icon mở sidebar thay vì finish()
         if (toolbar != null) {
             toolbar.setNavigationOnClickListener(v -> {
                 if (drawerLayout != null) {
@@ -64,78 +58,29 @@ public class InvitationsActivity extends BaseActivity { // Đổi sang kế th�
                 }
             });
         }
+    }
 
+    private void setupRecyclerView() {
         rvInvitations = findViewById(R.id.rvInvitations);
-        layoutInvitationsEmpty = findViewById(R.id.layoutInvitationsEmpty);
+        layoutInvitationsEmpty = findViewById(R.id.layoutInvitationsEmpty); // UI-consistency
         rvInvitations.setLayoutManager(new LinearLayoutManager(this));
 
         adapter = new InvitationAdapter(new InvitationAdapter.OnInviteClickListener() {
             @Override
             public void onAccept(WorkspaceInvitation invitation) {
-                firebaseManager.acceptWorkspaceInvitation(invitation, new FirebaseManager.DataCallback<Void>() {
-                    @Override
-                    public void onSuccess(Void data) {
-                        ToastHelper.show(InvitationsActivity.this, "You have joined the workspace: " + invitation.getWorkspaceName());
-                    }
-
-                    @Override
-                    public void onError(String message) {
-                        ToastHelper.show(InvitationsActivity.this, "Error: " + message);
-                    }
-                });
+                viewModel.acceptInvitation(invitation);
             }
 
             @Override
             public void onDecline(WorkspaceInvitation invitation) {
-                firebaseManager.declineWorkspaceInvitation(invitation.getId(), new FirebaseManager.DataCallback<Void>() {
-                    @Override
-                    public void onSuccess(Void data) {
-                        ToastHelper.show(InvitationsActivity.this, "You have declined the invitation");
-                    }
-
-                    @Override
-                    public void onError(String message) {
-                        ToastHelper.show(InvitationsActivity.this, "Error: " + message);
-                    }
-                });
+                viewModel.declineInvitation(invitation.getId());
             }
         });
 
         rvInvitations.setAdapter(adapter);
-
-        // Kéo dữ liệu từ Firebase về
-        loadInvitations();
-
-        // 3. SETUP CHUÔNG THÔNG BÁO VÀ CHẤM ĐỎ
-        ImageButton btnNotifications = findViewById(R.id.btnNotifications);
-        if (btnNotifications != null) {
-            btnNotifications.setOnClickListener(v -> {
-                new com.example.cashify.ui.notifications.NotificationBottomSheet()
-                        .show(getSupportFragmentManager(), "NotificationBottomSheet");
-            });
-        }
-
-        TextView tvNotificationBadge = findViewById(R.id.tvNotificationBadge);
-        if (tvNotificationBadge != null) {
-            FirebaseManager.getInstance().listenToUnreadNotifications(new FirebaseManager.DataCallback<Integer>() {
-                @Override
-                public void onSuccess(Integer count) {
-                    if (count != null && count > 0) {
-                        tvNotificationBadge.setVisibility(View.VISIBLE);
-                        tvNotificationBadge.setText(count > 9 ? "9+" : String.valueOf(count));
-                    } else {
-                        tvNotificationBadge.setVisibility(View.GONE);
-                    }
-                }
-
-                @Override
-                public void onError(String message) {
-                    tvNotificationBadge.setVisibility(View.GONE);
-                }
-            });
-        }
     }
 
+    // UI-consistency: custom status bar color
     private void applyLightSystemBars() {
         Window window = getWindow();
         window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
@@ -146,7 +91,25 @@ public class InvitationsActivity extends BaseActivity { // Đổi sang kế th�
         }
     }
 
-    // 4. XỬ LÝ LOGIC KHI BẤM VÀO ITEM QUỸ TRÊN SIDEBAR (BẮT BUỘC VÌ IMPLEMENTS)
+    private void observeViewModel() {
+        // master: dùng ViewModel, nhưng thêm xử lý empty state của UI-consistency
+        viewModel.getInvitations().observe(this, data -> {
+            adapter.setData(data);
+            boolean isEmpty = data == null || data.isEmpty();
+            if (rvInvitations != null)
+                rvInvitations.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
+            if (layoutInvitationsEmpty != null)
+                layoutInvitationsEmpty.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
+        });
+
+        viewModel.getActionResult().observe(this, result -> {
+            if (result != null) {
+                ToastHelper.show(this, result.message);
+                viewModel.clearActionResult();
+            }
+        });
+    }
+
     @Override
     protected void onNavigationItemSelected(int itemId) {
         if (menuIdToWorkspaceIdMap.containsKey(itemId)) {
@@ -159,24 +122,5 @@ public class InvitationsActivity extends BaseActivity { // Đổi sang kế th�
             startActivity(intent);
             finish();
         }
-    }
-
-    private void loadInvitations() {
-        firebaseManager.listenToWorkspaceInvitations(new FirebaseManager.DataCallback<List<WorkspaceInvitation>>() {
-            @Override
-            public void onSuccess(List<WorkspaceInvitation> data) {
-                adapter.setData(data);
-                boolean isEmpty = data == null || data.isEmpty();
-                if (rvInvitations != null)
-                    rvInvitations.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
-                if (layoutInvitationsEmpty != null)
-                    layoutInvitationsEmpty.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
-            }
-
-            @Override
-            public void onError(String message) {
-                ToastHelper.show(InvitationsActivity.this, "Downloading invitations failed: " + message);
-            }
-        });
     }
 }

@@ -14,9 +14,12 @@ public final class CurrencyManager {
     public static final String KEY_SELECTED_CURRENCY = "selected_currency";
     public static final String CURRENCY_VND = "VND";
     public static final String CURRENCY_USD = "USD";
-    public static final double VND_PER_USD = 26_000.0d;
+    public static final double VND_PER_USD = 26_000.0d; // Fixed exchange rate specification
 
+    // Storing Application Context prevents memory leaks
     private static Context appContext;
+
+    // Shared formatters
     static final DecimalFormat VND_FORMAT;
     static final DecimalFormat VND_COMPACT_FORMAT;
     static final DecimalFormat USD_WHOLE_FORMAT;
@@ -30,7 +33,7 @@ public final class CurrencyManager {
         USD_DECIMAL_FORMAT = new DecimalFormat("#,##0.00", symbols);
     }
 
-    private CurrencyManager() {}
+    private CurrencyManager() {} // Prevent instantiation
 
     public static void init(Context context) {
         if (context != null) appContext = context.getApplicationContext();
@@ -43,8 +46,7 @@ public final class CurrencyManager {
 
     public static String getSelectedCurrency(Context context) {
         if (context == null) return CURRENCY_VND;
-        SharedPreferences prefs = context.getApplicationContext()
-                .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        SharedPreferences prefs = context.getApplicationContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         return prefs.getString(KEY_SELECTED_CURRENCY, CURRENCY_VND);
     }
 
@@ -62,14 +64,17 @@ public final class CurrencyManager {
         return CURRENCY_USD.equals(getSelectedCurrency());
     }
 
+    // Converts actual DB amount (always VND) to current display currency
     public static double toDisplayAmount(double baseVndAmount) {
         return isUsd() ? baseVndAmount / VND_PER_USD : baseVndAmount;
     }
 
+    // Converts input display amount back to DB base amount (VND)
     public static double toBaseAmount(double displayAmount) {
         return isUsd() ? displayAmount * VND_PER_USD : displayAmount;
     }
 
+    // Proxies to Formatter
     public static String formatFull(double baseVndAmount) {
         return CurrencyFormatter.formatFullAmount(baseVndAmount);
     }
@@ -84,10 +89,11 @@ public final class CurrencyManager {
         return VND_FORMAT.format(Math.round(displayAmount));
     }
 
+    // Parses UI input strings back to raw double (VND base)
     public static double parseInputToBase(String input) {
         if (input == null || input.trim().isEmpty()) return 0;
         String cleaned = input.replace("$", "")
-                .replace("\u20ab", "")
+                .replace("\u0111", "") // Replaced \u20ab to match the 'đ' symbol
                 .replace("VND", "")
                 .replace("USD", "")
                 .trim();
@@ -107,22 +113,21 @@ public final class CurrencyManager {
         }
     }
 
+    // Formats raw digits from Numpad UI into currency string
     public static String formatNumpadDigits(String digits) {
         String safeDigits = normalizeDigits(digits);
         if (isUsd()) {
-            BigDecimal dollars = new BigDecimal(safeDigits)
-                    .divide(BigDecimal.valueOf(100), 2, RoundingMode.DOWN);
+            BigDecimal dollars = new BigDecimal(safeDigits).divide(BigDecimal.valueOf(100), 2, RoundingMode.DOWN);
             return CurrencyFormatter.formatUsdUnsigned(dollars.doubleValue());
         }
-        return "\u20ab" + VND_FORMAT.format(Long.parseLong(safeDigits));
+        return "\u0111" + VND_FORMAT.format(Long.parseLong(safeDigits)); // Fixed symbol inconsistency
     }
 
+    // Prepares raw Numpad digits for input fields without symbols
     public static String numpadRawToDisplayInput(String digits) {
         String safeDigits = normalizeDigits(digits);
         if (isUsd()) {
-            return new BigDecimal(safeDigits)
-                    .divide(BigDecimal.valueOf(100), 2, RoundingMode.DOWN)
-                    .toPlainString();
+            return new BigDecimal(safeDigits).divide(BigDecimal.valueOf(100), 2, RoundingMode.DOWN).toPlainString();
         }
         return safeDigits;
     }

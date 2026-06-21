@@ -35,7 +35,7 @@ public class WorkspaceContainerFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Nhận ID Quỹ từ Sidebar của MainActivity truyền sang bằng Bundle
+        // Retrieve Workspace ID passed from MainActivity's Sidebar via Bundle
         if (getArguments() != null) {
             workspaceId = getArguments().getString("WORKSPACE_ID");
         }
@@ -43,32 +43,39 @@ public class WorkspaceContainerFragment extends Fragment {
         BottomNavigationView bottomNav = view.findViewById(R.id.bottom_navigation_workspace);
         FloatingActionButton fabAddTransaction = view.findViewById(R.id.fabAddWorkspaceTransaction);
 
-        //Tách bottom navigation khỏi thanh hệ thống điện thoại (Tại cái thuộc tính fit system của layout)
-
+        // =========================================================================
+        // EDGE-TO-EDGE UI HANDLING
+        // Isolates the bottom navigation from the system gesture/navigation bars
+        // =========================================================================
         ViewCompat.setOnApplyWindowInsetsListener(bottomNav, (v, windowInsets) -> {
-            // Lấy độ cao của thanh 3 nút / vạch vuốt của hệ thống
+            // Retrieve the height of the system gesture/navigation bar
             Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
 
-            // Keep the runtime inset margin tied to the bottom-nav dimension used by XML.
+            // Retrieve the baseline margin defined in dimensions
             int systemMargin = Math.round(getResources().getDimension(R.dimen.bottom_nav_system_margin));
 
-            // Set lại Margin Bottom = Chiều cao thanh hệ thống + khoảng cách trong dimens.xml
+            // Apply calculated Bottom Margin: System Bar Height + baseline spacing
             ViewGroup.MarginLayoutParams mlp = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
             mlp.bottomMargin = insets.bottom + systemMargin;
             v.setLayoutParams(mlp);
 
-            // Báo cho Android: "Tao tính toán xong rồi, đừng tự động nhét padding vào nữa!"
+            // Instruct Android that the insets have been fully consumed to prevent duplicate padding
             return WindowInsetsCompat.CONSUMED;
         });
 
-        // Lấy NavController của cái ruột BÊN TRONG vỏ hộp
-        NavHostFragment navHostFragment = (NavHostFragment) getChildFragmentManager().findFragmentById(R.id.workspace_inner_nav_host);
+        // =========================================================================
+        // NAVIGATION SETUP
+        // =========================================================================
+
+        // Retrieve the NavController for the internal navigation host
+        NavHostFragment navHostFragment = (NavHostFragment) getChildFragmentManager()
+                .findFragmentById(R.id.workspace_inner_nav_host);
 
         if (navHostFragment != null) {
             NavController innerNavController = navHostFragment.getNavController();
             NavigationUI.setupWithNavController(bottomNav, innerNavController);
 
-            // Logic ẩn hiện nút FAB
+            // Dynamic FAB visibility based on the current destination
             innerNavController.addOnDestinationChangedListener((controller, destination, arguments) -> {
                 if (destination.getId() == R.id.workspace_nav_home) {
                     fabAddTransaction.show();
@@ -77,15 +84,17 @@ public class WorkspaceContainerFragment extends Fragment {
                 }
             });
 
-
+            // Handle direct deep-linking to the Chat tab
             if (getArguments() != null && getArguments().getBoolean("OPEN_CHAT_TAB", false)) {
                 bottomNav.setSelectedItemId(R.id.workspace_nav_chat);
-
+                // Consume the flag to prevent re-triggering on configuration changes
                 getArguments().putBoolean("OPEN_CHAT_TAB", false);
             }
         }
 
-        // Bắt sự kiện bấm FAB
+        // =========================================================================
+        // ACTIONS
+        // =========================================================================
         fabAddTransaction.setOnClickListener(v -> {
             Intent intent = new Intent(requireContext(), AddTransactionActivity.class);
             intent.putExtra("WORKSPACE_ID", workspaceId);

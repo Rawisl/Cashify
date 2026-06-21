@@ -1,4 +1,4 @@
-package com.example.cashify.data.model;
+package com.example.cashify.utils;
 
 import android.content.Context;
 
@@ -6,11 +6,9 @@ import androidx.annotation.NonNull;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
-import com.example.cashify.utils.NotificationHelper;
+public class ReminderWorker extends Worker {
 
-public class Notification extends Worker {
-
-    public Notification(@NonNull Context context, @NonNull WorkerParameters workerParams) {
+    public ReminderWorker(@NonNull Context context, @NonNull WorkerParameters workerParams) {
         super(context, workerParams);
     }
 

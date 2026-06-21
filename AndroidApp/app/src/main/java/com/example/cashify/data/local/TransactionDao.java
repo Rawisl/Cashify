@@ -1,6 +1,5 @@
 package com.example.cashify.data.local;
 
-
 import androidx.lifecycle.LiveData;
 import androidx.room.Dao;
 import androidx.room.Delete;
@@ -26,105 +25,114 @@ public interface TransactionDao {
     @Delete
     void delete(Transaction transaction);
 
-    //Lấy tất cả giao dịch, mới nhất nằm trên
+    // Lấy tất cả giao dịch của một quỹ, sắp xếp mới nhất lên đầu
     @Query("SELECT * FROM transactions WHERE workspaceId = :workspaceId ORDER BY timestamp DESC")
     List<Transaction> getAll(String workspaceId);
 
-    // Lấy toàn bộ giao dịch trong một khoảng thời gian (dùng cho lọc tuần/tháng/năm)
+    // Lấy toàn bộ giao dịch trong một khoảng thời gian (Dùng cho bộ lọc tuần/tháng/năm)
     @Query("SELECT * FROM transactions WHERE workspaceId = :workspaceId AND timestamp BETWEEN :start AND :end ORDER BY timestamp DESC")
     List<Transaction> getByDateRange(String workspaceId, long start, long end);
 
-    //Tổng thu trong 1 khoảng thời gian
-    @Query("SELECT IFNULL(SUM(amount), 0) FROM transactions WHERE workspaceId = :workspaceId AND type=1 AND timestamp BETWEEN :start AND :end")
+    // Tính tổng thu (type = 1) trong một khoảng thời gian
+    @Query("SELECT IFNULL(SUM(amount), 0) FROM transactions WHERE workspaceId = :workspaceId AND type = 1 AND timestamp BETWEEN :start AND :end")
     long getTotalIncome(String workspaceId, long start, long end);
 
-    //Tổng chi trong 1 khoảng tgian
-    @Query("SELECT IFNULL(SUM(amount), 0) FROM transactions WHERE workspaceId = :workspaceId AND type=0 AND timestamp BETWEEN :start AND :end")
+    // Tính tổng chi (type = 0) trong một khoảng thời gian
+    @Query("SELECT IFNULL(SUM(amount), 0) FROM transactions WHERE workspaceId = :workspaceId AND type = 0 AND timestamp BETWEEN :start AND :end")
     long getTotalExpense(String workspaceId, long start, long end);
 
-    //Top 5 danh mục chi nhiều nhất (pie chart)
+    // Lấy Top 5 danh mục có tổng chi tiêu cao nhất (Dùng cho biểu đồ Pie Chart)
     @Query("SELECT t.categoryId, c.name as categoryName, SUM(t.amount) as total " +
             "FROM transactions t INNER JOIN categories c ON t.categoryId = c.id " +
-            "WHERE t.workspaceId = :workspaceId AND t.type=0 AND t.timestamp BETWEEN :start AND :end " +
+            "WHERE t.workspaceId = :workspaceId AND t.type = 0 AND t.timestamp BETWEEN :start AND :end " +
             "GROUP BY t.categoryId ORDER BY total DESC LIMIT 5")
     List<CategorySum> getTop5ExpenseCategories(String workspaceId, long start, long end);
 
-    //Phần 'khác' trong pie chart: tổng tất cả ngoài top 5
-    @Query("SELECT IFNULL(SUM(amount), 0) FROM transactions "+"WHERE workspaceId = :workspaceId AND type=0 AND timestamp BETWEEN :start AND :end "+"AND categoryId NOT IN("+" SELECT categoryId FROM transactions WHERE workspaceId = :workspaceId AND type=0 AND timestamp BETWEEN :start AND :end "+" GROUP BY categoryId ORDER BY SUM(amount) DESC LIMIT 5"+")")
+    // Lấy tổng chi tiêu của phần "Khác" (Tất cả các danh mục nằm ngoài Top 5)
+    @Query("SELECT IFNULL(SUM(amount), 0) FROM transactions " +
+            "WHERE workspaceId = :workspaceId AND type = 0 AND timestamp BETWEEN :start AND :end " +
+            "AND categoryId NOT IN (" +
+            "   SELECT categoryId FROM transactions WHERE workspaceId = :workspaceId AND type = 0 AND timestamp BETWEEN :start AND :end " +
+            "   GROUP BY categoryId ORDER BY SUM(amount) DESC LIMIT 5" +
+            ")")
     long getOtherExpenseTotal(String workspaceId, long start, long end);
 
-    // Lấy chi tiết các mục nằm ngoài Top 5 (Dùng cho Popup xem mục khác)
+    // Lấy chi tiết các danh mục nằm ngoài Top 5 (Dùng khi click vào phần "Khác" trên biểu đồ)
+    // Dùng OFFSET 5 để bỏ qua 5 dòng đầu tiên
     @Query("SELECT t.categoryId, c.name as categoryName, SUM(t.amount) as total " +
             "FROM transactions t INNER JOIN categories c ON t.categoryId = c.id " +
-            "WHERE t.workspaceId = :workspaceId AND t.type=0 AND t.timestamp BETWEEN :start AND :end " +
+            "WHERE t.workspaceId = :workspaceId AND t.type = 0 AND t.timestamp BETWEEN :start AND :end " +
             "GROUP BY t.categoryId ORDER BY total DESC LIMIT -1 OFFSET 5")
     List<CategorySum> getOthersBreakdown(String workspaceId, long start, long end);
 
-    //Tổng chi theo 1 danh mục cụ thể trong 1 tgian cu the
-    @Query("SELECT IFNULL(SUM(amount),0) FROM transactions "+"WHERE workspaceId = :workspaceId AND type = 0 AND categoryId = :category_id AND timestamp BETWEEN :start AND :end")
+    // Tính tổng chi tiêu theo một danh mục cụ thể
+    @Query("SELECT IFNULL(SUM(amount), 0) FROM transactions WHERE workspaceId = :workspaceId AND type = 0 AND categoryId = :category_id AND timestamp BETWEEN :start AND :end")
     long getTotalExpenseByCategory(String workspaceId, int category_id, long start, long end);
 
-    //N giao dịch gần nhất
+    // Lấy N giao dịch gần nhất
     @Query("SELECT * FROM transactions WHERE workspaceId = :workspaceId ORDER BY timestamp DESC LIMIT :limit")
     List<Transaction> getRecentTransaction(String workspaceId, int limit);
 
     @Query("SELECT * FROM transactions WHERE id = :id LIMIT 1")
     Transaction getById(String id);
-    //tính sô dư trọn đời
-    @Query("SELECT (SELECT IFNULL(SUM(amount), 0) FROM transactions WHERE workspaceId = :workspaceId AND type = 1) - " + "(SELECT IFNULL(SUM(amount), 0) FROM transactions WHERE workspaceId = :workspaceId AND type = 0)")
+
+    // Tính số dư trọn đời (Tổng Thu - Tổng Chi) của một quỹ
+    @Query("SELECT " +
+            "(SELECT IFNULL(SUM(amount), 0) FROM transactions WHERE workspaceId = :workspaceId AND type = 1) - " +
+            "(SELECT IFNULL(SUM(amount), 0) FROM transactions WHERE workspaceId = :workspaceId AND type = 0)")
     long getActualBalance(String workspaceId);
 
-    //tính số dư trong tháng
-    @Query("SELECT (SELECT IFNULL(SUM(amount), 0) FROM transactions WHERE workspaceId = :workspaceId AND type = 1 AND timestamp BETWEEN :startDate AND :endDate) - " +
+    // Tính số dư theo khoảng thời gian (Ví dụ: Số dư trong tháng)
+    @Query("SELECT " +
+            "(SELECT IFNULL(SUM(amount), 0) FROM transactions WHERE workspaceId = :workspaceId AND type = 1 AND timestamp BETWEEN :startDate AND :endDate) - " +
             "(SELECT IFNULL(SUM(amount), 0) FROM transactions WHERE workspaceId = :workspaceId AND type = 0 AND timestamp BETWEEN :startDate AND :endDate)")
     long getMonthlyBalance(String workspaceId, long startDate, long endDate);
 
-    //đếm số lượng giao dịch trong 1 khoang thời gian
+    // Đếm số lượng giao dịch phát sinh trong 1 ngày (Dùng để check điều kiện Gamification/Streak)
     @Query("SELECT COUNT(*) FROM transactions WHERE workspaceId = :workspaceId AND timestamp BETWEEN :startOfDay AND :endOfDay")
     int countTransactionsByDay(String workspaceId, long startOfDay, long endOfDay);
 
-    // Lấy tháng đầu tiên có giao dịch
+    // Lấy thời điểm của giao dịch cũ nhất (Dùng để chặn giới hạn lướt bộ lọc thời gian)
     @Query("SELECT MIN(timestamp) FROM transactions WHERE workspaceId = :workspaceId")
     long getEarliestTransactionDate(String workspaceId);
 
-    // Lấy giao dịch theo loại (0: Chi, 1: Thu), sắp xếp mới nhất lên đầu
+    // Lấy danh sách giao dịch lọc theo loại (0: Chi, 1: Thu)
     @Query("SELECT * FROM transactions WHERE workspaceId = :workspaceId AND type = :type ORDER BY timestamp DESC")
     List<Transaction> getTransactionsByType(String workspaceId, int type);
 
-    // (Tùy chọn) Nếu sau này bạn muốn lọc Income/Expense trong một khoảng thời gian cụ thể
+    // Lấy danh sách giao dịch lọc theo loại và theo thời gian
     @Query("SELECT * FROM transactions WHERE workspaceId = :workspaceId AND type = :type AND timestamp BETWEEN :start AND :end ORDER BY timestamp DESC")
     List<Transaction> getTransactionsByTypeAndDate(String workspaceId, int type, long start, long end);
-
-
 
     @Query("DELETE FROM transactions WHERE workspaceId = :workspaceId")
     void deleteAllTransactions(String workspaceId);
 
-    // Sửa lại: Chỉ đếm giao dịch của ĐÚNG QUỸ ĐÓ
+    // Đếm tổng số giao dịch của một quỹ cụ thể
     @Query("SELECT COUNT(*) FROM transactions WHERE workspaceId = :workspaceId")
     int countTransactions(String workspaceId);
 
-    // Lấy toàn bộ mốc thời gian của tất cả giao dịch (Dùng để gom nhóm tháng)
+    // Lấy mốc thời gian của toàn bộ giao dịch (Dùng để logic UI gom nhóm theo tháng/năm)
     @Query("SELECT timestamp FROM transactions WHERE workspaceId = :workspaceId ORDER BY timestamp DESC")
     List<Long> getAllTimestamps(String workspaceId);
 
-    @androidx.room.Transaction // Bắt buộc phải có để Room chạy liên kết dữ liệu
+    // Bắt buộc dùng @Transaction vì có kết nối @Relation để tự động map Category vào Transaction
+    @androidx.room.Transaction
     @Query("SELECT * FROM transactions WHERE workspaceId = :workspaceId ORDER BY timestamp DESC")
     List<TransactionWithCategory> getAllTransactionsWithCategory(String workspaceId);
 
+    // Quan sát LiveData 5 giao dịch gần nhất (Tự động cập nhật UI khi có giao dịch mới)
     @androidx.room.Transaction
     @Query("SELECT * FROM transactions WHERE workspaceId = :workspaceId ORDER BY timestamp DESC LIMIT 5")
     LiveData<List<TransactionWithCategory>> getRecentTransactionsWithCategory(String workspaceId);
 
-    //lọc giao dịch theo phương thức:
     @Query("SELECT * FROM transactions WHERE workspaceId = :workspaceId AND paymentMethod = :method ORDER BY timestamp DESC")
     List<Transaction> getTransactionsByPaymentMethod(String workspaceId, String method);
 
-    //lọc giao dịch theo phương thức và theo ngày
     @Query("SELECT * FROM transactions WHERE workspaceId = :workspaceId AND paymentMethod = :method AND timestamp BETWEEN :start AND :end ORDER BY timestamp DESC")
     List<Transaction> getTransactionsByPaymentMethodAndDate(String workspaceId, String method, long start, long end);
 
-    // --- LỌC ĐỘNG KẾT HỢP NHIỀU ĐIỀU KIỆN (THAY THẾ CÁC HÀM LỌC CŨ) ---
+    // --- LỌC ĐỘNG KẾT HỢP NHIỀU ĐIỀU KIỆN ---
+    // Nhận câu lệnh SQL động được build từ tầng Repository (Ví dụ: kết hợp khoảng thời gian + loại + phương thức)
     @RawQuery
     List<Transaction> getFilteredTransactions(SupportSQLiteQuery query);
 }

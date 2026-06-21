@@ -5,6 +5,7 @@ import android.util.Log;
 import com.example.cashify.data.model.DirectConversation;
 import com.example.cashify.data.model.User;
 import com.example.cashify.utils.ApiClient;
+import com.example.cashify.data.remote.ApiDto;
 import com.example.cashify.utils.ApiService;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
@@ -21,8 +22,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+// Tầng Remote Data Source (Singleton Pattern) xử lý mọi giao tiếp với Server
 public class FirebaseManager {
     private static final String TAG = "CASHIFY";
+    private static final String ERR_NOT_LOGGED_IN = "Not logged in!";
 
     private static FirebaseManager instance;
     private final FirebaseAuth auth;
@@ -40,13 +43,11 @@ public class FirebaseManager {
 
     public interface AuthCallback {
         void onSuccess(String uid);
-
         void onError(String message);
     }
 
     public interface DataCallback<T> {
         void onSuccess(T data);
-
         void onError(String message);
     }
 
@@ -95,7 +96,7 @@ public class FirebaseManager {
     public String getCurrentUserId() {
         FirebaseUser user = auth.getCurrentUser();
         if (user == null) {
-            Log.e(TAG, "getCurrentUserId: chưa đăng nhập!");
+            Log.e(TAG, "getCurrentUserId: Not logged in!");
             return null;
         }
         return user.getUid();
@@ -112,35 +113,27 @@ public class FirebaseManager {
     public void syncLocalToCloud(String workspaceId, String collection, String docId, Map<String, Object> data, DataCallback<Void> callback) {
         String uid = getCurrentUserId();
         if (uid == null) {
-            if (callback != null) callback.onError("Chưa đăng nhập!");
+            if (callback != null) callback.onError(ERR_NOT_LOGGED_IN);
             return;
         }
 
-        com.google.firebase.firestore.DocumentReference docRef;
-        if (workspaceId == null || workspaceId.equals("PERSONAL")) {
-            docRef = db.collection("users").document(uid).collection(collection).document(docId);
-        } else {
-            docRef = db.collection("workspaces").document(workspaceId).collection(collection).document(docId);
-        }
+        com.google.firebase.firestore.DocumentReference docRef = (workspaceId == null || workspaceId.equals("PERSONAL"))
+                ? db.collection("users").document(uid).collection(collection).document(docId)
+                : db.collection("workspaces").document(workspaceId).collection(collection).document(docId);
 
         docRef.set(data)
-                .addOnSuccessListener(v -> {
-                    if (callback != null) callback.onSuccess(null);
-                })
-                .addOnFailureListener(e -> {
-                    if (callback != null) callback.onError(e.getMessage());
-                });
+                .addOnSuccessListener(v -> { if (callback != null) callback.onSuccess(null); })
+                .addOnFailureListener(e -> { if (callback != null) callback.onError(e.getMessage()); });
     }
 
     public void listenToChanges(String workspaceId, String collectionName, DataCallback<List<DocumentSnapshot>> callback) {
         String uid = getCurrentUserId();
         if (uid == null) return;
-        com.google.firebase.firestore.CollectionReference colRef;
-        if (workspaceId == null || workspaceId.equals("PERSONAL")) {
-            colRef = db.collection("users").document(uid).collection(collectionName);
-        } else {
-            colRef = db.collection("workspaces").document(workspaceId).collection(collectionName);
-        }
+
+        com.google.firebase.firestore.CollectionReference colRef = (workspaceId == null || workspaceId.equals("PERSONAL"))
+                ? db.collection("users").document(uid).collection(collectionName)
+                : db.collection("workspaces").document(workspaceId).collection(collectionName);
+
         colRef.addSnapshotListener((value, error) -> {
             if (error != null) {
                 callback.onError(error.getMessage());
@@ -153,12 +146,11 @@ public class FirebaseManager {
     public void deleteAllTransactionsFromCloud(String workspaceId, DataCallback<Void> callback) {
         String uid = getCurrentUserId();
         if (uid == null) return;
-        com.google.firebase.firestore.CollectionReference colRef;
-        if (workspaceId == null || workspaceId.equals("PERSONAL")) {
-            colRef = db.collection("users").document(uid).collection("transactions");
-        } else {
-            colRef = db.collection("workspaces").document(workspaceId).collection("transactions");
-        }
+
+        com.google.firebase.firestore.CollectionReference colRef = (workspaceId == null || workspaceId.equals("PERSONAL"))
+                ? db.collection("users").document(uid).collection("transactions")
+                : db.collection("workspaces").document(workspaceId).collection("transactions");
+
         colRef.get().addOnSuccessListener(snap -> {
             if (snap.isEmpty()) {
                 callback.onSuccess(null);
@@ -175,24 +167,17 @@ public class FirebaseManager {
     public void deleteDocumentFromCloud(String workspaceId, String collection, String docId, DataCallback<Void> callback) {
         String uid = getCurrentUserId();
         if (uid == null) {
-            if (callback != null) callback.onError("Chưa đăng nhập!");
+            if (callback != null) callback.onError(ERR_NOT_LOGGED_IN);
             return;
         }
 
-        com.google.firebase.firestore.DocumentReference docRef;
-        if (workspaceId == null || workspaceId.equals("PERSONAL")) {
-            docRef = db.collection("users").document(uid).collection(collection).document(docId);
-        } else {
-            docRef = db.collection("workspaces").document(workspaceId).collection(collection).document(docId);
-        }
+        com.google.firebase.firestore.DocumentReference docRef = (workspaceId == null || workspaceId.equals("PERSONAL"))
+                ? db.collection("users").document(uid).collection(collection).document(docId)
+                : db.collection("workspaces").document(workspaceId).collection(collection).document(docId);
 
         docRef.delete()
-                .addOnSuccessListener(v -> {
-                    if (callback != null) callback.onSuccess(null);
-                })
-                .addOnFailureListener(e -> {
-                    if (callback != null) callback.onError(e.getMessage());
-                });
+                .addOnSuccessListener(v -> { if (callback != null) callback.onSuccess(null); })
+                .addOnFailureListener(e -> { if (callback != null) callback.onError(e.getMessage()); });
     }
 
     // ============================================================
@@ -202,13 +187,11 @@ public class FirebaseManager {
     public void searchUserByEmail(String email, DataCallback<String> callback) {
         db.collection("users").whereEqualTo("email", email).get()
                 .addOnSuccessListener(snap -> {
-                    if (!snap.isEmpty())
-                        callback.onSuccess(snap.getDocuments().get(0).getString("uid"));
-                    else callback.onError("Không tìm thấy người dùng");
+                    if (!snap.isEmpty()) callback.onSuccess(snap.getDocuments().get(0).getString("uid"));
+                    else callback.onError("User not found");
                 })
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
-
 
     public void joinWorkspace(String workspaceId, String userId, DataCallback<Void> callback) {
         db.collection("workspaces").document(workspaceId)
@@ -217,7 +200,6 @@ public class FirebaseManager {
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
-    // 1. Lắng nghe danh sách lời mời theo thời gian thực
     public void listenToWorkspaceInvitations(DataCallback<List<com.example.cashify.data.model.WorkspaceInvitation>> callback) {
         String uid = getCurrentUserId();
         if (uid == null) return;
@@ -233,7 +215,7 @@ public class FirebaseManager {
                         for (DocumentSnapshot doc : snap.getDocuments()) {
                             com.example.cashify.data.model.WorkspaceInvitation invite = doc.toObject(com.example.cashify.data.model.WorkspaceInvitation.class);
                             if (invite != null) {
-                                invite.setId(doc.getId()); // Gắn ID của Document để lát biết đường xóa
+                                invite.setId(doc.getId());
                                 list.add(invite);
                             }
                         }
@@ -242,15 +224,14 @@ public class FirebaseManager {
                 });
     }
 
-    // 2. Gửi lời mời (Nhiều người cùng lúc)
     public void sendWorkspaceInvites(String workspaceId, String workspaceName, List<String> targetUids, DataCallback<Void> callback) {
         FirebaseUser user = auth.getCurrentUser();
-        if (user == null) { callback.onError("You are not logged in!"); return; }
+        if (user == null) { callback.onError(ERR_NOT_LOGGED_IN); return; }
 
         user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
             String token = "Bearer " + getTokenResult.getToken();
             ApiService apiService = ApiClient.getClient().create(ApiService.class);
-            ApiService.WorkspaceInviteSendRequest req = new ApiService.WorkspaceInviteSendRequest(workspaceId, workspaceName, targetUids);
+            ApiDto.WorkspaceInviteSendRequest req = new ApiDto.WorkspaceInviteSendRequest(workspaceId, workspaceName, targetUids);
 
             apiService.sendWorkspaceInvites(token, req).enqueue(new retrofit2.Callback<Object>() {
                 @Override public void onResponse(retrofit2.Call<Object> call, retrofit2.Response<Object> response) {
@@ -262,17 +243,14 @@ public class FirebaseManager {
         }).addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
-    // 3. Chấp nhận lời mời (ĐÃ REFACTOR GỌI C#)
     public void acceptWorkspaceInvitation(com.example.cashify.data.model.WorkspaceInvitation invitation, DataCallback<Void> callback) {
         FirebaseUser user = auth.getCurrentUser();
-        if (user == null) { callback.onError("You are not logged in!"); return; }
+        if (user == null) { callback.onError(ERR_NOT_LOGGED_IN); return; }
 
         user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
             String token = "Bearer " + getTokenResult.getToken();
             ApiService apiService = ApiClient.getClient().create(ApiService.class);
-
-            // Gọi endpoint C# đã viết: /api/v1/workspace/invite/accept
-            ApiService.WorkspaceInviteHandleRequest req = new ApiService.WorkspaceInviteHandleRequest(invitation.getWorkspaceId(), invitation.getId());
+            ApiDto.WorkspaceInviteHandleRequest req = new ApiDto.WorkspaceInviteHandleRequest(invitation.getWorkspaceId(), invitation.getId());
 
             apiService.acceptWorkspaceInvite(token, req).enqueue(new retrofit2.Callback<Object>() {
                 @Override
@@ -281,34 +259,27 @@ public class FirebaseManager {
                         callback.onSuccess(null);
                     } else {
                         try {
-                            String errorBody = response.errorBody().string();
-                            org.json.JSONObject jsonObject = new org.json.JSONObject(errorBody);
+                            org.json.JSONObject jsonObject = new org.json.JSONObject(response.errorBody().string());
                             callback.onError(jsonObject.getString("message"));
                         } catch (Exception e) {
                             callback.onError("Server rejected: " + response.code());
                         }
                     }
                 }
-
                 @Override
-                public void onFailure(retrofit2.Call<Object> call, Throwable t) {
-                    callback.onError(t.getMessage());
-                }
+                public void onFailure(retrofit2.Call<Object> call, Throwable t) { callback.onError(t.getMessage()); }
             });
         }).addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
-    // 4. Từ chối lời mời (ĐÃ REFACTOR GỌI C#)
     public void declineWorkspaceInvitation(String invitationId, DataCallback<Void> callback) {
         FirebaseUser user = auth.getCurrentUser();
-        if (user == null) { callback.onError("You are not logged in!"); return; }
+        if (user == null) { callback.onError(ERR_NOT_LOGGED_IN); return; }
 
         user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
             String token = "Bearer " + getTokenResult.getToken();
             ApiService apiService = ApiClient.getClient().create(ApiService.class);
-
-            // Gọi endpoint C# đã viết: /api/v1/workspace/invite/decline
-            ApiService.WorkspaceInviteHandleRequest req = new ApiService.WorkspaceInviteHandleRequest(null, invitationId);
+            ApiDto.WorkspaceInviteHandleRequest req = new ApiDto.WorkspaceInviteHandleRequest(null, invitationId);
 
             apiService.declineWorkspaceInvite(token, req).enqueue(new retrofit2.Callback<Object>() {
                 @Override public void onResponse(retrofit2.Call<Object> call, retrofit2.Response<Object> response) {
@@ -351,16 +322,12 @@ public class FirebaseManager {
 
     public void getAllTransactionsFromCloud(String workspaceId, DataCallback<List<DocumentSnapshot>> callback) {
         String uid = getCurrentUserId();
-        if (uid == null) {
-            callback.onError("Chưa đăng nhập!");
-            return;
-        }
-        com.google.firebase.firestore.CollectionReference colRef;
-        if (workspaceId == null || workspaceId.equals("PERSONAL")) {
-            colRef = db.collection("users").document(uid).collection("transactions");
-        } else {
-            colRef = db.collection("workspaces").document(workspaceId).collection("transactions");
-        }
+        if (uid == null) { callback.onError(ERR_NOT_LOGGED_IN); return; }
+
+        com.google.firebase.firestore.CollectionReference colRef = (workspaceId == null || workspaceId.equals("PERSONAL"))
+                ? db.collection("users").document(uid).collection("transactions")
+                : db.collection("workspaces").document(workspaceId).collection("transactions");
+
         colRef.get()
                 .addOnSuccessListener(q -> callback.onSuccess(q.getDocuments()))
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
@@ -384,11 +351,7 @@ public class FirebaseManager {
 
     public void getAllUsers(DataCallback<List<User>> callback) {
         String myUid = getCurrentUserId();
-        Log.e(TAG, "getAllUsers: myUid = " + myUid);
-        if (myUid == null) {
-            callback.onError("Chưa đăng nhập!");
-            return;
-        }
+        if (myUid == null) { callback.onError(ERR_NOT_LOGGED_IN); return; }
 
         db.collection("users").get()
                 .addOnSuccessListener(snap -> {
@@ -397,124 +360,75 @@ public class FirebaseManager {
                         User user = doc.toObject(User.class);
                         if (user != null && !myUid.equals(user.getUid())) users.add(user);
                     }
-                    Log.e(TAG, "getAllUsers: " + users.size() + " users");
                     callback.onSuccess(users);
                 })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "getAllUsers thất bại: " + e.getMessage());
-                    callback.onError(e.getMessage());
-                });
+                .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
     // ============================================================
     // FRIEND REQUEST SYSTEM
     // ============================================================
 
-    /**
-     * Lấy danh sách UID bạn bè đã kết bạn thành công
-     */
     public void getFriendIds(String uid, DataCallback<List<String>> callback) {
         db.collection("users").document(uid).collection("friends").get()
                 .addOnSuccessListener(snap -> {
                     List<String> ids = new ArrayList<>();
                     for (DocumentSnapshot doc : snap) ids.add(doc.getId());
-                    Log.e(TAG, "getFriendIds: " + ids.size() + " bạn");
                     callback.onSuccess(ids);
                 })
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
-    /**
-     * Lấy danh sách UID đang gửi lời mời kết bạn cho mình
-     */
     public void getIncomingRequestIds(DataCallback<List<String>> callback) {
         String myUid = getCurrentUserId();
-        if (myUid == null) {
-            callback.onError("Chưa đăng nhập!");
-            return;
-        }
+        if (myUid == null) { callback.onError(ERR_NOT_LOGGED_IN); return; }
 
         db.collection("users").document(myUid).collection("friend_requests").get()
                 .addOnSuccessListener(snap -> {
                     List<String> ids = new ArrayList<>();
                     for (DocumentSnapshot doc : snap) ids.add(doc.getId());
-                    Log.e(TAG, "getIncomingRequestIds: " + ids.size() + " lời mời đến");
                     callback.onSuccess(ids);
                 })
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
-    /**
-     * Lấy danh sách UID mình đã gửi lời mời đi (chưa được accept)
-     */
     public void getSentRequestIds(DataCallback<List<String>> callback) {
         String myUid = getCurrentUserId();
-        if (myUid == null) {
-            callback.onError("Chưa đăng nhập!");
-            return;
-        }
+        if (myUid == null) { callback.onError(ERR_NOT_LOGGED_IN); return; }
 
         db.collection("users").document(myUid).collection("sent_requests").get()
                 .addOnSuccessListener(snap -> {
                     List<String> ids = new ArrayList<>();
                     for (DocumentSnapshot doc : snap) ids.add(doc.getId());
-                    Log.e(TAG, "getSentRequestIds: " + ids.size() + " lời mời đã gửi");
                     callback.onSuccess(ids);
                 })
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
-    /**
-     * Gửi lời mời kết bạn tới targetUid
-     */
     public void sendFriendRequest(String targetUid, DataCallback<Void> callback) {
         String myUid = getCurrentUserId();
-        if (myUid == null) {
-            callback.onError("Chưa đăng nhập!");
-            return;
-        }
+        if (myUid == null) { callback.onError(ERR_NOT_LOGGED_IN); return; }
 
         WriteBatch batch = db.batch();
 
         Map<String, Object> requestData = new HashMap<>();
         requestData.put("fromUid", myUid);
         requestData.put("timestamp", FieldValue.serverTimestamp());
+        batch.set(db.collection("users").document(targetUid).collection("friend_requests").document(myUid), requestData);
 
-        // Ghi vào inbox của người kia
-        batch.set(
-                db.collection("users").document(targetUid).collection("friend_requests").document(myUid),
-                requestData
-        );
-
-        // Track phía mình đã gửi
         Map<String, Object> sentData = new HashMap<>();
         sentData.put("toUid", targetUid);
         sentData.put("timestamp", FieldValue.serverTimestamp());
-        batch.set(
-                db.collection("users").document(myUid).collection("sent_requests").document(targetUid),
-                sentData
-        );
+        batch.set(db.collection("users").document(myUid).collection("sent_requests").document(targetUid), sentData);
 
         batch.commit()
-                .addOnSuccessListener(v -> {
-                    Log.e(TAG, "sendFriendRequest tới " + targetUid + " thành công");
-                    callback.onSuccess(null);
-                })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "sendFriendRequest thất bại: " + e.getMessage());
-                    callback.onError(e.getMessage());
-                });
+                .addOnSuccessListener(v -> callback.onSuccess(null))
+                .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
-    /**
-     * Huỷ lời mời đã gửi
-     */
     public void cancelFriendRequest(String targetUid, DataCallback<Void> callback) {
         String myUid = getCurrentUserId();
-        if (myUid == null) {
-            callback.onError("Chưa đăng nhập!");
-            return;
-        }
+        if (myUid == null) { callback.onError(ERR_NOT_LOGGED_IN); return; }
 
         WriteBatch batch = db.batch();
         batch.delete(db.collection("users").document(targetUid).collection("friend_requests").document(myUid));
@@ -525,48 +439,24 @@ public class FirebaseManager {
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
-    /**
-     * Chấp nhận lời mời kết bạn
-     */
     public void acceptFriendRequest(String requesterUid, DataCallback<Void> callback) {
         String myUid = getCurrentUserId();
-        if (myUid == null) {
-            callback.onError("Chưa đăng nhập!");
-            return;
-        }
+        if (myUid == null) { callback.onError(ERR_NOT_LOGGED_IN); return; }
 
         WriteBatch batch = db.batch();
-
-        // Thêm bạn 2 chiều
         batch.set(db.collection("users").document(myUid).collection("friends").document(requesterUid), new HashMap<>());
         batch.set(db.collection("users").document(requesterUid).collection("friends").document(myUid), new HashMap<>());
-
-        // Xoá request
         batch.delete(db.collection("users").document(myUid).collection("friend_requests").document(requesterUid));
-
-        // Xoá sent_request của người kia
         batch.delete(db.collection("users").document(requesterUid).collection("sent_requests").document(myUid));
 
         batch.commit()
-                .addOnSuccessListener(v -> {
-                    Log.e(TAG, "acceptFriendRequest " + requesterUid + " thành công");
-                    callback.onSuccess(null);
-                })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "acceptFriendRequest thất bại: " + e.getMessage());
-                    callback.onError(e.getMessage());
-                });
+                .addOnSuccessListener(v -> callback.onSuccess(null))
+                .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
-    /**
-     * Từ chối lời mời kết bạn
-     */
     public void declineFriendRequest(String requesterUid, DataCallback<Void> callback) {
         String myUid = getCurrentUserId();
-        if (myUid == null) {
-            callback.onError("Chưa đăng nhập!");
-            return;
-        }
+        if (myUid == null) { callback.onError(ERR_NOT_LOGGED_IN); return; }
 
         WriteBatch batch = db.batch();
         batch.delete(db.collection("users").document(myUid).collection("friend_requests").document(requesterUid));
@@ -577,15 +467,9 @@ public class FirebaseManager {
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
-    /**
-     * Huỷ kết bạn
-     */
     public void unfriend(String targetUid, DataCallback<Void> callback) {
         String myUid = getCurrentUserId();
-        if (myUid == null) {
-            callback.onError("Chưa đăng nhập!");
-            return;
-        }
+        if (myUid == null) { callback.onError(ERR_NOT_LOGGED_IN); return; }
 
         WriteBatch batch = db.batch();
         batch.delete(db.collection("users").document(myUid).collection("friends").document(targetUid));
@@ -597,89 +481,115 @@ public class FirebaseManager {
     }
 
     // ============================================================
-    // LOGIC WORKSPACE & CÁC THAO TÁC CẦN CALL C# BACKEND (ĐÃ REFACTOR)
+    // WORKSPACE & API CALLS
     // ============================================================
 
     public void sendWorkspaceMessage(String workspaceId, String text, String imageUrl, DataCallback<Void> callback) {
         FirebaseUser user = auth.getCurrentUser();
-        if (user == null) { callback.onError("Chưa đăng nhập!"); return; }
+        if (user == null) { callback.onError(ERR_NOT_LOGGED_IN); return; }
 
         user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
             String token = "Bearer " + getTokenResult.getToken();
             ApiService apiService = ApiClient.getClient().create(ApiService.class);
-            ApiService.WorkspaceMessageSendRequest request = new ApiService.WorkspaceMessageSendRequest(workspaceId, text, imageUrl);
+            ApiDto.WorkspaceMessageSendRequest request = new ApiDto.WorkspaceMessageSendRequest(workspaceId, text, imageUrl);
 
             apiService.sendWorkspaceMessage(token, request).enqueue(new retrofit2.Callback<Object>() {
                 @Override
                 public void onResponse(retrofit2.Call<Object> call, retrofit2.Response<Object> response) {
                     if (response.isSuccessful()) callback.onSuccess(null);
-                    else callback.onError(extractApiError(response, "Lỗi server: " + response.code()));
+                    else callback.onError(extractApiError(response, "Server error: " + response.code()));
                 }
                 @Override
-                public void onFailure(retrofit2.Call<Object> call, Throwable t) { callback.onError("Lỗi mạng: " + t.getMessage()); }
+                public void onFailure(retrofit2.Call<Object> call, Throwable t) { callback.onError("Network error: " + t.getMessage()); }
             });
-        }).addOnFailureListener(e -> callback.onError("Lỗi Auth: " + e.getMessage()));
+        }).addOnFailureListener(e -> callback.onError("Auth error: " + e.getMessage()));
     }
 
     public void createSharedWorkspace(String workspaceName, String type, String iconName, List<String> memberIds, DataCallback<String> callback) {
         FirebaseUser user = auth.getCurrentUser();
-        if (user == null) {
-            callback.onError("Chưa đăng nhập!");
-            return;
-        }
+        if (user == null) { callback.onError(ERR_NOT_LOGGED_IN); return; }
 
         user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
             String token = "Bearer " + getTokenResult.getToken();
             ApiService apiService = ApiClient.getClient().create(ApiService.class);
-            ApiService.WorkspaceCreateRequest request = new ApiService.WorkspaceCreateRequest(workspaceName, type, iconName);
+            ApiDto.WorkspaceCreateRequest request = new ApiDto.WorkspaceCreateRequest(workspaceName, type, iconName);
 
-            apiService.createWorkspace(token, request).enqueue(new retrofit2.Callback<ApiService.WorkspaceCreateResponse>() {
+            apiService.createWorkspace(token, request).enqueue(new retrofit2.Callback<ApiDto.WorkspaceCreateResponse>() {
                 @Override
-                public void onResponse(retrofit2.Call<ApiService.WorkspaceCreateResponse> call, retrofit2.Response<ApiService.WorkspaceCreateResponse> response) {
-                    if (response.isSuccessful() && response.body() != null) {
-                        callback.onSuccess(response.body().workspaceId);
-                    } else {
-                        callback.onError("Server rejected: " + response.code());
-                    }
+                public void onResponse(retrofit2.Call<ApiDto.WorkspaceCreateResponse> call, retrofit2.Response<ApiDto.WorkspaceCreateResponse> response) {
+                    if (response.isSuccessful() && response.body() != null) callback.onSuccess(response.body().workspaceId);
+                    else callback.onError("Server rejected: " + response.code());
                 }
-
                 @Override
-                public void onFailure(retrofit2.Call<ApiService.WorkspaceCreateResponse> call, Throwable t) {
-                    callback.onError("Lỗi mạng: " + t.getMessage());
-                }
+                public void onFailure(retrofit2.Call<ApiDto.WorkspaceCreateResponse> call, Throwable t) { callback.onError("Network error: " + t.getMessage()); }
             });
-        }).addOnFailureListener(e -> callback.onError("Lỗi Auth: " + e.getMessage()));
+        }).addOnFailureListener(e -> callback.onError("Auth error: " + e.getMessage()));
     }
 
     public void leaveWorkspace(String workspaceId, DataCallback<Void> callback) {
-        ApiService.WorkspaceActionRequest req = new ApiService.WorkspaceActionRequest();
+        ApiDto.WorkspaceActionRequest req = new ApiDto.WorkspaceActionRequest();
         req.WorkspaceId = workspaceId;
         callGenericWorkspaceApi(req, "leave", callback);
     }
 
     public void transferOwnership(String workspaceId, String newOwnerId, DataCallback<Void> callback) {
-        ApiService.WorkspaceActionRequest req = new ApiService.WorkspaceActionRequest();
+        ApiDto.WorkspaceActionRequest req = new ApiDto.WorkspaceActionRequest();
         req.WorkspaceId = workspaceId;
         req.NewOwnerId = newOwnerId;
         callGenericWorkspaceApi(req, "transfer", callback);
     }
 
     public void kickMember(String workspaceId, String targetUid, DataCallback<Void> callback) {
-        ApiService.WorkspaceActionRequest req = new ApiService.WorkspaceActionRequest();
+        ApiDto.WorkspaceActionRequest req = new ApiDto.WorkspaceActionRequest();
         req.WorkspaceId = workspaceId;
         req.TargetUid = targetUid;
         callGenericWorkspaceApi(req, "kick", callback);
     }
 
     public void deleteWorkspaceTransaction(String workspaceId, String transactionId, DataCallback<Void> callback) {
-        ApiService.WorkspaceActionRequest req = new ApiService.WorkspaceActionRequest();
+        ApiDto.WorkspaceActionRequest req = new ApiDto.WorkspaceActionRequest();
         req.WorkspaceId = workspaceId;
         req.TransactionId = transactionId;
         callGenericWorkspaceApi(req, "deleteTransaction", callback);
     }
 
+    public void addCategory(String workspaceId, String name, String iconName, String colorCode, int type, DataCallback<Void> callback) {
+        FirebaseUser user = auth.getCurrentUser();
+        if (user == null) {
+            callback.onError(ERR_NOT_LOGGED_IN);
+            return;
+        }
+
+        user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
+            String token = "Bearer " + getTokenResult.getToken();
+            ApiService apiService = ApiClient.getClient().create(ApiService.class);
+
+            ApiDto.AddCategoryRequest request = new ApiDto.AddCategoryRequest();
+            request.WorkspaceId = workspaceId;
+            request.Name = name;
+            request.IconName = iconName;
+            request.ColorCode = colorCode;
+            request.Type = type;
+
+            apiService.addCategory(token, request).enqueue(new retrofit2.Callback<Object>() {
+                @Override
+                public void onResponse(retrofit2.Call<Object> call, retrofit2.Response<Object> response) {
+                    if (response.isSuccessful()) {
+                        callback.onSuccess(null);
+                    } else {
+                        callback.onError(extractApiError(response, "Server rejected (Code: " + response.code() + ")"));
+                    }
+                }
+
+                @Override
+                public void onFailure(retrofit2.Call<Object> call, Throwable t) {
+                    callback.onError("Network error: " + t.getMessage());
+                }
+            });
+        }).addOnFailureListener(e -> callback.onError("Auth error: " + e.getMessage()));
+    }
     public void deleteCategory(String workspaceId, String categoryId, DataCallback<Void> callback) {
-        ApiService.WorkspaceActionRequest req = new ApiService.WorkspaceActionRequest();
+        ApiDto.WorkspaceActionRequest req = new ApiDto.WorkspaceActionRequest();
         req.WorkspaceId = workspaceId;
         req.CategoryId = categoryId;
         callGenericWorkspaceApi(req, "deleteCategory", callback);
@@ -687,35 +597,34 @@ public class FirebaseManager {
 
     public void editCategory(String workspaceId, String categoryId, String name, String iconName, String colorCode, int type, DataCallback<Void> callback) {
         FirebaseUser user = auth.getCurrentUser();
-        if (user == null) { callback.onError("Chưa đăng nhập!"); return; }
+        if (user == null) { callback.onError(ERR_NOT_LOGGED_IN); return; }
 
         user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
             String token = "Bearer " + getTokenResult.getToken();
             ApiService apiService = ApiClient.getClient().create(ApiService.class);
-            ApiService.EditCategoryRequest request = new ApiService.EditCategoryRequest(workspaceId, categoryId, name, iconName, colorCode, type);
+            ApiDto.EditCategoryRequest request = new ApiDto.EditCategoryRequest(workspaceId, categoryId, name, iconName, colorCode, type);
 
             apiService.editCategory(token, request).enqueue(new retrofit2.Callback<Object>() {
                 @Override
                 public void onResponse(retrofit2.Call<Object> call, retrofit2.Response<Object> response) {
                     if (response.isSuccessful()) callback.onSuccess(null);
-                    else callback.onError(extractApiError(response, "Server từ chối (Mã: " + response.code() + ")"));
+                    else callback.onError(extractApiError(response, "Server rejected (Code: " + response.code() + ")"));
                 }
                 @Override
-                public void onFailure(retrofit2.Call<Object> call, Throwable t) { callback.onError("Lỗi mạng: " + t.getMessage()); }
+                public void onFailure(retrofit2.Call<Object> call, Throwable t) { callback.onError("Network error: " + t.getMessage()); }
             });
-        }).addOnFailureListener(e -> callback.onError("Lỗi Auth: " + e.getMessage()));
+        }).addOnFailureListener(e -> callback.onError("Auth error: " + e.getMessage()));
     }
 
     public void restoreCategory(String workspaceId, String categoryId, DataCallback<Void> callback) {
         FirebaseUser user = auth.getCurrentUser();
-        if (user == null) { callback.onError("Chưa đăng nhập!"); return; }
+        if (user == null) { callback.onError(ERR_NOT_LOGGED_IN); return; }
 
         user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
             String token = "Bearer " + getTokenResult.getToken();
             ApiService apiService = ApiClient.getClient().create(ApiService.class);
 
-            // Xài lại WorkspaceActionRequest vì nó có sẵn WorkspaceId và CategoryId
-            ApiService.WorkspaceActionRequest req = new ApiService.WorkspaceActionRequest();
+            ApiDto.WorkspaceActionRequest req = new ApiDto.WorkspaceActionRequest();
             req.WorkspaceId = workspaceId;
             req.CategoryId = categoryId;
 
@@ -723,28 +632,25 @@ public class FirebaseManager {
                 @Override
                 public void onResponse(retrofit2.Call<Object> call, retrofit2.Response<Object> response) {
                     if (response.isSuccessful()) callback.onSuccess(null);
-                    else callback.onError(extractApiError(response, "Server từ chối (Mã: " + response.code() + ")"));
+                    else callback.onError(extractApiError(response, "Server rejected (Code: " + response.code() + ")"));
                 }
                 @Override
-                public void onFailure(retrofit2.Call<Object> call, Throwable t) { callback.onError("Lỗi mạng: " + t.getMessage()); }
+                public void onFailure(retrofit2.Call<Object> call, Throwable t) { callback.onError("Network error: " + t.getMessage()); }
             });
-        }).addOnFailureListener(e -> callback.onError("Lỗi Auth: " + e.getMessage()));
+        }).addOnFailureListener(e -> callback.onError("Auth error: " + e.getMessage()));
     }
 
     public void recallMessage(String workspaceId, String messageId, DataCallback<Void> callback) {
-        ApiService.WorkspaceActionRequest req = new ApiService.WorkspaceActionRequest();
+        ApiDto.WorkspaceActionRequest req = new ApiDto.WorkspaceActionRequest();
         req.WorkspaceId = workspaceId;
         req.MessageId = messageId;
         callGenericWorkspaceApi(req, "recallMessage", callback);
     }
 
-    // Hàm dùng chung để tối ưu code cho 6 cục API trên (Khỏi lặp lại code Auth)
-    private void callGenericWorkspaceApi(ApiService.WorkspaceActionRequest requestData, String action, DataCallback<Void> callback) {
+    // Proxy cho các API chung của Workspace
+    private void callGenericWorkspaceApi(ApiDto.WorkspaceActionRequest requestData, String action, DataCallback<Void> callback) {
         FirebaseUser user = auth.getCurrentUser();
-        if (user == null) {
-            callback.onError("Chưa đăng nhập!");
-            return;
-        }
+        if (user == null) { callback.onError(ERR_NOT_LOGGED_IN); return; }
 
         user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
             String token = "Bearer " + getTokenResult.getToken();
@@ -752,135 +658,95 @@ public class FirebaseManager {
             retrofit2.Call<Object> call;
 
             switch (action) {
-                case "leave":
-                    call = apiService.leaveWorkspace(token, requestData);
-                    break;
-                case "transfer":
-                    call = apiService.transferOwnership(token, requestData);
-                    break;
-                case "kick":
-                    call = apiService.kickMember(token, requestData);
-                    break;
-                case "deleteTransaction":
-                    call = apiService.deleteWorkspaceTransaction(token, requestData);
-                    break;
-                case "deleteCategory":
-                    call = apiService.deleteCategory(token, requestData);
-                    break;
-                case "recallMessage":
-                    call = apiService.recallMessage(token, requestData);
-                    break;
-                default:
-                    callback.onError("Action không hợp lệ");
-                    return;
+                case "leave": call = apiService.leaveWorkspace(token, requestData); break;
+                case "transfer": call = apiService.transferOwnership(token, requestData); break;
+                case "kick": call = apiService.kickMember(token, requestData); break;
+                case "deleteTransaction": call = apiService.deleteWorkspaceTransaction(token, requestData); break;
+                case "deleteCategory": call = apiService.deleteCategory(token, requestData); break;
+                case "recallMessage": call = apiService.recallMessage(token, requestData); break;
+                default: callback.onError("Invalid action"); return;
             }
 
             call.enqueue(new retrofit2.Callback<Object>() {
                 @Override
                 public void onResponse(retrofit2.Call<Object> call, retrofit2.Response<Object> response) {
                     if (response.isSuccessful()) callback.onSuccess(null);
-                    else callback.onError("Bị từ chối (Mã: " + response.code() + ")");
+                    else callback.onError("Denied (Code: " + response.code() + ")");
                 }
-
                 @Override
-                public void onFailure(retrofit2.Call<Object> call, Throwable t) {
-                    callback.onError("Lỗi mạng: " + t.getMessage());
-                }
+                public void onFailure(retrofit2.Call<Object> call, Throwable t) { callback.onError("Network error: " + t.getMessage()); }
             });
-        }).addOnFailureListener(e -> callback.onError("Lỗi Auth: " + e.getMessage()));
+        }).addOnFailureListener(e -> callback.onError("Auth error: " + e.getMessage()));
     }
 
     // ============================================================
-    // GỌI API C# CHO HỆ THỐNG KẾT BẠN (Tích hợp 3 in 1)
+    // SOCIAL APIs
     // ============================================================
     public void processFriendAction(String targetUid, String actionType, DataCallback<Void> callback) {
         FirebaseUser user = auth.getCurrentUser();
-        if (user == null) {
-            callback.onError("Chưa đăng nhập!");
-            return;
-        }
+        if (user == null) { callback.onError(ERR_NOT_LOGGED_IN); return; }
 
         user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
             String token = "Bearer " + getTokenResult.getToken();
             ApiService apiService = ApiClient.getClient().create(ApiService.class);
-            ApiService.FriendActionRequest request = new ApiService.FriendActionRequest(targetUid);
+            ApiDto.FriendActionRequest request = new ApiDto.FriendActionRequest(targetUid);
 
             apiService.processFriendAction(actionType, token, request).enqueue(new retrofit2.Callback<Object>() {
                 @Override
                 public void onResponse(retrofit2.Call<Object> call, retrofit2.Response<Object> response) {
-                    if (response.isSuccessful()) {
-                        callback.onSuccess(null);
-                        return;
-                    }
-
-                    try {
-                        String errorBody = response.errorBody() != null ? response.errorBody().string() : "";
-                        if (!errorBody.isEmpty()) {
-                            org.json.JSONObject jsonObject = new org.json.JSONObject(errorBody);
-                            String message = jsonObject.optString("message");
-                            if (message.isEmpty()) {
-                                message = jsonObject.optString("detail");
-                            }
-                            if (message.isEmpty()) {
-                                message = jsonObject.optString("title");
-                            }
-                            if (!message.isEmpty()) {
-                                callback.onError(message);
-                                return;
-                            }
-                        }
-                    } catch (Exception ignored) {
-                    }
-
-                    callback.onError("Lỗi server: " + response.code());
+                    if (response.isSuccessful()) { callback.onSuccess(null); return; }
+                    callback.onError(extractApiError(response, "Server error: " + response.code()));
                 }
-
                 @Override
-                public void onFailure(retrofit2.Call<Object> call, Throwable t) {
-                    callback.onError("Lỗi mạng: " + t.getMessage());
-                }
+                public void onFailure(retrofit2.Call<Object> call, Throwable t) { callback.onError("Network error: " + t.getMessage()); }
             });
-        }).addOnFailureListener(e -> callback.onError("Lỗi Auth: " + e.getMessage()));
+        }).addOnFailureListener(e -> callback.onError("Auth error: " + e.getMessage()));
     }
 
     public void sendDirectFriendMessage(String receiverId, String text, String imageUrl, DataCallback<Void> callback) {
         FirebaseUser user = auth.getCurrentUser();
-        if (user == null) {
-            callback.onError("Chưa đăng nhập!");
-            return;
-        }
+        if (user == null) { callback.onError(ERR_NOT_LOGGED_IN); return; }
 
         user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
             String token = "Bearer " + getTokenResult.getToken();
             ApiService apiService = ApiClient.getClient().create(ApiService.class);
-            ApiService.DirectFriendMessageRequest request =
-                    new ApiService.DirectFriendMessageRequest(receiverId, text, imageUrl);
+            ApiDto.DirectFriendMessageRequest request = new ApiDto.DirectFriendMessageRequest(receiverId, text, imageUrl);
 
             apiService.sendDirectFriendMessage(token, request).enqueue(new retrofit2.Callback<Object>() {
                 @Override
                 public void onResponse(retrofit2.Call<Object> call, retrofit2.Response<Object> response) {
-                    if (response.isSuccessful()) {
-                        callback.onSuccess(null);
-                        return;
-                    }
-
-                    callback.onError(extractApiError(response, "Lỗi server: " + response.code()));
+                    if (response.isSuccessful()) callback.onSuccess(null);
+                    else callback.onError(extractApiError(response, "Server error: " + response.code()));
                 }
-
                 @Override
-                public void onFailure(retrofit2.Call<Object> call, Throwable t) {
-                    callback.onError("Lỗi mạng: " + t.getMessage());
-                }
+                public void onFailure(retrofit2.Call<Object> call, Throwable t) { callback.onError("Network error: " + t.getMessage()); }
             });
-        }).addOnFailureListener(e -> callback.onError("Lỗi Auth: " + e.getMessage()));
+        }).addOnFailureListener(e -> callback.onError("Auth error: " + e.getMessage()));
+    }
+
+    public void recallDirectFriendMessage(String friendUid, String messageId, DataCallback<Void> callback) {
+        FirebaseUser user = auth.getCurrentUser();
+        if (user == null) { callback.onError(ERR_NOT_LOGGED_IN); return; }
+
+        user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
+            String token = "Bearer " + getTokenResult.getToken();
+            ApiService apiService = ApiClient.getClient().create(ApiService.class);
+
+            apiService.recallFriendMessage(token, friendUid, messageId).enqueue(new retrofit2.Callback<Object>() {
+                @Override
+                public void onResponse(retrofit2.Call<Object> call, retrofit2.Response<Object> response) {
+                    if (response.isSuccessful()) callback.onSuccess(null);
+                    else callback.onError(extractApiError(response, "Server error: " + response.code()));
+                }
+                @Override
+                public void onFailure(retrofit2.Call<Object> call, Throwable t) { callback.onError("Network error: " + t.getMessage()); }
+            });
+        }).addOnFailureListener(e -> callback.onError("Auth error: " + e.getMessage()));
     }
 
     public void getFriendSuggestions(DataCallback<List<User>> callback) {
         FirebaseUser user = auth.getCurrentUser();
-        if (user == null) {
-            callback.onError("Chưa đăng nhập!");
-            return;
-        }
+        if (user == null) { callback.onError(ERR_NOT_LOGGED_IN); return; }
 
         user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
             String token = "Bearer " + getTokenResult.getToken();
@@ -888,27 +754,18 @@ public class FirebaseManager {
             apiService.getFriendSuggestions(token).enqueue(new retrofit2.Callback<List<User>>() {
                 @Override
                 public void onResponse(retrofit2.Call<List<User>> call, retrofit2.Response<List<User>> response) {
-                    if (response.isSuccessful()) {
-                        callback.onSuccess(response.body() != null ? response.body() : new ArrayList<>());
-                        return;
-                    }
-                    callback.onError(extractApiError(response, "Lỗi server: " + response.code()));
+                    if (response.isSuccessful()) callback.onSuccess(response.body() != null ? response.body() : new ArrayList<>());
+                    else callback.onError(extractApiError(response, "Server error: " + response.code()));
                 }
-
                 @Override
-                public void onFailure(retrofit2.Call<List<User>> call, Throwable t) {
-                    callback.onError("Lỗi mạng: " + t.getMessage());
-                }
+                public void onFailure(retrofit2.Call<List<User>> call, Throwable t) { callback.onError("Network error: " + t.getMessage()); }
             });
-        }).addOnFailureListener(e -> callback.onError("Lỗi Auth: " + e.getMessage()));
+        }).addOnFailureListener(e -> callback.onError("Auth error: " + e.getMessage()));
     }
 
     public void getFriendMessageChats(DataCallback<List<User>> callback) {
         FirebaseUser user = auth.getCurrentUser();
-        if (user == null) {
-            callback.onError("Chưa đăng nhập!");
-            return;
-        }
+        if (user == null) { callback.onError(ERR_NOT_LOGGED_IN); return; }
 
         user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
             String token = "Bearer " + getTokenResult.getToken();
@@ -917,23 +774,17 @@ public class FirebaseManager {
                 @Override
                 public void onResponse(retrofit2.Call<List<User>> call, retrofit2.Response<List<User>> response) {
                     if (response.isSuccessful()) callback.onSuccess(response.body() != null ? response.body() : new ArrayList<>());
-                    else callback.onError(extractApiError(response, "Lỗi server: " + response.code()));
+                    else callback.onError(extractApiError(response, "Server error: " + response.code()));
                 }
-
                 @Override
-                public void onFailure(retrofit2.Call<List<User>> call, Throwable t) {
-                    callback.onError("Lỗi mạng: " + t.getMessage());
-                }
+                public void onFailure(retrofit2.Call<List<User>> call, Throwable t) { callback.onError("Network error: " + t.getMessage()); }
             });
-        }).addOnFailureListener(e -> callback.onError("Lỗi Auth: " + e.getMessage()));
+        }).addOnFailureListener(e -> callback.onError("Auth error: " + e.getMessage()));
     }
 
     public void getDirectFriendConversations(DataCallback<List<DirectConversation>> callback) {
         FirebaseUser user = auth.getCurrentUser();
-        if (user == null) {
-            callback.onError("ChÆ°a Ä‘Äƒng nháº­p!");
-            return;
-        }
+        if (user == null) { callback.onError(ERR_NOT_LOGGED_IN); return; }
 
         user.getIdToken(true).addOnSuccessListener(getTokenResult -> {
             String token = "Bearer " + getTokenResult.getToken();
@@ -942,50 +793,35 @@ public class FirebaseManager {
                 @Override
                 public void onResponse(retrofit2.Call<List<DirectConversation>> call, retrofit2.Response<List<DirectConversation>> response) {
                     if (response.isSuccessful()) callback.onSuccess(response.body() != null ? response.body() : new ArrayList<>());
-                    else callback.onError(extractApiError(response, "Lỗi server: " + response.code()));
+                    else callback.onError(extractApiError(response, "Server error: " + response.code()));
                 }
-
                 @Override
-                public void onFailure(retrofit2.Call<List<DirectConversation>> call, Throwable t) {
-                    callback.onError("Lỗi mạng: " + t.getMessage());
-                }
+                public void onFailure(retrofit2.Call<List<DirectConversation>> call, Throwable t) { callback.onError("Network error: " + t.getMessage()); }
             });
-        }).addOnFailureListener(e -> callback.onError("Lỗi Auth: " + e.getMessage()));
+        }).addOnFailureListener(e -> callback.onError("Auth error: " + e.getMessage()));
     }
 
-    // Hàm tạo ID phòng chat y hệt bên C# (Xếp theo bảng chữ cái)
+    // Thuật toán tạo ID phòng chat 1-1 không bị trùng lặp
     private String generateChatId(String uid1, String uid2) {
-        if (uid1.compareTo(uid2) < 0) {
-            return uid1 + "_" + uid2;
-        } else {
-            return uid2 + "_" + uid1;
-        }
+        return (uid1.compareTo(uid2) < 0) ? (uid1 + "_" + uid2) : (uid2 + "_" + uid1);
     }
 
-    // Lắng nghe tin nhắn theo thời gian thực (Real-time)
+    // Lắng nghe tin nhắn theo thời gian thực (Real-time listener)
     public com.google.firebase.firestore.ListenerRegistration listenToDirectMessages(String friendUid, DataCallback<List<com.example.cashify.data.model.ChatMessage>> callback) {
         String currentUid = getCurrentUserId();
-        if (currentUid == null) {
-            callback.onError("Chưa đăng nhập!");
-            return null;
-        }
+        if (currentUid == null) { callback.onError(ERR_NOT_LOGGED_IN); return null; }
 
         String chatId = generateChatId(currentUid, friendUid);
 
-        // Cắm vòi hút vào Firebase, hễ có tin mới là hàm này tự chạy lại
         return db.collection("direct_chats").document(chatId).collection("messages")
                 .orderBy("timestamp")
                 .addSnapshotListener((snapshots, e) -> {
-                    if (e != null) {
-                        callback.onError(e.getMessage());
-                        return;
-                    }
-
+                    if (e != null) { callback.onError(e.getMessage()); return; }
                     List<com.example.cashify.data.model.ChatMessage> list = new ArrayList<>();
                     if (snapshots != null) {
                         for (com.google.firebase.firestore.QueryDocumentSnapshot doc : snapshots) {
                             com.example.cashify.data.model.ChatMessage msg = doc.toObject(com.example.cashify.data.model.ChatMessage.class);
-                            msg.setMessageId(doc.getId()); // Gắn ID phòng hờ sau này làm tính năng thu hồi
+                            msg.setMessageId(doc.getId());
                             list.add(msg);
                         }
                     }
@@ -993,6 +829,7 @@ public class FirebaseManager {
                 });
     }
 
+    // Helper method bóc tách mã lỗi từ API trả về
     private String extractApiError(retrofit2.Response<?> response, String fallback) {
         try {
             String errorBody = response.errorBody() != null ? response.errorBody().string() : "";
@@ -1003,14 +840,13 @@ public class FirebaseManager {
                 if (message.isEmpty()) message = jsonObject.optString("title");
                 if (!message.isEmpty()) return message;
             }
-        } catch (Exception ignored) {
-        }
+        } catch (Exception ignored) {}
         return fallback;
     }
 
     public ListenerRegistration listenToDirectConversations(DataCallback<List<DirectConversation>> callback) {
         String uid = getCurrentUserId();
-        if (uid == null) { callback.onError("Chưa đăng nhập"); return null; }
+        if (uid == null) { callback.onError(ERR_NOT_LOGGED_IN); return null; }
 
         return db.collection("users").document(uid).collection("friends")
                 .addSnapshotListener((friendSnap, e) -> {
@@ -1019,27 +855,87 @@ public class FirebaseManager {
                         callback.onSuccess(new ArrayList<>());
                         return;
                     }
-                    // Dùng lại logic của getDirectFriendConversations nhưng wrap trong listener
                     getDirectFriendConversations(callback);
                 });
     }
 
     // ============================================================
-    // UNIFIED NOTIFICATIONS (THÔNG BÁO TỔNG HỢP)
+    // UNIFIED NOTIFICATIONS
     // ============================================================
     public void listenToUnreadNotifications(DataCallback<Integer> callback) {
         String uid = getCurrentUserId();
         if (uid == null) return;
 
         db.collection("users").document(uid).collection("notifications")
-                .whereEqualTo("isRead", false) // Chỉ đếm những cái chưa đọc
+                .whereEqualTo("isRead", false)
                 .addSnapshotListener((snap, e) -> {
-                    if (e != null) {
-                        callback.onError(e.getMessage());
-                        return;
-                    }
-                    int count = (snap != null) ? snap.size() : 0;
-                    callback.onSuccess(count);
+                    if (e != null) { callback.onError(e.getMessage()); return; }
+                    callback.onSuccess(snap != null ? snap.size() : 0);
                 });
+    }
+
+    // ============================================================
+    // GAMIFICATION STATS (NIGHT OWL, BIG SPENDER)
+    // ============================================================
+    public void syncTransactionWithStats(boolean isInsert, boolean isDelete, com.example.cashify.data.model.Transaction t, DataCallback<Void> callback) {
+        String uid = getCurrentUserId();
+        if (uid == null) {
+            if (callback != null) callback.onError(ERR_NOT_LOGGED_IN);
+            return;
+        }
+
+        WriteBatch batch = db.batch();
+        String workspaceId = (t.workspaceId != null) ? t.workspaceId : "PERSONAL";
+
+        com.google.firebase.firestore.DocumentReference transRef = (workspaceId.equals("PERSONAL"))
+                ? db.collection("users").document(uid).collection("transactions").document(String.valueOf(t.id))
+                : db.collection("workspaces").document(workspaceId).collection("transactions").document(String.valueOf(t.id));
+
+        if (isDelete) {
+            batch.delete(transRef);
+        } else {
+            Map<String, Object> data = new HashMap<>();
+            data.put("amount", t.amount);
+            data.put("categoryId", t.categoryId);
+            data.put("note", t.note);
+            data.put("timestamp", t.timestamp);
+            data.put("paymentMethod", t.paymentMethod);
+            data.put("type", t.type);
+            data.put("workspaceId", workspaceId);
+            data.put("userId", uid);
+            batch.set(transRef, data);
+        }
+
+        if (isInsert || isDelete) {
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy_MM", java.util.Locale.ENGLISH);
+            String monthKey = sdf.format(new java.util.Date(t.timestamp));
+
+            Map<String, Object> statsUpdate = new HashMap<>();
+            int countChange = isDelete ? -1 : 1;
+            long amountChange = isDelete ? -t.amount : t.amount;
+
+            statsUpdate.put("totalTransactions", FieldValue.increment(countChange));
+            if (t.type == 1) statsUpdate.put("income_" + monthKey, FieldValue.increment(amountChange));
+            else if (t.type == 0) statsUpdate.put("spend_" + monthKey, FieldValue.increment(amountChange));
+
+            // Set achievements logic when inserting
+            if (isInsert) {
+                java.util.Calendar cal = java.util.Calendar.getInstance();
+                cal.setTimeInMillis(t.timestamp);
+                int hour = cal.get(java.util.Calendar.HOUR_OF_DAY);
+                if (hour >= 0 && hour < 4) statsUpdate.put("nightOwlUnlocked", true);
+                if (t.type == 0 && t.amount >= 10000000) statsUpdate.put("bigSpenderUnlocked", true);
+            }
+
+            com.google.firebase.firestore.DocumentReference statsRef = (workspaceId.equals("PERSONAL"))
+                    ? db.collection("users").document(uid).collection("user_stats").document("summary")
+                    : db.collection("workspaces").document(workspaceId).collection("workspace_stats").document("summary");
+
+            batch.set(statsRef, statsUpdate, com.google.firebase.firestore.SetOptions.merge());
+        }
+
+        batch.commit()
+                .addOnSuccessListener(v -> { if (callback != null) callback.onSuccess(null); })
+                .addOnFailureListener(e -> { if (callback != null) callback.onError(e.getMessage()); });
     }
 }

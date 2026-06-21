@@ -12,10 +12,12 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
 import com.example.cashify.data.model.Budget;
 import com.example.cashify.data.model.Category;
 import com.example.cashify.data.model.Transaction;
+import com.example.cashify.data.model.Workspace;
 
-@Database(entities = {Category.class, Transaction.class, Budget.class}, version = 7)
+@Database(entities = {Category.class, Transaction.class, Budget.class, Workspace.class}, version = 7, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
-    private static AppDatabase instance;
+
+    private static volatile AppDatabase instance;
 
     // Các "Trạm trung chuyển" dữ liệu (DAO)
     public abstract CategoryDao categoryDao();
@@ -23,6 +25,7 @@ public abstract class AppDatabase extends RoomDatabase {
     public abstract TransactionDao transactionDao();
 
     public abstract BudgetDao budgetDao();
+    public abstract WorkspaceDao workspaceDao();
 
     static final Migration MIGRATION_3_4 = new Migration(3, 4) {
         @Override
@@ -32,12 +35,18 @@ public abstract class AppDatabase extends RoomDatabase {
     };
 
     // Hàm lấy Database (Singleton pattern - Đảm bảo cả app chỉ có 1 Database duy nhất)
-    public static synchronized AppDatabase getInstance(Context context) {
+    public static AppDatabase getInstance(Context context) {
         if (instance == null) {
-            instance = Room.databaseBuilder(context.getApplicationContext(),
-                            AppDatabase.class, "money_manager_db")
-                    .fallbackToDestructiveMigration()
-                    .build();
+            // Giúp app chạy nhanh hơn vì chỉ khóa luồng ở lần khởi tạo đầu tiên.
+            synchronized (AppDatabase.class) {
+                if (instance == null) {
+                    instance = Room.databaseBuilder(context.getApplicationContext(),
+                                    AppDatabase.class, "money_manager_db")
+                            //warning: fallbackToDestructiveMigration sẽ xóa trắng data local nếu  tăng version mà quên viết Migration.
+                            .fallbackToDestructiveMigration()
+                            .build();
+                }
+            }
         }
         return instance;
     }

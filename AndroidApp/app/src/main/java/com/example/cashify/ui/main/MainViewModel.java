@@ -1,44 +1,43 @@
 package com.example.cashify.ui.main;
 
-import android.content.Context;
+import android.app.Application;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
+import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
-import androidx.lifecycle.ViewModel;
 
 import com.example.cashify.data.local.AppDatabase;
+import com.example.cashify.data.local.DatabaseSeeder;
+import com.example.cashify.data.local.FakeDataSeeder;
 import com.example.cashify.data.model.Category;
 import com.example.cashify.data.model.Budget;
 import com.example.cashify.data.model.Transaction;
+import com.example.cashify.data.model.User;
 import com.example.cashify.data.model.Workspace;
+import com.example.cashify.data.model.WorkspaceInvitation;
 import com.example.cashify.data.remote.FirebaseManager;
 import com.example.cashify.data.repository.IWorkspaceRepo;
 import com.example.cashify.data.repository.RemoteWorkspaceRepoImpl;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 
-public class MainViewModel extends ViewModel {
-    //Cần một biến MutableLiveData<Workspace> currentWorkspace.
-    //
-    //Khi user bấm vào Side Bar chọn "Quỹ Nhóm A", MainViewModel sẽ cập nhật cái ID này.
-    //
-    //Cực kỳ quan trọng: Tất cả các Fragment khác (Home, History) sẽ quan sát cái ID này để tải dữ liệu tương ứng
-    //Cơ chế "Loa phóng thanh": Khi MainActivity và các Fragment (Home, History, Budget) cùng sử dụng chung một instance của MainViewModel (dùng requireActivity() khi khởi tạo ViewModel trong Fragment), chúng sẽ luôn nhìn thấy cùng một currentWorkspace.
-    //Trải nghiệm người dùng: Nhắc bạn dev UI là khi currentWorkspace thay đổi, nên có một hiệu ứng chuyển cảnh nhẹ hoặc ProgressBar để user thấy app đang tải lại dữ liệu của quỹ mới.
-    //Lưu trạng thái: Nếu muốn xịn hơn, hãy lưu ID của Workspace cuối cùng user chọn vào SharedPreferences. Lần sau mở app, nó sẽ tự động vào đúng quỹ đó luôn mà không cần chờ load lại từ đầu.
-    private IWorkspaceRepo workspaceRepo;
+public class MainViewModel extends AndroidViewModel {
+
+    private final IWorkspaceRepo workspaceRepo;
     private final FirebaseManager firebaseManager;
 
-    // Danh sách tất cả Workspace để hiển thị lên Side Bar
+    // --- State & Data LiveData ---
     private final MutableLiveData<List<Workspace>> _workspaces = new MutableLiveData<>();
     public LiveData<List<Workspace>> workspaces = _workspaces;
 
-    // Workspace đang được chọn (Linh hồn của việc chuyển đổi dữ liệu)
     private final MutableLiveData<Workspace> _currentWorkspace = new MutableLiveData<>();
     public LiveData<Workspace> currentWorkspace = _currentWorkspace;
 
@@ -47,35 +46,92 @@ public class MainViewModel extends ViewModel {
 
     public final MutableLiveData<Boolean> syncCompleted = new MutableLiveData<>(false);
 
-    public MainViewModel() {
+    private final MutableLiveData<User> _userProfile = new MutableLiveData<>();
+    public LiveData<User> getUserProfile() { return _userProfile; }
+
+    private final MutableLiveData<Integer> _invitationCount = new MutableLiveData<>();
+    public LiveData<Integer> getInvitationCount() { return _invitationCount; }
+
+    private final MutableLiveData<Integer> _unreadNotificationCount = new MutableLiveData<>(0);
+    public LiveData<Integer> getUnreadNotificationCount() { return _unreadNotificationCount; }
+
+    // --- Listeners for cleanup ---
+    private ListenerRegistration userProfileListener;
+    private ListenerRegistration transListener;
+    private ListenerRegistration catListener;
+    private ListenerRegistration budgetListener;
+
+    public MainViewModel(@NonNull Application application) {
+        super(application);
         this.firebaseManager = FirebaseManager.getInstance();
         this.workspaceRepo = new RemoteWorkspaceRepoImpl();
+
+        // Tự động load số Notification ngay khi khởi tạo
+        loadUnreadNotifications();
+        //load user profile func
+        loadUserProfile();
+        loadInvitationsCount();
+
+        String currentUid = firebaseManager.getCurrentUserId();
+        if (currentUid != null) {
+            loadWorkspaces(currentUid);
+        }
+    }
+
+    // ============================================================
+    // LOAD NOTIFICATION CHO TOOLBAR
+    // ============================================================
+    public void loadUnreadNotifications() {
+        firebaseManager.listenToUnreadNotifications(new FirebaseManager.DataCallback<Integer>() {
+            @Override
+            public void onSuccess(Integer count) {
+                _unreadNotificationCount.postValue(count);
+            }
+
+            @Override
+            public void onError(String message) {
+                Log.e("MainViewModel", "Failed to load notifications: " + message);
+            }
+        });
+    }
+
+    public void loadUserProfile() {
+        String uid = FirebaseManager.getInstance().getCurrentUserId();
+        if (uid == null) return;
+
+        if (userProfileListener != null) userProfileListener.remove();
+
+        userProfileListener = FirebaseFirestore.getInstance().collection("users").document(uid)
+                .addSnapshotListener((doc, e) -> {
+                    if (e == null && doc != null && doc.exists()) {
+                        _userProfile.setValue(doc.toObject(User.class));
+                    }
+                });
+    }
+
+    public void loadInvitationsCount() {
+        FirebaseManager.getInstance().listenToWorkspaceInvitations(new FirebaseManager.DataCallback<List<WorkspaceInvitation>>() {
+            @Override
+            public void onSuccess(List<WorkspaceInvitation> data) {
+                _invitationCount.setValue((data != null) ? data.size() : 0);
+            }
+            @Override
+            public void onError(String message) {
+                _invitationCount.setValue(0);
+            }
+        });
     }
 
     public LiveData<List<Workspace>> getWorkspaces() {
         return workspaces;
     }
 
-    // TODO 1: Inject IWorkspaceRepo (Remote hoặc Local tùy cấu hình) vào Constructor
-    public MainViewModel(IWorkspaceRepo repo) {
-        this.workspaceRepo = repo;
-        this.firebaseManager = FirebaseManager.getInstance();
-    }
-
-    // ============================================================
-    // TODO 2: TẢI DANH SÁCH WORKSPACE
-    // - Khi MainActivity khởi tạo, gọi hàm này để lấy tất cả Quỹ của User.
-    // - Sau khi lấy được List:
-    //      + Cập nhật vào _workspaces để Side Bar hiển thị.
-    //      + Mặc định chọn Quỹ đầu tiên (thường là PERSONAL) gán vào _currentWorkspace.
-    // ============================================================
     public void loadWorkspaces(String userId) {
         _isLoading.setValue(true);
         workspaceRepo.getWorkspaces(userId, new IWorkspaceRepo.OnWorkspacesLoadedListener() {
             @Override
             public void onSuccess(List<Workspace> list) {
                 _isLoading.postValue(false);
-                // Đẩy danh sách lên cho MainActivity nhận được và vẽ Sidebar
                 _workspaces.postValue(list);
             }
 
@@ -87,13 +143,6 @@ public class MainViewModel extends ViewModel {
         });
     }
 
-    // ============================================================
-    // TODO 3: LOGIC CHUYỂN ĐỔI WORKSPACE
-    // - Hàm này được gọi khi User click vào một dòng trên Side Bar.
-    // - Cập nhật Workspace mới vào _currentWorkspace.
-    // - Các Fragment (Home, History) đang observe cái này sẽ tự động
-    //   nhận được thông báo và reload lại Transaction theo ID mới.
-    // ============================================================
     public void selectWorkspace(Workspace workspace) {
         if (workspace != null) {
             _currentWorkspace.setValue(workspace);
@@ -101,32 +150,21 @@ public class MainViewModel extends ViewModel {
     }
 
     // ============================================================
-    // TODO 4: LÀM MỚI SỐ DƯ (REFRESH BALANCE)
-    // - Viết hàm cập nhật lại số dư của currentWorkspace sau khi
-    //   User thêm/xóa giao dịch ở các Fragment con.
+    // DATA SYNC & OFFLINE CACHING
     // ============================================================
 
-    // ============================================================
-    // TODO Bonus: Lấy data từ server
-    // ============================================================
-
-
-    public void syncAllDataFromServer(Context context) {
-        Context appContext = context.getApplicationContext();
+    public void syncAllDataFromServer() {
         _isLoading.postValue(true);
 
-        // Tải Categories tự tạo trước
         firebaseManager.getAllCategoriesFromCloud(new FirebaseManager.DataCallback<List<DocumentSnapshot>>() {
             @Override
             public void onSuccess(List<DocumentSnapshot> catDocs) {
                 Executors.newSingleThreadExecutor().execute(() -> {
                     try {
-                        AppDatabase db = AppDatabase.getInstance(appContext);
-
-                        // Lấy danh sách local ra để chuẩn bị đối chiếu
+                        AppDatabase db = AppDatabase.getInstance(getApplication());
                         List<Category> localCats = db.categoryDao().getAll();
 
-                        for (DocumentSnapshot doc : catDocs) { // (Hoặc snapshots.getDocuments() tùy hàm)
+                        for (DocumentSnapshot doc : catDocs) {
                             Category c = new Category();
                             c.firestoreId = doc.getId();
                             c.name = doc.getString("name");
@@ -137,38 +175,34 @@ public class MainViewModel extends ViewModel {
                             c.type = (type != null) ? type.intValue() : 0;
                             c.workspaceId = "PERSONAL";
 
-                            // 🔥 FIX BUG 2: ĐỌC isDeleted TỪ MÂY, KHÔNG GÁN CỨNG BẰNG 0 NỮA!
                             Long isDef = doc.getLong("isDefault");
                             c.isDefault = (isDef != null) ? isDef.intValue() : 0;
 
                             Long isDel = doc.getLong("isDeleted");
                             c.isDeleted = (isDel != null) ? isDel.intValue() : 0;
 
-                            // 🔥 FIX BUG 1: CHỐNG XÓA CASCADE GIAO DỊCH
                             boolean existsLocally = false;
                             for (Category local : localCats) {
                                 boolean matchId = (local.firestoreId != null && local.firestoreId.equals(c.firestoreId));
                                 boolean matchName = (local.name != null && local.name.equalsIgnoreCase(c.name) && local.type == c.type);
 
                                 if (matchId || matchName) {
-                                    c.id = local.id; // Kế thừa ID
+                                    c.id = local.id;
                                     existsLocally = true;
                                     break;
                                 }
                             }
 
-                            // Nếu đã tồn tại thì DÙNG LỆNH UPDATE (Không dùng Insert REPLACE nữa để bảo toàn giao dịch)
                             if (existsLocally) {
                                 db.categoryDao().update(c);
                             } else {
                                 db.categoryDao().insert(c);
                             }
                         }
-                        Log.d("SYNC", "Downloaded " + catDocs.size() + " category");
+                        Log.d("SYNC", "Downloaded " + catDocs.size() + " categories");
 
-                        // Sau khi xong Category mới tải tiếp 2 cái kia
-                        fetchBudgets(appContext);
-                        fetchTransactions(appContext);
+                        fetchBudgets();
+                        fetchTransactions();
 
                     } catch (Exception e) {
                         Log.e("SYNC", "Category sync error: " + e.getMessage());
@@ -183,13 +217,13 @@ public class MainViewModel extends ViewModel {
         });
     }
 
-    private void fetchBudgets(Context context) {
+    private void fetchBudgets() {
         firebaseManager.getAllBudgetsFromCloud(new FirebaseManager.DataCallback<List<DocumentSnapshot>>() {
             @Override
             public void onSuccess(List<DocumentSnapshot> documents) {
                 Executors.newSingleThreadExecutor().execute(() -> {
                     try {
-                        AppDatabase db = AppDatabase.getInstance(context);
+                        AppDatabase db = AppDatabase.getInstance(getApplication());
                         for (DocumentSnapshot doc : documents) {
                             Budget b = new Budget();
                             b.id = Integer.parseInt(doc.getId());
@@ -208,22 +242,20 @@ public class MainViewModel extends ViewModel {
             }
 
             @Override
-            public void onError(String m) {
-            }
+            public void onError(String m) {}
         });
     }
 
-    private void fetchTransactions(Context context) {
+    private void fetchTransactions() {
         firebaseManager.getAllTransactionsFromCloud("PERSONAL", new FirebaseManager.DataCallback<List<DocumentSnapshot>>() {
             @Override
             public void onSuccess(List<DocumentSnapshot> documents) {
                 Executors.newSingleThreadExecutor().execute(() -> {
                     try {
-                        AppDatabase db = AppDatabase.getInstance(context);
-                        List<Category> localCats = db.categoryDao().getAll(); // Lấy danh mục để map ID
+                        AppDatabase db = AppDatabase.getInstance(getApplication());
+                        List<Category> localCats = db.categoryDao().getAll();
 
                         for (DocumentSnapshot doc : documents) {
-                            // BỌC TRY-CATCH CHO TỪNG ITEM: Lỗi 1 cái thì bỏ qua 1 cái, KHÔNG sập cả danh sách!
                             try {
                                 Transaction t = new Transaction();
                                 t.id = doc.getId();
@@ -231,11 +263,9 @@ public class MainViewModel extends ViewModel {
                                 Object amountObj = doc.get("amount");
                                 t.amount = (amountObj instanceof Number) ? ((Number) amountObj).longValue() : 0L;
 
-                                // LÕI MAP CATEGORY VÀ CHỐNG LỖI KHÓA NGOẠI (FOREIGN KEY)
                                 String firestoreCatId = doc.getString("firestoreCategoryId");
                                 boolean categoryMapped = false;
 
-                                // BƯỚC 1: Tìm theo firestoreCategoryId
                                 if (firestoreCatId != null && !firestoreCatId.isEmpty()) {
                                     for (Category c : localCats) {
                                         if (firestoreCatId.equals(c.firestoreId)) {
@@ -246,23 +276,20 @@ public class MainViewModel extends ViewModel {
                                     }
                                 }
 
-                                // BƯỚC 2: TÌM THEO ID CŨ (Dành cho đồ tạo Offline)
                                 if (!categoryMapped) {
                                     Object catIdObj = doc.get("categoryId");
                                     int oldCatId = (catIdObj instanceof Number) ? ((Number) catIdObj).intValue() : 1;
 
-                                    // 🔥 FIX CHÍNH: Tìm Category có ID mới nhưng mang firestoreId giống ID cũ!
                                     for (Category c : localCats) {
                                         if (c.id == oldCatId || (c.firestoreId != null && c.firestoreId.equals(String.valueOf(oldCatId)))) {
-                                            t.categoryId = c.id; // Map thành công với ID mới chuẩn
+                                            t.categoryId = c.id;
                                             categoryMapped = true;
                                             break;
                                         }
                                     }
 
-                                    // BƯỚC 3: TẠO TEMP CAT NẾU MẠNG CHẬM HOẶC LỖI
                                     if (!categoryMapped) {
-                                        t.categoryId = oldCatId; // Tạm dùng ID cũ
+                                        t.categoryId = oldCatId;
 
                                         boolean idExists = false;
                                         for (Category c : localCats) { if (c.id == t.categoryId) { idExists = true; break; } }
@@ -270,9 +297,8 @@ public class MainViewModel extends ViewModel {
                                         if (!idExists) {
                                             Category tempCat = new Category();
                                             tempCat.id = t.categoryId;
-                                            // Gắn luôn firestoreId để lát Category thật về nó tự Update đè lên thằng ảo này!
                                             tempCat.firestoreId = (firestoreCatId != null && !firestoreCatId.isEmpty()) ? firestoreCatId : String.valueOf(oldCatId);
-                                            tempCat.name = "Đang đồng bộ...";
+                                            tempCat.name = "Syncing...";
                                             tempCat.iconName = "ic_other";
                                             tempCat.colorCode = "#A9A9A9";
                                             tempCat.type = doc.getLong("type") != null ? doc.getLong("type").intValue() : 0;
@@ -286,7 +312,6 @@ public class MainViewModel extends ViewModel {
 
                                 t.note = doc.getString("note");
 
-                                // ÉP KIỂU THỜI GIAN AN TOÀN (Cả Timestamp lẫn Number)
                                 Object tsObj = doc.get("timestamp");
                                 if (tsObj instanceof com.google.firebase.Timestamp) {
                                     t.timestamp = ((com.google.firebase.Timestamp) tsObj).toDate().getTime();
@@ -301,12 +326,11 @@ public class MainViewModel extends ViewModel {
 
                                 Object typeObj = doc.get("type");
                                 t.type = (typeObj instanceof Number) ? ((Number) typeObj).intValue() : 0;
-
                                 t.workspaceId = "PERSONAL";
 
                                 db.transactionDao().insert(t);
                             } catch (Exception parseEx) {
-                                Log.e("SYNC", "Bỏ qua giao dịch bị lỗi format: " + doc.getId(), parseEx);
+                                Log.e("SYNC", "Skipped malformed transaction: " + doc.getId(), parseEx);
                             }
                         }
                         Log.d("SYNC", "Downloaded " + documents.size() + " transactions.");
@@ -330,7 +354,7 @@ public class MainViewModel extends ViewModel {
         Map<String, Object> data = new HashMap<>();
         data.put("amount", t.amount);
         data.put("note", t.note);
-        data.put("categoryId", t.categoryId); // Vẫn giữ ID local
+        data.put("categoryId", t.categoryId);
         data.put("timestamp", t.timestamp);
         data.put("paymentMethod", t.paymentMethod);
         data.put("type", t.type);
@@ -356,31 +380,29 @@ public class MainViewModel extends ViewModel {
     }
 
     // ============================================================
-    // TÍNH NĂNG ĐỒNG BỘ REAL-TIME ĐA THIẾT BỊ (ĐÃ CẬP NHẬT SUB-COLLECTION)
+    // REAL-TIME MULTI-DEVICE SYNC
     // ============================================================
-    public void startRealTimeSync(Context context) {
-        Context appContext = context.getApplicationContext();
-
-        // 1. Lấy thông tin user hiện tại
+    public void startRealTimeSync() {
         com.google.firebase.auth.FirebaseAuth auth = com.google.firebase.auth.FirebaseAuth.getInstance();
         if (auth.getCurrentUser() == null) {
-            Log.e("REALTIME_SYNC", "User chưa đăng nhập, không thể đồng bộ!");
+            Log.e("REALTIME_SYNC", "Sync failed: Not logged in");
             return;
         }
         String uid = auth.getCurrentUser().getUid();
-        com.google.firebase.firestore.FirebaseFirestore dbCloud = com.google.firebase.firestore.FirebaseFirestore.getInstance();
+        FirebaseFirestore dbCloud = FirebaseFirestore.getInstance();
 
-        // 2. LẮNG NGHE GIAO DỊCH (TRANSACTIONS)
-        dbCloud.collection("users").document(uid).collection("transactions")
+        if (transListener != null) transListener.remove();
+        if (catListener != null) catListener.remove();
+        if (budgetListener != null) budgetListener.remove();
+
+        // 1. LISTEN TO TRANSACTIONS
+        transListener = dbCloud.collection("users").document(uid).collection("transactions")
                 .addSnapshotListener((snapshots, e) -> {
-                    if (e != null) {
-                        Log.e("REALTIME_SYNC", "Listen failed.", e);
-                        return;
-                    }
+                    if (e != null) return;
                     if (snapshots != null) {
                         Executors.newSingleThreadExecutor().execute(() -> {
                             try {
-                                AppDatabase db = AppDatabase.getInstance(appContext);
+                                AppDatabase db = AppDatabase.getInstance(getApplication());
 
                                 if (snapshots.isEmpty()) {
                                     db.transactionDao().deleteAllTransactions("PERSONAL");
@@ -388,9 +410,8 @@ public class MainViewModel extends ViewModel {
                                     return;
                                 }
 
-                                List<Category> localCats = db.categoryDao().getAll(); // Lấy danh mục để map
+                                List<Category> localCats = db.categoryDao().getAll();
 
-                                // TRẢ LẠI CODE PARSE TRANSACTION CHUẨN
                                 for (DocumentSnapshot doc : snapshots.getDocuments()) {
                                     try {
                                         Transaction t = new Transaction();
@@ -399,11 +420,9 @@ public class MainViewModel extends ViewModel {
                                         Object amountObj = doc.get("amount");
                                         t.amount = (amountObj instanceof Number) ? ((Number) amountObj).longValue() : 0L;
 
-                                        // LÕI MAP CATEGORY VÀ CHỐNG LỖI KHÓA NGOẠI (FOREIGN KEY)
                                         String firestoreCatId = doc.getString("firestoreCategoryId");
                                         boolean categoryMapped = false;
 
-                                        // BƯỚC 1: Tìm theo firestoreCategoryId
                                         if (firestoreCatId != null && !firestoreCatId.isEmpty()) {
                                             for (Category c : localCats) {
                                                 if (firestoreCatId.equals(c.firestoreId)) {
@@ -414,23 +433,20 @@ public class MainViewModel extends ViewModel {
                                             }
                                         }
 
-                                        // BƯỚC 2: TÌM THEO ID CŨ (Dành cho đồ tạo Offline)
                                         if (!categoryMapped) {
                                             Object catIdObj = doc.get("categoryId");
                                             int oldCatId = (catIdObj instanceof Number) ? ((Number) catIdObj).intValue() : 1;
 
-                                            //Tìm Category có ID mới nhưng mang firestoreId giống ID cũ!
                                             for (Category c : localCats) {
                                                 if (c.id == oldCatId || (c.firestoreId != null && c.firestoreId.equals(String.valueOf(oldCatId)))) {
-                                                    t.categoryId = c.id; // Map thành công với ID mới chuẩn
+                                                    t.categoryId = c.id;
                                                     categoryMapped = true;
                                                     break;
                                                 }
                                             }
 
-                                            // BƯỚC 3: TẠO TEMP CAT NẾU MẠNG CHẬM HOẶC LỖI
                                             if (!categoryMapped) {
-                                                t.categoryId = oldCatId; // Tạm dùng ID cũ
+                                                t.categoryId = oldCatId;
 
                                                 boolean idExists = false;
                                                 for (Category c : localCats) { if (c.id == t.categoryId) { idExists = true; break; } }
@@ -438,9 +454,8 @@ public class MainViewModel extends ViewModel {
                                                 if (!idExists) {
                                                     Category tempCat = new Category();
                                                     tempCat.id = t.categoryId;
-                                                    //Gắn luôn firestoreId để lát Category thật về nó tự Update đè lên thằng ảo này!
                                                     tempCat.firestoreId = (firestoreCatId != null && !firestoreCatId.isEmpty()) ? firestoreCatId : String.valueOf(oldCatId);
-                                                    tempCat.name = "Đang đồng bộ...";
+                                                    tempCat.name = "Syncing...";
                                                     tempCat.iconName = "ic_other";
                                                     tempCat.colorCode = "#A9A9A9";
                                                     tempCat.type = doc.getLong("type") != null ? doc.getLong("type").intValue() : 0;
@@ -471,9 +486,9 @@ public class MainViewModel extends ViewModel {
 
                                         t.workspaceId = "PERSONAL";
 
-                                        db.transactionDao().insert(t); // Transaction insert bình thường
+                                        db.transactionDao().insert(t);
                                     } catch (Exception parseEx) {
-                                        Log.e("REALTIME_SYNC", "Lỗi parse dữ liệu ở transaction: " + doc.getId(), parseEx);
+                                        Log.e("REALTIME_SYNC", "Transaction parsing error: " + doc.getId(), parseEx);
                                     }
                                 }
                                 syncCompleted.postValue(true);
@@ -484,16 +499,14 @@ public class MainViewModel extends ViewModel {
                     }
                 });
 
-        // 3. LẮNG NGHE DANH MỤC (CATEGORIES)
-        dbCloud.collection("users").document(uid).collection("categories")
+        // 2. LISTEN TO CATEGORIES
+        catListener = dbCloud.collection("users").document(uid).collection("categories")
                 .addSnapshotListener((snapshots, e) -> {
                     if (e != null) return;
                     if (snapshots != null) {
                         Executors.newSingleThreadExecutor().execute(() -> {
                             try {
-                                AppDatabase db = AppDatabase.getInstance(appContext);
-
-                                // Kéo danh sách local ra
+                                AppDatabase db = AppDatabase.getInstance(getApplication());
                                 List<Category> localCats = db.categoryDao().getAll();
 
                                 for (DocumentSnapshot doc : snapshots.getDocuments()) {
@@ -505,30 +518,26 @@ public class MainViewModel extends ViewModel {
 
                                     Number type = (Number) doc.get("type");
                                     c.type = (type != null) ? type.intValue() : 0;
-
                                     c.workspaceId = "PERSONAL";
 
-                                    // ĐỌC isDeleted TỪ MÂY
                                     Long isDef = doc.getLong("isDefault");
                                     c.isDefault = (isDef != null) ? isDef.intValue() : 0;
 
                                     Long isDel = doc.getLong("isDeleted");
                                     c.isDeleted = (isDel != null) ? isDel.intValue() : 0;
 
-                                    // CHỐNG XÓA CASCADE GIAO DỊCH
                                     boolean existsLocally = false;
                                     for (Category local : localCats) {
                                         boolean matchId = (local.firestoreId != null && local.firestoreId.equals(c.firestoreId));
                                         boolean matchName = (local.name != null && local.name.equalsIgnoreCase(c.name) && local.type == c.type);
 
                                         if (matchId || matchName) {
-                                            c.id = local.id; // Kế thừa ID
+                                            c.id = local.id;
                                             existsLocally = true;
                                             break;
                                         }
                                     }
 
-                                    // DÙNG LỆNH UPDATE NẾU ĐÃ CÓ, KHÔNG DÙNG INSERT REPLACE
                                     if (existsLocally) {
                                         db.categoryDao().update(c);
                                     } else {
@@ -543,15 +552,14 @@ public class MainViewModel extends ViewModel {
                     }
                 });
 
-        // 4. LẮNG NGHE NGÂN SÁCH (BUDGETS)
-        // Đường dẫn mới: users/{uid}/budgets
-        dbCloud.collection("users").document(uid).collection("budgets")
+        // 3. LISTEN TO BUDGETS
+        budgetListener = dbCloud.collection("users").document(uid).collection("budgets")
                 .addSnapshotListener((snapshots, e) -> {
                     if (e != null) return;
                     if (snapshots != null) {
                         Executors.newSingleThreadExecutor().execute(() -> {
                             try {
-                                AppDatabase db = AppDatabase.getInstance(appContext);
+                                AppDatabase db = AppDatabase.getInstance(getApplication());
                                 for (DocumentSnapshot doc : snapshots.getDocuments()) {
                                     Budget b = new Budget();
                                     b.id = Integer.parseInt(doc.getId());
@@ -579,5 +587,66 @@ public class MainViewModel extends ViewModel {
                         });
                     }
                 });
+    }
+
+    // ============================================================
+    // DỌN DẸP LẮNG NGHE ĐỂ KHÔNG TRÀN BỘ NHỚ
+    // ============================================================
+    @Override
+    protected void onCleared() {
+        super.onCleared();
+        if (userProfileListener != null) userProfileListener.remove();
+        if (transListener != null) transListener.remove();
+        if (catListener != null) catListener.remove();
+        if (budgetListener != null) budgetListener.remove();
+    }
+
+    public void checkAndSeedLocalData(String currentUserId, Runnable onDataReady) {
+        java.util.concurrent.Executors.newSingleThreadExecutor().execute(() -> {
+            try {
+                AppDatabase db = AppDatabase.getInstance(getApplication());
+                android.content.SharedPreferences prefs = getApplication().getSharedPreferences("UserPrefs", android.content.Context.MODE_PRIVATE);
+                String lastUserId = prefs.getString("last_uid", "");
+
+                if (!lastUserId.equals(currentUserId)) {
+                    db.clearAllTables();
+                    prefs.edit().putString("last_uid", currentUserId).apply();
+                }
+
+                //Chạy tạo Category
+                DatabaseSeeder.seedIfEmpty(getApplication());
+
+                //chạy fakedataseeder gỡ comment chỗ này ra xong quay lên dòng 407 chỗ
+                //                                if (snapshots.isEmpty()) {
+                //                                    db.transactionDao().deleteAllTransactions("PERSONAL");
+                // comment cái dòng db.transactionDao().deleteAllTransactions("PERSONAL"); lại xong xóa app chạy lại, đăng nhập vào 1 acc mới là seed được data
+//                List<Category> allCats = db.categoryDao().getAll();
+//                if (allCats != null && !allCats.isEmpty()) {
+//                    FakeDataSeeder.seed(getApplication(), allCats, currentUserId, true);
+//                }
+
+                // 3. Lúc này chắc chắn có Data rồi
+                int count = db.transactionDao().countTransactions("PERSONAL");
+
+                new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
+                    if (count == 0) {
+                        syncAllDataFromServer();
+                    } else {
+                        if (onDataReady != null) onDataReady.run();
+                    }
+                    startRealTimeSync();
+                });
+
+            } catch (Exception e) {
+                Log.e("AUTH_FLOW", "Database error: " + e.getMessage());
+            }
+        });
+    }
+
+    public void registerFcmToken() {
+        FirebaseManager.getInstance().getFcmToken(new FirebaseManager.DataCallback<String>() {
+            @Override public void onSuccess(String token) {}
+            @Override public void onError(String message) {}
+        });
     }
 }

@@ -1,5 +1,6 @@
 package com.example.cashify.ui.workspace;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
@@ -8,6 +9,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
@@ -32,12 +34,16 @@ import java.util.Map;
 
 public class WorkspaceTransactionAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
+    // [Từ master] Tối ưu hoá memory: Không khởi tạo lại Formatter khi scroll
+    private static final SimpleDateFormat TIME_FORMATTER = new SimpleDateFormat("h:mm a", Locale.ENGLISH);
+
     private final Context context;
     private final String workspaceId;
-    private String currentUserId;
+    private final String currentUserId;
     private String ownerId;
     private List<TransactionViewModel.HistoryItem> items = new ArrayList<>();
 
+    // [Từ UI-Consistency] Cache profile để hiển thị Avatar thay vì chỉ String Name như master
     private final Map<String, CreatorProfile> creatorProfileCache = new HashMap<>();
     private final Map<String, Category> categoryCache = new HashMap<>();
     private final OnTransactionClickListener listener;
@@ -46,27 +52,23 @@ public class WorkspaceTransactionAdapter extends RecyclerView.Adapter<RecyclerVi
         void onClick(Transaction transaction);
     }
 
-    public WorkspaceTransactionAdapter(
-            Context context,
-            String workspaceId,
-            String currentUserId,
-            String ownerId,
-            List<TransactionViewModel.HistoryItem> list,
-            OnTransactionClickListener listener
-    ) {
+    public WorkspaceTransactionAdapter(Context context, String workspaceId, String currentUserId, String ownerId,
+                                       List<TransactionViewModel.HistoryItem> list, OnTransactionClickListener listener) {
         this.context = context;
         this.workspaceId = workspaceId;
         this.currentUserId = currentUserId;
         this.ownerId = ownerId;
-        if (list != null) this.items = list;
+        this.items = list != null ? list : new ArrayList<>();
         this.listener = listener;
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     public void setOwnerId(String ownerId) {
         this.ownerId = ownerId;
-        notifyDataSetChanged();
+        notifyDataSetChanged(); // Forces a re-render to update permissions immediately
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     public void setHistoryData(List<TransactionViewModel.HistoryItem> newList) {
         this.items = newList != null ? newList : new ArrayList<>();
         notifyDataSetChanged();
@@ -87,12 +89,14 @@ public class WorkspaceTransactionAdapter extends RecyclerView.Adapter<RecyclerVi
         return new TransactionViewHolder(inflater.inflate(R.layout.item_workspace_transaction, parent, false));
     }
 
+    @SuppressLint("SetTextI18n")
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         TransactionViewModel.HistoryItem item = items.get(position);
+
         if (holder instanceof DateViewHolder) {
             DateViewHolder dateHolder = (DateViewHolder) holder;
-            dateHolder.tvDate.setText(item.getDate());
+            if (dateHolder.tvDate != null) dateHolder.tvDate.setText(item.getDate());
             return;
         }
 
@@ -100,11 +104,13 @@ public class WorkspaceTransactionAdapter extends RecyclerView.Adapter<RecyclerVi
         Transaction transaction = item.getTransaction();
         if (transaction == null) return;
 
+        // [Từ master] Tagging mechanism để tránh lỗi update nhầm view khi scroll nhanh
         String bindKey = transaction.id != null ? transaction.id : String.valueOf(position);
         transactionHolder.itemView.setTag(bindKey);
 
-        SimpleDateFormat timeFormat = new SimpleDateFormat("h:mm a", Locale.ENGLISH);
-        String timeText = timeFormat.format(new Date(transaction.timestamp));
+        String timeText = TIME_FORMATTER.format(new Date(transaction.timestamp));
+        
+        // [Từ UI-Consistency] 1 element 2 cách trình bày -> Ưu tiên Text thay vì Emoji của master
         String paymentMethod = transaction.paymentMethod == null || transaction.paymentMethod.trim().isEmpty()
                 ? "Cash"
                 : transaction.paymentMethod.trim();
@@ -112,10 +118,11 @@ public class WorkspaceTransactionAdapter extends RecyclerView.Adapter<RecyclerVi
         bindAmount(transactionHolder, transaction);
         bindCreator(transactionHolder, transaction, bindKey);
         bindCategory(transactionHolder, transaction, bindKey, timeText, paymentMethod);
-        bindPermissions(holder.itemView, transaction);
+        bindPermissions(transactionHolder.itemView, transaction);
     }
 
     private void bindAmount(TransactionViewHolder holder, Transaction transaction) {
+        // [Từ UI-Consistency] Format compact amount (rút gọn) thay vì full số như master
         if (transaction.type == 1) {
             holder.tvAmount.setText("+" + CurrencyFormatter.formatCompactAmount(transaction.amount));
             holder.tvAmount.setTextColor(ContextCompat.getColor(context, R.color.status_green));
@@ -162,24 +169,14 @@ public class WorkspaceTransactionAdapter extends RecyclerView.Adapter<RecyclerVi
                 });
     }
 
-    private void bindCreatorProfile(
-            TransactionViewHolder holder,
-            Transaction transaction,
-            CreatorProfile profile,
-            String signedAmount
-    ) {
+    private void bindCreatorProfile(TransactionViewHolder holder, Transaction transaction, CreatorProfile profile, String signedAmount) {
         String action = transaction.type == 1 ? "added" : "spent";
+        // [Từ UI-Consistency] Hiển thị nguyên câu thay vì chỉ "By: Name"
         holder.tvMainTitle.setText(profile.name + " " + action + " " + signedAmount);
         ImageHelper.loadAvatar(profile.avatarUrl, holder.ivCreatorAvatar, profile.name);
     }
 
-    private void bindCategory(
-            TransactionViewHolder holder,
-            Transaction transaction,
-            String bindKey,
-            String timeText,
-            String paymentMethod
-    ) {
+    private void bindCategory(TransactionViewHolder holder, Transaction transaction, String bindKey, String timeText, String paymentMethod) {
         if (transaction.firestoreCategoryId == null || workspaceId == null) {
             updateCategoryUI(holder, transaction, null, timeText, paymentMethod);
             return;
@@ -207,17 +204,13 @@ public class WorkspaceTransactionAdapter extends RecyclerView.Adapter<RecyclerVi
                 });
     }
 
-    private void updateCategoryUI(
-            TransactionViewHolder holder,
-            Transaction transaction,
-            Category category,
-            String timeText,
-            String paymentMethod
-    ) {
+    private void updateCategoryUI(TransactionViewHolder holder, Transaction transaction, Category category, String timeText, String paymentMethod) {
         String categoryName = category != null ? category.name : "Unknown";
         String note = transaction.note != null && !transaction.note.trim().isEmpty()
                 ? transaction.note.trim()
                 : categoryName;
+                
+        // [Từ UI-Consistency] Giữ nguyên format gạch ngang " - "
         holder.tvSubtitle.setText(String.format(Locale.getDefault(), "%s - %s - %s", categoryName, timeText, paymentMethod));
         holder.tvSubtitle.setContentDescription(note);
 
@@ -256,11 +249,7 @@ public class WorkspaceTransactionAdapter extends RecyclerView.Adapter<RecyclerVi
             if (canEdit) {
                 if (listener != null) listener.onClick(transaction);
             } else {
-                android.widget.Toast.makeText(
-                        context,
-                        "Access denied! Only the creator or owner can edit this.",
-                        android.widget.Toast.LENGTH_SHORT
-                ).show();
+                Toast.makeText(context, "Access denied. Only the creator or owner can modify this transaction.", Toast.LENGTH_SHORT).show();
             }
         });
     }

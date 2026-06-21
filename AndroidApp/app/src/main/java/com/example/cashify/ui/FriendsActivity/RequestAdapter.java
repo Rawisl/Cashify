@@ -1,5 +1,6 @@
 package com.example.cashify.ui.FriendsActivity;
 
+import android.annotation.SuppressLint;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,24 +15,23 @@ import com.example.cashify.data.model.User;
 import com.example.cashify.utils.ImageHelper;
 import com.google.android.material.button.MaterialButton;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class RequestAdapter extends RecyclerView.Adapter<RequestAdapter.ViewHolder> {
 
     public interface RequestActionListener {
         void onAccept(User user);
-
         void onDecline(User user);
-
         void onCancel(User user);
     }
 
     private List<User> users;
     private final RequestActionListener listener;
-    private final boolean isIncoming; // True = Nhận, False = Gửi
+    private final boolean isIncoming; // True = Incoming request, False = Sent request
 
     public RequestAdapter(List<User> users, boolean isIncoming, RequestActionListener listener) {
-        this.users = users;
+        this.users = users != null ? users : new ArrayList<>();
         this.isIncoming = isIncoming;
         this.listener = listener;
     }
@@ -46,12 +46,13 @@ public class RequestAdapter extends RecyclerView.Adapter<RequestAdapter.ViewHold
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         User user = users.get(position);
+
         holder.tvFriendName.setText(user.getNameToShow());
-        holder.tvStatus.setText(user.getEmail());
+        holder.tvStatus.setText(user.getEmail() != null ? user.getEmail() : "");
 
         ImageHelper.loadAvatar(user.getAvatarUrl(), holder.imgAvatar, user.getNameToShow());
 
-        // Hiện nút theo Tab (KHÔNG cần ẩn mấy nút thừa nữa vì giao diện sếp làm gì có mà ẩn)
+        // Toggle action buttons based on the request type (Incoming vs Outgoing)
         if (isIncoming) {
             holder.btnAccept.setVisibility(View.VISIBLE);
             holder.btnDecline.setVisibility(View.VISIBLE);
@@ -62,8 +63,8 @@ public class RequestAdapter extends RecyclerView.Adapter<RequestAdapter.ViewHold
         } else {
             holder.btnAccept.setVisibility(View.GONE);
             holder.btnDecline.setVisibility(View.GONE);
+            holder.btnCancel.setVisibility(View.VISIBLE);
 
-            holder.btnCancel.setVisibility(View.VISIBLE); // Nút Cancel Request của sếp
             holder.btnCancel.setOnClickListener(v -> listener.onCancel(user));
         }
     }
@@ -73,13 +74,13 @@ public class RequestAdapter extends RecyclerView.Adapter<RequestAdapter.ViewHold
         return users != null ? users.size() : 0;
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     public void updateData(List<User> newUsers) {
-        this.users = newUsers;
+        this.users = newUsers != null ? newUsers : new ArrayList<>();
         notifyDataSetChanged();
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        // Chỉ giữ lại những biến THỰC SỰ CÓ trong item_request.xml
         TextView tvFriendName, tvStatus;
         ImageView imgAvatar;
         MaterialButton btnAccept, btnDecline, btnCancel;
@@ -87,13 +88,12 @@ public class RequestAdapter extends RecyclerView.Adapter<RequestAdapter.ViewHold
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
 
-            // Ánh xạ chuẩn xác với ID trong item_request.xml
-            imgAvatar = itemView.findViewById(R.id.imgAvatar); // Bổ sung ánh xạ Avatar
+            imgAvatar = itemView.findViewById(R.id.imgAvatar);
             tvFriendName = itemView.findViewById(R.id.tvName);
             tvStatus = itemView.findViewById(R.id.tvEmail);
             btnAccept = itemView.findViewById(R.id.btnAccept);
             btnDecline = itemView.findViewById(R.id.btnDecline);
-            btnCancel = itemView.findViewById(R.id.btnCancel); // Tớ đổi luôn thành btnCancel cho đúng nghĩa
+            btnCancel = itemView.findViewById(R.id.btnCancel);
         }
     }
 }

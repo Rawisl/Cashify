@@ -1,8 +1,11 @@
 package com.example.cashify.ui.FriendsActivity;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
-import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -15,6 +18,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -22,43 +26,77 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.example.cashify.R;
 import com.example.cashify.ui.workspace.ChatAdapter;
-import com.example.cashify.utils.CloudinaryHelper;
 import com.example.cashify.utils.DialogHelper;
+import com.example.cashify.utils.FileUtils;
 import com.example.cashify.utils.ImageHelper;
 import com.example.cashify.utils.ToastHelper;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.List;
 
 public class FriendChatActivity extends AppCompatActivity {
     public static final String EXTRA_FRIEND_UID = "friend_uid";
-    public static final String EXTRA_FRIEND_NAME = "friend_name";
-    public static final String EXTRA_FRIEND_AVATAR = "friend_avatar";
-
-    private final List<String> pendingImageUrls = new ArrayList<>();
-    private ImageButton btnSendMessage;
-
-    private ActivityResultLauncher<String> pickImageLauncher;
+    private static final int PERMISSION_REQUEST_CODE = 101;
 
     private FriendChatViewModel viewModel;
     private ChatAdapter chatAdapter;
     private RecyclerView rvChatMessages;
     private EditText edtMessageInput;
-    private String friendUid;
-
+    private ImageButton btnSendMessage;
     private LinearLayout layoutImagePreview;
     private LinearLayout layoutPreviewImages;
+
+    private String friendUid;
+    private ActivityResultLauncher<String> pickImageLauncher;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_friend_chat);
 
+        friendUid = getIntent().getStringExtra(EXTRA_FRIEND_UID);
+        viewModel = new ViewModelProvider(this).get(FriendChatViewModel.class);
+
+        initViews();
+        setupRecyclerView();
+        setupImagePicker();
+        setupObservers();
+        setupListeners();
+
+        viewModel.loadFriendProfile(friendUid);
+        viewModel.startListeningMessages(friendUid);
+    }
+
+    private void initViews() {
+        rvChatMessages = findViewById(R.id.rvChatMessages);
+        edtMessageInput = findViewById(R.id.edtMessageInput);
+        btnSendMessage = findViewById(R.id.btnSendMessage);
+        layoutImagePreview = findViewById(R.id.layoutImagePreview);
+        layoutPreviewImages = findViewById(R.id.layoutPreviewImages);
+
+        findViewById(R.id.btnBack).setOnClickListener(v -> finish());
+    }
+
+    private void setupRecyclerView() {
+        LinearLayoutManager layoutManager = new LinearLayoutManager(this);
+        layoutManager.setStackFromEnd(true);
+        rvChatMessages.setLayoutManager(layoutManager);
+
+        chatAdapter = new ChatAdapter(new ArrayList<>(), message ->
+                DialogHelper.showCustomDialog(this, "Recall Message",
+                        "Are you sure you want to recall this message?",
+                        "Recall", "Cancel", DialogHelper.DialogType.DANGER, true,
+                        () -> viewModel.recallMessage(friendUid, message.getMessageId()), null)
+        );
+        rvChatMessages.setAdapter(chatAdapter);
+    }
+
+    private void setupImagePicker() {
         pickImageLauncher = registerForActivityResult(
                 new ActivityResultContracts.GetMultipleContents(), uris -> {
                     if (uris == null || uris.isEmpty()) return;
                     for (Uri uri : uris) {
-                        long size = getFileSizeFromUri(uri);
+                        long size = FileUtils.getFileSizeFromUri(this, uri);
                         if (size > 10 * 1024 * 1024) {
                             DialogHelper.showCustomDialog(this, "Image too large",
                                     "Please select an image under 10MB.", "Choose again", "Cancel",
@@ -66,78 +104,70 @@ public class FriendChatActivity extends AppCompatActivity {
                                     () -> pickImageLauncher.launch("image/*"), null);
                             return;
                         }
-                        uploadAndPreview(uri);
+                        processImageUpload(uri);
                     }
                 });
+    }
 
-        friendUid = getIntent().getStringExtra(EXTRA_FRIEND_UID);
-        String friendName = getIntent().getStringExtra(EXTRA_FRIEND_NAME);
-        String friendAvatar = getIntent().getStringExtra(EXTRA_FRIEND_AVATAR);
+    private void setupObservers() {
+        viewModel.getFriendProfile().observe(this, user -> {
+            if (user != null) {
+                ((TextView) findViewById(R.id.tvFriendName)).setText(user.getNameToShow());
+                ImageHelper.loadAvatar(user.getAvatarUrl(), findViewById(R.id.imgFriendAvatar), user.getNameToShow());
+            }
+        });
 
-        ImageButton btnBack = findViewById(R.id.btnBack);
-        ImageView imgFriendAvatar = findViewById(R.id.imgFriendAvatar);
-        TextView tvFriendName = findViewById(R.id.tvFriendName);
-        rvChatMessages = findViewById(R.id.rvChatMessages);
-        edtMessageInput = findViewById(R.id.edtMessageInput);
-        btnSendMessage = findViewById(R.id.btnSendMessage);
-
-        layoutImagePreview = findViewById(R.id.layoutImagePreview);
-        layoutPreviewImages = findViewById(R.id.layoutPreviewImages);
-
-        btnBack.setOnClickListener(v -> finish());
-        tvFriendName.setText(friendName != null ? friendName : "Friend");
-        ImageHelper.loadAvatar(friendAvatar, imgFriendAvatar, friendName);
-
-        LinearLayoutManager layoutManager = new LinearLayoutManager(this);
-        layoutManager.setStackFromEnd(true);
-        rvChatMessages.setLayoutManager(layoutManager);
-//        rvChatMessages.setItemAnimator(null);
-        chatAdapter = new ChatAdapter(new ArrayList<>(), null);
-        rvChatMessages.setAdapter(chatAdapter);
-
-        viewModel = new ViewModelProvider(this).get(FriendChatViewModel.class);
-        viewModel.startListeningMessages(friendUid);
         viewModel.getChatMessages().observe(this, messages -> {
             chatAdapter.setMessages(messages);
             if (messages != null && !messages.isEmpty()) {
                 rvChatMessages.scrollToPosition(messages.size() - 1);
             }
         });
+
         viewModel.getLoadErrorMessage().observe(this, message -> {
             if (message != null && !message.isEmpty()) {
-                ToastHelper.show(this, "Load message failed");
-                ToastHelper.show(this, message);
+                ToastHelper.show(this, "Failed to load: " + message);
             }
         });
+
         viewModel.getSendErrorMessage().observe(this, message -> {
             if (message != null && !message.isEmpty()) {
-                ToastHelper.show(this, "Send message failed");
-                ToastHelper.show(this, message);
+                ToastHelper.show(this, "Failed to send: " + message);
             }
         });
 
-        btnSendMessage.setOnClickListener(v -> {
-            String text = edtMessageInput.getText() != null
-                    ? edtMessageInput.getText().toString() : "";
-            if (text.trim().isEmpty() && pendingImageUrls.isEmpty()) return;
+        viewModel.getIsUploading().observe(this, isUploading -> {
+            btnSendMessage.setEnabled(!isUploading);
+            btnSendMessage.setAlpha(isUploading ? 0.5f : 1.0f);
+        });
 
-            List<String> urlsToSend = new ArrayList<>(pendingImageUrls);
-
-            sendMessagesSequentially(friendUid, text, urlsToSend, 0);
-
-            pendingImageUrls.clear();
-            edtMessageInput.setText("");
-            layoutImagePreview.setVisibility(View.GONE);
+        viewModel.getPendingImages().observe(this, images -> {
             layoutPreviewImages.removeAllViews();
+            if (images == null || images.isEmpty()) {
+                layoutImagePreview.setVisibility(View.GONE);
+            } else {
+                layoutImagePreview.setVisibility(View.VISIBLE);
+                for (String url : images) {
+                    renderImagePreview(url);
+                }
+            }
+        });
+    }
+
+    private void setupListeners() {
+        btnSendMessage.setOnClickListener(v -> {
+            String text = edtMessageInput.getText() != null ? edtMessageInput.getText().toString().trim() : "";
+            boolean hasStartedSending = viewModel.submitMessages(friendUid, text);
+            if (hasStartedSending) {
+                edtMessageInput.setText("");
+            }
         });
 
         findViewById(R.id.btnAttachImage).setOnClickListener(v -> {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                if (checkSelfPermission(android.Manifest.permission.READ_MEDIA_IMAGES)
-                        != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                    requestPermissions(
-                            new String[]{android.Manifest.permission.READ_MEDIA_IMAGES},
-                            101);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES)
+                        != PackageManager.PERMISSION_GRANTED) {
+                    requestPermissions(new String[]{Manifest.permission.READ_MEDIA_IMAGES}, PERMISSION_REQUEST_CODE);
                     return;
                 }
             }
@@ -145,89 +175,16 @@ public class FriendChatActivity extends AppCompatActivity {
         });
     }
 
-    private void uploadAndPreview(Uri uri) {
-        btnSendMessage.setEnabled(false);
-        File file = getFileFromUri(uri);
-        if (file == null) { btnSendMessage.setEnabled(true); return; }
-
-        CloudinaryHelper.uploadImage(file, new CloudinaryHelper.UploadCallback() {
-            @Override public void onProgress(int percent) {}
-
-            @Override
-            public void onSuccess(String imageUrl) {
-                pendingImageUrls.add(imageUrl);
-                runOnUiThread(() -> {
-                    btnSendMessage.setEnabled(true);
-                    addImagePreview(imageUrl);
-                });
-            }
-
-            @Override
-            public void onFailure(String error) {
-                runOnUiThread(() -> {
-                    btnSendMessage.setEnabled(true);
-                    DialogHelper.showAlert(FriendChatActivity.this,
-                            "Tải ảnh thất bại", error, null);
-                });
-            }
-        });
-    }
-
-    private long getFileSizeFromUri(Uri uri) {
-        try (android.database.Cursor cursor = getContentResolver().query(
-                uri, new String[]{android.provider.OpenableColumns.SIZE}, null, null, null)) {
-            if (cursor != null && cursor.moveToFirst()) {
-                int idx = cursor.getColumnIndex(android.provider.OpenableColumns.SIZE);
-                if (idx != -1 && !cursor.isNull(idx)) return cursor.getLong(idx);
-            }
-        } catch (Exception ignored) {}
-        return 0;
-    }
-
-    private File getFileFromUri(Uri uri) {
-        try {
-            // Lấy tên file gốc nếu có
-            String fileName = "chat_img_" + System.currentTimeMillis() + ".jpg";
-            try (android.database.Cursor cursor = getContentResolver().query(
-                    uri, new String[]{android.provider.OpenableColumns.DISPLAY_NAME},
-                    null, null, null)) {
-                if (cursor != null && cursor.moveToFirst()) {
-                    int nameIdx = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME);
-                    if (nameIdx != -1) fileName = cursor.getString(nameIdx);
-                }
-            }
-
-            File outputFile = new File(getCacheDir(), "chat_" + System.currentTimeMillis() + "_" + fileName);
-
-            try (java.io.InputStream is = getContentResolver().openInputStream(uri);
-                 java.io.OutputStream os = new java.io.FileOutputStream(outputFile)) {
-                if (is == null) return null;
-                byte[] buffer = new byte[4096]; // 4KB buffer — nhanh hơn 1KB
-                int bytesRead;
-                while ((bytesRead = is.read(buffer)) != -1) {
-                    os.write(buffer, 0, bytesRead);
-                }
-            }
-            return outputFile.length() > 0 ? outputFile : null;
-        } catch (Exception e) {
-            Log.e("CHAT_IMG", "getFileFromUri lỗi: " + e.getMessage(), e);
-            return null;
+    private void processImageUpload(Uri uri) {
+        File file = FileUtils.getFileFromUri(this, uri);
+        if (file == null) {
+            ToastHelper.show(this, "Failed to process image file.");
+            return;
         }
+        viewModel.uploadChatImage(file);
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == 101 && grantResults.length > 0
-                && grantResults[0] == android.content.pm.PackageManager.PERMISSION_GRANTED) {
-            pickImageLauncher.launch("image/*");
-        }
-    }
-
-    private void addImagePreview(String imageUrl) {
-        layoutImagePreview.setVisibility(View.VISIBLE);
-
-        // Container cho ảnh + nút X
+    private void renderImagePreview(String imageUrl) {
         FrameLayout container = new FrameLayout(this);
         int size = (int) (64 * getResources().getDisplayMetrics().density);
         int margin = (int) (6 * getResources().getDisplayMetrics().density);
@@ -235,51 +192,33 @@ public class FriendChatActivity extends AppCompatActivity {
         params.setMarginEnd(margin);
         container.setLayoutParams(params);
 
-        // ImageView bo tròn
         ImageView imageView = new ImageView(this);
-        imageView.setLayoutParams(new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT));
+        imageView.setLayoutParams(new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
         imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
         imageView.setBackgroundResource(R.drawable.bg_image_preview);
         imageView.setClipToOutline(true);
         Glide.with(this).load(imageUrl).placeholder(R.drawable.ic_camera).into(imageView);
 
-        // Nút X nhỏ góc trên phải
         ImageButton btnRemove = new ImageButton(this);
         int btnSize = (int) (18 * getResources().getDisplayMetrics().density);
         FrameLayout.LayoutParams btnParams = new FrameLayout.LayoutParams(btnSize, btnSize);
-        btnParams.gravity = android.view.Gravity.TOP | android.view.Gravity.END;
+        btnParams.gravity = Gravity.TOP | Gravity.END;
         btnRemove.setLayoutParams(btnParams);
-        btnRemove.setImageResource(R.drawable.ic_arrow_left_back); // hoặc ic_close nếu có
+        btnRemove.setImageResource(R.drawable.ic_arrow_left_back);
         btnRemove.setBackground(null);
-        btnRemove.setColorFilter(getResources().getColor(R.color.brand_primary, null));
-        btnRemove.setOnClickListener(v -> {
-            pendingImageUrls.remove(imageUrl);
-            layoutPreviewImages.removeView(container);
-            if (pendingImageUrls.isEmpty()) {
-                layoutImagePreview.setVisibility(View.GONE);
-            }
-        });
+        btnRemove.setColorFilter(ContextCompat.getColor(this, R.color.brand_primary));
+        btnRemove.setOnClickListener(v -> viewModel.removePendingImage(imageUrl));
 
         container.addView(imageView);
         container.addView(btnRemove);
         layoutPreviewImages.addView(container);
     }
 
-    private void sendMessagesSequentially(String friendUid, String text,
-                                          List<String> urls, int index) {
-        if (index >= urls.size()) {
-            if (urls.isEmpty()) {
-                viewModel.sendMessage(friendUid, text, null);
-            }
-            return;
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == PERMISSION_REQUEST_CODE && grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            pickImageLauncher.launch("image/*");
         }
-
-        String imgUrl = urls.get(index);
-        String msgText = (index == 0) ? text : "";
-
-        viewModel.sendMessage(friendUid, msgText, imgUrl,
-                () -> sendMessagesSequentially(friendUid, text, urls, index + 1));
     }
 }

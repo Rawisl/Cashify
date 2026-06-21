@@ -26,10 +26,11 @@
     <fragment
         android:id="@+id/nav_other_profile"
         android:name="com.example.cashify.ui.social.SocialProfileFragment"
-        android:label="Member Profile">
+        android:label="User Profile">
         <argument
             android:name="USER_ID"
             app:argType="string"
             app:nullable="true" />
     </fragment>
+
 </navigation>

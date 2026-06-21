@@ -1,5 +1,6 @@
 package com.example.cashify.ui.workspace;
 
+import android.annotation.SuppressLint;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,15 +14,15 @@ import com.example.cashify.R;
 import com.example.cashify.data.model.User;
 import com.example.cashify.utils.ImageHelper;
 
+import java.util.ArrayList;
 import java.util.List;
-
-import android.widget.ImageView;
 
 public class WorkspaceMemberListAdapter extends RecyclerView.Adapter<WorkspaceMemberListAdapter.ViewHolder> {
 
+    // Roles and Permissions Constants
     public static final int MODE_VIEW_ONLY = 0;
     public static final int MODE_MANAGE_KICK = 1;
-    public static final int MODE_TRANSFER_OWNER = 2;
+    public static final int MODE_TRANSFER_OWNER = 2; // Reserved for future scaling
 
     private List<User> memberList;
     private int mode;
@@ -34,7 +35,7 @@ public class WorkspaceMemberListAdapter extends RecyclerView.Adapter<WorkspaceMe
     }
 
     public WorkspaceMemberListAdapter(List<User> memberList, int mode, String currentUserId, OnMemberActionListener listener) {
-        this.memberList = memberList;
+        this.memberList = memberList != null ? memberList : new ArrayList<>();
         this.mode = mode;
         this.currentUserId = currentUserId;
         this.listener = listener;
@@ -52,29 +53,37 @@ public class WorkspaceMemberListAdapter extends RecyclerView.Adapter<WorkspaceMe
         User user = memberList.get(position);
         if (user == null) return;
 
-        // Thêm chữ (Owner) hoặc (You) cho dễ nhìn
+        // Visual identifier for the current user
         String displayName = user.getDisplayName();
         if (user.getUid().equals(currentUserId)) {
             displayName += " (You)";
         }
+
         holder.tvName.setText(displayName);
         ImageHelper.loadAvatar(user.getAvatarUrl(), holder.imgAvatar, displayName);
 
-        // ==========================================
-        // LOGIC BIẾN HÌNH THEO MODE
-        // ==========================================
-        if (mode == MODE_MANAGE_KICK) { // Đây giờ là chế độ duy nhất cho Owner
+        // =========================================================================
+        // PERMISSION-BASED UI RENDERING
+        // =========================================================================
+        if (mode == MODE_MANAGE_KICK) {
+            // Admin/Owner Mode: Display management actions for all users EXCEPT themselves
             if (!user.getUid().equals(currentUserId)) {
                 holder.btnKick.setVisibility(View.VISIBLE);
-                holder.btnTransfer.setVisibility(View.VISIBLE); // Hiện nút transfer
+                holder.btnTransfer.setVisibility(View.VISIBLE);
 
-                holder.btnKick.setOnClickListener(v -> listener.onKickClicked(user));
-                holder.btnTransfer.setOnClickListener(v -> listener.onTransferClicked(user));
+                holder.btnKick.setOnClickListener(v -> {
+                    if (listener != null) listener.onKickClicked(user);
+                });
+
+                holder.btnTransfer.setOnClickListener(v -> {
+                    if (listener != null) listener.onTransferClicked(user);
+                });
             } else {
                 holder.btnKick.setVisibility(View.GONE);
                 holder.btnTransfer.setVisibility(View.GONE);
             }
-        } else { // MODE_VIEW_ONLY
+        } else {
+            // View-Only Mode: Hide all management actions
             holder.btnKick.setVisibility(View.GONE);
             holder.btnTransfer.setVisibility(View.GONE);
         }
@@ -82,19 +91,29 @@ public class WorkspaceMemberListAdapter extends RecyclerView.Adapter<WorkspaceMe
 
     @Override
     public int getItemCount() {
-        return memberList != null ? memberList.size() : 0;
+        return memberList.size();
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     public void setMembers(List<User> newMembers) {
-        this.memberList = newMembers;
+        this.memberList = newMembers != null ? newMembers : new ArrayList<>();
         notifyDataSetChanged();
     }
 
+    @SuppressLint("NotifyDataSetChanged")
+    public void updateMode(int newMode) {
+        if (this.mode != newMode) {
+            this.mode = newMode;
+            notifyDataSetChanged();
+        }
+    }
+
+    // =========================================================================
+    // VIEW HOLDER
+    // =========================================================================
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        ImageView imgAvatar;
+        ImageView imgAvatar, btnKick, btnTransfer;
         TextView tvName;
-        ImageView btnKick;
-        ImageView btnTransfer;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -102,12 +121,6 @@ public class WorkspaceMemberListAdapter extends RecyclerView.Adapter<WorkspaceMe
             tvName = itemView.findViewById(R.id.tvListName);
             btnKick = itemView.findViewById(R.id.btnKick);
             btnTransfer = itemView.findViewById(R.id.btnTransfer);
-        }
-    }
-    public void updateMode(int newMode) {
-        if (this.mode != newMode) {
-            this.mode = newMode;
-            notifyDataSetChanged(); // Yêu cầu vẽ lại toàn bộ danh sách
         }
     }
 }

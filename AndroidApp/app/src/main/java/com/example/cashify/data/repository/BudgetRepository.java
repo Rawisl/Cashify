@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+// Xử lý logic nghiệp vụ cho Ngân sách (Offline-first Sync)
 public class BudgetRepository {
 
     private final BudgetDao budgetDao;
@@ -29,11 +30,10 @@ public class BudgetRepository {
 
     public void insert(Budget budget) {
         executor.execute(() -> {
-            // Lưu Local và lấy ID thực tế từ Room
+            // Lưu Local trước, lấy ID tự sinh từ SQLite gắn ngược lại vào Model
             long id = budgetDao.insert(budget);
             budget.id = (int) id;
-
-            // Đẩy bản sao lên Firebase
+            // Bắn dữ liệu lên mây để sao lưu
             syncBudgetToCloud(budget);
         });
     }
@@ -48,8 +48,19 @@ public class BudgetRepository {
     public void delete(Budget budget) {
         executor.execute(() -> {
             budgetDao.delete(budget);
-            // Gửi yêu cầu xóa document trên cloud (nếu FirebaseManager hỗ trợ) Hoặc đơn giản là sync một Map rỗng/đánh dấu xóa
-            Log.d("FIREBASE_SYNC", "The budget has been cleared from the machine.");
+
+            // Đã vá: Gọi API xóa document tương ứng trên Firestore để tránh rác data trên mây
+            String workspaceId = (budget.workspaceId != null) ? budget.workspaceId : "PERSONAL";
+            firebaseManager.deleteDocumentFromCloud(workspaceId, "budgets", String.valueOf(budget.id), new FirebaseManager.DataCallback<Void>() {
+                @Override
+                public void onSuccess(Void data) {
+                    Log.d("FIREBASE_SYNC", "Budget " + budget.id + " deleted from Cloud.");
+                }
+                @Override
+                public void onError(String message) {
+                    Log.e("FIREBASE_SYNC", "Failed to delete budget " + budget.id + " from Cloud: " + message);
+                }
+            });
         });
     }
 
@@ -61,22 +72,21 @@ public class BudgetRepository {
         data.put("endDate", budget.endDate);
         data.put("periodType", budget.periodType);
 
-
         String currentWorkspaceId = (budget.workspaceId != null) ? budget.workspaceId : "PERSONAL";
 
         firebaseManager.syncLocalToCloud(currentWorkspaceId, "budgets", String.valueOf(budget.id), data, new FirebaseManager.DataCallback<Void>() {
             @Override
             public void onSuccess(Void result) {
-                Log.d("FIREBASE_SYNC", "Synchronize budget " + budget.id + " successfully!");
+                Log.d("FIREBASE_SYNC", "Budget " + budget.id + " synced to Cloud.");
             }
-
             @Override
             public void onError(String message) {
-                Log.e("FIREBASE_SYNC", "Synchronize budget " + budget.id + " failed: " + message);
+                Log.e("FIREBASE_SYNC", "Failed to sync budget " + budget.id + ": " + message);
             }
         });
     }
 
+    // --- CÁC HÀM GET DỮ LIỆU ĐỌC TRỰC TIẾP TỪ LOCAL (ROOM DB) ---
     public void getActiveBudgets(long now, Callback<List<Budget>> callback) {
         executor.execute(() -> callback.onResult(budgetDao.getActiveBudgets(now)));
     }

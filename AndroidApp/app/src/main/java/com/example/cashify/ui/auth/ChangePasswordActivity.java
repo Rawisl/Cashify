@@ -1,8 +1,10 @@
 package com.example.cashify.ui.auth;
 
+import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -10,20 +12,16 @@ import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
 import androidx.core.content.ContextCompat;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.example.cashify.R;
-import com.example.cashify.data.remote.FirebaseManager;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputLayout;
-import com.google.firebase.auth.AuthCredential;
-import com.google.firebase.auth.EmailAuthProvider;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.auth.GoogleAuthProvider;
-import com.google.firebase.auth.UserInfo;
 
 public class ChangePasswordActivity extends AppCompatActivity {
+
+    private ChangePasswordViewModel viewModel;
 
     private CardView cvGoogleBanner;
     private TextView tvGoogleBanner;
@@ -37,18 +35,19 @@ public class ChangePasswordActivity extends AppCompatActivity {
     private MaterialButton btnChangePassword;
     private MaterialButton btnSetPassword;
 
-    private FirebaseAuth auth;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_change_password);
 
-        auth = FirebaseManager.getInstance().getAuth();
+        viewModel = new ViewModelProvider(this).get(ChangePasswordViewModel.class);
+
         bindViews();
-        setupUI();
         setupPasswordStrength();
         setupClickListeners();
+        setupObservers();
+
+        viewModel.checkUserProviders();
     }
 
     private void bindViews() {
@@ -65,41 +64,65 @@ public class ChangePasswordActivity extends AppCompatActivity {
         btnSetPassword     = findViewById(R.id.btn_set_password);
     }
 
-    private void setupUI() {
-        FirebaseUser user = auth.getCurrentUser();
-        if (user == null) return;
+    private void setupObservers() {
+        viewModel.isGoogleUser.observe(this, isGoogle -> updateUIState());
+        viewModel.hasEmailProvider.observe(this, hasEmail -> updateUIState());
 
-        boolean isGoogleUser = false;
-        boolean hasEmailProvider = false;
+        viewModel.isLoading.observe(this, this::setLoading);
 
-        for (UserInfo info : user.getProviderData()) {
-            if (GoogleAuthProvider.PROVIDER_ID.equals(info.getProviderId())) isGoogleUser = true;
-            if (EmailAuthProvider.PROVIDER_ID.equals(info.getProviderId()))  hasEmailProvider = true;
-        }
+        viewModel.errorMessage.observe(this, error -> {
+            if (error != null) {
+                if ("WRONG_CURRENT_PASSWORD".equals(error)) {
+                    tilCurrentPassword.setError(getString(R.string.change_password_wrong_current));
+                } else {
+                    showSnackbar(error, false);
+                }
+                viewModel.clearMessages();
+            }
+        });
+
+        viewModel.successMessage.observe(this, successEvent -> {
+            if (successEvent != null) {
+                if ("PASSWORD_CHANGED".equals(successEvent)) {
+                    showSnackbar(getString(R.string.change_password_success), true);
+                    clearFields();
+                } else if ("PASSWORD_LINKED".equals(successEvent)) {
+                    showSnackbar(getString(R.string.change_password_set_success), true);
+                    clearFields();
+                }
+                viewModel.clearMessages();
+            }
+        });
+    }
+
+    private void updateUIState() {
+        boolean isGoogleUser = Boolean.TRUE.equals(viewModel.isGoogleUser.getValue());
+        boolean hasEmailProvider = Boolean.TRUE.equals(viewModel.hasEmailProvider.getValue());
 
         if (isGoogleUser && hasEmailProvider) {
             showGoogleBanner(true);
             showPasswordForm();
         } else if (isGoogleUser) {
             showGoogleBanner(false);
-            layoutPasswordForm.setVisibility(android.view.View.VISIBLE);
-            tilCurrentPassword.setVisibility(android.view.View.GONE);
-            btnChangePassword.setVisibility(android.view.View.GONE);
-            btnSetPassword.setVisibility(android.view.View.VISIBLE);
+            layoutPasswordForm.setVisibility(View.VISIBLE);
+            tilCurrentPassword.setVisibility(View.GONE);
+            btnChangePassword.setVisibility(View.GONE);
+            btnSetPassword.setVisibility(View.VISIBLE);
         } else {
+            cvGoogleBanner.setVisibility(View.GONE);
             showPasswordForm();
         }
     }
 
     private void showPasswordForm() {
-        layoutPasswordForm.setVisibility(android.view.View.VISIBLE);
-        tilCurrentPassword.setVisibility(android.view.View.VISIBLE);
-        btnChangePassword.setVisibility(android.view.View.VISIBLE);
-        btnSetPassword.setVisibility(android.view.View.GONE);
+        layoutPasswordForm.setVisibility(View.VISIBLE);
+        tilCurrentPassword.setVisibility(View.VISIBLE);
+        btnChangePassword.setVisibility(View.VISIBLE);
+        btnSetPassword.setVisibility(View.GONE);
     }
 
     private void showGoogleBanner(boolean linkedMode) {
-        cvGoogleBanner.setVisibility(android.view.View.VISIBLE);
+        cvGoogleBanner.setVisibility(View.VISIBLE);
         tvGoogleBanner.setText(linkedMode
                 ? getString(R.string.change_password_google_linked_banner)
                 : getString(R.string.change_password_google_banner));
@@ -116,10 +139,10 @@ public class ChangePasswordActivity extends AppCompatActivity {
             public void afterTextChanged(Editable s) {
                 String pw = (s != null) ? s.toString() : "";
                 if (pw.isEmpty()) {
-                    layoutStrength.setVisibility(android.view.View.GONE);
+                    layoutStrength.setVisibility(View.GONE);
                     return;
                 }
-                layoutStrength.setVisibility(android.view.View.VISIBLE);
+                layoutStrength.setVisibility(View.VISIBLE);
                 applyStrength(pw);
             }
         });
@@ -147,74 +170,31 @@ public class ChangePasswordActivity extends AppCompatActivity {
         }
 
         pbStrength.setProgress(progress);
-        pbStrength.setProgressTintList(ContextCompat.getColorStateList(this, colorRes));
+        pbStrength.setProgressTintList(ColorStateList.valueOf(ContextCompat.getColor(this, colorRes)));
         tvStrengthLabel.setText(labelRes);
         tvStrengthLabel.setTextColor(ContextCompat.getColor(this, colorRes));
     }
 
     private void setupClickListeners() {
-        android.view.View btnBack = findViewById(R.id.btnBack);
+        View btnBack = findViewById(R.id.btnBack);
         if (btnBack != null) btnBack.setOnClickListener(v -> finish());
 
         btnChangePassword.setOnClickListener(v -> {
             String currentPw = getInputText(tilCurrentPassword);
             String newPw     = getInputText(tilNewPassword);
             String confirmPw = getInputText(tilConfirmPassword);
+
             if (!validateChangeFields(currentPw, newPw, confirmPw)) return;
-            setLoading(true);
-            reauthenticateAndChange(currentPw, newPw);
+            viewModel.changePassword(currentPw, newPw);
         });
 
         btnSetPassword.setOnClickListener(v -> {
             String newPw     = getInputText(tilNewPassword);
             String confirmPw = getInputText(tilConfirmPassword);
+
             if (!validateNewOnly(newPw, confirmPw)) return;
-            setLoading(true);
-            linkEmailPassword(newPw);
+            viewModel.linkEmailPassword(newPw);
         });
-    }
-
-    private void reauthenticateAndChange(String currentPw, String newPw) {
-        FirebaseUser user = auth.getCurrentUser();
-        if (user == null || user.getEmail() == null) return;
-
-        AuthCredential credential = EmailAuthProvider.getCredential(user.getEmail(), currentPw);
-
-        user.reauthenticate(credential)
-                .addOnSuccessListener(unused ->
-                        user.updatePassword(newPw)
-                                .addOnSuccessListener(v2 -> {
-                                    setLoading(false);
-                                    showSnackbar(getString(R.string.change_password_success), true);
-                                    clearFields();
-                                })
-                                .addOnFailureListener(e -> {
-                                    setLoading(false);
-                                    showSnackbar(e.getLocalizedMessage());
-                                })
-                )
-                .addOnFailureListener(e -> {
-                    setLoading(false);
-                    tilCurrentPassword.setError(getString(R.string.change_password_wrong_current));
-                });
-    }
-
-    private void linkEmailPassword(String newPw) {
-        FirebaseUser user = auth.getCurrentUser();
-        if (user == null || user.getEmail() == null) return;
-
-        AuthCredential credential = EmailAuthProvider.getCredential(user.getEmail(), newPw);
-
-        user.linkWithCredential(credential)
-                .addOnSuccessListener(result -> {
-                    setLoading(false);
-                    showSnackbar(getString(R.string.change_password_set_success), true);
-                    setupUI();
-                })
-                .addOnFailureListener(e -> {
-                    setLoading(false);
-                    showSnackbar(e.getLocalizedMessage());
-                });
     }
 
     private boolean validateChangeFields(String currentPw, String newPw, String confirmPw) {
@@ -275,10 +255,11 @@ public class ChangePasswordActivity extends AppCompatActivity {
         if (tilCurrentPassword.getEditText() != null) tilCurrentPassword.getEditText().setText("");
         if (tilNewPassword.getEditText() != null)     tilNewPassword.getEditText().setText("");
         if (tilConfirmPassword.getEditText() != null) tilConfirmPassword.getEditText().setText("");
-    }
 
-    private void showSnackbar(String message) {
-        showSnackbar(message, false);
+        layoutStrength.setVisibility(View.GONE);
+        tilCurrentPassword.clearFocus();
+        tilNewPassword.clearFocus();
+        tilConfirmPassword.clearFocus();
     }
 
     private void showSnackbar(String message, boolean success) {
