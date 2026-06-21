@@ -43,6 +43,9 @@ public class NotificationBottomSheet extends BottomSheetDialogFragment {
     private static final String TYPE_WORKSPACE_TRANS = "WORKSPACE_TRANS";
     private static final String TYPE_WORKSPACE_CHAT = "WORKSPACE_CHAT";
     private static final String TYPE_FRIEND_CHAT = "FRIEND_CHAT";
+    private static final String TYPE_SOCIAL_LIKE = "SOCIAL_LIKE";
+    private static final String TYPE_SOCIAL_COMMENT = "SOCIAL_COMMENT";
+    private static final String TYPE_SOCIAL_SHARE = "SOCIAL_SHARE";
 
     private NotificationAdapter adapter;
     private FirebaseFirestore db;
@@ -158,6 +161,17 @@ public class NotificationBottomSheet extends BottomSheetDialogFragment {
                     Intent intent = new Intent(requireContext(), com.example.cashify.ui.FriendsActivity.FriendChatActivity.class);
                     // Truyền UID (lấy từ referenceId do Backend trả về) sang Activity
                     intent.putExtra(com.example.cashify.ui.FriendsActivity.FriendChatActivity.EXTRA_FRIEND_UID, notification.getReferenceId());
+                    startActivity(intent);
+                }
+                dismiss();
+                break;
+
+            case TYPE_SOCIAL_LIKE:
+            case TYPE_SOCIAL_COMMENT:
+            case TYPE_SOCIAL_SHARE:
+                if (notification.getReferenceId() != null && !notification.getReferenceId().isEmpty()) {
+                    Intent intent = new Intent(requireContext(), com.example.cashify.ui.social.PostDetailActivity.class);
+                    intent.putExtra("POST_ID", notification.getReferenceId());
                     startActivity(intent);
                 }
                 dismiss();

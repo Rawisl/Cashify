@@ -28,12 +28,18 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
     private static final String TYPE_WORKSPACE_INVITE = "WORKSPACE_INVITE";
     private static final String TYPE_WORKSPACE_TRANS = "WORKSPACE_TRANS";
     private static final String TYPE_WORKSPACE_CHAT = "WORKSPACE_CHAT";
+    private static final String TYPE_SOCIAL_LIKE = "SOCIAL_LIKE";
+    private static final String TYPE_SOCIAL_COMMENT = "SOCIAL_COMMENT";
+    private static final String TYPE_SOCIAL_SHARE = "SOCIAL_SHARE";
 
     private static final int COLOR_UNREAD_BG = Color.parseColor("#F9FAFC");
     private static final int COLOR_ICON_FRIEND = Color.parseColor("#E91E63");
     private static final int COLOR_ICON_INVITE = Color.parseColor("#4C6FFF");
     private static final int COLOR_ICON_TRANS = Color.parseColor("#FF9800");
     private static final int COLOR_ICON_CHAT = Color.parseColor("#4CAF50");
+    private static final int COLOR_SOCIAL_LIKE = Color.parseColor("#E91E63"); // Pinkish red
+    private static final int COLOR_SOCIAL_COMMENT = Color.parseColor("#00BCD4"); // Cyan
+    private static final int COLOR_SOCIAL_SHARE = Color.parseColor("#9C27B0"); // Purple
     private static final int COLOR_ICON_DEFAULT = Color.parseColor("#757575");
 
     private List<NotificationItem> list = new ArrayList<>();
@@ -92,6 +98,18 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
             case TYPE_WORKSPACE_CHAT:
                 holder.imgIcon.setImageResource(android.R.drawable.ic_menu_send); // Fallback icon
                 holder.imgIcon.setColorFilter(COLOR_ICON_CHAT);
+                break;
+            case TYPE_SOCIAL_LIKE:
+                holder.imgIcon.setImageResource(R.drawable.ic_feed_like); // Use feed_like icon
+                holder.imgIcon.setColorFilter(COLOR_SOCIAL_LIKE);
+                break;
+            case TYPE_SOCIAL_COMMENT:
+                holder.imgIcon.setImageResource(R.drawable.ic_feed_comment); // Use feed_comment icon
+                holder.imgIcon.setColorFilter(COLOR_SOCIAL_COMMENT);
+                break;
+            case TYPE_SOCIAL_SHARE:
+                holder.imgIcon.setImageResource(R.drawable.ic_feed_share); // Use feed_share icon
+                holder.imgIcon.setColorFilter(COLOR_SOCIAL_SHARE);
                 break;
             default:
                 holder.imgIcon.setImageResource(R.drawable.ic_notification_regular);

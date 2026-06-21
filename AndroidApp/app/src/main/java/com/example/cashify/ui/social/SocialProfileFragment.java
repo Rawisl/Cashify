@@ -113,7 +113,12 @@ public class SocialProfileFragment extends BaseFragment {
         viewModel = new ViewModelProvider(this).get(SocialProfileViewModel.class);
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser != null) {
-            currentUserId = currentUser.getUid();
+            if (getArguments() != null && getArguments().getString("userId") != null) {
+                currentUserId = getArguments().getString("userId");
+            } else {
+                currentUserId = currentUser.getUid();
+            }
+
             viewModel.loadProfileData(currentUserId);
 
             // YÊU CẦU VIEWMODEL TẢI HUY HIỆU
@@ -128,14 +133,35 @@ public class SocialProfileFragment extends BaseFragment {
     }
 
     private void setupActions(View view) {
-        view.findViewById(R.id.btnEditProfile).setOnClickListener(v -> startActivity(new Intent(requireContext(), EditProfileActivity.class)));
-        view.findViewById(R.id.btnShareProfile).setOnClickListener(v -> shareProfile());
-        view.findViewById(R.id.txtProfileLink).setOnClickListener(v -> copyProfileLink());
+        View btnEditProfile = view.findViewById(R.id.btnEditProfile);
+        View btnShareProfile = view.findViewById(R.id.btnShareProfile);
+        View txtProfileLink = view.findViewById(R.id.txtProfileLink);
+
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        boolean isMyProfile = currentUser != null && currentUser.getUid().equals(currentUserId);
+
+        if (!isMyProfile) {
+            btnEditProfile.setVisibility(View.GONE);
+            if (layoutActionCards != null) layoutActionCards.setVisibility(View.GONE);
+        } else {
+            btnEditProfile.setVisibility(View.VISIBLE);
+            if (layoutActionCards != null) layoutActionCards.setVisibility(View.VISIBLE);
+        }
+
+        btnEditProfile.setOnClickListener(v -> startActivity(new Intent(requireContext(), EditProfileActivity.class)));
+        btnShareProfile.setOnClickListener(v -> shareProfile());
+        txtProfileLink.setOnClickListener(v -> copyProfileLink());
 
         View.OnClickListener createPostListener = v -> openCreatePost("thoughts");
         view.findViewById(R.id.btnStartGrowing).setOnClickListener(createPostListener);
         view.findViewById(R.id.actionFirstEntry).setOnClickListener(createPostListener);
         view.findViewById(R.id.actionSetMilestone).setOnClickListener(v -> openCreatePost("milestone"));
+        
+        MaterialToolbar toolbar = view.findViewById(R.id.toolbarSocialProfile);
+        if (!isMyProfile) {
+            toolbar.setNavigationIcon(R.drawable.ic_arrow_left_back);
+            toolbar.setNavigationOnClickListener(v -> androidx.navigation.Navigation.findNavController(view).navigateUp());
+        }
     }
 
     private void setupRecyclerView() {
@@ -157,6 +183,23 @@ public class SocialProfileFragment extends BaseFragment {
                     callback.onResult(true);
                 }).addOnFailureListener(e -> callback.onResult(false));
             } else callback.onResult(false);
+        });
+
+        myPostsAdapter.setOnCommentFetchListener(postId -> {
+            FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+            if (user != null) {
+                user.getIdToken(true).addOnSuccessListener(result -> {
+                    viewModel.loadPreviewComments(postId, "Bearer " + result.getToken());
+                });
+            }
+        });
+
+        myPostsAdapter.setOnAvatarClickListener(userId -> {
+            if (!userId.equals(currentUserId)) {
+                android.os.Bundle bundle = new android.os.Bundle();
+                bundle.putString("userId", userId);
+                androidx.navigation.Navigation.findNavController(requireView()).navigate(R.id.nav_other_profile, bundle);
+            }
         });
 
         rvMyPosts.setLayoutManager(new LinearLayoutManager(requireContext()));

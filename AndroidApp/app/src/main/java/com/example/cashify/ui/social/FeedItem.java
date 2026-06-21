@@ -1,5 +1,9 @@
 package com.example.cashify.ui.social;
 
+import com.example.cashify.data.model.Comment;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 public abstract class FeedItem {
@@ -10,7 +14,11 @@ public abstract class FeedItem {
     private String userId; // Mandatory for Edit/Delete permission validation
     private int likeCount;
     private int commentCount;
+    private int shareCount;
     private boolean isLiked;
+    private boolean isCommentExpanded = false;
+    private boolean isPreviewCommentsLoaded = false;
+    private List<Comment> previewComments = new ArrayList<>();
 
     protected FeedItem(String id, String userId) {
         this.id = id;
@@ -22,16 +30,46 @@ public abstract class FeedItem {
     public String getUserId() { return userId; }
     public int getLikeCount() { return likeCount; }
     public int getCommentCount() { return commentCount; }
+    public int getShareCount() { return shareCount; }
     public boolean isLiked() { return isLiked; }
+    public boolean isCommentExpanded() { return isCommentExpanded; }
+    public boolean isPreviewCommentsLoaded() { return isPreviewCommentsLoaded; }
+    public List<Comment> getPreviewComments() { return previewComments; }
 
     // --- Setters ---
     public void setId(String id) { this.id = id; } // Cho phép gán ID dễ dàng ở PostDetailActivity
     public void setUserId(String userId) { this.userId = userId != null ? userId : ""; }
     public void setLikeCount(int likeCount) { this.likeCount = likeCount; }
     public void setCommentCount(int commentCount) { this.commentCount = commentCount; }
+    public void setShareCount(int shareCount) { this.shareCount = shareCount; }
     public void setLiked(boolean liked) { isLiked = liked; }
+    public void setCommentExpanded(boolean commentExpanded) { isCommentExpanded = commentExpanded; }
+    public void setPreviewCommentsLoaded(boolean previewCommentsLoaded) { isPreviewCommentsLoaded = previewCommentsLoaded; }
+    public void setPreviewComments(List<Comment> previewComments) { this.previewComments = previewComments; }
 
     public abstract int getType();
+
+    // =========================================================================
+    // CLONING
+    // =========================================================================
+    public FeedItem cloneItem() {
+        FeedItem cloned;
+        if (this instanceof NormalPost) {
+            NormalPost np = (NormalPost) this;
+            cloned = new NormalPost(np.getId(), np.getUserId(), np.userName, np.time, np.title, np.description, np.hasImage, np.imageUrl, np.initials, np.expandable, np.avatarUrl);
+        } else {
+            MilestonePost mp = (MilestonePost) this;
+            cloned = new MilestonePost(mp.getId(), mp.getUserId(), mp.userName, mp.time, mp.title, mp.description, mp.month, mp.amount, mp.iconText, mp.progress, mp.expandable, mp.milestoneJson, mp.avatarUrl, mp.initials);
+        }
+        cloned.setLikeCount(this.getLikeCount());
+        cloned.setCommentCount(this.getCommentCount());
+        cloned.setShareCount(this.getShareCount());
+        cloned.setLiked(this.isLiked());
+        cloned.setCommentExpanded(this.isCommentExpanded());
+        cloned.setPreviewCommentsLoaded(this.isPreviewCommentsLoaded());
+        cloned.setPreviewComments(new ArrayList<>(this.getPreviewComments()));
+        return cloned;
+    }
 
     // =========================================================================
     // EQUALS & HASHCODE
@@ -45,13 +83,16 @@ public abstract class FeedItem {
         // BẮT BUỘC PHẢI SO SÁNH CẢ TRẠNG THÁI TƯƠNG TÁC
         return likeCount == feedItem.likeCount &&
                 commentCount == feedItem.commentCount &&
+                shareCount == feedItem.shareCount &&
                 isLiked == feedItem.isLiked &&
+                isCommentExpanded == feedItem.isCommentExpanded &&
+                isPreviewCommentsLoaded == feedItem.isPreviewCommentsLoaded &&
                 Objects.equals(id, feedItem.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, likeCount, commentCount, isLiked);
+        return Objects.hash(id, likeCount, commentCount, shareCount, isLiked, isCommentExpanded, isPreviewCommentsLoaded);
     }
 
     // =========================================================================

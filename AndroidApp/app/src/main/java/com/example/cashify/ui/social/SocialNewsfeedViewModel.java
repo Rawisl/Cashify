@@ -6,6 +6,10 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 import com.example.cashify.data.remote.ApiDto;
+import com.example.cashify.data.model.Comment;
+import com.example.cashify.ui.social.FeedItem;
+import com.example.cashify.ui.social.FeedItem.NormalPost;
+import com.example.cashify.ui.social.FeedItem.MilestonePost;
 import com.example.cashify.utils.ApiClient;
 import com.example.cashify.utils.ApiService;
 import com.example.cashify.utils.TimeFormatter;
@@ -235,6 +239,57 @@ public class SocialNewsfeedViewModel extends ViewModel {
         });
     }
 
+    public void loadPreviewComments(String postId, String token) {
+        if (token == null || token.isEmpty()) return;
+        apiService.getComments(postId, token).enqueue(new Callback<List<Object>>() {
+            @Override
+            public void onResponse(@NonNull Call<List<Object>> call, @NonNull Response<List<Object>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    List<Comment> previewList = new ArrayList<>();
+                    int count = 0;
+                    for (Object obj : response.body()) {
+                        if (count >= 5) break;
+                        if (obj instanceof Map) {
+                            Map<String, Object> map = (Map<String, Object>) obj;
+                            Object tObj = map.get("timestamp");
+                            long t = tObj instanceof Number ? ((Number) tObj).longValue() : 0L;
+                            String authorName = map.get("authorName") instanceof String ? (String) map.get("authorName") : "";
+                            String content = map.get("content") instanceof String ? (String) map.get("content") : "";
+                            String avatarUrl = map.get("authorAvatarUrl") instanceof String ? (String) map.get("authorAvatarUrl") : "";
+                            
+                            previewList.add(new Comment(
+                                    map.get("commentId") instanceof String ? (String) map.get("commentId") : "",
+                                    map.get("userId") instanceof String ? (String) map.get("userId") : "",
+                                    avatarUrl,
+                                    authorName.isEmpty() ? "Cashify User" : authorName,
+                                    content,
+                                    t > 0 ? TimeFormatter.format(t) : "Just now"
+                            ));
+                            count++;
+                        }
+                    }
+                    
+                    List<FeedItem> current = _feedItems.getValue();
+                    if (current != null) {
+                        List<FeedItem> newList = new ArrayList<>(current);
+                        for (int i = 0; i < newList.size(); i++) {
+                            if (newList.get(i).getId().equals(postId)) {
+                                FeedItem item = newList.get(i).cloneItem();
+                                item.setPreviewComments(previewList);
+                                item.setPreviewCommentsLoaded(true);
+                                item.setCommentExpanded(true); // Expand now that comments are loaded
+                                newList.set(i, item);
+                                _feedItems.setValue(newList);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            @Override public void onFailure(@NonNull Call<List<Object>> call, @NonNull Throwable t) {}
+        });
+    }
+
     // CƠ CHẾ TOGGLE LIKED TỐI THƯỢNG
     public void toggleLike(String postId, String token, boolean isLiked) {
         // 1. Ghi nhớ lịch sử vào RAM ngay lập tức (Xóa sạch bộ nhớ tạm)
@@ -290,6 +345,7 @@ public class SocialNewsfeedViewModel extends ViewModel {
 
         Long likeCount = doc.getLong("likeCount");
         Long commentCount = doc.getLong("commentCount");
+        Long shareCount = doc.getLong("shareCount");
 
         if (timestamp == null) timestamp = 0L;
         if (authorName == null) authorName = "Cashify User";
@@ -316,8 +372,9 @@ public class SocialNewsfeedViewModel extends ViewModel {
 
         if (item != null) {
             item.setLikeCount(likeCount != null ? likeCount.intValue() : 0);
-            item.setCommentCount(commentCount != null ? commentCount.intValue() : 0);
-            // Mặc định là false, sẽ bị đè lại nếu có trong localLikedPosts
+            int finalCommentCount = commentCount != null ? commentCount.intValue() : 0;
+            item.setCommentCount(finalCommentCount);
+            item.setShareCount(shareCount != null ? shareCount.intValue() : 0);
             item.setLiked(false);
         }
         return item;

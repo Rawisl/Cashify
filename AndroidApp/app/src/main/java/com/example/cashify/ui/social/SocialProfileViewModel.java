@@ -9,6 +9,7 @@ import com.example.cashify.data.remote.ApiDto;
 import com.example.cashify.utils.ApiClient;
 import com.example.cashify.utils.ApiService;
 import com.example.cashify.utils.TimeFormatter;
+import com.example.cashify.data.model.Comment;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
@@ -155,6 +156,57 @@ public class SocialProfileViewModel extends ViewModel {
             public void onFailure(@NonNull Call<ApiDto.SocialPostDetailResponse> call, @NonNull Throwable t) {
                 // Lỗi mạng thì bỏ qua, giữ UI cũ
             }
+        });
+    }
+
+    public void loadPreviewComments(String postId, String token) {
+        if (token == null || token.isEmpty()) return;
+        apiService.getComments(postId, token).enqueue(new Callback<List<Object>>() {
+            @Override
+            public void onResponse(@NonNull Call<List<Object>> call, @NonNull Response<List<Object>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    List<Comment> previewList = new ArrayList<>();
+                    int count = 0;
+                    for (Object obj : response.body()) {
+                        if (count >= 5) break;
+                        if (obj instanceof Map) {
+                            Map<String, Object> map = (Map<String, Object>) obj;
+                            Object tObj = map.get("timestamp");
+                            long t = tObj instanceof Number ? ((Number) tObj).longValue() : 0L;
+                            String authorName = map.get("authorName") instanceof String ? (String) map.get("authorName") : "";
+                            String content = map.get("content") instanceof String ? (String) map.get("content") : "";
+                            String avatarUrl = map.get("authorAvatarUrl") instanceof String ? (String) map.get("authorAvatarUrl") : "";
+                            
+                            previewList.add(new Comment(
+                                    map.get("commentId") instanceof String ? (String) map.get("commentId") : "",
+                                    map.get("userId") instanceof String ? (String) map.get("userId") : "",
+                                    avatarUrl,
+                                    authorName.isEmpty() ? "Cashify User" : authorName,
+                                    content,
+                                    t > 0 ? TimeFormatter.format(t) : "Just now"
+                            ));
+                            count++;
+                        }
+                    }
+                    
+                    List<FeedItem> current = _wallPosts.getValue();
+                    if (current != null) {
+                        List<FeedItem> newList = new ArrayList<>(current);
+                        for (int i = 0; i < newList.size(); i++) {
+                            if (newList.get(i).getId().equals(postId)) {
+                                FeedItem item = newList.get(i).cloneItem();
+                                item.setPreviewComments(previewList);
+                                item.setPreviewCommentsLoaded(true);
+                                item.setCommentExpanded(true);
+                                newList.set(i, item);
+                                _wallPosts.setValue(newList);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            @Override public void onFailure(@NonNull Call<List<Object>> call, @NonNull Throwable t) {}
         });
     }
 

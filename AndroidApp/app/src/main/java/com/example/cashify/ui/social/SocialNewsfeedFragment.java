@@ -138,6 +138,21 @@ public class SocialNewsfeedFragment extends BaseFragment {
                 } else callback.onResult(false);
             });
 
+            feedAdapter.setOnCommentFetchListener(postId -> {
+                FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+                if (user != null) {
+                    user.getIdToken(true).addOnSuccessListener(result -> {
+                        viewModel.loadPreviewComments(postId, "Bearer " + result.getToken());
+                    });
+                }
+            });
+
+            feedAdapter.setOnAvatarClickListener(userId -> {
+                android.os.Bundle bundle = new android.os.Bundle();
+                bundle.putString("userId", userId);
+                androidx.navigation.Navigation.findNavController(requireView()).navigate(R.id.nav_other_profile, bundle);
+            });
+
             rvFeed.setLayoutManager(new LinearLayoutManager(requireContext()));
             rvFeed.setAdapter(feedAdapter);
             rvFeed.setHasFixedSize(false);

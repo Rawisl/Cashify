@@ -3,8 +3,10 @@ package com.example.cashify.ui.social;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -18,11 +20,13 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.example.cashify.R;
+import com.example.cashify.data.model.Comment;
 import com.example.cashify.utils.HeartAnimation;
 import com.example.cashify.utils.ImageHelper;
 import com.example.cashify.utils.ShineAnimationHelper;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -49,6 +53,16 @@ public class SocialNewsfeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vi
 
     public interface LikeResultCallback {
         void onResult(boolean success);
+    }
+
+    public interface OnCommentFetchListener {
+        void onFetchComments(String postId);
+    }
+
+    private OnCommentFetchListener commentFetchListener;
+
+    public void setOnCommentFetchListener(OnCommentFetchListener listener) {
+        this.commentFetchListener = listener;
     }
 
     // Constructor dùng ngoài Newsfeed (Mặc định cắt chữ, có click)
@@ -146,20 +160,38 @@ public class SocialNewsfeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vi
         }
     }
 
-    private void handleLikeClick(FeedItem post, ImageView imgLikeHeart, TextView tvLikeCount) {
+    private void handleLikeClick(FeedItem post, ImageView imgLikeHeart, TextView tvLikeLabel, TextView tvEngagement) {
         boolean nowLiked = !likedItemIds.contains(post.getId());
 
         if (nowLiked) {
             likedItemIds.add(post.getId());
             post.setLikeCount(post.getLikeCount() + 1);
             HeartAnimation.playRubberBand(imgLikeHeart);
+            
+            // Send Notification
+            if (post.getUserId() != null) {
+                String currentUser = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser() != null ? 
+                        com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser().getDisplayName() : "Someone";
+                com.example.cashify.data.remote.FirebaseManager.getInstance().sendSocialNotification(
+                        post.getUserId(),
+                        "SOCIAL_LIKE",
+                        "New Like \u2764\uFE0F",
+                        currentUser + " liked your post",
+                        post.getId()
+                );
+            }
         } else {
             likedItemIds.remove(post.getId());
             post.setLikeCount(Math.max(0, post.getLikeCount() - 1));
         }
 
-        tvLikeCount.setText(String.valueOf(post.getLikeCount()));
-        applyLikeState(imgLikeHeart, tvLikeCount, nowLiked);
+        if (tvEngagement != null) {
+            String likeFormatted = formatCount(post.getLikeCount());
+            String commentFormatted = formatCount(post.getCommentCount());
+            tvEngagement.setText(String.format("%s Likes • %s Comments", likeFormatted, commentFormatted));
+        }
+
+        applyLikeState(imgLikeHeart, tvLikeLabel, nowLiked);
 
         if (likeClickListener != null) {
             likeClickListener.onLikeClick(post.getId(), nowLiked, success -> {
@@ -171,11 +203,93 @@ public class SocialNewsfeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vi
                         likedItemIds.add(post.getId());
                         post.setLikeCount(post.getLikeCount() + 1);
                     }
-                    tvLikeCount.setText(String.valueOf(post.getLikeCount()));
-                    applyLikeState(imgLikeHeart, tvLikeCount, !nowLiked);
+                    if (tvEngagement != null) {
+                        String likeFormatted = formatCount(post.getLikeCount());
+                        String commentFormatted = formatCount(post.getCommentCount());
+                        tvEngagement.setText(String.format("%s Likes • %s Comments", likeFormatted, commentFormatted));
+                    }
+                    applyLikeState(imgLikeHeart, tvLikeLabel, !nowLiked);
                 }
             });
         }
+    }
+    private void handleShareClick(FeedItem milestone, View btnShare, TextView tvShareSummary) {
+        android.content.Context context = btnShare.getContext();
+        HeartAnimation.playRubberBand(btnShare);
+
+        milestone.setShareCount(milestone.getShareCount() + 1);
+        if (tvShareSummary != null) {
+            String shareFormatted = formatCount(milestone.getShareCount());
+            tvShareSummary.setText(String.format("%s Shares", shareFormatted));
+        }
+
+        if (milestone.getUserId() != null) {
+            String currentUser = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser() != null ?
+                    com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser().getDisplayName() : "Someone";
+            com.example.cashify.data.remote.FirebaseManager.getInstance().sendSocialNotification(
+                    milestone.getUserId(),
+                    "SOCIAL_SHARE",
+                    "New Share \uD83D\uDD04",
+                    currentUser + " shared your post",
+                    milestone.getId()
+            );
+        }
+
+        com.google.android.material.bottomsheet.BottomSheetDialog dialog = new com.google.android.material.bottomsheet.BottomSheetDialog(context);
+        View sheetView = android.view.LayoutInflater.from(context).inflate(R.layout.bottom_sheet_share, null);
+
+        // Zalo
+        sheetView.findViewById(R.id.btnShareZalo).setOnClickListener(v -> {
+            dialog.dismiss();
+            Toast.makeText(context, "Mở ứng dụng Zalo...", Toast.LENGTH_SHORT).show();
+        });
+
+        // Messenger
+        sheetView.findViewById(R.id.btnShareMessenger).setOnClickListener(v -> {
+            dialog.dismiss();
+            Toast.makeText(context, "Mở ứng dụng Messenger...", Toast.LENGTH_SHORT).show();
+        });
+
+        // Facebook
+        sheetView.findViewById(R.id.btnShareFacebook).setOnClickListener(v -> {
+            dialog.dismiss();
+            Toast.makeText(context, "Mở ứng dụng Facebook...", Toast.LENGTH_SHORT).show();
+        });
+
+        // Copy Link
+        sheetView.findViewById(R.id.btnShareCopyLink).setOnClickListener(v -> {
+            dialog.dismiss();
+            android.content.ClipboardManager clipboard = (android.content.ClipboardManager) context.getSystemService(android.content.Context.CLIPBOARD_SERVICE);
+            android.content.ClipData clip = android.content.ClipData.newPlainText("Share Link", "https://cashify.app/post/" + milestone.getId());
+            clipboard.setPrimaryClip(clip);
+            Toast.makeText(context, "Đã sao chép liên kết", Toast.LENGTH_SHORT).show();
+        });
+
+        // More Options (System Intent)
+        sheetView.findViewById(R.id.btnShareMore).setOnClickListener(v -> {
+            dialog.dismiss();
+            android.content.Intent shareIntent = new android.content.Intent(android.content.Intent.ACTION_SEND);
+            shareIntent.setType("text/plain");
+            shareIntent.putExtra(android.content.Intent.EXTRA_TITLE, "Share this post");
+
+            String shareBody = "Check out this post on Cashify!";
+            if (milestone instanceof FeedItem.NormalPost) {
+                FeedItem.NormalPost normalPost = (FeedItem.NormalPost) milestone;
+                String titlePart = (normalPost.title != null && !normalPost.title.isEmpty()) ? normalPost.title + "\n" : "";
+                shareBody = normalPost.userName + " posted on Cashify:\n\n" + titlePart + normalPost.description;
+            } else if (milestone instanceof FeedItem.MilestonePost) {
+                FeedItem.MilestonePost milestonePost = (FeedItem.MilestonePost) milestone;
+                String iconPart = (milestonePost.iconText != null) ? milestonePost.iconText + " " : "";
+                shareBody = milestonePost.userName + " just achieved a milestone on Cashify!\n\n" + iconPart + milestonePost.title;
+            }
+            shareIntent.putExtra(android.content.Intent.EXTRA_SUBJECT, "Cashify Post");
+            shareIntent.putExtra(android.content.Intent.EXTRA_TEXT, shareBody);
+            
+            context.startActivity(android.content.Intent.createChooser(shareIntent, "Share post via"));
+        });
+
+        dialog.setContentView(sheetView);
+        dialog.show();
     }
 
     // =========================================================================
@@ -183,10 +297,14 @@ public class SocialNewsfeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vi
     // =========================================================================
     class NormalPostViewHolder extends RecyclerView.ViewHolder {
         private final ImageView imgAvatar, imgPostImage, decorIcon, imgLikeHeart;
-        private final TextView txtAvatar, name, time, title, content, seeMore, decorCaption, tvLikeCount; // THÊM 'title'
-        private final TextView tvCommentCount, tvShareCount;
+        private final TextView txtAvatar, name, time, title, content, seeMore, decorCaption, tvLikeLabel, tvEngagementSummary, tvShareSummary;
         private final View imagePlaceholder, btnLike, btnComment, btnShare;
+        private final View layoutInlineComments;
+        private final EditText editInlineComment;
+        private final View btnSendInlineComment;
         private final ImageButton menuButton;
+        private final LinearLayout layoutCommentPreviewList;
+        private final TextView btnViewAllComments;
 
         NormalPostViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -195,33 +313,41 @@ public class SocialNewsfeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vi
             name = itemView.findViewById(R.id.txtUserName);
             time = itemView.findViewById(R.id.txtPostTime);
 
-            // ÁNH XẠ TIÊU ĐỀ & NỘI DUNG
+            // LOGIC TỰ ĐỘNG CHUYỂN ĐỔI ẢNH THEO TRẠNG THÁI GIAO DỊCH
+            // imagePlaceholder không còn trong item_post_normal (ui-consistency)
+            imagePlaceholder = null;
+            imgPostImage = null;
+            decorIcon = null;
+            decorCaption = null;
+
             title = itemView.findViewById(R.id.txtPostTitle);
             content = itemView.findViewById(R.id.txtPostContent);
-
             seeMore = itemView.findViewById(R.id.txtSeeMore);
-            imagePlaceholder = itemView.findViewById(R.id.postImagePlaceholder);
-            imgPostImage = itemView.findViewById(R.id.imgPostImage);
-            decorIcon = itemView.findViewById(R.id.decorIcon);
-            decorCaption = itemView.findViewById(R.id.decorCaption);
+
             menuButton = itemView.findViewById(R.id.btnPostMenu);
 
             btnLike = itemView.findViewById(R.id.btnLike);
             imgLikeHeart = itemView.findViewById(R.id.imgLikeHeart);
-            tvLikeCount = itemView.findViewById(R.id.tvLikeCount);
+            tvLikeLabel = itemView.findViewById(R.id.tvLikeLabel);
+            tvEngagementSummary = itemView.findViewById(R.id.tvPostEngagementSummary);
+            tvShareSummary = itemView.findViewById(R.id.tvPostShareSummary);
 
             btnComment = itemView.findViewById(R.id.btnComment);
-            tvCommentCount = itemView.findViewById(R.id.tvCommentCount);
-
             btnShare = itemView.findViewById(R.id.btnShare);
-            tvShareCount = itemView.findViewById(R.id.tvShareCount);
+
+            layoutInlineComments = itemView.findViewById(R.id.layoutInlineComments);
+            editInlineComment = itemView.findViewById(R.id.editInlineComment);
+            btnSendInlineComment = itemView.findViewById(R.id.btnSendInlineComment);
+            layoutCommentPreviewList = itemView.findViewById(R.id.layoutCommentPreviewList);
+            btnViewAllComments = itemView.findViewById(R.id.btnViewAllComments);
         }
 
         void bind(FeedItem.NormalPost post, boolean expanded) {
-            if (!isDetailMode) {
-                itemView.setOnClickListener(v -> { if (postClickListener != null) postClickListener.onPostClick(post); });
-            } else {
-                itemView.setOnClickListener(null);
+            itemView.setOnClickListener(null);
+            itemView.setClickable(false);
+            itemView.setFocusable(false);
+            if (itemView instanceof com.google.android.material.card.MaterialCardView) {
+                ((com.google.android.material.card.MaterialCardView) itemView).setRippleColorResource(android.R.color.transparent);
             }
 
             View.OnClickListener onAvatarClicked = v -> {
@@ -244,20 +370,29 @@ public class SocialNewsfeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vi
             txtAvatar.setOnClickListener(onAvatarClicked);
             name.setOnClickListener(onAvatarClicked);
 
-            name.setText(post.userName);
-            time.setText(post.time);
+            if (name != null) name.setText(post.userName);
+            if (time != null) time.setText(post.time);
 
-            // LOGIC HIỂN THỊ TIÊU ĐỀ: Nếu rỗng thì ẩn hẳn đi để không bị trống một mảng trắng
-            if (post.title != null && !post.title.trim().isEmpty()) {
-                title.setVisibility(View.VISIBLE);
-                title.setText(post.title);
-            } else {
-                title.setVisibility(View.GONE);
+            // LOGIC HIỂN THỊ TIÊU ĐỀ
+            if (title != null) {
+                if (post.title != null && !post.title.trim().isEmpty()) {
+                    title.setVisibility(View.VISIBLE);
+                    title.setText(post.title);
+                } else {
+                    title.setVisibility(View.GONE);
+                }
             }
 
-            // HIỂN THỊ NỘI DUNG TỪ BIẾN description (trước đây là text)
-            content.setText(post.description);
-            content.setMaxLines(isDetailMode ? Integer.MAX_VALUE : (expanded ? Integer.MAX_VALUE : 3));
+            // HIỂN THỊ NỘI DUNG
+            if (content != null) {
+                if (post.description != null && !post.description.trim().isEmpty()) {
+                    content.setVisibility(View.VISIBLE);
+                    content.setText(formatHashtags(post.description));
+                    content.setMaxLines(isDetailMode ? Integer.MAX_VALUE : (expanded ? Integer.MAX_VALUE : 3));
+                } else {
+                    content.setVisibility(View.GONE);
+                }
+            }
 
             // Xử lý nút Xem thêm...
             bindSeeMore(seeMore, content, post.getId(), post.expandable, expanded, this);
@@ -266,29 +401,16 @@ public class SocialNewsfeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vi
                 if (menuClickListener != null) menuClickListener.onMenuClick(post);
             });
 
-            if (post.hasImage && post.imageUrl != null && !post.imageUrl.isEmpty()) {
-                imagePlaceholder.setVisibility(View.VISIBLE);
-                imgPostImage.setVisibility(View.VISIBLE);
-                decorIcon.setVisibility(View.GONE);
-                decorCaption.setVisibility(View.GONE);
-                Glide.with(itemView.getContext())
-                        .load(post.imageUrl)
-                        .placeholder(R.drawable.bg_feed_image_placeholder)
-                        .error(R.drawable.bg_feed_image_placeholder)
-                        .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC)
-                        .override(1080, 720)
-                        .centerCrop()
-                        .dontAnimate()
-                        .into(imgPostImage);
-            } else {
-                imagePlaceholder.setVisibility(View.GONE);
-                imgPostImage.setVisibility(View.GONE);
-                decorIcon.setVisibility(View.VISIBLE);
-                decorCaption.setVisibility(View.VISIBLE);
+            if (tvEngagementSummary != null) {
+                String likeFormatted = formatCount(post.getLikeCount());
+                String commentFormatted = formatCount(post.getCommentCount());
+                tvEngagementSummary.setText(String.format("%s Likes • %s Comments", likeFormatted, commentFormatted));
             }
 
-            tvLikeCount.setText(String.valueOf(post.getLikeCount()));
-            if(tvCommentCount != null) tvCommentCount.setText(String.valueOf(post.getCommentCount()));
+            if (tvShareSummary != null) {
+                String shareFormatted = formatCount(post.getShareCount());
+                tvShareSummary.setText(String.format("%s Shares", shareFormatted));
+            }
 
             if (post.isLiked()) {
                 likedItemIds.add(post.getId());
@@ -297,12 +419,16 @@ public class SocialNewsfeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vi
             }
 
             boolean currentlyLiked = likedItemIds.contains(post.getId());
-            applyLikeState(imgLikeHeart, tvLikeCount, currentlyLiked);
+            applyLikeState(imgLikeHeart, tvLikeLabel, currentlyLiked);
 
-            btnLike.setOnClickListener(v -> handleLikeClick(post, imgLikeHeart, tvLikeCount));
+            if (btnLike != null) {
+                btnLike.setOnClickListener(v -> {
+                    HeartAnimation.playRubberBand(btnLike);
+                    handleLikeClick(post, imgLikeHeart, tvLikeLabel, tvEngagementSummary);
+                });
+            }
 
-            if(btnComment != null) btnComment.setOnClickListener(v -> { if (!isDetailMode && postClickListener != null) postClickListener.onPostClick(post); });
-            if(btnShare != null) btnShare.setOnClickListener(v -> Toast.makeText(itemView.getContext(), "Post link copied", Toast.LENGTH_SHORT).show());
+            bindInlineComments(post, layoutInlineComments, layoutCommentPreviewList, btnViewAllComments, itemView, editInlineComment, btnComment, btnSendInlineComment, tvEngagementSummary);
         }
     }
     // =========================================================================
@@ -310,13 +436,17 @@ public class SocialNewsfeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vi
     // =========================================================================
     class MilestoneViewHolder extends RecyclerView.ViewHolder {
         private final ImageView imgAvatar, imgLikeHeart;
-        private final TextView txtAvatar, name, time, icon, title, description, month, amount, tvLikeCount;
-        private final TextView tvCommentCount, tvShareCount;
+        private final TextView txtAvatar, name, time, icon, title, description, month, amount, tvLikeLabel, tvEngagementSummary, tvShareSummary;
         private final ProgressBar pbProgress;
         private final View goalPanel, btnLike, btnComment, btnShare;
+        private final View layoutInlineComments;
+        private final EditText editInlineComment;
+        private final View btnSendInlineComment;
         private final ImageButton menuButton;
         private final TextView seeMore;
         private final ShineAnimationHelper shineHelper;
+        private final LinearLayout layoutCommentPreviewList;
+        private final TextView btnViewAllComments;
 
         MilestoneViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -327,44 +457,49 @@ public class SocialNewsfeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vi
             icon = itemView.findViewById(R.id.txtMilestoneIcon);
             title = itemView.findViewById(R.id.txtMilestoneTitle);
             description = itemView.findViewById(R.id.txtMilestoneDescription);
-            month = itemView.findViewById(R.id.txtMilestoneMonth);
+            month = null;
             amount = itemView.findViewById(R.id.txtMilestoneAmount);
-            pbProgress = itemView.findViewById(R.id.pbMilestoneProgress);
+            pbProgress = null;
             goalPanel = itemView.findViewById(R.id.layoutMilestoneGoalPanel);
-            menuButton = itemView.findViewById(R.id.btnMilestoneMenu);
             seeMore = itemView.findViewById(R.id.txtMilestoneSeeMore);
+
+            menuButton = itemView.findViewById(R.id.btnMilestoneMenu);
 
             btnLike = itemView.findViewById(R.id.btnMilestoneLike);
             imgLikeHeart = itemView.findViewById(R.id.imgLikeHeart);
-            tvLikeCount = itemView.findViewById(R.id.tvLikeCount);
+            tvLikeLabel = itemView.findViewById(R.id.tvLikeLabel);
+            tvEngagementSummary = itemView.findViewById(R.id.tvPostEngagementSummary);
+            tvShareSummary = itemView.findViewById(R.id.tvMilestoneShareSummary);
 
             btnComment = itemView.findViewById(R.id.btnMilestoneComment);
-            tvCommentCount = itemView.findViewById(R.id.tvCommentCount);
-
             btnShare = itemView.findViewById(R.id.btnMilestoneShare);
-            tvShareCount = itemView.findViewById(R.id.tvShareCount);
+
+            layoutInlineComments = itemView.findViewById(R.id.layoutMilestoneInlineComments);
+            editInlineComment = itemView.findViewById(R.id.editMilestoneInlineComment);
+            btnSendInlineComment = itemView.findViewById(R.id.btnMilestoneSendInlineComment);
+            layoutCommentPreviewList = itemView.findViewById(R.id.layoutMilestoneCommentPreviewList);
+            btnViewAllComments = itemView.findViewById(R.id.btnMilestoneViewAllComments);
 
             View shineView = itemView.findViewById(R.id.viewMilestoneShine);
             shineHelper = new ShineAnimationHelper(shineView, itemView);
         }
 
         void bind(FeedItem.MilestonePost milestone, boolean expanded) {
-            if (!isDetailMode) {
-                itemView.setOnClickListener(v -> { if (postClickListener != null) postClickListener.onPostClick(milestone); });
-            } else {
-                itemView.setOnClickListener(null);
+            itemView.setOnClickListener(null);
+            itemView.setClickable(false);
+            itemView.setFocusable(false);
+            if (itemView instanceof com.google.android.material.card.MaterialCardView) {
+                ((com.google.android.material.card.MaterialCardView) itemView).setRippleColorResource(android.R.color.transparent);
             }
 
             icon.setText(milestone.iconText != null ? milestone.iconText : "🏆");
             name.setText(milestone.userName);
-            time.setText(milestone.time);
-            month.setText(milestone.month);
-            title.setText(milestone.title);
-            description.setText(milestone.description);
+            if (time != null) time.setText(milestone.time);
+            if (month != null) month.setText(milestone.month);
+            if (title != null) title.setText(milestone.title);
+            description.setText(formatHashtags(milestone.description));
 
             description.setVisibility(milestone.description == null || milestone.description.trim().isEmpty() ? View.GONE : View.VISIBLE);
-
-            // Ép buộc hiển thị vô hạn dòng nếu ở Detail Mode
             description.setMaxLines(isDetailMode ? Integer.MAX_VALUE : (expanded ? Integer.MAX_VALUE : 3));
             amount.setText(milestone.amount);
 
@@ -397,8 +532,16 @@ public class SocialNewsfeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vi
             txtAvatar.setOnClickListener(onAvatarClicked);
             name.setOnClickListener(onAvatarClicked);
 
-            tvLikeCount.setText(String.valueOf(milestone.getLikeCount()));
-            if(tvCommentCount != null) tvCommentCount.setText(String.valueOf(milestone.getCommentCount()));
+            if (tvEngagementSummary != null) {
+                String likeFormatted = formatCount(milestone.getLikeCount());
+                String commentFormatted = formatCount(milestone.getCommentCount());
+                tvEngagementSummary.setText(String.format("%s Likes • %s Comments", likeFormatted, commentFormatted));
+            }
+
+            if (tvShareSummary != null) {
+                String shareFormatted = formatCount(milestone.getShareCount());
+                tvShareSummary.setText(String.format("%s Shares", shareFormatted));
+            }
 
             if (milestone.isLiked()) {
                 likedItemIds.add(milestone.getId());
@@ -407,12 +550,21 @@ public class SocialNewsfeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vi
             }
 
             boolean currentlyLiked = likedItemIds.contains(milestone.getId());
-            applyLikeState(imgLikeHeart, tvLikeCount, currentlyLiked);
+            applyLikeState(imgLikeHeart, tvLikeLabel, currentlyLiked);
 
-            btnLike.setOnClickListener(v -> handleLikeClick(milestone, imgLikeHeart, tvLikeCount));
-            if(btnComment != null) btnComment.setOnClickListener(v -> { if (!isDetailMode && postClickListener != null) postClickListener.onPostClick(milestone); });
-            if(btnShare != null) btnShare.setOnClickListener(v -> Toast.makeText(itemView.getContext(), "Post link copied", Toast.LENGTH_SHORT).show());
+            if (btnLike != null) {
+                btnLike.setOnClickListener(v -> {
+                    HeartAnimation.playRubberBand(btnLike);
+                    handleLikeClick(milestone, imgLikeHeart, tvLikeLabel, tvEngagementSummary);
+                });
+            }
 
+            if (btnShare != null) {
+                btnShare.setOnClickListener(v -> handleShareClick(milestone, btnShare, tvShareSummary));
+            }
+
+            bindInlineComments(milestone, layoutInlineComments, layoutCommentPreviewList, btnViewAllComments, itemView, editInlineComment, btnComment, btnSendInlineComment, tvEngagementSummary);
+            
             shineHelper.start();
         }
 
@@ -443,9 +595,38 @@ public class SocialNewsfeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vi
         button.setOnClickListener(v -> {
             int position = holder.getBindingAdapterPosition();
             if (position != RecyclerView.NO_POSITION) {
-                toggleExpanded(itemId, position);
+                FeedItem item = getCurrentList().get(position);
+                if (postClickListener != null) postClickListener.onPostClick(item);
             }
         });
+    }
+
+    private String formatCount(int count) {
+        if (count >= 1000000) return String.format(java.util.Locale.US, "%.1fM", count / 1000000.0).replace(".0M", "M");
+        if (count >= 1000) return String.format(java.util.Locale.US, "%.1fK", count / 1000.0).replace(".0K", "K");
+        return String.valueOf(count);
+    }
+
+    private CharSequence formatHashtags(String text) {
+        if (text == null || text.trim().isEmpty()) return text;
+        android.text.SpannableString spannable = new android.text.SpannableString(text);
+        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("#[A-Za-z0-9_]+").matcher(text);
+        while (matcher.find()) {
+            String hashtag = text.substring(matcher.start(), matcher.end());
+            int color;
+            if ("#Saving".equalsIgnoreCase(hashtag)) color = android.graphics.Color.parseColor("#66BB6A"); // Pastel Green
+            else if ("#Debt".equalsIgnoreCase(hashtag)) color = android.graphics.Color.parseColor("#EF5350"); // Pastel Red
+            else if ("#Investing".equalsIgnoreCase(hashtag)) color = android.graphics.Color.parseColor("#42A5F5"); // Pastel Blue
+            else color = android.graphics.Color.parseColor("#FFCA28"); // Pastel Yellow
+            
+            spannable.setSpan(new android.text.style.ForegroundColorSpan(color),
+                    matcher.start(), matcher.end(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            spannable.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD),
+                    matcher.start(), matcher.end(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            spannable.setSpan(new android.text.style.RelativeSizeSpan(1.15f),
+                    matcher.start(), matcher.end(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+        return spannable;
     }
 
     private static final DiffUtil.ItemCallback<FeedItem> DIFF_CALLBACK = new DiffUtil.ItemCallback<FeedItem>() {
@@ -459,4 +640,110 @@ public class SocialNewsfeedAdapter extends ListAdapter<FeedItem, RecyclerView.Vi
             return Objects.equals(oldItem, newItem);
         }
     };
+
+    private void bindInlineComments(FeedItem post, View layoutInlineComments, LinearLayout layoutCommentPreviewList, TextView btnViewAllComments, View itemView, EditText editInlineComment, View btnComment, View btnSendInlineComment, TextView tvEngagementSummary) {
+        if (btnComment != null) {
+            btnComment.setOnClickListener(v -> {
+                if (!isDetailMode) {
+                    HeartAnimation.playRubberBand(btnComment);
+                    if (post.isPreviewCommentsLoaded()) {
+                        post.setCommentExpanded(!post.isCommentExpanded());
+                        int position = getCurrentList().indexOf(post);
+                        if (position >= 0) {
+                            notifyItemChanged(position);
+                        }
+                        if (post.isCommentExpanded() && editInlineComment != null) {
+                            editInlineComment.requestFocus();
+                        }
+                    } else {
+                        // Notify listener to fetch comments. View model will expand it when done.
+                        if (commentFetchListener != null) {
+                            commentFetchListener.onFetchComments(post.getId());
+                        }
+                        // Optionally show a loading toast if needed, but the UI is usually fast
+                    }
+                }
+            });
+        }
+        
+        if (btnSendInlineComment != null) {
+            btnSendInlineComment.setOnClickListener(v -> {
+                if (editInlineComment != null) {
+                    String text = editInlineComment.getText().toString().trim();
+                    if (text.isEmpty()) return;
+                    
+                    editInlineComment.setText("");
+                    if (layoutInlineComments != null) layoutInlineComments.setVisibility(View.GONE);
+                    Toast.makeText(itemView.getContext(), "Comment posted", Toast.LENGTH_SHORT).show();
+                    
+                    // Increment Comment count visually
+                    post.setCommentCount(post.getCommentCount() + 1);
+                    if (tvEngagementSummary != null) {
+                        String likeFormatted = formatCount(post.getLikeCount());
+                        String commentFormatted = formatCount(post.getCommentCount());
+                        tvEngagementSummary.setText(String.format("%s Likes • %s Comments", likeFormatted, commentFormatted));
+                    }
+                    
+                    // Send Notification
+                    if (post.getUserId() != null) {
+                        String currentUser = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser() != null ? 
+                                com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser().getDisplayName() : "Someone";
+                        com.example.cashify.data.remote.FirebaseManager.getInstance().sendSocialNotification(
+                                post.getUserId(),
+                                "SOCIAL_COMMENT",
+                                "New Comment \uD83D\uDCAC",
+                                currentUser + " commented: " + text,
+                                post.getId()
+                        );
+                    }
+                }
+            });
+        }
+        
+        if (layoutInlineComments != null) {
+            if (isDetailMode) {
+                layoutInlineComments.setVisibility(View.GONE);
+            } else {
+                layoutInlineComments.setVisibility(post.isCommentExpanded() ? View.VISIBLE : View.GONE);
+            }
+        }
+        
+        if (layoutCommentPreviewList != null) {
+            layoutCommentPreviewList.removeAllViews();
+            List<Comment> previewComments = post.getPreviewComments();
+            if (previewComments != null && !previewComments.isEmpty() && !isDetailMode && post.isCommentExpanded()) {
+                int count = 0;
+                for (Comment c : previewComments) {
+                    if (count >= 5) break;
+                    View commentView = LayoutInflater.from(itemView.getContext()).inflate(R.layout.item_comment, layoutCommentPreviewList, false);
+                    TextView tvUsername = commentView.findViewById(R.id.tvCommentUsername);
+                    TextView tvContent = commentView.findViewById(R.id.tvCommentContent);
+                    TextView tvTime = commentView.findViewById(R.id.tvCommentTime);
+                    View menu = commentView.findViewById(R.id.imgCommentMenu);
+                    ImageView imgAvatar = commentView.findViewById(R.id.imgCommentAvatar);
+                    
+                    if (tvUsername != null) tvUsername.setText(c.getUsername());
+                    if (tvContent != null) tvContent.setText(c.getContent());
+                    if (tvTime != null) tvTime.setText(c.getTime());
+                    if (menu != null) menu.setVisibility(View.GONE);
+                    if (imgAvatar != null) {
+                        ImageHelper.loadAvatar(c.getAvatarUrl(), imgAvatar, c.getUsername());
+                    }
+                    layoutCommentPreviewList.addView(commentView);
+                    count++;
+                }
+            }
+        }
+        
+        if (btnViewAllComments != null) {
+            if (!isDetailMode && post.isCommentExpanded() && post.getCommentCount() > 5) {
+                btnViewAllComments.setVisibility(View.VISIBLE);
+                btnViewAllComments.setOnClickListener(v -> {
+                    if (postClickListener != null) postClickListener.onPostClick(post);
+                });
+            } else {
+                btnViewAllComments.setVisibility(View.GONE);
+            }
+        }
+    }
 }

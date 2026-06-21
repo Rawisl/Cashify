@@ -224,9 +224,8 @@ public class SocialComposerFragment extends Fragment {
 
         handleIncomingArguments();
 
-        updateAudienceButton();
         updateAudienceDock();
-        btnAudience.setOnClickListener(v -> showAudienceMenu(v));
+        btnAudience.setOnClickListener(v -> selectAudience("Public"));
         btnAudienceFriends.setOnClickListener(v -> selectAudience("Friends"));
         btnAudiencePrivate.setOnClickListener(v -> selectAudience("Private"));
 
@@ -396,77 +395,7 @@ public class SocialComposerFragment extends Fragment {
 
     private void selectAudience(String audience) {
         selectedAudience = audience;
-        updateAudienceButton();
         updateAudienceDock();
-    }
-
-    private void showAudienceMenu(View anchor) {
-        if (audiencePopup != null && audiencePopup.isShowing()) {
-            audiencePopup.dismiss();
-            return;
-        }
-
-        LinearLayout menu = new LinearLayout(requireContext());
-        menu.setOrientation(LinearLayout.VERTICAL);
-        int padding = dp(8);
-        menu.setPadding(padding, padding, padding, padding);
-        menu.setBackgroundResource(R.drawable.bg_privacy_menu);
-
-        addAudienceMenuItem(menu, "Public", R.drawable.ic_privacy_public);
-        addAudienceMenuItem(menu, "Friends", R.drawable.ic_friends);
-        addAudienceMenuItem(menu, "Only Me", R.drawable.ic_privacy_lock);
-
-        audiencePopup = new PopupWindow(
-                menu,
-                Math.max(anchor.getWidth(), dp(190)),
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                true
-        );
-        audiencePopup.setBackgroundDrawable(new ColorDrawable(android.graphics.Color.TRANSPARENT));
-        audiencePopup.setOutsideTouchable(true);
-        audiencePopup.setElevation(dp(6));
-        audiencePopup.showAsDropDown(anchor, 0, dp(6));
-    }
-
-    private void addAudienceMenuItem(LinearLayout menu, String label, int iconRes) {
-        TextView item = new TextView(requireContext());
-        item.setText(label);
-        item.setTextSize(14);
-        item.setTextColor(ContextCompat.getColor(requireContext(), R.color.item_title));
-        item.setGravity(android.view.Gravity.CENTER_VERTICAL);
-        item.setMinHeight(dp(46));
-        item.setPadding(dp(12), 0, dp(12), 0);
-        item.setCompoundDrawablePadding(dp(10));
-        item.setCompoundDrawablesRelativeWithIntrinsicBounds(tintedDrawable(iconRes), null, null, null);
-        if (label.equals(selectedAudience)) {
-            item.setBackgroundResource(R.drawable.bg_privacy_menu_item_selected);
-            item.setTextColor(ContextCompat.getColor(requireContext(), R.color.brand_primary));
-            item.setTypeface(item.getTypeface(), android.graphics.Typeface.BOLD);
-        }
-        item.setOnClickListener(v -> {
-            selectedAudience = label;
-            updateAudienceButton();
-            updateAudienceDock();
-            if (audiencePopup != null) audiencePopup.dismiss();
-        });
-        menu.addView(item, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-    }
-
-    private void updateAudienceButton() {
-        btnAudience.setText(selectedAudience);
-        btnAudience.setTextColor(ContextCompat.getColor(requireContext(), R.color.brand_primary));
-        btnAudience.setCompoundDrawablePadding(dp(8));
-        btnAudience.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                tintedDrawable(iconForAudience(selectedAudience)), null,
-                tintedDrawable(R.drawable.ic_angle_down_regular), null
-        );
-        btnAudience.setCompoundDrawableTintList(ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.brand_primary)));
-    }
-
-    private int iconForAudience(String audience) {
-        if ("Public".equals(audience)) return R.drawable.ic_privacy_public;
-        if ("Only Me".equals(audience)) return R.drawable.ic_privacy_lock;
-        return R.drawable.ic_friends;
     }
 
     private Drawable tintedDrawable(int iconRes) {
@@ -615,20 +544,30 @@ public class SocialComposerFragment extends Fragment {
         ForegroundColorSpan[] existing = editable.getSpans(0, editable.length(), ForegroundColorSpan.class);
         for (ForegroundColorSpan span : existing) editable.removeSpan(span);
 
+        android.text.style.StyleSpan[] existingStyle = editable.getSpans(0, editable.length(), android.text.style.StyleSpan.class);
+        for (android.text.style.StyleSpan span : existingStyle) editable.removeSpan(span);
+
+        android.text.style.RelativeSizeSpan[] existingSize = editable.getSpans(0, editable.length(), android.text.style.RelativeSizeSpan.class);
+        for (android.text.style.RelativeSizeSpan span : existingSize) editable.removeSpan(span);
+
         Matcher matcher = Pattern.compile("#[A-Za-z0-9_]+").matcher(editable.toString());
         while (matcher.find()) {
             String hashtag = editable.subSequence(matcher.start(), matcher.end()).toString();
             editable.setSpan(new ForegroundColorSpan(colorForHashtag(hashtag)),
+                    matcher.start(), matcher.end(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            editable.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD),
+                    matcher.start(), matcher.end(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            editable.setSpan(new android.text.style.RelativeSizeSpan(1.15f),
                     matcher.start(), matcher.end(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
         applyingHashtagStyle = false;
     }
 
     private int colorForHashtag(String hashtag) {
-        if ("#Saving".equals(hashtag)) return android.graphics.Color.parseColor("#74A982");
-        if ("#Debt".equals(hashtag)) return android.graphics.Color.parseColor("#D98782");
-        if ("#Investing".equals(hashtag)) return android.graphics.Color.parseColor("#8794DB");
-        return android.graphics.Color.parseColor("#D29A6F");
+        if ("#Saving".equalsIgnoreCase(hashtag)) return android.graphics.Color.parseColor("#66BB6A"); // Pastel Green
+        if ("#Debt".equalsIgnoreCase(hashtag)) return android.graphics.Color.parseColor("#EF5350"); // Pastel Red
+        if ("#Investing".equalsIgnoreCase(hashtag)) return android.graphics.Color.parseColor("#42A5F5"); // Pastel Blue
+        return android.graphics.Color.parseColor("#FFCA28"); // Pastel Yellow
     }
 
     private void updateCategoryTiles() {

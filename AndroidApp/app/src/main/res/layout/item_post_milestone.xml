@@ -144,7 +144,7 @@
                         tools:text="@string/username" />
 
                     <TextView
-                        android:id="@+id/txtMilestoneMonth"
+                        android:id="@+id/txtPostTime"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
@@ -295,7 +295,7 @@
                 android:orientation="horizontal">
 
                 <TextView
-                    android:id="@+id/tvMilestoneEngagementSummary"
+                    android:id="@+id/tvPostEngagementSummary"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -337,6 +337,7 @@
                     android:background="?attr/selectableItemBackgroundBorderless">
 
                     <ImageView
+                        android:id="@+id/imgLikeHeart"
                         android:layout_width="22dp"
                         android:layout_height="22dp"
                         android:src="@drawable/ic_feed_like"
@@ -344,6 +345,7 @@
                         android:contentDescription="@string/like" />
 
                     <TextView
+                        android:id="@+id/tvLikeLabel"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="6dp"
@@ -411,20 +413,7 @@
                         android:text="@string/share" />
                 </LinearLayout>
 
-                <View
-                    android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    android:layout_weight="1" />
 
-                <ImageButton
-                    android:id="@+id/btnMilestoneMenu"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="@string/menu"
-                    android:padding="6dp"
-                    app:srcCompat="@drawable/ic_more_horizontal"
-                    app:tint="@color/icon_inactive" />
             </LinearLayout>
 
             <LinearLayout

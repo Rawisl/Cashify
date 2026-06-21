@@ -3,6 +3,7 @@ package com.example.cashify.utils;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
+import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -14,7 +15,7 @@ public class HeartAnimation {
      * Plays a rubber band animation on any target ImageView.
      * Often used to draw attention to interactive icons (e.g., likes, bookmarks).
      */
-    public static void playRubberBand(ImageView target) {
+    public static void playRubberBand(View target) {
         target.setScaleX(1f);
         target.setScaleY(1f);
 

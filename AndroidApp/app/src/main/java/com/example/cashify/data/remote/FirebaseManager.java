@@ -874,6 +874,21 @@ public class FirebaseManager {
                 });
     }
 
+    public void sendSocialNotification(String recipientUid, String type, String title, String message, String referenceId) {
+        String currentUid = getCurrentUserId();
+        if (currentUid == null || currentUid.equals(recipientUid)) return; // Don't notify self
+
+        java.util.Map<String, Object> notif = new java.util.HashMap<>();
+        notif.put("type", type);
+        notif.put("title", title);
+        notif.put("message", message);
+        notif.put("timestamp", System.currentTimeMillis());
+        notif.put("isRead", false);
+        notif.put("referenceId", referenceId);
+
+        db.collection("users").document(recipientUid).collection("notifications").add(notif);
+    }
+
     // ============================================================
     // GAMIFICATION STATS (NIGHT OWL, BIG SPENDER)
     // ============================================================
