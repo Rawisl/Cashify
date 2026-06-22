@@ -22,8 +22,7 @@
                 android:id="@+id/btnBack"
                 style="@style/btn_back_icon"
                 android:layout_width="38dp"
-                android:layout_height="38dp"
-                android:background="@color/icon_setting_background" />
+                android:layout_height="38dp"/>
 
             <TextView
                 android:layout_width="wrap_content"

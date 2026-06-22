@@ -90,12 +90,18 @@ public static class ChatEndpoints
                         .WhereEqualTo("isRead", false)
                         .GetSnapshotAsync();
 
+                    //LOGIC KIỂM TRA THU HỒI
+                    var isRecalled = latest.ContainsField("isRecalled") && latest.GetValue<bool>("isRecalled");
+                    var rawText = latest.ContainsField("text") ? latest.GetValue<string>("text") : "";
+                    var previewText = isRecalled ? "🚫 Message recalled" : rawText;
+
                     conversations.Add(new DirectConversationSummary(
                                     FriendUid: friendSnap.ContainsField("uid") ? friendSnap.GetValue<string>("uid") : friendId,
                                     FriendEmail: friendSnap.ContainsField("email") ? friendSnap.GetValue<string>("email") : "",
                                     FriendDisplayName: friendSnap.ContainsField("displayName") ? friendSnap.GetValue<string>("displayName") : "",
                                     FriendAvatarUrl: friendSnap.ContainsField("avatarUrl") ? friendSnap.GetValue<string>("avatarUrl") : "",
-                                    LatestMessageText: latest.ContainsField("text") ? latest.GetValue<string>("text") : "",
+                                    //DÙNG BIẾN PREVIEW TEXT ĐÃ XỬ LÝ
+                                    LatestMessageText: previewText,
                                     LatestMessageTimestamp: latest.ContainsField("timestamp") ? latest.GetValue<long>("timestamp") : 0,
                                     UnreadCount: unreadSnapshot.Count
                                 ));
@@ -190,8 +196,13 @@ public static class ChatEndpoints
                 if (!senderSnap.Exists || !receiverSnap.Exists)
                     return Results.NotFound(new { message = "User not found" });
 
-                var senderFriendSnap = await senderRef.Collection("friends").Document(body.ReceiverId).GetSnapshotAsync();
-                var receiverFriendSnap = await receiverRef.Collection("friends").Document(uid).GetSnapshotAsync();
+                //LẤY REFERENCE CỦA DOCUMENT BẠN BÈ ĐỂ CHUẨN BỊ UPDATE
+                var senderFriendRef = senderRef.Collection("friends").Document(body.ReceiverId);
+                var receiverFriendRef = receiverRef.Collection("friends").Document(uid);
+
+                var senderFriendSnap = await senderFriendRef.GetSnapshotAsync();
+                var receiverFriendSnap = await receiverFriendRef.GetSnapshotAsync();
+
                 if (!senderFriendSnap.Exists || !receiverFriendSnap.Exists)
                 {
                     Console.Error.WriteLine($"Send direct friend message rejected: users are not mutual friends ({uid}, {body.ReceiverId})");
@@ -207,7 +218,7 @@ public static class ChatEndpoints
                 // Mở Batch để ghi tin nhắn và thông báo cùng lúc
                 var batch = db.StartBatch();
 
-                // Ghi tin nhắn vào phòng chat
+                // 1. Ghi tin nhắn vào phòng chat
                 var msgRef = db.Collection("direct_chats").Document(chatId).Collection("messages").Document();
                 var messageData = new Dictionary<string, object>
                 {
@@ -223,7 +234,7 @@ public static class ChatEndpoints
                 };
                 batch.Set(msgRef, messageData);
 
-                // Ghi In-app Notification cho người nhận
+                // 2. Ghi In-app Notification cho người nhận
                 var notifRef = receiverRef.Collection("notifications").Document();
                 string notifMessage = string.IsNullOrWhiteSpace(body.Text) ? "Sent an image" : body.Text.Trim();
 
@@ -235,6 +246,18 @@ public static class ChatEndpoints
                     timestamp = timestamp,
                     isRead = false,
                     referenceId = uid
+                });
+
+                // Cập nhật cho Người Gửi (Để ứng dụng của họ nhảy Real-time)
+                batch.Update(senderFriendRef, new Dictionary<string, object>
+                {
+                    { "lastMessageTimestamp", timestamp }
+                });
+
+                // Cập nhật cho Người Nhận (Để ứng dụng của họ báo có tin nhắn mới tới)
+                batch.Update(receiverFriendRef, new Dictionary<string, object>
+                {
+                    { "lastMessageTimestamp", timestamp }
                 });
 
                 await batch.CommitAsync();
@@ -299,7 +322,21 @@ public static class ChatEndpoints
                     { "isRecalled", true }
                 };
 
-                await messageRef.UpdateAsync(updates);
+                //BATCH ĐỂ KÍCH HOẠT REAL-TIME
+                var senderFriendRef = db.Collection("users").Document(uid).Collection("friends").Document(friendUid);
+                var receiverFriendRef = db.Collection("users").Document(friendUid).Collection("friends").Document(uid);
+                var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+                var batch = db.StartBatch();
+
+                // 1. Cập nhật tin nhắn thành "Đã thu hồi"
+                batch.Update(messageRef, updates);
+
+                // 2. Kích hoạt Realtime cho cả người gửi và người nhận
+                batch.Update(senderFriendRef, new Dictionary<string, object> { { "lastMessageTimestamp", timestamp } });
+                batch.Update(receiverFriendRef, new Dictionary<string, object> { { "lastMessageTimestamp", timestamp } });
+
+                await batch.CommitAsync();
 
                 return Results.Ok(new { message = "Message recalled successfully", messageId });
             }

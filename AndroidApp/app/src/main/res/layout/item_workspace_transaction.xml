@@ -16,11 +16,10 @@
         android:id="@+id/itemContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:minHeight="92dp"
         android:paddingStart="14dp"
-        android:paddingTop="13dp"
+        android:paddingTop="12dp"
         android:paddingEnd="14dp"
-        android:paddingBottom="13dp">
+        android:paddingBottom="12dp">
 
         <com.example.cashify.ui.common.AvatarImageView
             android:id="@+id/ivCreatorAvatar"
@@ -40,20 +39,20 @@
             android:layout_marginEnd="10dp"
             android:ellipsize="end"
             android:fontFamily="@font/inter_bold"
-            android:maxLines="1"
+            android:maxLines="2"
             android:textColor="@color/item_title"
             android:textSize="15sp"
             app:layout_constraintEnd_toStartOf="@id/tvAmount"
             app:layout_constraintStart_toEndOf="@id/ivCreatorAvatar"
-            app:layout_constraintTop_toTopOf="@id/ivCreatorAvatar"
-            tools:text="An added +500.000đ" />
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="Nguyen Van An" />
 
         <TextView
             android:id="@+id/tvSubtitle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="13dp"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="2dp"
             android:layout_marginEnd="10dp"
             android:ellipsize="end"
             android:fontFamily="@font/inter_regular"
@@ -70,7 +69,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="13dp"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="6dp"
             android:layout_marginEnd="10dp"
             android:gravity="center_vertical"
             android:orientation="horizontal"
@@ -90,7 +89,7 @@
             <TextView
                 android:id="@+id/tvCreatorName"
                 android:layout_width="wrap_content"
-                android:layout_height="26dp"
+                android:layout_height="24dp"
                 android:layout_marginStart="7dp"
                 android:background="@drawable/bg_tag_blue"
                 android:ellipsize="end"
@@ -107,8 +106,9 @@
 
         <TextView
             android:id="@+id/tvAmount"
-            android:layout_width="116dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
             android:ellipsize="end"
             android:fontFamily="@font/outfit_bold"
             android:gravity="end|center_vertical"

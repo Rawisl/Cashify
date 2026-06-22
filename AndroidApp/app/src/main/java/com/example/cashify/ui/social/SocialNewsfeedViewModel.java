@@ -42,34 +42,60 @@ public class SocialNewsfeedViewModel extends ViewModel {
     // STATE LIVEDATA
     // =========================================================================
     private final MutableLiveData<Boolean> _isDeleteSuccess = new MutableLiveData<>(false);
-    public LiveData<Boolean> getIsDeleteSuccess() { return _isDeleteSuccess; }
+
+    public LiveData<Boolean> getIsDeleteSuccess() {
+        return _isDeleteSuccess;
+    }
+
     private final MutableLiveData<List<DocumentSnapshot>> _topUsers = new MutableLiveData<>();
-    public LiveData<List<DocumentSnapshot>> getTopUsers() { return _topUsers; }
+
+    public LiveData<List<DocumentSnapshot>> getTopUsers() {
+        return _topUsers;
+    }
+
     private final MutableLiveData<Boolean> _isLoading = new MutableLiveData<>(false);
     public LiveData<Boolean> isLoading = _isLoading;
 
     private final MutableLiveData<Boolean> _isLoadingMore = new MutableLiveData<>(false);
-    public LiveData<Boolean> getIsLoadingMore() { return _isLoadingMore; }
+
+    public LiveData<Boolean> getIsLoadingMore() {
+        return _isLoadingMore;
+    }
 
     private final MutableLiveData<String> _errorMessage = new MutableLiveData<>();
-    public LiveData<String> getErrorMessage() { return _errorMessage; }
+
+    public LiveData<String> getErrorMessage() {
+        return _errorMessage;
+    }
 
     private final MutableLiveData<DocumentSnapshot> _profile = new MutableLiveData<>();
-    public LiveData<DocumentSnapshot> getProfile() { return _profile; }
+
+    public LiveData<DocumentSnapshot> getProfile() {
+        return _profile;
+    }
 
     private final MutableLiveData<List<FeedItem>> _feedItems = new MutableLiveData<>(new ArrayList<>());
-    public LiveData<List<FeedItem>> getFeedItems() { return _feedItems; }
+
+    public LiveData<List<FeedItem>> getFeedItems() {
+        return _feedItems;
+    }
 
     private final MutableLiveData<Boolean> _isFeedEmpty = new MutableLiveData<>(false);
-    public LiveData<Boolean> getIsFeedEmpty() { return _isFeedEmpty; }
+
+    public LiveData<Boolean> getIsFeedEmpty() {
+        return _isFeedEmpty;
+    }
 
     private final MutableLiveData<Boolean> _isLastPage = new MutableLiveData<>(false);
-    public LiveData<Boolean> getIsLastPage() { return _isLastPage; }
+
+    public LiveData<Boolean> getIsLastPage() {
+        return _isLastPage;
+    }
 
     private DocumentSnapshot lastVisibleFeedDoc = null;
     private final List<String> cachedFriendIds = new ArrayList<>();
     private boolean isAdmin = false;
-    private ListenerRegistration realTimeListener; // GIỮ LẠI REAL-TIME CỦA FIREBASE
+    private ListenerRegistration realTimeListener;
 
     public void loadProfile(String uid) {
         db.collection("users").document(uid).addSnapshotListener((doc, e) -> {
@@ -91,7 +117,8 @@ public class SocialNewsfeedViewModel extends ViewModel {
     }
 
     public void loadNextPage() {
-        if (Boolean.TRUE.equals(_isLoading.getValue()) || Boolean.TRUE.equals(_isLoadingMore.getValue()) || Boolean.TRUE.equals(_isLastPage.getValue())) return;
+        if (Boolean.TRUE.equals(_isLoading.getValue()) || Boolean.TRUE.equals(_isLoadingMore.getValue()) || Boolean.TRUE.equals(_isLastPage.getValue()))
+            return;
         _isLoadingMore.setValue(true);
         loadFeedPageFromFirebase(false);
     }
@@ -110,7 +137,8 @@ public class SocialNewsfeedViewModel extends ViewModel {
             db.collection("users").document(user.getUid()).collection("friends").get()
                     .addOnSuccessListener(snapshots -> {
                         cachedFriendIds.clear();
-                        for (DocumentSnapshot doc : snapshots.getDocuments()) cachedFriendIds.add(doc.getId());
+                        for (DocumentSnapshot doc : snapshots.getDocuments())
+                            cachedFriendIds.add(doc.getId());
                         loadFeedPageFromFirebase(isRefresh);
                     });
         }
@@ -137,7 +165,6 @@ public class SocialNewsfeedViewModel extends ViewModel {
             realTimeListener.remove();
         }
 
-        // REAL-TIME LISTENER
         realTimeListener = query.addSnapshotListener((snapshots, error) -> {
             if (error != null || snapshots == null) {
                 _isLoading.setValue(false);
@@ -145,20 +172,19 @@ public class SocialNewsfeedViewModel extends ViewModel {
                 return;
             }
 
-            if (!snapshots.isEmpty()) lastVisibleFeedDoc = snapshots.getDocuments().get(snapshots.size() - 1);
+            if (!snapshots.isEmpty())
+                lastVisibleFeedDoc = snapshots.getDocuments().get(snapshots.size() - 1);
             _isLastPage.setValue(snapshots.size() < FEED_PAGE_SIZE);
 
             List<FeedItem> parsedItems = new ArrayList<>();
             List<Task<DocumentSnapshot>> likeTasks = new ArrayList<>();
             String currentUid = user.getUid();
 
-            // 1. Phân tích bài viết
             for (DocumentSnapshot doc : snapshots.getDocuments()) {
                 FeedItem item = mapFirebaseDocToFeedItem(doc);
                 if (item != null) {
                     parsedItems.add(item);
 
-                    // 2. CHỈ ĐI HỎI FIREBASE NẾU BÀI NÀY CHƯA CÓ TRONG CACHE
                     if (!likedCache.containsKey(item.getId())) {
                         Task<DocumentSnapshot> task = db.collection("posts").document(item.getId())
                                 .collection("likes").document(currentUid).get();
@@ -171,14 +197,11 @@ public class SocialNewsfeedViewModel extends ViewModel {
                 }
             }
 
-            // 3. Chờ hỏi xong (nếu có) rồi mới đắp data lên UI
             Tasks.whenAllComplete(likeTasks).addOnCompleteListener(t -> {
                 for (FeedItem item : parsedItems) {
-                    // Móc trạng thái từ Cache đắp vào Item
                     item.setLiked(Boolean.TRUE.equals(likedCache.get(item.getId())));
                 }
 
-                // 4. Render UI
                 if (isRefresh) {
                     _feedItems.setValue(parsedItems);
                 } else {
@@ -201,7 +224,6 @@ public class SocialNewsfeedViewModel extends ViewModel {
         });
     }
 
-    // ĐỒNG BỘ DATA API XUỐNG FIREBASE KHI QUAY RA (GIỮ LẠI CHO CHUẨN)
     public void syncSinglePost(String postId, String token) {
         if (token == null || token.isEmpty()) return;
         apiService.getPostDetail(postId, token).enqueue(new Callback<ApiDto.SocialPostDetailResponse>() {
@@ -210,7 +232,6 @@ public class SocialNewsfeedViewModel extends ViewModel {
                 if (response.isSuccessful() && response.body() != null) {
                     ApiDto.SocialPostDetailResponse data = response.body();
 
-                    // Cập nhật lại kho RAM
                     if (data.likedByMe) likedCache.put(postId, data.likedByMe);
                     else likedCache.remove(postId);
 
@@ -231,17 +252,17 @@ public class SocialNewsfeedViewModel extends ViewModel {
                     }
                 }
             }
-            @Override public void onFailure(@NonNull Call<ApiDto.SocialPostDetailResponse> call, @NonNull Throwable t) {}
+
+            @Override
+            public void onFailure(@NonNull Call<ApiDto.SocialPostDetailResponse> call, @NonNull Throwable t) {
+            }
         });
     }
 
-    // CƠ CHẾ TOGGLE LIKED TỐI THƯỢNG
     public void toggleLike(String postId, String token, boolean isLiked) {
-        // 1. Ghi nhớ lịch sử vào RAM ngay lập tức (Xóa sạch bộ nhớ tạm)
         if (isLiked) likedCache.put(postId, isLiked);
         else likedCache.remove(postId);
 
-        // 2. Ép UI đỏ/xám tim và nhảy số ngay lập tức
         List<FeedItem> current = _feedItems.getValue();
         if (current != null) {
             List<FeedItem> newList = new ArrayList<>(current);
@@ -258,25 +279,26 @@ public class SocialNewsfeedViewModel extends ViewModel {
             }
         }
 
-        // 3. Ném lệnh ngầm cho C# Backend ghi DB
         apiService.toggleLike(token, new ApiDto.LikeActionRequest(postId, isLiked)).enqueue(new Callback<Object>() {
             @Override
             public void onResponse(@NonNull Call<Object> call, @NonNull Response<Object> response) {
-                if (!response.isSuccessful()) syncSinglePost(postId, token); // Rollback nếu xịt
+                if (!response.isSuccessful()) syncSinglePost(postId, token);
             }
+
             @Override
             public void onFailure(@NonNull Call<Object> call, @NonNull Throwable t) {
-                syncSinglePost(postId, token); // Rollback nếu xịt
+                syncSinglePost(postId, token);
             }
         });
-
     }
+
     public void loadTopUsersForDecoration() {
         db.collection("users").limit(5).get()
                 .addOnSuccessListener(querySnapshot -> {
                     _topUsers.postValue(querySnapshot.getDocuments());
                 });
     }
+
     private FeedItem mapFirebaseDocToFeedItem(DocumentSnapshot doc) {
         String id = doc.getId();
         String title = doc.getString("title") != null ? doc.getString("title") : "";
@@ -300,12 +322,46 @@ public class SocialNewsfeedViewModel extends ViewModel {
 
         if (type.toLowerCase().contains("milestone")) {
             String milestoneData = doc.getString("milestoneData") != null ? doc.getString("milestoneData") : "";
+
+            // Trả về đúng giá trị mặc định giống PostDetailActivity
+            String mTitle = title.isEmpty() ? "Milestone" : title;
+            String mDescription = !content.isEmpty() ? content : "Reached a new goal";
+            String mMonth = "";
+            String mAmount = ""; //Nếu không có data, Adapter sẽ tự View.GONE cái goalPanel
+            String mIcon = "🏆";
+            int mProgress = 0;
+
+            // Chỉ giải mã và áp dụng thông số khi có dữ liệu milestoneData từ Firebase
+            if (!milestoneData.isEmpty()) {
+                try {
+                    JSONObject json = new JSONObject(milestoneData);
+                    mIcon = json.optString("iconText", "🏆");
+                    mTitle = json.optString("title", mTitle);
+                    mMonth = json.optString("month", "");
+                    mAmount = json.optString("amount", "");
+                    mProgress = json.optInt("progress", 0);
+                    mDescription = !content.isEmpty() ? content : "";
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+            //Đóng gói vào Constructor
             item = new FeedItem.MilestonePost(
-                    id, userId, authorName, TimeFormatter.format(timestamp),
-                    "New Milestone", !content.isEmpty() ? content : "Reached a new goal",
-                    "Milestone", "", "🏆", 0,
-                    (!content.isEmpty() ? content : "Reached a new goal").length() > 120,
-                    milestoneData, authorAvatarUrl, initials(authorName)
+                    id,
+                    userId,
+                    authorName,
+                    TimeFormatter.format(timestamp),
+                    mTitle,
+                    mDescription,
+                    mMonth,
+                    mAmount,
+                    mIcon,
+                    mProgress,
+                    mDescription.length() > 120,
+                    milestoneData,
+                    authorAvatarUrl,
+                    initials(authorName)
             );
         } else {
             item = new FeedItem.NormalPost(
@@ -317,7 +373,6 @@ public class SocialNewsfeedViewModel extends ViewModel {
         if (item != null) {
             item.setLikeCount(likeCount != null ? likeCount.intValue() : 0);
             item.setCommentCount(commentCount != null ? commentCount.intValue() : 0);
-            // Mặc định là false, sẽ bị đè lại nếu có trong localLikedPosts
             item.setLiked(false);
         }
         return item;
@@ -340,9 +395,8 @@ public class SocialNewsfeedViewModel extends ViewModel {
             @Override
             public void onResponse(@NonNull Call<Object> call, @NonNull Response<Object> response) {
                 if (response.isSuccessful()) {
-                    _isDeleteSuccess.setValue(true); // Báo UI hiện Toast
+                    _isDeleteSuccess.setValue(true);
 
-                    // Cập nhật List UI (xóa bài lập tức cho mượt)
                     List<FeedItem> current = _feedItems.getValue();
                     if (current != null) {
                         List<FeedItem> newList = new ArrayList<>(current);
@@ -362,7 +416,6 @@ public class SocialNewsfeedViewModel extends ViewModel {
             }
         });
     }
-
 
     @Override
     protected void onCleared() {

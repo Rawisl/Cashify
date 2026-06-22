@@ -8,14 +8,43 @@
     android:gravity="center"
     android:orientation="vertical">
 
-    <com.example.cashify.ui.common.AvatarImageView
-        android:id="@+id/imgMemberAvatar"
-        android:layout_width="56dp"
-        android:layout_height="56dp"
-        android:layout_marginBottom="8dp"
-        android:scaleType="centerCrop"
-        android:src="@drawable/bg_default_avatar_pastel"
-        tools:src="@drawable/bg_default_avatar_pastel" />
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp">
+
+        <com.example.cashify.ui.common.AvatarImageView
+            android:id="@+id/imgMemberAvatar"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:scaleType="centerCrop"
+            android:src="@drawable/bg_default_avatar_pastel"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:src="@drawable/bg_default_avatar_pastel" />
+
+        <ImageView
+            android:id="@+id/imgOwnerBadge"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:background="@drawable/bg_soft_circle"
+            android:elevation="2dp"
+            android:padding="4dp"
+            android:src="@drawable/ic_key"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="@id/imgMemberAvatar"
+            app:layout_constraintEnd_toEndOf="@id/imgMemberAvatar"
+            app:layout_constraintHorizontal_bias="1.0"
+            app:layout_constraintStart_toStartOf="@id/imgMemberAvatar"
+            app:layout_constraintTop_toTopOf="@id/imgMemberAvatar"
+            app:layout_constraintVertical_bias="1.0"
+            app:layout_constraintWidth_percent="0.5"
+            app:tint="@color/cat_pastel_orange"
+            tools:visibility="visible" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
     <TextView
         android:id="@+id/tvMemberName"

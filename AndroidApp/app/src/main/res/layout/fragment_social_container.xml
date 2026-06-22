@@ -10,8 +10,6 @@
         android:name="androidx.navigation.fragment.NavHostFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:clipToPadding="false"
-        android:paddingBottom="96dp"
         app:defaultNavHost="false"
         app:navGraph="@navigation/social_nav_graph" />
 

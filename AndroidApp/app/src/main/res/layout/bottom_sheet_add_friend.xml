@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="@drawable/bg_bottom_sheet"
-    android:backgroundTint="#FFFFFF"
+    android:backgroundTint="@color/white"
     android:orientation="vertical"
     android:padding="24dp">
 
@@ -22,7 +22,7 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="8dp"
         android:text="@string/add_friend"
-        android:textColor="#1A237E"
+        android:textColor="@color/brand_primary"
         android:textSize="22sp"
         android:textStyle="bold" />
 
@@ -42,11 +42,10 @@
         app:boxCornerRadiusBottomStart="12dp"
         app:boxCornerRadiusTopEnd="12dp"
         app:boxCornerRadiusTopStart="12dp"
-        app:boxStrokeColor="#1A237E"
+        app:boxStrokeColor="@color/brand_primary"
         app:hintEnabled="false"
         app:startIconDrawable="@android:drawable/ic_dialog_email"
-        app:startIconTint="#1A237E">
-
+        app:startIconTint="@color/brand_primary">
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/edtEmailInput"
             android:layout_width="match_parent"
@@ -54,7 +53,7 @@
             android:hint="@string/email_example"
             android:inputType="textEmailAddress"
             android:padding="16dp"
-            android:textColor="#1A237E"
+            android:textColor="@color/brand_primary"
             android:textColorHint="#9E9E9E" />
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -65,10 +64,11 @@
         android:layout_marginTop="24dp"
         android:layout_marginBottom="8dp"
         android:text="@string/send_request"
+        android:textColor="@color/white"
         android:textAllCaps="false"
         android:textSize="16sp"
         android:textStyle="bold"
-        app:backgroundTint="#1A237E"
+        app:backgroundTint="@color/brand_primary"
         app:cornerRadius="12dp" />
 
 </LinearLayout>

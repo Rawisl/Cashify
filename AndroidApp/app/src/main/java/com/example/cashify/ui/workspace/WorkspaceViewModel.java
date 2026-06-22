@@ -58,6 +58,8 @@ public class WorkspaceViewModel extends ViewModel {
     private final MutableLiveData<List<TransactionViewModel.HistoryItem>> _transactionsLiveData = new MutableLiveData<>();
     public LiveData<List<TransactionViewModel.HistoryItem>> getTransactionsLiveData() { return _transactionsLiveData; }
     private final List<TransactionViewModel.HistoryItem> currentTransactionList = new ArrayList<>();
+    private final MutableLiveData<Long> totalTransactionCountLiveData = new MutableLiveData<>(0L);
+    public LiveData<Long> getTotalTransactionCountLiveData() { return totalTransactionCountLiveData; }
 
     //KHÓA CHỐNG SPAM LOAD MẠNG
     private boolean isFetchingMore = false;
@@ -323,9 +325,14 @@ public class WorkspaceViewModel extends ViewModel {
 
     public void calculateWorkspaceBalance(String workspaceId) {
         AggregateField sumField = AggregateField.sum("amount");
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
 
-        FirebaseFirestore.getInstance().collection("workspaces")
-                .document(workspaceId).collection("transactions")
+        db.collection("workspaces").document(workspaceId).collection("transactions")
+                .count()
+                .get(AggregateSource.SERVER)
+                .addOnSuccessListener(snap -> totalTransactionCountLiveData.postValue(snap.getCount()));
+
+        db.collection("workspaces").document(workspaceId).collection("transactions")
                 .whereEqualTo("type", 1)
                 .aggregate(sumField)
                 .get(AggregateSource.SERVER)
@@ -334,8 +341,7 @@ public class WorkspaceViewModel extends ViewModel {
                     long totalIncome = incomeObj != null ? incomeObj.longValue() : 0L;
                     totalIncomeLiveData.postValue(totalIncome);
 
-                    FirebaseFirestore.getInstance().collection("workspaces")
-                            .document(workspaceId).collection("transactions")
+                    db.collection("workspaces").document(workspaceId).collection("transactions")
                             .whereEqualTo("type", 0)
                             .aggregate(sumField)
                             .get(AggregateSource.SERVER)
@@ -345,13 +351,9 @@ public class WorkspaceViewModel extends ViewModel {
                                 totalExpenseLiveData.postValue(totalExpense);
                                 actualBalanceLiveData.postValue(totalIncome - totalExpense);
                             })
-                            .addOnFailureListener(e -> {
-                                Log.e("Cashify", "Index error: ", e);
-                            });
+                            .addOnFailureListener(e -> Log.e("Cashify", "Index error: ", e));
                 })
-                .addOnFailureListener(e -> {
-                    Log.e("Cashify", "Index error: ", e);
-                });
+                .addOnFailureListener(e -> Log.e("Cashify", "Index error: ", e));
     }
 
     public void startRealtimeSyncTrigger(String workspaceId) {

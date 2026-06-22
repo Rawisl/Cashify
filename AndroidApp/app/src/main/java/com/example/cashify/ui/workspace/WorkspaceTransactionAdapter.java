@@ -34,7 +34,6 @@ import java.util.Map;
 
 public class WorkspaceTransactionAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
-    // [Từ master] Tối ưu hoá memory: Không khởi tạo lại Formatter khi scroll
     private static final SimpleDateFormat TIME_FORMATTER = new SimpleDateFormat("h:mm a", Locale.ENGLISH);
 
     private final Context context;
@@ -43,7 +42,6 @@ public class WorkspaceTransactionAdapter extends RecyclerView.Adapter<RecyclerVi
     private String ownerId;
     private List<TransactionViewModel.HistoryItem> items = new ArrayList<>();
 
-    // [Từ UI-Consistency] Cache profile để hiển thị Avatar thay vì chỉ String Name như master
     private final Map<String, CreatorProfile> creatorProfileCache = new HashMap<>();
     private final Map<String, Category> categoryCache = new HashMap<>();
     private final OnTransactionClickListener listener;
@@ -65,7 +63,7 @@ public class WorkspaceTransactionAdapter extends RecyclerView.Adapter<RecyclerVi
     @SuppressLint("NotifyDataSetChanged")
     public void setOwnerId(String ownerId) {
         this.ownerId = ownerId;
-        notifyDataSetChanged(); // Forces a re-render to update permissions immediately
+        notifyDataSetChanged();
     }
 
     @SuppressLint("NotifyDataSetChanged")
@@ -104,13 +102,11 @@ public class WorkspaceTransactionAdapter extends RecyclerView.Adapter<RecyclerVi
         Transaction transaction = item.getTransaction();
         if (transaction == null) return;
 
-        // [Từ master] Tagging mechanism để tránh lỗi update nhầm view khi scroll nhanh
         String bindKey = transaction.id != null ? transaction.id : String.valueOf(position);
         transactionHolder.itemView.setTag(bindKey);
 
         String timeText = TIME_FORMATTER.format(new Date(transaction.timestamp));
-        
-        // [Từ UI-Consistency] 1 element 2 cách trình bày -> Ưu tiên Text thay vì Emoji của master
+
         String paymentMethod = transaction.paymentMethod == null || transaction.paymentMethod.trim().isEmpty()
                 ? "Cash"
                 : transaction.paymentMethod.trim();
@@ -122,7 +118,6 @@ public class WorkspaceTransactionAdapter extends RecyclerView.Adapter<RecyclerVi
     }
 
     private void bindAmount(TransactionViewHolder holder, Transaction transaction) {
-        // [Từ UI-Consistency] Format compact amount (rút gọn) thay vì full số như master
         if (transaction.type == 1) {
             holder.tvAmount.setText("+" + CurrencyFormatter.formatCompactAmount(transaction.amount));
             holder.tvAmount.setTextColor(ContextCompat.getColor(context, R.color.status_green));
@@ -135,22 +130,18 @@ public class WorkspaceTransactionAdapter extends RecyclerView.Adapter<RecyclerVi
     }
 
     private void bindCreator(TransactionViewHolder holder, Transaction transaction, String bindKey) {
-        String signedAmount = transaction.type == 1
-                ? "+" + CurrencyFormatter.formatCompactAmount(transaction.amount)
-                : CurrencyFormatter.formatCompactAmount(-transaction.amount);
-
         if (transaction.userId == null || transaction.userId.trim().isEmpty()) {
-            bindCreatorProfile(holder, transaction, new CreatorProfile("Unknown Member", null), signedAmount);
+            bindCreatorProfile(holder, new CreatorProfile("Unknown Member", null));
             return;
         }
 
         CreatorProfile cachedProfile = creatorProfileCache.get(transaction.userId);
         if (cachedProfile != null) {
-            bindCreatorProfile(holder, transaction, cachedProfile, signedAmount);
+            bindCreatorProfile(holder, cachedProfile);
             return;
         }
 
-        bindCreatorProfile(holder, transaction, CreatorProfile.loading(), signedAmount);
+        bindCreatorProfile(holder, CreatorProfile.loading());
         FirebaseFirestore.getInstance()
                 .collection("users")
                 .document(transaction.userId)
@@ -161,18 +152,16 @@ public class WorkspaceTransactionAdapter extends RecyclerView.Adapter<RecyclerVi
                     String avatarUrl = doc.getString("avatarUrl");
                     CreatorProfile profile = new CreatorProfile(name, avatarUrl);
                     creatorProfileCache.put(transaction.userId, profile);
-                    bindCreatorProfile(holder, transaction, profile, signedAmount);
+                    bindCreatorProfile(holder, profile);
                 })
                 .addOnFailureListener(e -> {
                     if (!bindKey.equals(holder.itemView.getTag())) return;
-                    bindCreatorProfile(holder, transaction, new CreatorProfile("Unknown Member", null), signedAmount);
+                    bindCreatorProfile(holder, new CreatorProfile("Unknown Member", null));
                 });
     }
 
-    private void bindCreatorProfile(TransactionViewHolder holder, Transaction transaction, CreatorProfile profile, String signedAmount) {
-        String action = transaction.type == 1 ? "added" : "spent";
-        // [Từ UI-Consistency] Hiển thị nguyên câu thay vì chỉ "By: Name"
-        holder.tvMainTitle.setText(profile.name + " " + action + " " + signedAmount);
+    private void bindCreatorProfile(TransactionViewHolder holder, CreatorProfile profile) {
+        holder.tvMainTitle.setText(profile.name);
         ImageHelper.loadAvatar(profile.avatarUrl, holder.ivCreatorAvatar, profile.name);
     }
 
@@ -209,8 +198,7 @@ public class WorkspaceTransactionAdapter extends RecyclerView.Adapter<RecyclerVi
         String note = transaction.note != null && !transaction.note.trim().isEmpty()
                 ? transaction.note.trim()
                 : categoryName;
-                
-        // [Từ UI-Consistency] Giữ nguyên format gạch ngang " - "
+
         holder.tvSubtitle.setText(String.format(Locale.getDefault(), "%s - %s - %s", categoryName, timeText, paymentMethod));
         holder.tvSubtitle.setContentDescription(note);
 

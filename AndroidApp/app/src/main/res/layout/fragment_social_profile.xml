@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/bg_budget_screen"
@@ -67,513 +68,515 @@
             android:clipToPadding="false"
             android:paddingBottom="110dp">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
-
-            <FrameLayout
-                android:layout_width="match_parent"
-                android:layout_height="294dp">
-
-                <ImageView
-                    android:layout_width="match_parent"
-                    android:layout_height="244dp"
-                    android:scaleType="centerCrop"
-                    android:src="@drawable/bg_profile_hero_scene" />
-
-                <com.example.cashify.ui.common.AvatarImageView
-                    android:id="@+id/imgAvatar"
-                    android:layout_width="90dp"
-                    android:layout_height="90dp"
-                    android:layout_gravity="bottom|start"
-                    android:layout_marginStart="18dp"
-                    android:layout_marginBottom="12dp"
-                    android:scaleType="centerCrop"
-                    android:src="@drawable/bg_default_avatar_pastel" />
-
-                <TextView
-                    android:id="@+id/btnEditProfile"
-                    android:layout_width="wrap_content"
-                    android:layout_height="30dp"
-                    android:layout_gravity="bottom|start"
-                    android:layout_marginStart="120dp"
-                    android:layout_marginBottom="12dp"
-                    android:background="@drawable/bg_profile_creator_badge"
-                    android:backgroundTint="#4CAF50"
-                    android:fontFamily="@font/inter_bold"
-                    android:gravity="center"
-                    android:paddingStart="12dp"
-                    android:paddingEnd="12dp"
-                    android:text="@string/your_profile"
-                    android:textColor="@color/white"
-                    android:textSize="12sp" />
-
-                <LinearLayout
-                    android:id="@+id/layoutFriendActions"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="bottom|start"
-                    android:layout_marginStart="120dp"
-                    android:layout_marginBottom="12dp"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:id="@+id/btnAddFriend"
-                        android:layout_width="wrap_content"
-                        android:layout_height="30dp"
-                        android:background="@drawable/bg_profile_creator_badge"
-                        android:backgroundTint="#2196F3"
-                        android:fontFamily="@font/inter_bold"
-                        android:gravity="center"
-                        android:paddingStart="12dp"
-                        android:paddingEnd="12dp"
-                        android:text="Add Friend"
-                        android:textColor="@color/white"
-                        android:textSize="12sp"
-                        android:visibility="gone" />
-
-                    <TextView
-                        android:id="@+id/btnMessage"
-                        android:layout_width="wrap_content"
-                        android:layout_height="30dp"
-                        android:background="@drawable/bg_profile_creator_badge"
-                        android:backgroundTint="#FF9800"
-                        android:fontFamily="@font/inter_bold"
-                        android:gravity="center"
-                        android:paddingStart="12dp"
-                        android:paddingEnd="12dp"
-                        android:text="Message"
-                        android:textColor="@color/white"
-                        android:textSize="12sp"
-                        android:visibility="gone" />
-
-                    <TextView
-                        android:id="@+id/btnUnfriend"
-                        android:layout_width="wrap_content"
-                        android:layout_height="30dp"
-                        android:layout_marginStart="8dp"
-                        android:background="@drawable/bg_profile_action_card"
-                        android:backgroundTint="#FFEBEE"
-                        android:fontFamily="@font/inter_bold"
-                        android:gravity="center"
-                        android:paddingStart="12dp"
-                        android:paddingEnd="12dp"
-                        android:text="Unfriend"
-                        android:textColor="#D32F2F"
-                        android:textSize="12sp"
-                        android:visibility="gone" />
-
-                </LinearLayout>
-
-                <ImageView
-                    android:id="@+id/btnShareProfile"
-                    android:layout_width="42dp"
-                    android:layout_height="42dp"
-                    android:layout_gravity="bottom|end"
-                    android:layout_marginEnd="16dp"
-                    android:layout_marginBottom="28dp"
-                    android:background="@drawable/bg_profile_share_circle"
-                    android:clickable="true"
-                    android:elevation="2dp"
-                    android:focusable="true"
-                    android:padding="11dp"
-                    android:src="@drawable/ic_share"
-                    app:tint="#1A237E" />
-            </FrameLayout>
-
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp">
+                android:orientation="vertical">
 
-                <TextView
-                    android:id="@+id/tvDisplayName"
+                <FrameLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:ellipsize="end"
-                    android:fontFamily="@font/outfit_bold"
-                    android:maxLines="1"
-                    android:text="@string/placeholder_user_name"
-                    android:textColor="#1A237E"
-                    android:textSize="23sp" />
-
-                <TextView
-                    android:id="@+id/tvBio"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:fontFamily="@font/inter_regular"
-                    android:lineSpacingExtra="4dp"
-                    android:maxLines="4"
-                    android:text="@string/bio"
-                    android:textColor="#607D8B"
-                    android:textSize="14sp" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:id="@+id/tvJoinedDate"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:drawableStart="@drawable/ic_cozy_leaf"
-                        android:drawablePadding="5dp"
-                        android:drawableTint="#1A237E"
-                        android:fontFamily="@font/inter_medium"
-                        android:text="@string/cashify_member"
-                        android:textColor="#1A237E"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:id="@+id/txtProfileLink"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:clickable="true"
-                        android:drawableStart="@drawable/ic_share"
-                        android:drawablePadding="5dp"
-                        android:drawableTint="#1A237E"
-                        android:focusable="true"
-                        android:fontFamily="@font/inter_medium"
-                        android:text="@string/profile_link"
-                        android:textColor="#1A237E"
-                        android:textSize="12sp" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="122dp"
-                    android:layout_marginTop="28dp"
-                    android:orientation="horizontal">
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_marginEnd="7dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_profile_stat_peach"
-                        android:gravity="center_vertical"
-                        android:orientation="vertical"
-                        android:padding="18dp">
-
-                        <ImageView
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:src="@drawable/ic_friends"
-                            app:tint="#1A237E" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="18dp"
-                            android:fontFamily="@font/inter_medium"
-                            android:letterSpacing="0.08"
-                            android:text="@string/social_profile_Friends"
-                            android:textColor="#1A237E"
-                            android:textSize="11sp" />
-
-                        <TextView
-                            android:id="@+id/tvFriendCount"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:fontFamily="@font/outfit_bold"
-                            android:text="@string/no_friend"
-                            android:textColor="#607D8B"
-                            android:textSize="23sp" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_marginStart="7dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_profile_stat_navy"
-                        android:gravity="center_vertical"
-                        android:orientation="vertical"
-                        android:padding="18dp">
-
-                        <ImageView
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:src="@drawable/ic_statistic_regular"
-                            app:tint="@color/white" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="18dp"
-                            android:fontFamily="@font/inter_medium"
-                            android:letterSpacing="0.08"
-                            android:text="@string/stamp"
-                            android:textColor="@color/white"
-                            android:textSize="11sp" />
-
-                        <TextView
-                            android:id="@+id/tvTrophyCount"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:fontFamily="@font/outfit_bold"
-                            android:text="@string/no_achievement"
-                            android:textColor="#DCE2F0"
-                            android:textSize="23sp" />
-                    </LinearLayout>
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="86dp"
-                    android:layout_marginTop="14dp"
-                    android:background="@drawable/bg_profile_harvest_card"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingStart="20dp"
-                    android:paddingEnd="18dp">
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:fontFamily="@font/inter_medium"
-                            android:letterSpacing="0.08"
-                            android:text="@string/finance_sprout"
-                            android:textColor="#607D8B"
-                            android:textSize="11sp" />
-
-                        <TextView
-                            android:id="@+id/tvPostCount"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:fontFamily="@font/outfit_bold"
-                            android:text="@string/no_post"
-                            android:textColor="#1A237E"
-                            android:textSize="24sp" />
-                    </LinearLayout>
-
-                    <TextView
-                        android:id="@+id/tvStreakCount"
-                        android:layout_width="62dp"
-                        android:layout_height="62dp"
-                        android:background="@drawable/bg_profile_streak_fire_circle"
-                        android:drawableTop="@drawable/ic_fire_regular"
-                        android:drawablePadding="0dp"
-                        android:fontFamily="@font/inter_bold"
-                        android:gravity="center"
-                        android:includeFontPadding="false"
-                        android:paddingTop="7dp"
-                        android:paddingBottom="6dp"
-                        android:text="@string/zero_d"
-                        android:textColor="#EF5350"
-                        android:textSize="11sp" />
-                </LinearLayout>
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="30dp"
-                    android:fontFamily="@font/inter_medium"
-                    android:letterSpacing="0.08"
-                    android:text="@string/Achievement"
-                    android:textColor="#1A237E"
-                    android:textSize="12sp" />
-
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/rvAchievementsProfile"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:clipToPadding="false"
-                    android:orientation="horizontal"
-                    android:overScrollMode="never" />
-
-                <TextView
-                    android:id="@+id/tvPinnedAchievement"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:background="@drawable/bg_social_soft_panel"
-                    android:drawableStart="@drawable/ic_feed_trophy"
-                    android:drawablePadding="9dp"
-                    android:drawableTint="#1A237E"
-                    android:fontFamily="@font/inter_medium"
-                    android:lineSpacingExtra="3dp"
-                    android:padding="13dp"
-                    android:text="@string/pin_milestone"
-                    android:textColor="#607D8B"
-                    android:textSize="12sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="28dp"
-                    android:fontFamily="@font/outfit_bold"
-                    android:text="@string/your_journey"
-                    android:textColor="#1A237E"
-                    android:textSize="21sp" />
-
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/rvMyPosts"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:clipToPadding="false"
-                    android:nestedScrollingEnabled="false"
-                    android:overScrollMode="never" />
-
-                <LinearLayout
-                    android:id="@+id/layoutEmptyState"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:background="@drawable/bg_profile_journey_card"
-                    android:gravity="center"
-                    android:orientation="vertical"
-                    android:paddingStart="28dp"
-                    android:paddingTop="24dp"
-                    android:paddingEnd="28dp"
-                    android:paddingBottom="28dp"
-                    android:visibility="gone">
+                    android:layout_height="294dp">
 
                     <ImageView
-                        android:layout_width="100dp"
-                        android:layout_height="100dp"
-                        android:scaleType="centerInside"
-                        android:src="@drawable/ic_post_image" />
+                        android:layout_width="match_parent"
+                        android:layout_height="244dp"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/bg_profile_hero_scene" />
+
+                    <com.example.cashify.ui.common.AvatarImageView
+                        android:id="@+id/imgAvatar"
+                        android:layout_width="90dp"
+                        android:layout_height="90dp"
+                        android:layout_gravity="bottom|start"
+                        android:layout_marginStart="18dp"
+                        android:layout_marginBottom="12dp"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/bg_default_avatar_pastel" />
 
                     <TextView
+                        android:id="@+id/btnEditProfile"
+                        android:layout_width="wrap_content"
+                        android:layout_height="30dp"
+                        android:layout_gravity="bottom|start"
+                        android:layout_marginStart="120dp"
+                        android:layout_marginBottom="12dp"
+                        android:background="@drawable/bg_profile_creator_badge"
+                        android:backgroundTint="#4CAF50"
+                        android:fontFamily="@font/inter_bold"
+                        android:gravity="center"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp"
+                        android:text="@string/your_profile"
+                        android:textColor="@color/white"
+                        android:textSize="12sp" />
+
+                    <LinearLayout
+                        android:id="@+id/layoutFriendActions"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="18dp"
-                        android:fontFamily="@font/outfit_bold"
-                        android:gravity="center"
-                        android:text="@string/new_thought"
-                        android:textColor="#1A237E"
-                        android:textSize="21sp" />
+                        android:layout_gravity="bottom|start"
+                        android:layout_marginStart="120dp"
+                        android:layout_marginBottom="12dp"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/btnAddFriend"
+                            android:layout_width="wrap_content"
+                            android:layout_height="30dp"
+                            android:background="@drawable/bg_profile_creator_badge"
+                            android:backgroundTint="#2196F3"
+                            android:fontFamily="@font/inter_bold"
+                            android:gravity="center"
+                            android:paddingStart="12dp"
+                            android:paddingEnd="12dp"
+                            android:text="Add Friend"
+                            android:textColor="@color/white"
+                            android:textSize="12sp"
+                            android:visibility="gone" />
+
+                        <TextView
+                            android:id="@+id/btnMessage"
+                            android:layout_width="wrap_content"
+                            android:layout_height="30dp"
+                            android:background="@drawable/bg_profile_creator_badge"
+                            android:backgroundTint="#FF9800"
+                            android:fontFamily="@font/inter_bold"
+                            android:gravity="center"
+                            android:paddingStart="12dp"
+                            android:paddingEnd="12dp"
+                            android:text="Message"
+                            android:textColor="@color/white"
+                            android:textSize="12sp"
+                            android:visibility="gone" />
+
+                        <TextView
+                            android:id="@+id/btnUnfriend"
+                            android:layout_width="wrap_content"
+                            android:layout_height="30dp"
+                            android:layout_marginStart="8dp"
+                            android:background="@drawable/bg_profile_action_card"
+                            android:backgroundTint="#FFEBEE"
+                            android:fontFamily="@font/inter_bold"
+                            android:gravity="center"
+                            android:paddingStart="12dp"
+                            android:paddingEnd="12dp"
+                            android:text="Unfriend"
+                            android:textColor="#D32F2F"
+                            android:textSize="12sp"
+                            android:visibility="gone" />
+
+                    </LinearLayout>
+
+                    <ImageView
+                        android:id="@+id/btnShareProfile"
+                        android:layout_width="42dp"
+                        android:layout_height="42dp"
+                        android:layout_gravity="bottom|end"
+                        android:layout_marginEnd="16dp"
+                        android:layout_marginBottom="28dp"
+                        android:background="@drawable/bg_profile_share_circle"
+                        android:clickable="true"
+                        android:elevation="2dp"
+                        android:focusable="true"
+                        android:padding="11dp"
+                        android:src="@drawable/ic_share"
+                        app:tint="#1A237E" />
+                </FrameLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp">
 
                     <TextView
+                        android:id="@+id/tvDisplayName"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:fontFamily="@font/outfit_bold"
+                        android:maxLines="1"
+                        android:text="@string/placeholder_user_name"
+                        android:textColor="#1A237E"
+                        android:textSize="23sp" />
+
+                    <TextView
+                        android:id="@+id/tvBio"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
                         android:fontFamily="@font/inter_regular"
-                        android:gravity="center"
-                        android:lineSpacingExtra="3dp"
-                        android:text="@string/firstly_post_prompt"
+                        android:lineSpacingExtra="4dp"
+                        android:maxLines="4"
+                        android:text="@string/bio"
                         android:textColor="#607D8B"
-                        android:textSize="13sp" />
-
-                    <TextView
-                        android:id="@+id/btnStartGrowing"
-                        android:layout_width="136dp"
-                        android:layout_height="46dp"
-                        android:layout_marginTop="20dp"
-                        android:background="@drawable/bg_profile_start_button"
-                        android:clickable="true"
-                        android:elevation="3dp"
-                        android:focusable="true"
-                        android:fontFamily="@font/inter_bold"
-                        android:gravity="center"
-                        android:text="@string/start_write"
-                        android:textColor="@color/white"
-                        android:textSize="13sp" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:id="@+id/layoutActionCards"
-                    android:layout_width="match_parent"
-                    android:layout_height="126dp"
-                    android:layout_marginTop="18dp"
-                    android:layout_marginBottom="28dp"
-                    android:orientation="horizontal">
+                        android:textSize="14sp" />
 
                     <LinearLayout
-                        android:id="@+id/actionSetMilestone"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_marginEnd="7dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_profile_action_card"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:orientation="vertical"
-                        android:padding="18dp">
-
-                        <ImageView
-                            android:layout_width="28dp"
-                            android:layout_height="28dp"
-                            android:src="@drawable/ic_pencil_regular"
-                            app:tint="#1A237E" />
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
 
                         <TextView
+                            android:id="@+id/tvJoinedDate"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="22dp"
-                            android:fontFamily="@font/inter_bold"
-                            android:text="@string/create_milestone"
+                            android:drawableStart="@drawable/ic_cozy_leaf"
+                            android:drawablePadding="5dp"
+                            android:drawableTint="#1A237E"
+                            android:fontFamily="@font/inter_medium"
+                            android:text="@string/cashify_member"
                             android:textColor="#1A237E"
                             android:textSize="12sp" />
 
                         <TextView
-                            android:layout_width="match_parent"
+                            android:id="@+id/txtProfileLink"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="5dp"
-                            android:fontFamily="@font/inter_regular"
-                            android:lineSpacingExtra="2dp"
-                            android:text="@string/dinh_hinh_hanh_trinh_tai_chinh"
-                            android:textColor="#607D8B"
-                            android:textSize="10sp" />
+                            android:layout_marginStart="12dp"
+                            android:clickable="true"
+                            android:drawableStart="@drawable/ic_share"
+                            android:drawablePadding="5dp"
+                            android:drawableTint="#1A237E"
+                            android:focusable="true"
+                            android:fontFamily="@font/inter_medium"
+                            android:text="@string/profile_link"
+                            android:textColor="#1A237E"
+                            android:textSize="12sp" />
                     </LinearLayout>
 
                     <LinearLayout
-                        android:id="@+id/actionFirstEntry"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_marginStart="7dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_profile_action_card"
-                        android:clickable="true"
-                        android:focusable="true"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="28dp"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_marginEnd="7dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_profile_stat_peach"
+                            android:gravity="center_vertical"
+                            android:orientation="vertical"
+                            android:padding="18dp">
+
+                            <ImageView
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:src="@drawable/ic_friends"
+                                app:tint="#1A237E" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="18dp"
+                                android:fontFamily="@font/inter_medium"
+                                android:letterSpacing="0.08"
+                                android:text="@string/social_profile_Friends"
+                                android:textColor="#1A237E"
+                                android:textSize="11sp" />
+
+                            <TextView
+                                android:id="@+id/tvFriendCount"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/outfit_bold"
+                                android:text="@string/no_friend"
+                                android:textColor="#607D8B"
+                                android:textSize="23sp" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_marginStart="7dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_profile_stat_navy"
+                            android:gravity="center_vertical"
+                            android:orientation="vertical"
+                            android:padding="18dp">
+
+                            <ImageView
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:src="@drawable/ic_statistic_regular"
+                                app:tint="@color/white" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="18dp"
+                                android:fontFamily="@font/inter_medium"
+                                android:letterSpacing="0.08"
+                                android:text="@string/stamp"
+                                android:textColor="@color/white"
+                                android:textSize="11sp" />
+
+                            <TextView
+                                android:id="@+id/tvTrophyCount"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/outfit_bold"
+                                android:text="@string/no_achievement"
+                                android:textColor="#DCE2F0"
+                                android:textSize="20sp" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:background="@drawable/bg_profile_harvest_card"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingStart="20dp"
+                        android:paddingTop="12dp"
+                        android:paddingEnd="18dp"
+                        android:paddingBottom="12dp">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/inter_medium"
+                                android:letterSpacing="0.08"
+                                android:text="@string/finance_sprout"
+                                android:textColor="#607D8B"
+                                android:textSize="11sp" />
+
+                            <TextView
+                                android:id="@+id/tvPostCount"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/outfit_bold"
+                                android:text="@string/no_post"
+                                android:textColor="#1A237E"
+                                android:textSize="24sp" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/tvStreakCount"
+                            android:layout_width="62dp"
+                            android:layout_height="62dp"
+                            android:background="@drawable/bg_profile_streak_fire_circle"
+                            android:drawableTop="@drawable/ic_fire_regular"
+                            android:drawablePadding="0dp"
+                            android:fontFamily="@font/inter_bold"
+                            android:gravity="center"
+                            android:includeFontPadding="false"
+                            android:paddingTop="7dp"
+                            android:paddingBottom="6dp"
+                            android:text="@string/zero_d"
+                            android:textColor="#EF5350"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="30dp"
+                        android:fontFamily="@font/inter_medium"
+                        android:letterSpacing="0.08"
+                        android:text="@string/Achievement"
+                        android:textColor="#1A237E"
+                        android:textSize="12sp" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rvAchievementsProfile"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:clipToPadding="false"
+                        android:orientation="horizontal"
+                        android:overScrollMode="never" />
+
+                    <TextView
+                        android:id="@+id/tvPinnedAchievement"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:background="@drawable/bg_social_soft_panel"
+                        android:drawableStart="@drawable/ic_feed_trophy"
+                        android:drawablePadding="9dp"
+                        android:drawableTint="#1A237E"
+                        android:fontFamily="@font/inter_medium"
+                        android:lineSpacingExtra="3dp"
+                        android:padding="13dp"
+                        android:text="@string/pin_milestone"
+                        android:textColor="#607D8B"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="28dp"
+                        android:fontFamily="@font/outfit_bold"
+                        android:text="@string/your_journey"
+                        android:textColor="#1A237E"
+                        android:textSize="21sp" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rvMyPosts"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:clipToPadding="false"
+                        android:nestedScrollingEnabled="false"
+                        android:overScrollMode="never" />
+
+                    <LinearLayout
+                        android:id="@+id/layoutEmptyState"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:background="@drawable/bg_profile_journey_card"
+                        android:gravity="center"
                         android:orientation="vertical"
-                        android:padding="18dp">
+                        android:paddingStart="28dp"
+                        android:paddingTop="24dp"
+                        android:paddingEnd="28dp"
+                        android:paddingBottom="28dp"
+                        android:visibility="gone">
 
                         <ImageView
-                            android:layout_width="28dp"
-                            android:layout_height="28dp"
-                            android:src="@drawable/ic_cozy_notebook"
-                            app:tint="#1A237E" />
+                            android:layout_width="100dp"
+                            android:layout_height="100dp"
+                            android:scaleType="centerInside"
+                            android:src="@drawable/ic_post_image" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="22dp"
-                            android:fontFamily="@font/inter_bold"
-                            android:text="@string/first_post"
+                            android:layout_marginTop="18dp"
+                            android:fontFamily="@font/outfit_bold"
+                            android:gravity="center"
+                            android:text="@string/new_thought"
                             android:textColor="#1A237E"
-                            android:textSize="12sp" />
+                            android:textSize="21sp" />
 
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="5dp"
+                            android:layout_marginTop="8dp"
                             android:fontFamily="@font/inter_regular"
-                            android:lineSpacingExtra="2dp"
-                            android:text="@string/start_sharing"
+                            android:gravity="center"
+                            android:lineSpacingExtra="3dp"
+                            android:text="@string/firstly_post_prompt"
                             android:textColor="#607D8B"
-                            android:textSize="10sp" />
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:id="@+id/btnStartGrowing"
+                            android:layout_width="136dp"
+                            android:layout_height="46dp"
+                            android:layout_marginTop="20dp"
+                            android:background="@drawable/bg_profile_start_button"
+                            android:clickable="true"
+                            android:elevation="3dp"
+                            android:focusable="true"
+                            android:fontFamily="@font/inter_bold"
+                            android:gravity="center"
+                            android:text="@string/start_write"
+                            android:textColor="@color/white"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/layoutActionCards"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="18dp"
+                        android:layout_marginBottom="28dp"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:id="@+id/actionSetMilestone"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_marginEnd="7dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_profile_action_card"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:orientation="vertical"
+                            android:padding="18dp">
+
+                            <ImageView
+                                android:layout_width="28dp"
+                                android:layout_height="28dp"
+                                android:src="@drawable/ic_pencil_regular"
+                                app:tint="#1A237E" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="22dp"
+                                android:fontFamily="@font/inter_bold"
+                                android:text="@string/create_milestone"
+                                android:textColor="#1A237E"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="5dp"
+                                android:fontFamily="@font/inter_regular"
+                                android:lineSpacingExtra="2dp"
+                                android:text="@string/dinh_hinh_hanh_trinh_tai_chinh"
+                                android:textColor="#607D8B"
+                                android:textSize="10sp" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/actionFirstEntry"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_marginStart="7dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_profile_action_card"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:orientation="vertical"
+                            android:padding="18dp">
+
+                            <ImageView
+                                android:layout_width="28dp"
+                                android:layout_height="28dp"
+                                android:src="@drawable/ic_cozy_notebook"
+                                app:tint="#1A237E" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="22dp"
+                                android:fontFamily="@font/inter_bold"
+                                android:text="@string/first_post"
+                                android:textColor="#1A237E"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="5dp"
+                                android:fontFamily="@font/inter_regular"
+                                android:lineSpacingExtra="2dp"
+                                android:text="@string/start_sharing"
+                                android:textColor="#607D8B"
+                                android:textSize="10sp" />
+                        </LinearLayout>
                     </LinearLayout>
                 </LinearLayout>
             </LinearLayout>
-        </LinearLayout>
         </androidx.core.widget.NestedScrollView>
     </LinearLayout>
 
