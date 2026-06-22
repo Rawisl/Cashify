@@ -286,16 +286,19 @@ public class SocialComposerFragment extends Fragment {
                     : "You've gone over budget this period. Try to stay on track next time. 🥲";
 
             milestoneMode = true;
-            milestonePreviewContainer.setVisibility(View.VISIBLE);
-            tvPreviewIcon.setText(progress + "%");
-            tvPreviewTitle.setText(title);
-            tvPreviewMonth.setText(periodLabel);
-            tvPreviewAmount.setText(amountLabel);
-            pbPreviewProgress.setProgress(uiProgress);
+            if (milestonePreviewContainer != null)
+            {
+                milestonePreviewContainer.setVisibility(View.VISIBLE);
+                if (tvPreviewIcon != null) tvPreviewIcon.setText(progress + "%");
+                if (tvPreviewTitle != null) tvPreviewTitle.setText(title);
+                if (tvPreviewMonth != null) tvPreviewMonth.setText(periodLabel);
+                if (tvPreviewAmount != null) tvPreviewAmount.setText(amountLabel);
+                if (pbPreviewProgress != null) pbPreviewProgress.setProgress(uiProgress);
+            }
 
             if (actionPhoto != null) actionPhoto.setVisibility(View.GONE);
 
-            txtComposerHint.setText("Your milestone is ready! Post your thoughts above.");
+            if (txtComposerHint != null) txtComposerHint.setText("Your milestone is ready! Post your thoughts above.");
 
             if (editPostTitle != null) {
                 editPostTitle.setVisibility(View.GONE);
@@ -355,7 +358,7 @@ public class SocialComposerFragment extends Fragment {
                 } catch (Exception ignored) {}
             }
             if (postMenuItem != null) postMenuItem.setTitle("SAVE");
-            txtComposerHint.setText("What's on your mind? Edit your post here...");
+            if (txtComposerHint != null) txtComposerHint.setText("What's on your mind? Edit your post here...");
         }
     }
 
@@ -496,7 +499,7 @@ public class SocialComposerFragment extends Fragment {
 
     private void setMilestoneMode(boolean enabled) {
         milestoneMode = enabled;
-        txtComposerHint.setText(enabled
+        if (txtComposerHint != null) txtComposerHint.setText(enabled
                 ? "Milestone mode: share your goal, streak, or a small win."
                 : "Start a small financial story.");
         editPostContent.setHint(enabled

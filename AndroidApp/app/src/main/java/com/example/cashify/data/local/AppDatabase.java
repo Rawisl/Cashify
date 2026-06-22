@@ -6,6 +6,7 @@ import androidx.annotation.NonNull;
 import androidx.room.Database;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
+import androidx.room.TypeConverters;
 import androidx.room.migration.Migration;
 import androidx.sqlite.db.SupportSQLiteDatabase;
 
@@ -14,7 +15,8 @@ import com.example.cashify.data.model.Category;
 import com.example.cashify.data.model.Transaction;
 import com.example.cashify.data.model.Workspace;
 
-@Database(entities = {Category.class, Transaction.class, Budget.class, Workspace.class}, version = 7, exportSchema = false)
+@Database(entities = {Category.class, Transaction.class, Budget.class, Workspace.class}, version = 8, exportSchema = false)
+@TypeConverters(Workspace.WorkspaceConverters.class)
 public abstract class AppDatabase extends RoomDatabase {
 
     private static volatile AppDatabase instance;

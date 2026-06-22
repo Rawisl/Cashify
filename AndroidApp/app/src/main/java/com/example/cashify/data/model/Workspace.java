@@ -15,7 +15,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity(tableName = "workspaces")
-@TypeConverters(Workspace.WorkspaceConverters.class)
 public class Workspace {
 
     @PrimaryKey
