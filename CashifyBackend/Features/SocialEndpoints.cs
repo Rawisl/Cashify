@@ -28,6 +28,9 @@ public static class SocialEndpoints
                 var userSnap = await db.Collection("users").Document(uid).GetSnapshotAsync();
                 bool isAdmin = userSnap.ContainsField("role") && userSnap.GetValue<string>("role") == "ADMIN";
 
+                // Lấy danh sách các bài viết đã bị ẩn
+                var hiddenSnap = await db.Collection("users").Document(uid).Collection("hidden_posts").GetSnapshotAsync();
+                var hiddenPostIds = new HashSet<string>(hiddenSnap.Documents.Select(d => d.Id));
                 Query query = db.Collection("posts");
 
                 // Giới hạn feed theo danh sách bạn bè nếu không phải Admin
@@ -53,7 +56,9 @@ public static class SocialEndpoints
                     return postDict;
                 });
 
-                var posts = (await Task.WhenAll(likeCheckTasks)).ToList();
+                var posts = (await Task.WhenAll(likeCheckTasks))
+                                            .Where(p => !hiddenPostIds.Contains(p["postId"].ToString())) // BỘ LỌC
+                                            .ToList();
                 return Results.Ok(posts);
             }
             catch (Exception ex) { return Results.Problem($"Failed to fetch feed: {ex.Message}"); }
@@ -70,10 +75,28 @@ public static class SocialEndpoints
                 if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
                     return Results.Unauthorized();
 
+                var token = authHeader.Substring("Bearer ".Length);
+                var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token)).Uid;
+
+                //Lấy danh sách các Bình Luận đã bị ẩn của User này
+                var hiddenSnap = await db.Collection("users").Document(uid).Collection("hidden_comments").GetSnapshotAsync();
+                //Vì lúc lưu ta dùng key là "{postId}_{commentId}", nên giờ phải tách ra lấy commentId
+                var hiddenCommentIds = new HashSet<string>(
+                    hiddenSnap.Documents
+                              .Where(d => d.Id.StartsWith($"{postId}_"))
+                              .Select(d => d.Id.Split('_')[1])
+                );
+
+                // Tải toàn bộ bình luận của bài viết
                 var commentsRef = db.Collection("posts").Document(postId).Collection("comments");
                 var snapshot = await commentsRef.OrderBy("timestamp").GetSnapshotAsync();
 
-                var comments = snapshot.Documents.Select(doc => doc.ToDictionary()).ToList();
+                //Bỏ qua những bình luận nằm trong danh sách đen
+                var comments = snapshot.Documents
+                                       .Where(doc => !hiddenCommentIds.Contains(doc.Id))
+                                       .Select(doc => doc.ToDictionary())
+                                       .ToList();
+
                 return Results.Ok(comments);
             }
             catch (Exception ex) { return Results.Problem(ex.Message); }
@@ -93,6 +116,10 @@ public static class SocialEndpoints
                 var token = authHeader.Substring("Bearer ".Length);
                 var currentViewerUid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token)).Uid;
 
+                // Lấy danh sách các bài viết đã bị ẩn
+                var hiddenSnap = await db.Collection("users").Document(currentViewerUid).Collection("hidden_posts").GetSnapshotAsync();
+                var hiddenPostIds = new HashSet<string>(hiddenSnap.Documents.Select(d => d.Id));
+
                 Query query = db.Collection("posts").WhereEqualTo("userId", targetUid).OrderByDescending("timestamp");
 
                 if (lastTimestamp > 0)
@@ -109,7 +136,9 @@ public static class SocialEndpoints
                     return postDict;
                 });
 
-                var posts = (await Task.WhenAll(likeCheckTasks)).ToList();
+                var posts = (await Task.WhenAll(likeCheckTasks))
+                                            .Where(p => !hiddenPostIds.Contains(p["postId"].ToString())) // BỘ LỌC
+                                            .ToList();
                 return Results.Ok(posts);
             }
             catch (Exception ex) { return Results.Problem(ex.Message); }
@@ -873,6 +902,59 @@ public static class SocialEndpoints
                 return Results.Ok(postDict);
             }
             catch (Exception ex) { return Results.Problem(ex.Message); }
+        });
+        // ---------------------------------------------------------
+        // 17. ẨN BÀI VIẾT (HIDE POST)
+        // ---------------------------------------------------------
+        group.MapPost("/post/hide", async (HttpRequest request, HidePostRequest body, FirestoreDb db) =>
+        {
+            try
+            {
+                var authHeader = request.Headers["Authorization"].FirstOrDefault();
+                if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
+                    return Results.Unauthorized();
+
+                var token = authHeader.Substring("Bearer ".Length);
+                var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token)).Uid;
+
+                if (string.IsNullOrEmpty(body.PostId))
+                    return Results.BadRequest("Post ID cannot be empty");
+
+                // Thêm vào sub-collection "hidden_posts" của User
+                var hideRef = db.Collection("users").Document(uid).Collection("hidden_posts").Document(body.PostId);
+                await hideRef.SetAsync(new { hiddenAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() });
+
+                return Results.Ok(new { message = "Post hidden successfully" });
+            }
+            catch (Exception ex) { return Results.Problem($"Failed to hide post: {ex.Message}"); }
+        });
+
+        // ---------------------------------------------------------
+        // 18. ẨN BÌNH LUẬN (HIDE COMMENT)
+        // ---------------------------------------------------------
+        group.MapPost("/comment/hide", async (HttpRequest request, HideCommentRequest body, FirestoreDb db) =>
+        {
+            try
+            {
+                var authHeader = request.Headers["Authorization"].FirstOrDefault();
+                if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
+                    return Results.Unauthorized();
+
+                var token = authHeader.Substring("Bearer ".Length);
+                var uid = (await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token)).Uid;
+
+                if (string.IsNullOrEmpty(body.PostId) || string.IsNullOrEmpty(body.CommentId))
+                    return Results.BadRequest("Post ID and Comment ID cannot be empty");
+
+                // Thêm vào sub-collection "hidden_comments" của User
+                //gộp key là {postId}_{commentId} để dễ check sau này
+                string hiddenKey = $"{body.PostId}_{body.CommentId}";
+                var hideRef = db.Collection("users").Document(uid).Collection("hidden_comments").Document(hiddenKey);
+                await hideRef.SetAsync(new { hiddenAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() });
+
+                return Results.Ok(new { message = "Comment hidden successfully" });
+            }
+            catch (Exception ex) { return Results.Problem($"Failed to hide comment: {ex.Message}"); }
         });
     }
 }
