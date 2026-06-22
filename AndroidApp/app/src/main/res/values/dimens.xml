@@ -13,7 +13,8 @@
     <dimen name="bottom_nav_item_vertical_offset">0dp</dimen>
     <dimen name="bottom_nav_selected_icon_float_offset">5dp</dimen>
 
-    <dimen name="bottom_nav_social_height">72dp</dimen>
+    <dimen name="bottom_nav_social_height">60dp</dimen>
+    <dimen name="bottom_nav_workspace_height">60dp</dimen>
     <dimen name="bottom_nav_social_horizontal_margin">15dp</dimen>
     <dimen name="bottom_nav_social_icon_size">26dp</dimen>
     <dimen name="bottom_nav_social_elevation">10dp</dimen>
