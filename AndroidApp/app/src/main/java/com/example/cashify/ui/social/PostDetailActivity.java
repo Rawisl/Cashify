@@ -123,7 +123,7 @@ public class PostDetailActivity extends AppCompatActivity {
         postAdapter.setOnAvatarClickListener(userId -> {
             if (userId != null && !userId.equals(FirebaseAuth.getInstance().getCurrentUser().getUid())) {
                 Intent intent = new Intent(this, com.example.cashify.ui.main.MainActivity.class);
-                intent.putExtra("OPEN_USER_PROFILE", userId);
+                intent.putExtra("OPEN_USER_PROFILE", userId); intent.putExtra("FINISH_ON_BACK", true);
                 startActivity(intent);
             }
         });
@@ -141,7 +141,7 @@ public class PostDetailActivity extends AppCompatActivity {
         commentAdapter.setOnAvatarClickListener(userId -> {
             if (userId != null && !userId.equals(FirebaseAuth.getInstance().getCurrentUser().getUid())) {
                 Intent intent = new Intent(this, com.example.cashify.ui.main.MainActivity.class);
-                intent.putExtra("OPEN_USER_PROFILE", userId);
+                intent.putExtra("OPEN_USER_PROFILE", userId); intent.putExtra("FINISH_ON_BACK", true);
                 startActivity(intent);
             }
         });

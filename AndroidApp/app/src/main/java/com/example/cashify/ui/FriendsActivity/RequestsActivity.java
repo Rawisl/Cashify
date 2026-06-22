@@ -100,6 +100,14 @@ public class RequestsActivity extends AppCompatActivity {
             public void onCancel(User user) {
                 friendsViewModel.cancelFriendRequest(user);
             }
+
+            @Override
+            public void onAvatarClick(User user) {
+                android.content.Intent intent = new android.content.Intent(RequestsActivity.this, com.example.cashify.ui.main.MainActivity.class);
+                intent.putExtra("OPEN_USER_PROFILE", user.getUid());
+                intent.putExtra("FINISH_ON_BACK", true);
+                startActivity(intent);
+            }
         });
         rvRequests.setAdapter(adapter);
 

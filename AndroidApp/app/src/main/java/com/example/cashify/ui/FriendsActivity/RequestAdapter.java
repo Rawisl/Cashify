@@ -24,6 +24,7 @@ public class RequestAdapter extends RecyclerView.Adapter<RequestAdapter.ViewHold
         void onAccept(User user);
         void onDecline(User user);
         void onCancel(User user);
+        void onAvatarClick(User user);
     }
 
     private List<User> users;
@@ -67,6 +68,10 @@ public class RequestAdapter extends RecyclerView.Adapter<RequestAdapter.ViewHold
 
             holder.btnCancel.setOnClickListener(v -> listener.onCancel(user));
         }
+
+        holder.itemView.setOnClickListener(v -> {
+            if (listener != null) listener.onAvatarClick(user);
+        });
     }
 
     @Override

@@ -128,7 +128,7 @@ public class FriendsActivity extends BaseActivity {
             public void onAvatarClick(User user) {
                 android.content.Intent intent = new android.content.Intent(FriendsActivity.this, com.example.cashify.ui.main.MainActivity.class);
                 intent.putExtra("OPEN_USER_PROFILE", user.getUid());
-                intent.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                intent.putExtra("FINISH_ON_BACK", true);
                 startActivity(intent);
             }
         };
@@ -160,7 +160,7 @@ public class FriendsActivity extends BaseActivity {
             public void onAvatarClick(User user) {
                 android.content.Intent intent = new android.content.Intent(FriendsActivity.this, com.example.cashify.ui.main.MainActivity.class);
                 intent.putExtra("OPEN_USER_PROFILE", user.getUid());
-                intent.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                intent.putExtra("FINISH_ON_BACK", true);
                 startActivity(intent);
             }
         };

@@ -75,7 +75,7 @@ public class ProfileAchievementAdapter extends RecyclerView.Adapter<ProfileAchie
                 android.graphics.drawable.GradientDrawable gd = new android.graphics.drawable.GradientDrawable();
                 gd.setShape(android.graphics.drawable.GradientDrawable.OVAL);
                 gd.setColor(solidColor);
-                int strokeWidth = (int) (2 * holder.itemView.getContext().getResources().getDisplayMetrics().density);
+                int strokeWidth = (int) (4 * holder.itemView.getContext().getResources().getDisplayMetrics().density);
                 gd.setStroke(strokeWidth, strokeColor);
                 holder.layoutBadgeBg.setBackground(gd);
             } catch (IllegalArgumentException e) {

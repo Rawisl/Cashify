@@ -200,13 +200,19 @@ public class MainActivity extends BaseActivity {
 
         if (getIntent().hasExtra("OPEN_USER_PROFILE")) {
             String profileId = getIntent().getStringExtra("OPEN_USER_PROFILE");
-            navigateWhenHome(controller -> {
+            NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager()
+                    .findFragmentById(R.id.nav_host_fragment);
+            if (navHostFragment != null) {
+                NavController controller = navHostFragment.getNavController();
                 Bundle args = new Bundle();
                 args.putString("USER_ID", profileId);
-                controller.navigate(R.id.nav_social_container);
-                controller.navigate(R.id.action_newsfeed_to_other_profile, args);
-                getIntent().removeExtra("OPEN_USER_PROFILE");
-            });
+                args.putBoolean("OPEN_OTHER_PROFILE", true);
+                args.putBoolean("FINISH_ON_BACK", getIntent().getBooleanExtra("FINISH_ON_BACK", false));
+                
+                // Navigate to social container, pass arguments so it can navigate internally
+                controller.navigate(R.id.nav_social_container, args);
+            }
+            getIntent().removeExtra("OPEN_USER_PROFILE");
         }
     }
 
