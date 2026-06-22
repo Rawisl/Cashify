@@ -489,6 +489,43 @@
                             android:textSize="15sp" />
                     </LinearLayout>
                 </LinearLayout>
+
+                <include
+                    android:id="@+id/milestonePreviewContainer"
+                    layout="@layout/layout_milestone_preview"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/txtComposerHint"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:background="@drawable/bg_creator_panel"
+                    android:drawableStart="@drawable/ic_cozy_leaf"
+                    android:drawablePadding="10dp"
+                    android:drawableTint="@color/brand_primary"
+                    android:fontFamily="@font/inter_regular"
+                    android:lineSpacingExtra="3dp"
+                    android:padding="14dp"
+                    android:text="@string/composer_hint"
+                    android:textColor="@color/item_description"
+                    android:textSize="13sp" />
+
+                <ProgressBar
+                    android:id="@+id/progressPosting"
+                    style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="4dp"
+                    android:layout_marginTop="22dp"
+                    android:indeterminate="true"
+                    android:indeterminateTint="@color/brand_primary"
+                    android:visibility="gone"
+                    tools:visibility="visible"
+                    android:max="100"/>
+
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>
     </LinearLayout>

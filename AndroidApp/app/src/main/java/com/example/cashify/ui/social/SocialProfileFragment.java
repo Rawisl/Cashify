@@ -302,12 +302,10 @@ public class SocialProfileFragment extends BaseFragment {
             ImageHelper.loadAvatar(doc.getString("avatarUrl"), imgAvatar,
                     firstNonEmpty(displayName, currentUserId));
             
-            updateDynamicBadges();
         });
 
         viewModel.getFriendCount().observe(getViewLifecycleOwner(), count -> {
             tvFriendCount.setText(Math.max(0, count) + " friends");
-            updateDynamicBadges();
         });
 
         viewModel.getWallPosts().observe(getViewLifecycleOwner(), posts -> {
@@ -334,7 +332,6 @@ public class SocialProfileFragment extends BaseFragment {
                 layoutActionCards.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
             }
             
-            updateDynamicBadges();
         });
 
         viewModel.getIsDeleteSuccess().observe(getViewLifecycleOwner(), success -> {
@@ -353,6 +350,22 @@ public class SocialProfileFragment extends BaseFragment {
                 getView().findViewById(R.id.btnMessage).setVisibility(isFriend ? View.VISIBLE : View.GONE);
                 getView().findViewById(R.id.btnUnfriend).setVisibility(isFriend ? View.VISIBLE : View.GONE);
                 getView().findViewById(R.id.btnAddFriend).setVisibility(isFriend ? View.GONE : View.VISIBLE);
+            }
+        });
+        viewModel.getAchievements().observe(getViewLifecycleOwner(), badges -> {
+            if (badges == null) return;
+
+            // Lấy thêm danh sách tự tính
+            java.util.List<ProfileAchievementAdapter.BadgeMeta> combinedBadges = new java.util.ArrayList<>(badges);
+
+            // Đếm cho chuẩn tổng số lượng
+            if (tvTrophyCount != null) {
+                tvTrophyCount.setText(combinedBadges.size() + " achievements");
+            }
+
+            // Đẩy vào Adapter
+            if (badgeAdapter != null) {
+                badgeAdapter.updateData(combinedBadges);
             }
         });
     }
@@ -456,36 +469,6 @@ public class SocialProfileFragment extends BaseFragment {
                 requireContext(), active ? R.color.status_red : R.color.item_description));
         tvStreakCount.setAlpha(active ? 1f : 0.65f);
     }
-    
-    private void updateDynamicBadges() {
-        java.util.List<ProfileAchievementAdapter.BadgeMeta> badges = new java.util.ArrayList<>();
-        int postCount = viewModel.getWallPosts().getValue() != null ? viewModel.getWallPosts().getValue().size() : 0;
-        int friendCount = viewModel.getFriendCount().getValue() != null ? viewModel.getFriendCount().getValue() : 0;
-        
-        long streakDays = 0;
-        if (viewModel.getWallPosts().getValue() != null && !viewModel.getWallPosts().getValue().isEmpty()) {
-            streakDays = evaluateAchievements(new ArrayList<>(viewModel.getWallPosts().getValue())).currentStreakDays;
-        }
-        int fireCount = (int) Math.max(0, streakDays);
-
-        if (postCount > 0) {
-            badges.add(new ProfileAchievementAdapter.BadgeMeta("First Post", "📝", "#FFF59D"));
-        }
-        if (friendCount >= 10) {
-            badges.add(new ProfileAchievementAdapter.BadgeMeta("Diplomat", "🤝", "#A5D6A7"));
-        }
-        if (fireCount >= 3) {
-            badges.add(new ProfileAchievementAdapter.BadgeMeta("Consistency", "🔥", "#EF9A9A"));
-        }
-
-        if (tvTrophyCount != null) {
-            tvTrophyCount.setText(badges.size() + (badges.size() == 1 ? " achievement" : " achievements"));
-        }
-        if (badgeAdapter != null) {
-            badgeAdapter.updateData(badges);
-        }
-    }
-
     
     private ProfileAchievementState evaluateAchievements(java.util.List<FeedItem> items) {
         ProfileAchievementState state = new ProfileAchievementState();
