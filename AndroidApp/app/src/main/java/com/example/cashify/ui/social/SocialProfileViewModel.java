@@ -10,6 +10,7 @@ import com.example.cashify.utils.ApiClient;
 import com.example.cashify.utils.ApiService;
 import com.example.cashify.utils.TimeFormatter;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
@@ -364,6 +365,27 @@ public class SocialProfileViewModel extends ViewModel {
             @Override
             public void onError(String message) {
                 _errorMessage.postValue(message);
+            }
+        });
+    }
+    public void hidePost(String postId, String token) {
+        // Optimistic Update: Ẩn ngay trên màn hình
+        List<FeedItem> current = _wallPosts.getValue();
+        if (current != null) {
+            List<FeedItem> newList = new ArrayList<>(current);
+            newList.removeIf(item -> item.getId().equals(postId));
+            _wallPosts.setValue(newList);
+        }
+
+        // Gọi API chuẩn
+        apiService.hidePost(token, new ApiDto.HidePostRequest(postId)).enqueue(new Callback<Object>() {
+            @Override
+            public void onResponse(@NonNull Call<Object> call, @NonNull Response<Object> response) {
+                if (!response.isSuccessful()) _errorMessage.postValue("Failed to hide post on server");
+            }
+            @Override
+            public void onFailure(@NonNull Call<Object> call, @NonNull Throwable t) {
+                _errorMessage.postValue("Network error: " + t.getMessage());
             }
         });
     }

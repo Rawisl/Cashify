@@ -9,7 +9,11 @@ import androidx.lifecycle.ViewModel;
 import com.example.cashify.data.remote.ApiDto;
 import com.example.cashify.utils.ApiClient;
 import com.example.cashify.utils.ApiService;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import retrofit2.Call;
@@ -163,6 +167,37 @@ public class PostDetailViewModel extends ViewModel {
             public void onFailure(@NonNull Call<Object> call, @NonNull Throwable t) {
                 isLoading.setValue(false);
                 errorMessage.setValue("Network error: " + t.getMessage());
+            }
+        });
+    }
+    public void hideComment(String postId, String commentId, String token) {
+        apiService.hideComment(token, new ApiDto.HideCommentRequest(postId, commentId)).enqueue(new Callback<Object>() {
+            @Override
+            public void onResponse(@NonNull Call<Object> call, @NonNull Response<Object> response) {
+                if (!response.isSuccessful()) {
+                    errorMessage.postValue("Failed to hide comment on server");
+                }
+            }
+            @Override
+            public void onFailure(@NonNull Call<Object> call, @NonNull Throwable t) {
+                errorMessage.postValue("Network error: " + t.getMessage());
+            }
+        });
+    }
+
+    public void hidePost(String postId, String token) {
+        isLoading.setValue(true);
+        apiService.hidePost(token, new ApiDto.HidePostRequest(postId)).enqueue(new Callback<Object>() {
+            @Override
+            public void onResponse(@NonNull Call<Object> call, @NonNull Response<Object> response) {
+                isLoading.setValue(false);
+                if (response.isSuccessful()) isActionSuccess.setValue(true); // Thành công -> đóng UI
+                else errorMessage.setValue("Failed to hide post");
+            }
+            @Override
+            public void onFailure(@NonNull Call<Object> call, @NonNull Throwable t) {
+                isLoading.setValue(false);
+                errorMessage.setValue("Network error");
             }
         });
     }

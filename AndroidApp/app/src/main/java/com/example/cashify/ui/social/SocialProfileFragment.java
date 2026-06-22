@@ -370,63 +370,81 @@ public class SocialProfileFragment extends BaseFragment {
         });
     }
 
-    
+
     private void showPostBottomSheet(FeedItem item) {
         BottomSheetDialog dialog = new BottomSheetDialog(requireContext());
         View sheetView = LayoutInflater.from(requireContext())
                 .inflate(R.layout.bottom_sheet_option, null);
 
         sheetView.findViewById(R.id.btnEditComment).setVisibility(View.GONE);
-        boolean isOwner = !currentUserId.isEmpty() && currentUserId.equals(item.getUserId());
+
+        //Lấy chuẩn ID của người đang cầm app để so sánh
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        String myUid = currentUser != null ? currentUser.getUid() : "";
+        boolean isOwner = !myUid.isEmpty() && myUid.equals(item.getUserId());
 
         View btnEditPost = sheetView.findViewById(R.id.btnEditPost);
         View btnDeletePost = sheetView.findViewById(R.id.btnDeleteComment);
+        View btnHidePost = sheetView.findViewById(R.id.btnHideComment);
+        View btnReportPost = sheetView.findViewById(R.id.btnReportPost);
 
         if (isOwner) {
-            btnEditPost.setVisibility(View.VISIBLE);
-            btnDeletePost.setVisibility(View.VISIBLE);
-            sheetView.findViewById(R.id.btnHideComment).setVisibility(View.GONE);
-            sheetView.findViewById(R.id.btnReportPost).setVisibility(View.GONE);
+            if (btnEditPost != null) btnEditPost.setVisibility(View.VISIBLE);
+            if (btnDeletePost != null) btnDeletePost.setVisibility(View.VISIBLE);
+            if (btnHidePost != null) btnHidePost.setVisibility(View.GONE);
+            if (btnReportPost != null) btnReportPost.setVisibility(View.GONE);
 
-            btnDeletePost.setOnClickListener(v -> {
-                dialog.dismiss();
-                FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-                if (user == null) return; // ui-consistency: null-check
-                user.getIdToken(true).addOnSuccessListener(result ->
-                        viewModel.deletePost(item.getId(), "Bearer " + result.getToken()));
-            });
+            if (btnDeletePost != null) {
+                btnDeletePost.setOnClickListener(v -> {
+                    dialog.dismiss();
+                    if (currentUser == null) return;
+                    currentUser.getIdToken(true).addOnSuccessListener(result ->
+                            viewModel.deletePost(item.getId(), "Bearer " + result.getToken()));
+                });
+            }
 
-            btnEditPost.setOnClickListener(v -> {
-                dialog.dismiss();
-                Intent intent = new Intent(requireContext(), MainActivity.class);
-                intent.putExtra("ACTION_EDIT_POST", true);
-                intent.putExtra("edit_post_id", item.getId());
-                if (item instanceof FeedItem.NormalPost) {
-                    FeedItem.NormalPost post = (FeedItem.NormalPost) item;
-                    intent.putExtra("edit_post_title", post.title);
-                    intent.putExtra("edit_post_content", post.description);
-                    intent.putExtra("edit_post_image", post.imageUrl);
-                } else if (item instanceof FeedItem.MilestonePost) {
-                    FeedItem.MilestonePost milestone = (FeedItem.MilestonePost) item;
-                    intent.putExtra("edit_post_content", milestone.description);
-                    intent.putExtra("edit_milestone_data", milestone.milestoneJson);
-                }
-                startActivity(intent);
-            });
+            if (btnEditPost != null) {
+                btnEditPost.setOnClickListener(v -> {
+                    dialog.dismiss();
+                    Intent intent = new Intent(requireContext(), MainActivity.class);
+                    intent.putExtra("ACTION_EDIT_POST", true);
+                    intent.putExtra("edit_post_id", item.getId());
+                    if (item instanceof FeedItem.NormalPost) {
+                        FeedItem.NormalPost post = (FeedItem.NormalPost) item;
+                        intent.putExtra("edit_post_title", post.title);
+                        intent.putExtra("edit_post_content", post.description);
+                        intent.putExtra("edit_post_image", post.imageUrl);
+                    } else if (item instanceof FeedItem.MilestonePost) {
+                        FeedItem.MilestonePost milestone = (FeedItem.MilestonePost) item;
+                        intent.putExtra("edit_post_content", milestone.description);
+                        intent.putExtra("edit_milestone_data", milestone.milestoneJson);
+                    }
+                    startActivity(intent);
+                });
+            }
         } else {
             if (btnEditPost != null) btnEditPost.setVisibility(View.GONE);
-            btnDeletePost.setVisibility(View.GONE);
-            sheetView.findViewById(R.id.btnHideComment).setVisibility(View.VISIBLE);
-            sheetView.findViewById(R.id.btnReportPost).setVisibility(View.VISIBLE);
+            if (btnDeletePost != null) btnDeletePost.setVisibility(View.GONE);
+            if (btnHidePost != null) btnHidePost.setVisibility(View.VISIBLE);
+            if (btnReportPost != null) btnReportPost.setVisibility(View.VISIBLE);
 
-            sheetView.findViewById(R.id.btnHideComment).setOnClickListener(v -> {
-                dialog.dismiss();
-                toast("Post hidden");
-            });
-            sheetView.findViewById(R.id.btnReportPost).setOnClickListener(v -> {
-                dialog.dismiss();
-                toast("Post reported");
-            });
+            if (btnHidePost != null) {
+                btnHidePost.setOnClickListener(v -> {
+                    dialog.dismiss();
+                    if (currentUser == null) return;
+                    currentUser.getIdToken(true).addOnSuccessListener(result -> {
+                        viewModel.hidePost(item.getId(), "Bearer " + result.getToken());
+                        toast("Post hidden");
+                    });
+                });
+            }
+
+            if (btnReportPost != null) {
+                btnReportPost.setOnClickListener(v -> {
+                    dialog.dismiss();
+                    toast("Post reported");
+                });
+            }
         }
 
         sheetView.findViewById(R.id.btnCancelComment).setOnClickListener(v -> dialog.dismiss());
