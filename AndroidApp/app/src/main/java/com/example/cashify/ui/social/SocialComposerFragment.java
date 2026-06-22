@@ -155,7 +155,7 @@ public class SocialComposerFragment extends Fragment {
         editPostContent = view.findViewById(R.id.editPostContent);
         editPostTitle = view.findViewById(R.id.editPostTitle);
         txtComposerCount = view.findViewById(R.id.txtComposerCount);
-        txtComposerHint = null; // Removed from UI
+        txtComposerHint = view.findViewById(R.id.txtComposerHint);
         btnAudienceSelector = view.findViewById(R.id.btnAudienceSelector);
         actionMilestone = view.findViewById(R.id.actionMilestone);
         actionThoughts = view.findViewById(R.id.actionThoughts);
@@ -168,7 +168,7 @@ public class SocialComposerFragment extends Fragment {
         txtModeTitle = view.findViewById(R.id.txtModeTitle);
         txtModeDescription = view.findViewById(R.id.txtModeDescription);
         txtModePrompt = view.findViewById(R.id.txtModePrompt);
-        progressPosting = null; // Removed from UI
+        progressPosting = view.findViewById(R.id.progressPosting);
         imagePreviewContainer = view.findViewById(R.id.imagePreviewContainer);
         imgPostPreview = view.findViewById(R.id.imgPostPreview);
         imgComposerAvatar = view.findViewById(R.id.imgComposerAvatar);
