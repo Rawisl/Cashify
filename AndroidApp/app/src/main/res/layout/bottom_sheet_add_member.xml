@@ -12,7 +12,7 @@
         android:layout_height="4dp"
         android:layout_gravity="center_horizontal"
         android:layout_marginBottom="16dp"
-        app:cardBackgroundColor="#D1D5DB"
+        app:cardBackgroundColor="#E0E0E0"
         app:cardCornerRadius="2dp"
         app:cardElevation="0dp" />
 
@@ -21,7 +21,7 @@
         android:layout_height="wrap_content"
         android:fontFamily="@font/inter_bold"
         android:text="@string/invite_friends"
-        android:textColor="#1A237E"
+        android:textColor="@color/brand_primary"
         android:textSize="20sp" />
 
     <TextView
@@ -30,7 +30,7 @@
         android:layout_marginTop="4dp"
         android:layout_marginBottom="16dp"
         android:text="@string/select_friends_to_invite_to_this_workspace"
-        android:textColor="#757575"
+        android:textColor="@color/item_description"
         android:textSize="14sp" />
 
     <androidx.cardview.widget.CardView
@@ -51,7 +51,7 @@
             android:hint="@string/search_name"
             android:paddingHorizontal="16dp"
             android:singleLine="true"
-            android:textColor="#1A237E"
+            android:textColor="@color/brand_primary"
             android:textSize="14sp" />
     </androidx.cardview.widget.CardView>
 
@@ -68,9 +68,10 @@
         android:layout_width="match_parent"
         android:layout_height="54dp"
         android:layout_marginTop="12dp"
-        android:backgroundTint="#1A237E"
         android:text="@string/invite_0"
+        android:textColor="@color/white"
         android:textAllCaps="false"
         android:textSize="16sp"
+        app:backgroundTint="@color/brand_primary"
         app:cornerRadius="12dp" />
 </LinearLayout>

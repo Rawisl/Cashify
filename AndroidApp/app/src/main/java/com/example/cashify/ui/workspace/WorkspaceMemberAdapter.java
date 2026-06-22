@@ -20,6 +20,7 @@ import java.util.List;
 public class WorkspaceMemberAdapter extends RecyclerView.Adapter<WorkspaceMemberAdapter.MemberViewHolder> {
 
     private List<User> memberList;
+    private String ownerId = "";
 
     public WorkspaceMemberAdapter(List<User> memberList) {
         this.memberList = memberList != null ? memberList : new ArrayList<>();
@@ -39,9 +40,10 @@ public class WorkspaceMemberAdapter extends RecyclerView.Adapter<WorkspaceMember
         if (currentMember != null) {
             String fullName = currentMember.getDisplayName();
             holder.tvName.setText(fullName != null ? fullName : "Anonymous");
-
-            // Dynamic avatar rendering utilizing team baseline image utilities
             ImageHelper.loadAvatar(currentMember.getAvatarUrl(), holder.imgAvatar, fullName);
+
+            boolean isOwner = currentMember.getUid() != null && currentMember.getUid().equals(ownerId);
+            holder.imgOwnerBadge.setVisibility(isOwner ? View.VISIBLE : View.GONE);
         }
     }
 
@@ -56,16 +58,21 @@ public class WorkspaceMemberAdapter extends RecyclerView.Adapter<WorkspaceMember
         notifyDataSetChanged();
     }
 
-    // =========================================================================
-    // VIEW HOLDER
-    // =========================================================================
+    @SuppressLint("NotifyDataSetChanged")
+    public void setOwnerId(String ownerId) {
+        this.ownerId = ownerId != null ? ownerId : "";
+        notifyDataSetChanged();
+    }
+
     public static class MemberViewHolder extends RecyclerView.ViewHolder {
         ImageView imgAvatar;
+        ImageView imgOwnerBadge;
         TextView tvName;
 
         public MemberViewHolder(@NonNull View itemView) {
             super(itemView);
             imgAvatar = itemView.findViewById(R.id.imgMemberAvatar);
+            imgOwnerBadge = itemView.findViewById(R.id.imgOwnerBadge);
             tvName = itemView.findViewById(R.id.tvMemberName);
         }
     }

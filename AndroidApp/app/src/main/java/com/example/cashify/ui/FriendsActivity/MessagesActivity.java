@@ -1,96 +1,96 @@
-package com.example.cashify.ui.FriendsActivity;
+    package com.example.cashify.ui.FriendsActivity;
 
-import android.content.Intent;
-import android.os.Bundle;
-import android.view.View;
-import android.widget.ProgressBar;
-import android.widget.TextView;
+    import android.content.Intent;
+    import android.os.Bundle;
+    import android.view.View;
+    import android.widget.ProgressBar;
+    import android.widget.TextView;
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.lifecycle.ViewModelProvider;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
+    import androidx.appcompat.app.AppCompatActivity;
+    import androidx.lifecycle.ViewModelProvider;
+    import androidx.recyclerview.widget.LinearLayoutManager;
+    import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.cashify.R;
-import com.example.cashify.data.model.DirectConversation;
-import com.example.cashify.utils.ToastHelper;
-import com.google.android.material.appbar.MaterialToolbar;
+    import com.example.cashify.R;
+    import com.example.cashify.data.model.DirectConversation;
+    import com.example.cashify.utils.ToastHelper;
+    import com.google.android.material.appbar.MaterialToolbar;
 
-import java.util.ArrayList;
+    import java.util.ArrayList;
 
-public class MessagesActivity extends AppCompatActivity {
+    public class MessagesActivity extends AppCompatActivity {
 
-    private ConversationAdapter adapter;
-    private RecyclerView rvConversations;
-    private ProgressBar progressLoading;
-    private TextView tvEmptyState;
-    private TextView tvErrorState;
-    private MessagesViewModel viewModel;
+        private ConversationAdapter adapter;
+        private RecyclerView rvConversations;
+        private ProgressBar progressLoading;
+        private TextView tvEmptyState;
+        private TextView tvErrorState;
+        private MessagesViewModel viewModel;
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_messages);
+        @Override
+        protected void onCreate(Bundle savedInstanceState) {
+            super.onCreate(savedInstanceState);
+            setContentView(R.layout.activity_messages);
 
-        initViews();
-        setupRecyclerView();
+            initViews();
+            setupRecyclerView();
 
-        viewModel = new ViewModelProvider(this).get(MessagesViewModel.class);
-        observeViewModel();
+            viewModel = new ViewModelProvider(this).get(MessagesViewModel.class);
+            observeViewModel();
 
-        viewModel.startListening();
-    }
+            viewModel.startListening();
+        }
 
-    private void initViews() {
-        rvConversations = findViewById(R.id.rvConversations);
-        progressLoading = findViewById(R.id.progressLoading);
-        tvEmptyState = findViewById(R.id.tvEmptyState);
-        tvErrorState = findViewById(R.id.tvErrorState);
+        private void initViews() {
+            rvConversations = findViewById(R.id.rvConversations);
+            progressLoading = findViewById(R.id.progressLoading);
+            tvEmptyState = findViewById(R.id.tvEmptyState);
+            tvErrorState = findViewById(R.id.tvErrorState);
 
-        MaterialToolbar toolbar = findViewById(R.id.toolbarMessages);
-        if (toolbar != null) {
-            toolbar.setNavigationOnClickListener(v -> finish());
+            MaterialToolbar toolbar = findViewById(R.id.toolbarMessages);
+            if (toolbar != null) {
+                toolbar.setNavigationOnClickListener(v -> finish());
+            }
+        }
+
+        private void setupRecyclerView() {
+            adapter = new ConversationAdapter(new ArrayList<>(), this::openConversation);
+            rvConversations.setLayoutManager(new LinearLayoutManager(this));
+            rvConversations.setAdapter(adapter);
+        }
+
+        private void observeViewModel() {
+            viewModel.getConversations().observe(this, conversations -> {
+                adapter.updateList(conversations);
+
+                boolean isEmpty = (conversations == null || conversations.isEmpty());
+                boolean isLoading = Boolean.TRUE.equals(viewModel.getLoading().getValue());
+
+                tvEmptyState.setVisibility(isEmpty && !isLoading ? View.VISIBLE : View.GONE);
+                rvConversations.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
+
+                if (!isEmpty) tvErrorState.setVisibility(View.GONE);
+            });
+
+            viewModel.getLoading().observe(this, isLoading -> {
+                progressLoading.setVisibility(Boolean.TRUE.equals(isLoading) ? View.VISIBLE : View.GONE);
+                if (Boolean.TRUE.equals(isLoading)) {
+                    tvEmptyState.setVisibility(View.GONE);
+                    tvErrorState.setVisibility(View.GONE);
+                }
+            });
+
+            viewModel.getError().observe(this, message -> {
+                if (message != null && !message.isEmpty()) {
+                    tvErrorState.setVisibility(View.VISIBLE);
+                    ToastHelper.show(this, "Failed to load message list.");
+                }
+            });
+        }
+
+        private void openConversation(DirectConversation conversation) {
+            Intent intent = new Intent(this, FriendChatActivity.class);
+            intent.putExtra(FriendChatActivity.EXTRA_FRIEND_UID, conversation.getFriendUid());
+            startActivity(intent);
         }
     }
-
-    private void setupRecyclerView() {
-        adapter = new ConversationAdapter(new ArrayList<>(), this::openConversation);
-        rvConversations.setLayoutManager(new LinearLayoutManager(this));
-        rvConversations.setAdapter(adapter);
-    }
-
-    private void observeViewModel() {
-        viewModel.getConversations().observe(this, conversations -> {
-            adapter.updateList(conversations);
-
-            boolean isEmpty = (conversations == null || conversations.isEmpty());
-            boolean isLoading = Boolean.TRUE.equals(viewModel.getLoading().getValue());
-
-            tvEmptyState.setVisibility(isEmpty && !isLoading ? View.VISIBLE : View.GONE);
-            rvConversations.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
-
-            if (!isEmpty) tvErrorState.setVisibility(View.GONE);
-        });
-
-        viewModel.getLoading().observe(this, isLoading -> {
-            progressLoading.setVisibility(Boolean.TRUE.equals(isLoading) ? View.VISIBLE : View.GONE);
-            if (Boolean.TRUE.equals(isLoading)) {
-                tvEmptyState.setVisibility(View.GONE);
-                tvErrorState.setVisibility(View.GONE);
-            }
-        });
-
-        viewModel.getError().observe(this, message -> {
-            if (message != null && !message.isEmpty()) {
-                tvErrorState.setVisibility(View.VISIBLE);
-                ToastHelper.show(this, "Failed to load message list.");
-            }
-        });
-    }
-
-    private void openConversation(DirectConversation conversation) {
-        Intent intent = new Intent(this, FriendChatActivity.class);
-        intent.putExtra(FriendChatActivity.EXTRA_FRIEND_UID, conversation.getFriendUid());
-        startActivity(intent);
-    }
-}

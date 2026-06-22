@@ -21,7 +21,7 @@
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:layout_marginStart="16dp"
-        android:textColor="#1A237E"
+        android:textColor="@color/brand_primary"
         android:textSize="16sp"
         android:textStyle="bold" />
 
@@ -29,6 +29,6 @@
         android:id="@+id/cbSelect"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:buttonTint="#1A237E" />
+        app:buttonTint="@color/brand_primary" />
 
 </LinearLayout>

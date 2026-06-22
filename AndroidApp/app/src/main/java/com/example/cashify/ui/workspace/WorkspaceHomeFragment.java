@@ -151,10 +151,11 @@ public class WorkspaceHomeFragment extends Fragment {
         workspaceViewModel.getWorkspaceLiveData().observe(getViewLifecycleOwner(), workspace -> {
             if (workspace != null) {
                 toolbar.setTitle(workspace.getName());
-                // ui-consistency: hiện tên workspace trên card
                 if (tvWorkspaceNameCard != null) tvWorkspaceNameCard.setText(workspace.getName());
-                if (historyAdapter != null && workspace.getOwnerId() != null) {
-                    historyAdapter.setOwnerId(workspace.getOwnerId());
+
+                if (workspace.getOwnerId() != null) {
+                    if (historyAdapter != null) historyAdapter.setOwnerId(workspace.getOwnerId());
+                    if (memberAdapter != null) memberAdapter.setOwnerId(workspace.getOwnerId());
                 }
             }
         });
@@ -162,7 +163,6 @@ public class WorkspaceHomeFragment extends Fragment {
         workspaceViewModel.getMembersLiveData().observe(getViewLifecycleOwner(), members -> {
             if (members != null && memberAdapter != null) {
                 memberAdapter.setMembers(members);
-                // ui-consistency: hiện số lượng member
                 if (tvWorkspaceMemberCount != null) {
                     int memberCount = members.size();
                     tvWorkspaceMemberCount.setText(getString(
@@ -173,56 +173,43 @@ public class WorkspaceHomeFragment extends Fragment {
             }
         });
 
-        // master: chỉ set data vào adapter, balance tính qua LiveData riêng
-        // ui-consistency: thêm empty state + activity summary
         workspaceViewModel.getTransactionsLiveData().observe(getViewLifecycleOwner(), historyItems -> {
             if (historyItems != null && historyAdapter != null) {
                 historyAdapter.setHistoryData(historyItems);
             }
 
-            // ui-consistency: empty state + activity summary
-            int transactionCount = 0;
-            if (historyItems != null) {
-                for (com.example.cashify.ui.transactions.TransactionViewModel.HistoryItem item : historyItems) {
-                    if (item != null && item.getType() == com.example.cashify.ui.transactions.TransactionViewModel.HistoryItem.TYPE_TRANSACTION) {
-                        transactionCount++;
-                    }
-                }
-            }
+            boolean hasData = historyItems != null && !historyItems.isEmpty();
+            if (rvTransactions != null) rvTransactions.setVisibility(hasData ? View.VISIBLE : View.GONE);
+            if (layoutWorkspaceEmptyTransactions != null) layoutWorkspaceEmptyTransactions.setVisibility(hasData ? View.GONE : View.VISIBLE);
+        });
 
-            boolean hasTransactions = transactionCount > 0;
-            if (rvTransactions != null)
-                rvTransactions.setVisibility(hasTransactions ? View.VISIBLE : View.GONE);
-            if (layoutWorkspaceEmptyTransactions != null)
-                layoutWorkspaceEmptyTransactions.setVisibility(hasTransactions ? View.GONE : View.VISIBLE);
+        workspaceViewModel.getTotalTransactionCountLiveData().observe(getViewLifecycleOwner(), count -> {
+            long c = count != null ? count : 0L;
             if (tvWorkspaceActivitySummary != null) {
-                if (!hasTransactions) {
+                if (c == 0) {
                     tvWorkspaceActivitySummary.setText(R.string.group_no_activity);
-                } else if (transactionCount == 1) {
+                } else if (c == 1) {
                     tvWorkspaceActivitySummary.setText(R.string.group_activity_one);
                 } else {
-                    tvWorkspaceActivitySummary.setText(getString(R.string.group_activity_count, transactionCount));
+                    tvWorkspaceActivitySummary.setText(getString(R.string.group_activity_count, c));
                 }
             }
         });
 
-        // master: balance từ LiveData riêng (clean hơn tính thủ công)
         workspaceViewModel.getTotalIncomeLiveData().observe(getViewLifecycleOwner(), income -> {
-            tvIncome.setText(CurrencyFormatter.formatFullVND(income != null ? income : 0L));
+            tvIncome.setText("+" + CurrencyFormatter.formatCompactAmount(income != null ? income : 0L));
         });
 
         workspaceViewModel.getTotalExpenseLiveData().observe(getViewLifecycleOwner(), expense -> {
-            tvExpense.setText(CurrencyFormatter.formatFullVND(expense != null ? expense : 0L));
+            tvExpense.setText("-" + CurrencyFormatter.formatCompactAmount(expense != null ? expense : 0L));
         });
 
         workspaceViewModel.getActualBalanceLiveData().observe(getViewLifecycleOwner(), balance -> {
-            tvBalance.setText(CurrencyFormatter.formatFullVND(balance != null ? balance : 0L));
+            tvBalance.setText(CurrencyFormatter.formatCompactAmount(balance != null ? balance : 0L));
         });
 
         workspaceViewModel.errorMessage.observe(getViewLifecycleOwner(), errorMsg -> {
-            if (errorMsg != null) {
-                ToastHelper.show(requireContext(), errorMsg);
-            }
+            if (errorMsg != null) ToastHelper.show(requireContext(), errorMsg);
         });
     }
 }

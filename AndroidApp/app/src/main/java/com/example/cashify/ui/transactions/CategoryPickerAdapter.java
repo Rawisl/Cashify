@@ -105,6 +105,9 @@ public class CategoryPickerAdapter extends RecyclerView.Adapter<CategoryPickerAd
             selectedPosition = holder.getAdapterPosition();
             if (selectedPosition == RecyclerView.NO_POSITION) return;
 
+            // Giải phóng ID được prefill từ lúc Edit để category cũ có thể tắt đèn
+            selectedFirestoreId = "";
+
             // Notify only modified items to optimize render cycle
             if (oldPos != -1) {
                 notifyItemChanged(oldPos);
