@@ -581,4 +581,28 @@ public class WorkspaceViewModel extends ViewModel {
             }
         });
     }
+    public void clearWorkspaceData() {
+        // CHẶT ĐỨT MỌI VÒI HÚT DATA CỦA QUỸ CŨ TRƯỚC TIÊN
+        if (workspaceListener != null) {
+            workspaceListener.remove();
+            workspaceListener = null;
+        }
+        if (chatListener != null) {
+            chatListener.remove();
+            chatListener = null;
+        }
+        if (realtimeTriggerListener != null) {
+            realtimeTriggerListener.remove();
+            realtimeTriggerListener = null;
+        }
+
+        // Sau đó mới clear data trên UI như cũ
+        _workspaceLiveData.setValue(null);
+        _membersLiveData.setValue(new ArrayList<>());
+        _transactionsLiveData.setValue(new ArrayList<>());
+        currentTransactionList.clear(); // Nhớ clear cả cái mảng đệm chống spam này nữa!
+        totalIncomeLiveData.setValue(0L);
+        totalExpenseLiveData.setValue(0L);
+        actualBalanceLiveData.setValue(0L);
+    }
 }

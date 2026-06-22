@@ -616,7 +616,7 @@ public class MainViewModel extends AndroidViewModel {
                 //Chạy tạo Category
                 DatabaseSeeder.seedIfEmpty(getApplication());
 
-                //chạy fakedataseeder gỡ comment chỗ này ra xong quay lên dòng 407 chỗ
+                //chạy fakedataseeder gỡ comment chỗ này ra xong quay lên chỗ
                 //                                if (snapshots.isEmpty()) {
                 //                                    db.transactionDao().deleteAllTransactions("PERSONAL");
                 // comment cái dòng db.transactionDao().deleteAllTransactions("PERSONAL"); lại xong xóa app chạy lại, đăng nhập vào 1 acc mới là seed được data

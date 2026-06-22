@@ -71,6 +71,7 @@ public class WorkspaceHomeFragment extends Fragment {
 
     private void initViewModel() {
         workspaceViewModel = new ViewModelProvider(requireActivity()).get(WorkspaceViewModel.class);
+        workspaceViewModel.clearWorkspaceData();
         workspaceViewModel.loadWorkspaceDetails(workspaceId);
         workspaceViewModel.loadWorkspaceMembers(workspaceId);
         workspaceViewModel.startRealtimeSyncTrigger(workspaceId);
@@ -104,8 +105,8 @@ public class WorkspaceHomeFragment extends Fragment {
 
         rvTransactions.setLayoutManager(new LinearLayoutManager(requireContext()));
 
-        String currentUserUid = FirebaseAuth.getInstance().getCurrentUser() != null ?
-                FirebaseAuth.getInstance().getCurrentUser().getUid() : "";
+        String currentUserUid = workspaceViewModel.getCurrentUserId();
+        if (currentUserUid == null) currentUserUid = "";
 
         historyAdapter = new WorkspaceTransactionAdapter(
                 requireContext(),
