@@ -287,8 +287,6 @@ public class MainActivity extends BaseActivity {
             return androidx.core.view.WindowInsetsCompat.CONSUMED;
         });
 
-        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(bottomNav, (v, insets) -> insets);
-
         NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.nav_host_fragment);
         if (navHostFragment == null) return;
