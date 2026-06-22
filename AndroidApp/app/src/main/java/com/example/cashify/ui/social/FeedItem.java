@@ -14,6 +14,11 @@ public abstract class FeedItem {
     private boolean isLiked;
     private boolean isCommented;
     private boolean isShared;
+    
+    // Additional fields for achievement evaluation
+    private long timestamp;
+    private String rawType = "";
+    private String category = "";
 
     protected FeedItem(String id, String userId) {
         this.id = id;
@@ -29,6 +34,9 @@ public abstract class FeedItem {
     public boolean isLiked() { return isLiked; }
     public boolean isCommented() { return isCommented; }
     public boolean isShared() { return isShared; }
+    public long getTimestamp() { return timestamp; }
+    public String getRawType() { return rawType; }
+    public String getCategory() { return category; }
 
     // --- Setters ---
     public void setId(String id) { this.id = id; } // Cho phép gán ID dễ dàng ở PostDetailActivity
@@ -39,6 +47,9 @@ public abstract class FeedItem {
     public void setLiked(boolean liked) { isLiked = liked; }
     public void setCommented(boolean commented) { isCommented = commented; }
     public void setShared(boolean shared) { isShared = shared; }
+    public void setTimestamp(long timestamp) { this.timestamp = timestamp; }
+    public void setRawType(String rawType) { this.rawType = rawType != null ? rawType : ""; }
+    public void setCategory(String category) { this.category = category != null ? category : ""; }
 
     public abstract int getType();
 

@@ -472,27 +472,30 @@ public class SocialProfileFragment extends BaseFragment {
     }
 
     
-    @SuppressWarnings("unchecked")
-    private ProfileAchievementState evaluateAchievements(java.util.List<Object> raw) {
+    private ProfileAchievementState evaluateAchievements(java.util.List<FeedItem> items) {
         ProfileAchievementState state = new ProfileAchievementState();
         Set<Long> postDays = new HashSet<>();
 
-        for (Object obj : raw) {
-            if (!(obj instanceof java.util.Map)) continue;
-            java.util.Map<String, Object> map = (java.util.Map<String, Object>) obj;
-            long timestamp = normalizeTimestamp(num(map, "timestamp"));
+        for (FeedItem item : items) {
+            long timestamp = normalizeTimestamp(item.getTimestamp());
             if (timestamp > 0) postDays.add(dayKey(timestamp));
 
-            String content = str(map, "content").toLowerCase(Locale.US);
-            String type = str(map, "type").toLowerCase(Locale.US);
-            String category = str(map, "category").toLowerCase(Locale.US);
-            String categoryKey = str(map, "categoryKey").toLowerCase(Locale.US);
+            String content = "";
+            if (item instanceof FeedItem.NormalPost) {
+                content = ((FeedItem.NormalPost) item).description;
+            } else if (item instanceof FeedItem.MilestonePost) {
+                content = ((FeedItem.MilestonePost) item).description;
+            }
+            if (content == null) content = "";
+            content = content.toLowerCase(Locale.US);
+
+            String type = item.getRawType() != null ? item.getRawType().toLowerCase(Locale.US) : "";
+            String category = item.getCategory() != null ? item.getCategory().toLowerCase(Locale.US) : "";
 
             state.hasFirstPost = true;
-            if (isCompletedMilestone(map)) state.hasCompletedMilestone = true;
+            if (isCompletedMilestone(item)) state.hasCompletedMilestone = true;
             if (type.contains("share") || category.contains("share")
-                    || categoryKey.contains("share") || content.contains("#tip")
-                    || content.contains("#share") || content.contains(" tip ")) {
+                    || content.contains("#tip") || content.contains("#share") || content.contains(" tip ")) {
                 state.hasSharedTip = true;
             }
         }
@@ -506,10 +509,6 @@ public class SocialProfileFragment extends BaseFragment {
         return state;
     }
 
-    private void bindAchievementBadges(ProfileAchievementState state) {
-        // Achievements are now managed via rvAchievementsProfile
-    }
-
     private void setAchievementVisible(int iconId, boolean visible) {
         View root = getView();
         if (root == null) return;
@@ -519,12 +518,18 @@ public class SocialProfileFragment extends BaseFragment {
         parent.setVisibility(visible ? View.VISIBLE : View.GONE);
     }
 
-    @SuppressWarnings("unchecked")
-    private boolean isCompletedMilestone(java.util.Map<String, Object> map) {
-        String type = str(map, "type").toLowerCase(Locale.US);
+    private boolean isCompletedMilestone(FeedItem item) {
+        if (item == null || item.getRawType() == null) return false;
+        String type = item.getRawType().toLowerCase(Locale.US);
         if (!type.contains("milestone") && !type.contains("achievement")) return false;
-        return Math.max(num(map, "progress"), progressFromMilestoneData(str(map, "milestoneData"))) >= 100;
+        if (item instanceof FeedItem.MilestonePost) {
+            FeedItem.MilestonePost mp = (FeedItem.MilestonePost) item;
+            return Math.max(mp.progress, progressFromMilestoneData(mp.milestoneJson)) >= 100;
+        }
+        return false;
     }
+
+
 
     private long progressFromMilestoneData(String milestoneData) {
         if (milestoneData == null || milestoneData.trim().isEmpty()) return 0;
