@@ -11,6 +11,9 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
@@ -55,6 +58,18 @@ public class SocialContainerFragment extends Fragment {
         }
 
         View container = view.findViewById(R.id.bottom_navigation_social_container);
+        
+        if (container != null) {
+            ViewCompat.setOnApplyWindowInsetsListener(container, (v, windowInsets) -> {
+                Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
+                int systemMargin = Math.round(getResources().getDimension(R.dimen.bottom_nav_system_margin));
+                ViewGroup.MarginLayoutParams mlp = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
+                mlp.bottomMargin = insets.bottom + systemMargin;
+                v.setLayoutParams(mlp);
+                return WindowInsetsCompat.CONSUMED;
+            });
+        }
+        
         navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
             if (destination.getId() == R.id.nav_other_profile) {
                 if (container != null) container.setVisibility(View.GONE);
