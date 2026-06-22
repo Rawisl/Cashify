@@ -116,7 +116,7 @@ public class MainActivity extends BaseActivity {
     }
 
     private void setupPersonalWorkspaceSystemBars() {
-        WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         getWindow().setStatusBarColor(Color.parseColor("#FBFCFF"));
         getWindow().setNavigationBarColor(Color.parseColor("#F7F9FF"));
         WindowInsetsControllerCompat controller =
@@ -273,6 +273,21 @@ public class MainActivity extends BaseActivity {
         BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
         View bottomNavContainer = findViewById(R.id.bottom_nav_container);
 
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(bottomNavContainer, (v, windowInsets) -> {
+            androidx.core.graphics.Insets navBarInsets = windowInsets.getInsets(
+                    androidx.core.view.WindowInsetsCompat.Type.systemBars()
+                            | androidx.core.view.WindowInsetsCompat.Type.displayCutout());
+            int systemMargin = Math.round(getResources().getDimension(R.dimen.bottom_nav_system_margin));
+
+            android.view.ViewGroup.MarginLayoutParams mlp =
+                    (android.view.ViewGroup.MarginLayoutParams) v.getLayoutParams();
+            mlp.bottomMargin = navBarInsets.bottom + systemMargin;
+            v.setLayoutParams(mlp);
+
+            return androidx.core.view.WindowInsetsCompat.CONSUMED;
+        });
+
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(bottomNav, (v, insets) -> insets);
 
         NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.nav_host_fragment);
