@@ -142,6 +142,18 @@ public class SocialProfileFragment extends BaseFragment {
                     bottomSheet.show(getParentFragmentManager(), "NotificationBottomSheet");
                 });
             }
+            
+            TextView tvBellBadge = view.findViewById(R.id.tvBellBadge);
+            if (tvBellBadge != null && mainViewModel != null) {
+                mainViewModel.getUnreadNotificationCount().observe(getViewLifecycleOwner(), count -> {
+                    if (count != null && count > 0) {
+                        tvBellBadge.setText(count > 99 ? "99+" : String.valueOf(count));
+                        tvBellBadge.setVisibility(View.VISIBLE);
+                    } else {
+                        tvBellBadge.setVisibility(View.GONE);
+                    }
+                });
+            }
         } else {
             if (tvGreeting != null) {
                 if (viewingOwnProfile) {
@@ -155,6 +167,9 @@ public class SocialProfileFragment extends BaseFragment {
             toolbar.setNavigationIcon(R.drawable.ic_arrow_left_back);
             if (view.findViewById(R.id.imgBellIcon) != null) {
                 view.findViewById(R.id.imgBellIcon).setVisibility(View.GONE);
+            }
+            if (view.findViewById(R.id.tvBellBadge) != null) {
+                view.findViewById(R.id.tvBellBadge).setVisibility(View.GONE);
             }
         }
 
