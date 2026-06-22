@@ -272,18 +272,7 @@ public class MainActivity extends BaseActivity {
 
         BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
         View bottomNavContainer = findViewById(R.id.bottom_nav_container);
-        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(bottomNavContainer, (v, windowInsets) -> {
-            androidx.core.graphics.Insets insets = windowInsets.getInsets(
-                    androidx.core.view.WindowInsetsCompat.Type.systemBars());
-            int systemMargin = Math.round(getResources().getDimension(R.dimen.bottom_nav_system_margin));
 
-            android.view.ViewGroup.MarginLayoutParams mlp =
-                    (android.view.ViewGroup.MarginLayoutParams) v.getLayoutParams();
-            mlp.bottomMargin = insets.bottom + systemMargin;
-            v.setLayoutParams(mlp);
-
-            return windowInsets;
-        });
 
         NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.nav_host_fragment);

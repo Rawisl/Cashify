@@ -11,6 +11,9 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
@@ -52,10 +55,19 @@ public class SocialContainerFragment extends Fragment {
         com.google.android.material.bottomnavigation.BottomNavigationView bottomNav = view.findViewById(R.id.bottom_navigation_social);
         if (bottomNav != null) {
             androidx.navigation.ui.NavigationUI.setupWithNavController(bottomNav, navController);
+            
+            int currentDestinationId = navController.getCurrentDestination() == null
+                    ? bottomNav.getSelectedItemId()
+                    : navController.getCurrentDestination().getId();
+            animateBottomNavigationSelection(bottomNav, currentDestinationId, false);
         }
 
         View container = view.findViewById(R.id.bottom_navigation_social_container);
+        
         navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
+            if (bottomNav != null) {
+                animateBottomNavigationSelection(bottomNav, destination.getId(), true);
+            }
             if (destination.getId() == R.id.nav_other_profile) {
                 if (container != null) container.setVisibility(View.GONE);
             } else {
@@ -71,5 +83,28 @@ public class SocialContainerFragment extends Fragment {
             navController.navigate(R.id.nav_other_profile, args);
             getArguments().remove("OPEN_OTHER_PROFILE");
         }
+    }
+
+    private void animateBottomNavigationSelection(com.google.android.material.bottomnavigation.BottomNavigationView bottomNav, int destinationId, boolean animate) {
+        bottomNav.post(() -> {
+            float itemVerticalOffset = getResources().getDimension(R.dimen.bottom_nav_item_vertical_offset);
+            float selectedFloatOffset = getResources().getDimension(R.dimen.bottom_nav_selected_icon_float_offset);
+            int floatDuration = getResources().getInteger(R.integer.bottom_nav_icon_float_duration);
+
+            for (int i = 0; i < bottomNav.getMenu().size(); i++) {
+                int itemId = bottomNav.getMenu().getItem(i).getItemId();
+                View itemView = bottomNav.findViewById(itemId);
+                if (itemView != null) {
+                    float targetOffset = itemId == destinationId
+                            ? itemVerticalOffset - selectedFloatOffset : itemVerticalOffset;
+                    if (animate) {
+                        itemView.animate().translationY(targetOffset).setDuration(floatDuration)
+                                .setInterpolator(new android.view.animation.DecelerateInterpolator()).start();
+                    } else {
+                        itemView.setTranslationY(targetOffset);
+                    }
+                }
+            }
+        });
     }
 }

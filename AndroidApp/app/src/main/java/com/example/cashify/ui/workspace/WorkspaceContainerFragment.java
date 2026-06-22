@@ -44,25 +44,6 @@ public class WorkspaceContainerFragment extends Fragment {
         FloatingActionButton fabAddTransaction = view.findViewById(R.id.fabAddWorkspaceTransaction);
 
         // =========================================================================
-        // EDGE-TO-EDGE UI HANDLING
-        // Isolates the bottom navigation from the system gesture/navigation bars
-        // =========================================================================
-        ViewCompat.setOnApplyWindowInsetsListener(bottomNav, (v, windowInsets) -> {
-            // Retrieve the height of the system gesture/navigation bar
-            Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
-
-            // Retrieve the baseline margin defined in dimensions
-            int systemMargin = Math.round(getResources().getDimension(R.dimen.bottom_nav_system_margin));
-
-            // Apply calculated Bottom Margin: System Bar Height + baseline spacing
-            ViewGroup.MarginLayoutParams mlp = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
-            mlp.bottomMargin = insets.bottom + systemMargin;
-            v.setLayoutParams(mlp);
-
-            // Instruct Android that the insets have been fully consumed to prevent duplicate padding
-            return WindowInsetsCompat.CONSUMED;
-        });
-
         // =========================================================================
         // NAVIGATION SETUP
         // =========================================================================
