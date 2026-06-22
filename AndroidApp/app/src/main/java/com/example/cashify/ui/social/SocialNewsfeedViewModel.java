@@ -96,6 +96,8 @@ public class SocialNewsfeedViewModel extends ViewModel {
     private final List<String> cachedFriendIds = new ArrayList<>();
     private boolean isAdmin = false;
     private ListenerRegistration realTimeListener;
+    private final Set<String> hiddenPostsCache = new HashSet<>();
+    private ListenerRegistration hiddenPostsListener;
 
     public void loadProfile(String uid) {
         db.collection("users").document(uid).addSnapshotListener((doc, e) -> {
@@ -104,6 +106,31 @@ public class SocialNewsfeedViewModel extends ViewModel {
                 _profile.postValue(doc);
             }
         });
+
+        // Kéo danh sách ẩn về máy để làm bộ lọc local cho Newsfeed
+        if (hiddenPostsListener != null) hiddenPostsListener.remove();
+        hiddenPostsListener = db.collection("users").document(uid).collection("hidden_posts")
+                .addSnapshotListener((snap, e) -> {
+                    if (snap != null) {
+
+                        hiddenPostsCache.clear();
+                        for (DocumentSnapshot doc : snap.getDocuments()) {
+                            hiddenPostsCache.add(doc.getId());
+                        }
+
+                        //(RACE CONDITION): Quét lại Feed hiện tại và xóa nếu có bài lọt lưới
+                        List<FeedItem> currentFeed = _feedItems.getValue();
+                        if (currentFeed != null && !currentFeed.isEmpty()) {
+                            List<FeedItem> filteredFeed = new ArrayList<>(currentFeed);
+                            // Xóa các bài bị trùng ID với danh sách ẩn
+                            boolean isRemoved = filteredFeed.removeIf(item -> hiddenPostsCache.contains(item.getId()));
+                            if (isRemoved) {
+                                // Cập nhật lại UI lập tức
+                                _feedItems.setValue(filteredFeed);
+                            }
+                        }
+                    }
+                });
     }
 
     public void refreshFeed() {
@@ -156,13 +183,17 @@ public class SocialNewsfeedViewModel extends ViewModel {
             query = query.whereIn("userId", allUserIds);
         }
 
-        query = query.orderBy("timestamp", Query.Direction.DESCENDING).limit(FEED_PAGE_SIZE);
-        if (!isRefresh && lastVisibleFeedDoc != null) {
-            query = query.startAfter(lastVisibleFeedDoc);
-        }
+        query = query.orderBy("timestamp", Query.Direction.DESCENDING);
 
-        if (realTimeListener != null && isRefresh) {
-            realTimeListener.remove();
+        // Kỹ thuật phân trang chuẩn với Snapshot Listener:
+        // Ta KHÔNG dùng startAfter() trong Listener, mà ta nới rộng cái Limit ra!
+        // Nếu List hiện tại đang có 20 bài, kéo thêm trang mới -> Limit = 30. Listener sẽ fetch 30 bài.
+        int currentItemCount = _feedItems.getValue() != null ? _feedItems.getValue().size() : 0;
+        int nextLimit = isRefresh ? FEED_PAGE_SIZE : currentItemCount + FEED_PAGE_SIZE;
+        query = query.limit(nextLimit);
+
+        if (realTimeListener != null) {
+            realTimeListener.remove(); // Dập luôn Listener cũ trước khi tạo Listener mới có Limit bự hơn
         }
 
         realTimeListener = query.addSnapshotListener((snapshots, error) -> {
@@ -172,15 +203,17 @@ public class SocialNewsfeedViewModel extends ViewModel {
                 return;
             }
 
-            if (!snapshots.isEmpty())
-                lastVisibleFeedDoc = snapshots.getDocuments().get(snapshots.size() - 1);
-            _isLastPage.setValue(snapshots.size() < FEED_PAGE_SIZE);
+            // Kiểm tra xem đã hết bài chưa (Số bài kéo về ít hơn Limit)
+            _isLastPage.setValue(snapshots.size() < nextLimit);
 
             List<FeedItem> parsedItems = new ArrayList<>();
             List<Task<DocumentSnapshot>> likeTasks = new ArrayList<>();
             String currentUid = user.getUid();
 
             for (DocumentSnapshot doc : snapshots.getDocuments()) {
+                // BỘ LỌC CỨNG: Bất kỳ lúc nào Listener chạy, bài ẩn đều bị vứt
+                if (hiddenPostsCache.contains(doc.getId())) continue;
+
                 FeedItem item = mapFirebaseDocToFeedItem(doc);
                 if (item != null) {
                     parsedItems.add(item);
@@ -201,23 +234,11 @@ public class SocialNewsfeedViewModel extends ViewModel {
                 for (FeedItem item : parsedItems) {
                     item.setLiked(Boolean.TRUE.equals(likedCache.get(item.getId())));
                 }
+                parsedItems.removeIf(item -> hiddenPostsCache.contains(item.getId()));
 
-                if (isRefresh) {
-                    _feedItems.setValue(parsedItems);
-                } else {
-                    List<FeedItem> current = _feedItems.getValue();
-                    if (current == null) current = new ArrayList<>();
-                    Set<String> existingIds = new HashSet<>();
-                    for (FeedItem i : current) existingIds.add(i.getId());
+                _feedItems.setValue(parsedItems);
 
-                    List<FeedItem> updated = new ArrayList<>(current);
-                    for (FeedItem i : parsedItems) {
-                        if (!existingIds.contains(i.getId())) updated.add(i);
-                    }
-                    _feedItems.setValue(updated);
-                }
-
-                _isFeedEmpty.setValue(_feedItems.getValue() == null || _feedItems.getValue().isEmpty());
+                _isFeedEmpty.setValue(parsedItems.isEmpty());
                 _isLoading.setValue(false);
                 _isLoadingMore.setValue(false);
             });
@@ -419,9 +440,38 @@ public class SocialNewsfeedViewModel extends ViewModel {
         });
     }
 
+    public void hidePost(String postId, String token) {
+        // 1. Optimistic Update: Ẩn ngay và luôn trên UI cho mượt
+        List<FeedItem> current = _feedItems.getValue(); // Dùng _wallPosts cho ProfileVM
+        if (current != null) {
+            List<FeedItem> newList = new ArrayList<>(current);
+            newList.removeIf(item -> item.getId().equals(postId));
+            _feedItems.setValue(newList);
+        }
+
+        // 2. Thêm vào sổ đen local để chặn luồng load data ngay lúc này
+        if (hiddenPostsCache != null) {
+            hiddenPostsCache.add(postId);
+        }
+
+        apiService.hidePost(token, new ApiDto.HidePostRequest(postId)).enqueue(new Callback<Object>() {
+            @Override
+            public void onResponse(@NonNull Call<Object> call, @NonNull Response<Object> response) {
+                if (!response.isSuccessful()) {
+                    _errorMessage.postValue("Server Error (" + response.code() + ")");
+                }
+            }
+            @Override
+            public void onFailure(@NonNull Call<Object> call, @NonNull Throwable t) {
+                _errorMessage.postValue("Network Error: " + t.getMessage());
+            }
+        });
+    }
+
     @Override
     protected void onCleared() {
         super.onCleared();
         if (realTimeListener != null) realTimeListener.remove();
+        if (hiddenPostsListener != null) hiddenPostsListener.remove();
     }
 }

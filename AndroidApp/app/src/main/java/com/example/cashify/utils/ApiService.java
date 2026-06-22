@@ -136,4 +136,9 @@ public interface ApiService {
 
     @POST("/api/v1/post/milestone-auto")
     Call<Object> generateAutoMilestone(@Header("Authorization") String token, @Body ApiDto.AutoMilestoneRequest request);
+    @POST("/api/v1/post/hide")
+    Call<Object> hidePost(@Header("Authorization") String token, @Body ApiDto.HidePostRequest request);
+
+    @POST("/api/v1/comment/hide")
+    Call<Object> hideComment(@Header("Authorization") String token, @Body ApiDto.HideCommentRequest request);
 }

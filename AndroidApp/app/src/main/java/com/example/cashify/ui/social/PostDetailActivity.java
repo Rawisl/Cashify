@@ -119,11 +119,12 @@ public class PostDetailActivity extends AppCompatActivity {
 
     private void setupCombinedRecyclerView() {
         postAdapter = new SocialNewsfeedAdapter(item -> showPostBottomSheet());
-        
+
         postAdapter.setOnAvatarClickListener(userId -> {
             if (userId != null && !userId.equals(FirebaseAuth.getInstance().getCurrentUser().getUid())) {
                 Intent intent = new Intent(this, com.example.cashify.ui.main.MainActivity.class);
-                intent.putExtra("OPEN_USER_PROFILE", userId); intent.putExtra("FINISH_ON_BACK", true);
+                intent.putExtra("OPEN_USER_PROFILE", userId);
+                intent.putExtra("FINISH_ON_BACK", true);
                 startActivity(intent);
             }
         });
@@ -133,15 +134,29 @@ public class PostDetailActivity extends AppCompatActivity {
         );
 
         commentAdapter = new CommentAdapter(commentList, new CommentAdapter.OnCommentActionListener() {
-            @Override public void onEditComment(int pos) { showEditCommentDialog(commentList.get(pos)); }
-            @Override public void onDeleteComment(int pos) { viewModel.deleteComment(postId, commentList.get(pos).getId(), authHeader); }
-            @Override public void onHideComment(int pos) { commentList.remove(pos); commentAdapter.notifyItemRemoved(pos); }
+            @Override
+            public void onEditComment(int pos) {
+                showEditCommentDialog(commentList.get(pos));
+            }
+
+            @Override
+            public void onDeleteComment(int pos) {
+                viewModel.deleteComment(postId, commentList.get(pos).getId(), authHeader);
+            }
+
+            @Override
+            public void onHideComment(int pos) {
+                viewModel.hideComment(postId, commentList.get(pos).getId(), authHeader);
+                commentList.remove(pos);
+                commentAdapter.notifyItemRemoved(pos);
+            }
         }, currentUserId, postOwnerId);
-        
+
         commentAdapter.setOnAvatarClickListener(userId -> {
             if (userId != null && !userId.equals(FirebaseAuth.getInstance().getCurrentUser().getUid())) {
                 Intent intent = new Intent(this, com.example.cashify.ui.main.MainActivity.class);
-                intent.putExtra("OPEN_USER_PROFILE", userId); intent.putExtra("FINISH_ON_BACK", true);
+                intent.putExtra("OPEN_USER_PROFILE", userId);
+                intent.putExtra("FINISH_ON_BACK", true);
                 startActivity(intent);
             }
         });
@@ -185,7 +200,8 @@ public class PostDetailActivity extends AppCompatActivity {
                             milestone.amount = json.optString("amount", "");
                             milestone.progress = json.optInt("progress", 0);
                             milestone.description = nonEmpty(post.content, "");
-                        } catch (Exception ignored) {}
+                        } catch (Exception ignored) {
+                        }
                     } else {
                         milestone.iconText = "🏆";
                         milestone.title = "Milestone";
@@ -221,7 +237,9 @@ public class PostDetailActivity extends AppCompatActivity {
             }
         });
 
-        viewModel.getIsActionSuccess().observe(this, success -> { if (success) finish(); });
+        viewModel.getIsActionSuccess().observe(this, success -> {
+            if (success) finish();
+        });
 
         viewModel.getComments().observe(this, list -> {
             if (list == null) return;
@@ -264,7 +282,6 @@ public class PostDetailActivity extends AppCompatActivity {
         BottomSheetDialog dialog = new BottomSheetDialog(this);
         View sheetView = LayoutInflater.from(this).inflate(R.layout.bottom_sheet_option, null);
 
-        // Ẩn nút Edit Comment vì đây là menu của Post
         if (sheetView.findViewById(R.id.btnEditComment) != null) {
             sheetView.findViewById(R.id.btnEditComment).setVisibility(View.GONE);
         }
@@ -289,6 +306,7 @@ public class PostDetailActivity extends AppCompatActivity {
                         intent.putExtra("edit_milestone_data", ((FeedItem.MilestonePost) currentFeedItem).milestoneJson);
                     }
                     startActivity(intent);
+                    // Không gọi finish() ở đây để giữ màn hình Detail sống, lát quay lại sẽ trigger onResume
                 });
             }
 
@@ -305,7 +323,11 @@ public class PostDetailActivity extends AppCompatActivity {
             View btnHide = sheetView.findViewById(R.id.btnHideComment);
             if (btnHide != null) {
                 btnHide.setVisibility(View.VISIBLE);
-                btnHide.setOnClickListener(v -> { dialog.dismiss(); finish(); });
+                btnHide.setOnClickListener(v -> {
+                    dialog.dismiss();
+                    // ĐÃ FIX: Gọi hàm hidePost để báo Server thay vì chỉ đóng UI
+                    viewModel.hidePost(postId, authHeader);
+                });
             }
 
             View btnReport = sheetView.findViewById(R.id.btnReportPost);
@@ -315,12 +337,21 @@ public class PostDetailActivity extends AppCompatActivity {
             }
         }
 
-        // Nút Cancel chung
         View btnCancel = sheetView.findViewById(R.id.btnCancelComment);
         if (btnCancel != null) btnCancel.setOnClickListener(v -> dialog.dismiss());
 
         dialog.setContentView(sheetView);
         dialog.show();
+    }
+
+    //Lifecycle hook để auto refresh sau khi Edit bài quay về
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Kiểm tra authHeader != null để tránh gọi lúc onCreate vừa vào chưa kịp load Firebase auth
+        if (authHeader != null && !authHeader.isEmpty() && postId != null) {
+            viewModel.loadPost(postId, authHeader);
+        }
     }
 
     private void showEditCommentDialog(Comment comment) {
@@ -353,13 +384,26 @@ public class PostDetailActivity extends AppCompatActivity {
         tvPostDetailMessage.setVisibility(View.VISIBLE);
     }
 
-    private String nonEmpty(String value, String fallback) { return value == null || value.trim().isEmpty() ? fallback : value.trim(); }
-    private String mapStr(java.util.Map<String, Object> map, String key) { Object v = map.get(key); return v instanceof String ? (String) v : ""; }
-    private long mapNum(java.util.Map<String, Object> map, String key) { Object v = map.get(key); return v instanceof Number ? ((Number) v).longValue() : 0L; }
+    private String nonEmpty(String value, String fallback) {
+        return value == null || value.trim().isEmpty() ? fallback : value.trim();
+    }
+
+    private String mapStr(java.util.Map<String, Object> map, String key) {
+        Object v = map.get(key);
+        return v instanceof String ? (String) v : "";
+    }
+
+    private long mapNum(java.util.Map<String, Object> map, String key) {
+        Object v = map.get(key);
+        return v instanceof Number ? ((Number) v).longValue() : 0L;
+    }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == android.R.id.home) { onBackPressed(); return true; }
+        if (item.getItemId() == android.R.id.home) {
+            onBackPressed();
+            return true;
+        }
         return super.onOptionsItemSelected(item);
     }
 }

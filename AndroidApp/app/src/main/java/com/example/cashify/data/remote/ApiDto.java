@@ -153,6 +153,24 @@ public class ApiDto {
         public DeleteCommentRequest(String postId, String commentId) { this.PostId = postId; this.CommentId = commentId; }
     }
 
+    public static class HidePostRequest {
+        @SerializedName("postId")
+        public String PostId;
+
+        public HidePostRequest(String postId) {
+            this.PostId = postId;
+        }
+    }
+
+    public static class HideCommentRequest {
+        public String postId;
+        public String commentId;
+
+        public HideCommentRequest(String postId, String commentId) {
+            this.postId = postId;
+            this.commentId = commentId;
+        }
+    }
     public static class BatchProfileRequest {
         public List<String> Uids;
         public BatchProfileRequest(List<String> uids) { this.Uids = uids; }

@@ -304,7 +304,7 @@ public class SocialNewsfeedFragment extends BaseFragment {
                 }).start();
     }
 
-    
+
     private void showPostBottomSheet(FeedItem item) {
         if (getActivity() == null) return;
         BottomSheetDialog dialog = new BottomSheetDialog(requireContext());
@@ -320,20 +320,24 @@ public class SocialNewsfeedFragment extends BaseFragment {
 
         View btnEditPost = sheetView.findViewById(R.id.btnEditPost);
         View btnDeletePost = sheetView.findViewById(R.id.btnDeleteComment);
+        View btnHidePost = sheetView.findViewById(R.id.btnHideComment);
+        View btnReportPost = sheetView.findViewById(R.id.btnReportPost);
 
         if (canEditOrDelete) {
             if (btnEditPost != null) btnEditPost.setVisibility(View.VISIBLE);
-            btnDeletePost.setVisibility(View.VISIBLE);
-            sheetView.findViewById(R.id.btnHideComment).setVisibility(View.GONE);
-            sheetView.findViewById(R.id.btnReportPost).setVisibility(View.GONE);
+            if (btnDeletePost != null) btnDeletePost.setVisibility(View.VISIBLE);
+            if (btnHidePost != null) btnHidePost.setVisibility(View.GONE);
+            if (btnReportPost != null) btnReportPost.setVisibility(View.GONE);
 
-            btnDeletePost.setOnClickListener(v -> {
-                dialog.dismiss();
-                if (user == null) return;
-                user.getIdToken(true).addOnSuccessListener(result -> {
-                    viewModel.deletePost(item.getId(), "Bearer " + result.getToken());
+            if (btnDeletePost != null) {
+                btnDeletePost.setOnClickListener(v -> {
+                    dialog.dismiss();
+                    if (user == null) return;
+                    user.getIdToken(true).addOnSuccessListener(result -> {
+                        viewModel.deletePost(item.getId(), "Bearer " + result.getToken());
+                    });
                 });
-            });
+            }
 
             if (btnEditPost != null) {
                 btnEditPost.setOnClickListener(v -> {
@@ -354,18 +358,28 @@ public class SocialNewsfeedFragment extends BaseFragment {
             }
         } else {
             if (btnEditPost != null) btnEditPost.setVisibility(View.GONE);
-            btnDeletePost.setVisibility(View.GONE);
-            sheetView.findViewById(R.id.btnHideComment).setVisibility(View.VISIBLE);
-            sheetView.findViewById(R.id.btnReportPost).setVisibility(View.VISIBLE);
+            if (btnDeletePost != null) btnDeletePost.setVisibility(View.GONE);
+            if (btnHidePost != null) btnHidePost.setVisibility(View.VISIBLE);
+            if (btnReportPost != null) btnReportPost.setVisibility(View.VISIBLE);
 
-            sheetView.findViewById(R.id.btnHideComment).setOnClickListener(v -> {
-                dialog.dismiss();
-                Toast.makeText(requireContext(), "Post hidden", Toast.LENGTH_SHORT).show();
-            });
-            sheetView.findViewById(R.id.btnReportPost).setOnClickListener(v -> {
-                dialog.dismiss();
-                Toast.makeText(requireContext(), "Post reported", Toast.LENGTH_SHORT).show();
-            });
+            if (btnHidePost != null) {
+                btnHidePost.setOnClickListener(v -> {
+                    dialog.dismiss();
+                    //Gọi ViewModel để ẩn Post trên máy khách và báo lên server
+                    if (user == null) return;
+                    user.getIdToken(true).addOnSuccessListener(result -> {
+                        viewModel.hidePost(item.getId(), "Bearer " + result.getToken());
+                        Toast.makeText(requireContext(), "Post hidden", Toast.LENGTH_SHORT).show();
+                    });
+                });
+            }
+
+            if (btnReportPost != null) {
+                btnReportPost.setOnClickListener(v -> {
+                    dialog.dismiss();
+                    Toast.makeText(requireContext(), "Post reported", Toast.LENGTH_SHORT).show();
+                });
+            }
         }
 
         sheetView.findViewById(R.id.btnCancelComment).setOnClickListener(v -> dialog.dismiss());
