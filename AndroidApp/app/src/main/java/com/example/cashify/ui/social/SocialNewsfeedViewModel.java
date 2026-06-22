@@ -240,11 +240,10 @@ public class SocialNewsfeedViewModel extends ViewModel {
                         List<FeedItem> newList = new ArrayList<>(current);
                         for (int i = 0; i < newList.size(); i++) {
                             if (newList.get(i).getId().equals(postId)) {
-                                FeedItem item = newList.get(i);
-                                item.setLikeCount(data.likeCount);
-                                item.setCommentCount(data.commentCount);
-                                item.setLiked(data.likedByMe);
-                                newList.set(i, item);
+                                //Gọi hàm tự nhân bản, quăng data mới vào!
+                                FeedItem newItem = newList.get(i).cloneWithUpdates(data.likeCount, data.commentCount, data.likedByMe);
+
+                                newList.set(i, newItem);
                                 _feedItems.setValue(newList);
                                 break;
                             }
@@ -268,11 +267,14 @@ public class SocialNewsfeedViewModel extends ViewModel {
             List<FeedItem> newList = new ArrayList<>(current);
             for (int i = 0; i < newList.size(); i++) {
                 if (newList.get(i).getId().equals(postId)) {
-                    FeedItem item = newList.get(i);
-                    item.setLiked(isLiked);
-                    int currentCount = item.getLikeCount();
-                    item.setLikeCount(isLiked ? currentCount + 1 : Math.max(0, currentCount - 1));
-                    newList.set(i, item);
+                    FeedItem oldItem = newList.get(i);
+                    int currentCount = oldItem.getLikeCount();
+                    int newCount = isLiked ? currentCount + 1 : Math.max(0, currentCount - 1);
+
+                    //Gọi hàm tự nhân bản, quăng data mới vào!
+                    FeedItem newItem = oldItem.cloneWithUpdates(newCount, oldItem.getCommentCount(), isLiked);
+
+                    newList.set(i, newItem);
                     _feedItems.setValue(newList);
                     break;
                 }

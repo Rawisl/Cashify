@@ -19,7 +19,7 @@ public abstract class FeedItem {
     private long timestamp;
     private String rawType = "";
     private String category = "";
-
+    public abstract FeedItem cloneWithUpdates(int newLikeCount, int newCommentCount, boolean newIsLiked);
     protected FeedItem(String id, String userId) {
         this.id = id;
         this.userId = userId != null ? userId : "";
@@ -108,6 +108,27 @@ public abstract class FeedItem {
 
         @Override
         public int getType() { return TYPE_NORMAL; }
+        @Override
+        public FeedItem cloneWithUpdates(int newLikeCount, int newCommentCount, boolean newIsLiked) {
+            NormalPost copy = new NormalPost(
+                    getId(), getUserId(), userName, time, title, description,
+                    hasImage, imageUrl, initials, expandable, avatarUrl
+            );
+            // Copy state cũ từ class cha
+            copy.setShareCount(this.getShareCount());
+            copy.setCommented(this.isCommented());
+            copy.setShared(this.isShared());
+            copy.setRawType(this.getRawType());
+            copy.setCategory(this.getCategory());
+            copy.setTimestamp(this.getTimestamp());
+
+            // Ép state mới vào
+            copy.setLikeCount(newLikeCount);
+            copy.setCommentCount(newCommentCount);
+            copy.setLiked(newIsLiked);
+
+            return copy;
+        }
     }
 
     // =========================================================================
@@ -147,5 +168,27 @@ public abstract class FeedItem {
 
         @Override
         public int getType() { return TYPE_MILESTONE; }
+        @Override
+        public FeedItem cloneWithUpdates(int newLikeCount, int newCommentCount, boolean newIsLiked) {
+            MilestonePost copy = new MilestonePost(
+                    getId(), getUserId(), userName, time, title, description,
+                    month, amount, iconText, progress, expandable,
+                    milestoneJson, avatarUrl, initials
+            );
+            // Copy state cũ từ class cha
+            copy.setShareCount(this.getShareCount());
+            copy.setCommented(this.isCommented());
+            copy.setShared(this.isShared());
+            copy.setRawType(this.getRawType());
+            copy.setCategory(this.getCategory());
+            copy.setTimestamp(this.getTimestamp());
+
+            // Ép state mới vào
+            copy.setLikeCount(newLikeCount);
+            copy.setCommentCount(newCommentCount);
+            copy.setLiked(newIsLiked);
+
+            return copy;
+        }
     }
 }
