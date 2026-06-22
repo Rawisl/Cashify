@@ -20,5 +20,14 @@ public class AchievementSuggestion
     public string MonthLabel { get; set; }
     public int Progress { get; set; }
 }
+public class HidePostRequest
+{
+    public string PostId { get; set; } = string.Empty;
+}
+public class HideCommentRequest
+{
+    public string PostId { get; set; } = string.Empty;
+    public string CommentId { get; set; } = string.Empty;
+}
 // --- NHÓM MODEL CỦA BẠN BÈ ---
 public record FriendActionRequest(string? TargetUid);
