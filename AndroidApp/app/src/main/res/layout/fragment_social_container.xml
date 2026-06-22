@@ -32,7 +32,6 @@
             android:layout_height="match_parent"
             android:layout_gravity="center"
             android:background="@drawable/bg_bottom_nav"
-            android:elevation="@dimen/bottom_nav_center_button_elevation"
             app:itemIconTint="@color/nav_color_selector"
             app:itemTextAppearanceActive="@style/BottomNavWorkspaceLabelActive"
             app:itemTextAppearanceInactive="@style/BottomNavWorkspaceLabelInactive"

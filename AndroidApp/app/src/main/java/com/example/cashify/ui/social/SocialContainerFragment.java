@@ -64,17 +64,6 @@ public class SocialContainerFragment extends Fragment {
 
         View container = view.findViewById(R.id.bottom_navigation_social_container);
         
-        if (container != null) {
-            ViewCompat.setOnApplyWindowInsetsListener(container, (v, windowInsets) -> {
-                Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
-                int systemMargin = Math.round(getResources().getDimension(R.dimen.bottom_nav_system_margin));
-                ViewGroup.MarginLayoutParams mlp = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
-                mlp.bottomMargin = insets.bottom + systemMargin;
-                v.setLayoutParams(mlp);
-                return WindowInsetsCompat.CONSUMED;
-            });
-        }
-        
         navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
             if (bottomNav != null) {
                 animateBottomNavigationSelection(bottomNav, destination.getId(), true);
