@@ -20,7 +20,7 @@
         android:id="@+id/bottom_navigation_workspace"
         style="@style/CashifyBottomNavigation"
         android:layout_width="match_parent"
-        android:layout_height="@dimen/bottom_nav_height"
+        android:layout_height="@dimen/bottom_nav_workspace_height"
         android:layout_gravity="bottom"
         android:layout_marginHorizontal="@dimen/bottom_nav_workspace_horizontal_margin"
         android:layout_marginBottom="@dimen/bottom_nav_system_margin"

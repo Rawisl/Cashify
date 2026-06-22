@@ -45,6 +45,7 @@
 
         <activity
             android:name=".ui.auth.LoginActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="false" />
         <activity
             android:name=".ui.FriendsActivity.FriendsActivity"
@@ -65,10 +66,12 @@
 
         <activity
             android:name=".ui.auth.RegisterActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="false" />
 
         <activity
             android:name=".ui.auth.ForgotPasswordActivity"
+            android:windowSoftInputMode="adjustResize"
             android:exported="false" />
 
         <activity android:name=".ui.auth.ChangePasswordActivity"
