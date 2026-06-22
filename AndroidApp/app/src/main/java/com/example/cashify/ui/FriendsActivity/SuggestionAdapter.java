@@ -78,7 +78,7 @@ public class SuggestionAdapter extends RecyclerView.Adapter<SuggestionAdapter.Vi
         userHolder.tvStatus.setText(user.getEmail() != null ? user.getEmail() : "Cashify User");
         ImageHelper.loadAvatar(user.getAvatarUrl(), userHolder.imgAvatar, user.getNameToShow());
 
-        userHolder.imgAvatar.setOnClickListener(v -> {
+        userHolder.itemView.setOnClickListener(v -> {
             if (listener != null) listener.onAvatarClick(user);
         });
 

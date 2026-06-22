@@ -53,5 +53,23 @@ public class SocialContainerFragment extends Fragment {
         if (bottomNav != null) {
             androidx.navigation.ui.NavigationUI.setupWithNavController(bottomNav, navController);
         }
+
+        View container = view.findViewById(R.id.bottom_navigation_social_container);
+        navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
+            if (destination.getId() == R.id.nav_other_profile) {
+                if (container != null) container.setVisibility(View.GONE);
+            } else {
+                if (container != null) container.setVisibility(View.VISIBLE);
+            }
+        });
+
+        if (getArguments() != null && getArguments().getBoolean("OPEN_OTHER_PROFILE", false)) {
+            String userId = getArguments().getString("USER_ID");
+            Bundle args = new Bundle();
+            args.putString("USER_ID", userId);
+            args.putBoolean("FINISH_ON_BACK", getArguments().getBoolean("FINISH_ON_BACK", false));
+            navController.navigate(R.id.nav_other_profile, args);
+            getArguments().remove("OPEN_OTHER_PROFILE");
+        }
     }
 }

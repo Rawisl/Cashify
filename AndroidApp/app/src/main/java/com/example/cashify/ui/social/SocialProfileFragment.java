@@ -114,7 +114,17 @@ public class SocialProfileFragment extends BaseFragment {
         MaterialToolbar toolbar = view.findViewById(R.id.toolbarSocialProfile);
         TextView tvGreeting = view.findViewById(R.id.tvProfileGreeting);
 
-        if (viewingOwnProfile) {
+        boolean isTopLevel = false;
+        try {
+            androidx.navigation.NavController nav = androidx.navigation.Navigation.findNavController(view);
+            if (nav.getCurrentDestination() != null && nav.getCurrentDestination().getId() == R.id.nav_social_profile) {
+                isTopLevel = true;
+            }
+        } catch (Exception e) {
+            // ignore
+        }
+
+        if (viewingOwnProfile && isTopLevel) {
             if (tvGreeting != null) {
                 int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
                 String greeting;
@@ -124,12 +134,21 @@ public class SocialProfileFragment extends BaseFragment {
                 tvGreeting.setText(greeting);
                 tvGreeting.setVisibility(View.VISIBLE);
             }
-            if (view.findViewById(R.id.imgBellIcon) != null) {
-                view.findViewById(R.id.imgBellIcon).setVisibility(View.VISIBLE);
+            View bellIcon = view.findViewById(R.id.imgBellIcon);
+            if (bellIcon != null) {
+                bellIcon.setVisibility(View.VISIBLE);
+                bellIcon.setOnClickListener(v -> {
+                    com.example.cashify.ui.notifications.NotificationBottomSheet bottomSheet = new com.example.cashify.ui.notifications.NotificationBottomSheet();
+                    bottomSheet.show(getParentFragmentManager(), "NotificationBottomSheet");
+                });
             }
         } else {
             if (tvGreeting != null) {
-                tvGreeting.setText(R.string.social_profile_title);
+                if (viewingOwnProfile) {
+                    tvGreeting.setText(R.string.social_profile_title);
+                } else {
+                    tvGreeting.setText(R.string.social_profile_title);
+                }
                 tvGreeting.setVisibility(View.VISIBLE);
             }
             toolbar.setTitle("");
@@ -139,16 +158,22 @@ public class SocialProfileFragment extends BaseFragment {
             }
         }
 
+        final boolean topLevelFinal = isTopLevel;
         toolbar.setNavigationOnClickListener(v -> {
-            if (!viewingOwnProfile) {
-                Navigation.findNavController(view).popBackStack();
-                return;
-            }
-            if (getActivity() == null) return;
-            androidx.drawerlayout.widget.DrawerLayout drawer =
-                    getActivity().findViewById(R.id.drawerLayout);
-            if (drawer != null) {
-                drawer.openDrawer(androidx.core.view.GravityCompat.START);
+            if (!topLevelFinal) {
+                boolean finishOnBack = getArguments() != null && getArguments().getBoolean("FINISH_ON_BACK", false);
+                if (finishOnBack && getActivity() != null) {
+                    getActivity().finish();
+                } else {
+                    androidx.navigation.Navigation.findNavController(view).popBackStack();
+                }
+            } else {
+                if (getActivity() == null) return;
+                androidx.drawerlayout.widget.DrawerLayout drawer =
+                        getActivity().findViewById(R.id.drawerLayout);
+                if (drawer != null) {
+                    drawer.openDrawer(androidx.core.view.GravityCompat.START);
+                }
             }
         });
     }
@@ -166,6 +191,7 @@ public class SocialProfileFragment extends BaseFragment {
         if (currentUser != null && !currentUserId.trim().isEmpty()) {
             viewModel.loadProfileData(currentUserId);
             viewModel.loadAchievements(currentUserId);
+            
             currentUser.getIdToken(true).addOnSuccessListener(result ->
                     viewModel.loadWallPosts(currentUserId, "Bearer " + result.getToken()));
         } else {
@@ -267,13 +293,6 @@ public class SocialProfileFragment extends BaseFragment {
         viewModel.getFriendCount().observe(getViewLifecycleOwner(), count -> {
             tvFriendCount.setText(Math.max(0, count) + " friends");
             updateDynamicBadges();
-        });
-
-        viewModel.isFriend().observe(getViewLifecycleOwner(), isFriend -> {
-            if (!viewingOwnProfile && getView() != null) {
-                getView().findViewById(R.id.btnMessage).setVisibility(isFriend ? View.VISIBLE : View.GONE);
-                getView().findViewById(R.id.btnAddFriend).setVisibility(isFriend ? View.GONE : View.VISIBLE);
-            }
         });
 
         viewModel.getWallPosts().observe(getViewLifecycleOwner(), posts -> {
@@ -413,7 +432,7 @@ public class SocialProfileFragment extends BaseFragment {
     private void updateStreakState(int currentStreakDays) {
         if (tvStreakCount == null) return;
         int days = Math.max(0, currentStreakDays);
-        boolean active = days > 0;
+        boolean active = days >= 1;
         tvStreakCount.setText(days + (days == 1 ? " day" : " days"));
         tvStreakCount.setBackgroundResource(active
                 ? R.drawable.bg_profile_streak_fire_circle

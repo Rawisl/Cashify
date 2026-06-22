@@ -81,7 +81,7 @@ public class SocialProfileViewModel extends ViewModel {
         // Check if current user is a friend
         String currentUserId = FirebaseAuth.getInstance().getCurrentUser() != null ? FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
         if (currentUserId != null && !currentUserId.equals(uid)) {
-            db.collection("users").document(uid).collection("friends").document(currentUserId)
+            db.collection("users").document(currentUserId).collection("friends").document(uid)
                     .addSnapshotListener((doc, e) -> {
                         boolean friend = (doc != null && doc.exists());
                         _isFriend.postValue(friend);
