@@ -10,7 +10,7 @@
     <dimen name="bottom_nav_icon_size">26dp</dimen>
     <dimen name="bottom_nav_item_padding_top">0dp</dimen>
     <dimen name="bottom_nav_item_padding_bottom">0dp</dimen>
-    <dimen name="bottom_nav_item_vertical_offset">10dp</dimen>
+    <dimen name="bottom_nav_item_vertical_offset">0dp</dimen>
     <dimen name="bottom_nav_selected_icon_float_offset">5dp</dimen>
 
     <dimen name="bottom_nav_social_height">72dp</dimen>
