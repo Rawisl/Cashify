@@ -116,7 +116,7 @@ public class MainActivity extends BaseActivity {
     }
 
     private void setupPersonalWorkspaceSystemBars() {
-        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
         getWindow().setStatusBarColor(Color.parseColor("#FBFCFF"));
         getWindow().setNavigationBarColor(Color.parseColor("#F7F9FF"));
         WindowInsetsControllerCompat controller =

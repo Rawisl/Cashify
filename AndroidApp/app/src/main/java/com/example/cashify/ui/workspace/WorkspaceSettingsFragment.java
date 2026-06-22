@@ -66,10 +66,14 @@ public class WorkspaceSettingsFragment extends Fragment {
     private void initViewModel() {
         workspaceViewModel = new ViewModelProvider(requireActivity()).get(WorkspaceViewModel.class);
 
-        // 1. Kick Trap: Automatically redirect if the user leaves or is kicked
+        // 1. Kick Trap
         workspaceViewModel.isKickedOut.observe(getViewLifecycleOwner(), isKicked -> {
             if (Boolean.TRUE.equals(isKicked)) {
                 ToastHelper.show(requireContext(), "You are no longer in this workspace.");
+
+                // Dọn sạch data trước khi văng ra
+                workspaceViewModel.clearWorkspaceData();
+
                 forceQuitToPersonal();
             }
         });
@@ -155,6 +159,16 @@ public class WorkspaceSettingsFragment extends Fragment {
                         () -> workspaceViewModel.leaveWorkspace(workspaceId), // Delegate to ViewModel
                         null
                 );
+            }
+        });
+        workspaceViewModel.actionSuccess.observe(getViewLifecycleOwner(), success -> {
+            if (Boolean.TRUE.equals(success)) {
+                ToastHelper.show(requireContext(), "Action completed.");
+
+                // Dọn sạch data trước khi văng ra
+                workspaceViewModel.clearWorkspaceData();
+
+                forceQuitToPersonal();
             }
         });
     }

@@ -28,7 +28,6 @@ import com.bumptech.glide.Glide;
 import com.example.cashify.R;
 import com.example.cashify.utils.DialogHelper;
 import com.example.cashify.utils.FileUtils;
-import com.example.cashify.utils.ImageHelper;
 import com.example.cashify.utils.ToastHelper;
 
 import java.io.File;
@@ -78,7 +77,7 @@ public class WorkspaceChatFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Kỹ thuật truy ngược Fragment Tree để lấy workspaceId từ Fragment Container cha
+        // Retrieve workspaceId from the parent container
         Fragment parent = getParentFragment();
         while (parent != null) {
             if (parent instanceof WorkspaceContainerFragment && parent.getArguments() != null) {
@@ -88,6 +87,7 @@ public class WorkspaceChatFragment extends Fragment {
             parent = parent.getParentFragment();
         }
 
+        // Initialize ViewModel using the parent activity scope
         workspaceViewModel = new ViewModelProvider(requireActivity()).get(WorkspaceViewModel.class);
 
         initViews(view);
@@ -131,9 +131,13 @@ public class WorkspaceChatFragment extends Fragment {
 
         workspaceViewModel.getWorkspaceLiveData().observe(getViewLifecycleOwner(), workspace -> {
             if (workspace != null) {
-                tvWorkspaceName.setText(workspace.getName());
-                int resId = requireContext().getResources().getIdentifier(workspace.getIconName(), "drawable", requireContext().getPackageName());
-                imgWorkspaceIcon.setImageResource(resId != 0 ? resId : R.drawable.ic_other);
+                if (tvWorkspaceName != null) {
+                    tvWorkspaceName.setText(workspace.getName());
+                }
+                if (imgWorkspaceIcon != null) {
+                    int resId = requireContext().getResources().getIdentifier(workspace.getIconName(), "drawable", requireContext().getPackageName());
+                    imgWorkspaceIcon.setImageResource(resId != 0 ? resId : R.drawable.ic_other);
+                }
 
                 if (chatAdapter != null) chatAdapter.setOwnerId(workspace.getOwnerId());
             }
@@ -152,13 +156,11 @@ public class WorkspaceChatFragment extends Fragment {
             if (errorMsg != null) ToastHelper.show(requireContext(), errorMsg);
         });
 
-        // Delegate UI blocking to ViewModel state
         workspaceViewModel.getIsUploading().observe(getViewLifecycleOwner(), isUploading -> {
             btnSendMessage.setEnabled(!isUploading);
             btnSendMessage.setAlpha(isUploading ? 0.5f : 1.0f);
         });
 
-        // Auto-render previews driven by ViewModel state
         workspaceViewModel.getPendingImages().observe(getViewLifecycleOwner(), images -> {
             layoutPreviewImages.removeAllViews();
             if (images == null || images.isEmpty()) {
@@ -219,7 +221,6 @@ public class WorkspaceChatFragment extends Fragment {
         layoutPreviewImages.addView(container);
     }
 
-    // Xử lý co giãn RecyclerView khi bàn phím ảo (Soft Keyboard) xuất hiện
     private void setupKeyboardListener(View view) {
         float density = getResources().getDisplayMetrics().density;
         view.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
@@ -233,7 +234,7 @@ public class WorkspaceChatFragment extends Fragment {
                 ViewGroup.MarginLayoutParams inputParams = (ViewGroup.MarginLayoutParams) layoutInput.getLayoutParams();
                 View bottomNav = getActivity() != null ? getActivity().findViewById(R.id.bottom_navigation_workspace) : null;
 
-                if (keypadHeight > screenHeight * 0.15) { // Bàn phím đang mở
+                if (keypadHeight > screenHeight * 0.15) {
                     if (bottomNav != null) bottomNav.setVisibility(View.GONE);
 
                     if (inputParams.bottomMargin != (int) (16 * density)) {
@@ -242,7 +243,7 @@ public class WorkspaceChatFragment extends Fragment {
                         rvChatMessages.setPadding(rvChatMessages.getPaddingLeft(), rvChatMessages.getPaddingTop(), rvChatMessages.getPaddingRight(), (int) (16 * density));
                         if (chatAdapter.getItemCount() > 0) rvChatMessages.smoothScrollToPosition(chatAdapter.getItemCount() - 1);
                     }
-                } else { // Bàn phím đang đóng
+                } else {
                     if (bottomNav != null) bottomNav.setVisibility(View.VISIBLE);
 
                     if (inputParams.bottomMargin != (int) (110 * density)) {
