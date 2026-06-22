@@ -232,11 +232,9 @@ public class WorkspaceChatFragment extends Fragment {
 
                 ViewGroup.MarginLayoutParams inputParams = (ViewGroup.MarginLayoutParams) layoutInput.getLayoutParams();
                 View bottomNav = getActivity() != null ? getActivity().findViewById(R.id.bottom_navigation_workspace) : null;
-                View fab = getActivity() != null ? getActivity().findViewById(R.id.fabAddWorkspaceTransaction) : null;
 
                 if (keypadHeight > screenHeight * 0.15) { // Bàn phím đang mở
                     if (bottomNav != null) bottomNav.setVisibility(View.GONE);
-                    if (fab != null) fab.setVisibility(View.GONE);
 
                     if (inputParams.bottomMargin != (int) (16 * density)) {
                         inputParams.bottomMargin = (int) (16 * density);
@@ -246,7 +244,6 @@ public class WorkspaceChatFragment extends Fragment {
                     }
                 } else { // Bàn phím đang đóng
                     if (bottomNav != null) bottomNav.setVisibility(View.VISIBLE);
-                    if (fab != null) fab.setVisibility(View.VISIBLE);
 
                     if (inputParams.bottomMargin != (int) (110 * density)) {
                         inputParams.bottomMargin = (int) (110 * density);
