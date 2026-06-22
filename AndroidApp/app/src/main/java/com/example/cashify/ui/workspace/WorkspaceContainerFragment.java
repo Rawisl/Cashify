@@ -69,8 +69,15 @@ public class WorkspaceContainerFragment extends Fragment {
             NavController innerNavController = navHostFragment.getNavController();
             NavigationUI.setupWithNavController(bottomNav, innerNavController);
 
-            // Dynamic FAB visibility based on the current destination
+            // Initial selection animation
+            int currentDestinationId = innerNavController.getCurrentDestination() == null
+                    ? bottomNav.getSelectedItemId()
+                    : innerNavController.getCurrentDestination().getId();
+            animateBottomNavigationSelection(bottomNav, currentDestinationId, false);
+
+            // Dynamic FAB visibility and animation based on the current destination
             innerNavController.addOnDestinationChangedListener((controller, destination, arguments) -> {
+                animateBottomNavigationSelection(bottomNav, destination.getId(), true);
                 if (destination.getId() == R.id.workspace_nav_home) {
                     fabAddTransaction.show();
                 } else {
@@ -93,6 +100,27 @@ public class WorkspaceContainerFragment extends Fragment {
             Intent intent = new Intent(requireContext(), AddTransactionActivity.class);
             intent.putExtra("WORKSPACE_ID", workspaceId);
             startActivity(intent);
+        });
+    }
+
+    private void animateBottomNavigationSelection(BottomNavigationView bottomNav, int destinationId, boolean animate) {
+        bottomNav.post(() -> {
+            float selectedFloatOffset = getResources().getDimension(R.dimen.bottom_nav_selected_icon_float_offset);
+            int floatDuration = getResources().getInteger(R.integer.bottom_nav_icon_float_duration);
+
+            for (int i = 0; i < bottomNav.getMenu().size(); i++) {
+                int itemId = bottomNav.getMenu().getItem(i).getItemId();
+                android.view.View itemView = bottomNav.findViewById(itemId);
+                if (itemView != null) {
+                    float targetOffset = itemId == destinationId ? -selectedFloatOffset : 0f;
+                    if (animate) {
+                        itemView.animate().translationY(targetOffset).setDuration(floatDuration)
+                                .setInterpolator(new android.view.animation.DecelerateInterpolator()).start();
+                    } else {
+                        itemView.setTranslationY(targetOffset);
+                    }
+                }
+            }
         });
     }
 }
