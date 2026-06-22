@@ -22,16 +22,17 @@
         android:layout_gravity="bottom"
         android:layout_marginHorizontal="@dimen/bottom_nav_horizontal_margin"
         android:layout_marginBottom="@dimen/bottom_nav_system_margin"
+        android:background="@drawable/bg_bottom_nav"
         android:clipChildren="false"
         android:clipToPadding="false">
 
         <com.google.android.material.bottomnavigation.BottomNavigationView
             android:id="@+id/bottom_navigation_social"
             style="@style/CashifyBottomNavigation"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:layout_gravity="center"
-            android:background="@drawable/bg_bottom_nav"
+            android:background="@android:color/transparent"
             app:itemIconTint="@color/nav_color_selector"
             app:itemTextAppearanceActive="@style/BottomNavWorkspaceLabelActive"
             app:itemTextAppearanceInactive="@style/BottomNavWorkspaceLabelInactive"

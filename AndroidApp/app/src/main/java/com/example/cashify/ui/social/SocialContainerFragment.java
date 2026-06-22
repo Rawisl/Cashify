@@ -60,9 +60,24 @@ public class SocialContainerFragment extends Fragment {
                     ? bottomNav.getSelectedItemId()
                     : navController.getCurrentDestination().getId();
             animateBottomNavigationSelection(bottomNav, currentDestinationId, false);
+
         }
 
         View container = view.findViewById(R.id.bottom_navigation_social_container);
+        if (container != null) {
+            ViewCompat.setOnApplyWindowInsetsListener(container, (v, windowInsets) -> {
+                Insets navInsets = windowInsets.getInsets(
+                        WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+                int systemMargin = Math.round(getResources().getDimension(R.dimen.bottom_nav_system_margin));
+
+                android.view.ViewGroup.MarginLayoutParams mlp =
+                        (android.view.ViewGroup.MarginLayoutParams) v.getLayoutParams();
+                mlp.bottomMargin = navInsets.bottom + systemMargin;
+                v.setLayoutParams(mlp);
+
+                return WindowInsetsCompat.CONSUMED;
+            });
+        }
         
         navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
             if (bottomNav != null) {
@@ -87,16 +102,14 @@ public class SocialContainerFragment extends Fragment {
 
     private void animateBottomNavigationSelection(com.google.android.material.bottomnavigation.BottomNavigationView bottomNav, int destinationId, boolean animate) {
         bottomNav.post(() -> {
-            float itemVerticalOffset = getResources().getDimension(R.dimen.bottom_nav_item_vertical_offset);
             float selectedFloatOffset = getResources().getDimension(R.dimen.bottom_nav_selected_icon_float_offset);
             int floatDuration = getResources().getInteger(R.integer.bottom_nav_icon_float_duration);
 
             for (int i = 0; i < bottomNav.getMenu().size(); i++) {
                 int itemId = bottomNav.getMenu().getItem(i).getItemId();
-                View itemView = bottomNav.findViewById(itemId);
+                android.view.View itemView = bottomNav.findViewById(itemId);
                 if (itemView != null) {
-                    float targetOffset = itemId == destinationId
-                            ? itemVerticalOffset - selectedFloatOffset : itemVerticalOffset;
+                    float targetOffset = itemId == destinationId ? -selectedFloatOffset : 0f;
                     if (animate) {
                         itemView.animate().translationY(targetOffset).setDuration(floatDuration)
                                 .setInterpolator(new android.view.animation.DecelerateInterpolator()).start();

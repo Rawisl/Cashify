@@ -300,11 +300,13 @@ public class MainActivity extends BaseActivity {
                 : navController.getCurrentDestination().getId();
         animateBottomNavigationSelection(bottomNav, currentDestinationId, false);
 
+
         View navHostView = findViewById(R.id.nav_host_fragment);
         navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
             int id = destination.getId();
             syncSidebarSelection(id);
             animateBottomNavigationSelection(bottomNav, id, true);
+
 
             if (id == R.id.nav_workspace_container
                     || id == R.id.nav_social_container
@@ -377,19 +379,18 @@ public class MainActivity extends BaseActivity {
         spring.start();
     }
 
-    private void animateBottomNavigationSelection(BottomNavigationView bottomNav, int destinationId, boolean animate) {
+    private void animateBottomNavigationSelection(com.google.android.material.bottomnavigation.BottomNavigationView bottomNav, int destinationId, boolean animate) {
         bottomNav.post(() -> {
-            float itemVerticalOffset = getResources().getDimension(R.dimen.bottom_nav_item_vertical_offset);
             float selectedFloatOffset = getResources().getDimension(R.dimen.bottom_nav_selected_icon_float_offset);
             int floatDuration = getResources().getInteger(R.integer.bottom_nav_icon_float_duration);
+
             for (int i = 0; i < bottomNav.getMenu().size(); i++) {
                 int itemId = bottomNav.getMenu().getItem(i).getItemId();
                 if (itemId == R.id.nav_center_cta_space) continue;
 
-                View itemView = bottomNav.findViewById(itemId);
+                android.view.View itemView = bottomNav.findViewById(itemId);
                 if (itemView != null) {
-                    float targetOffset = itemId == destinationId
-                            ? itemVerticalOffset - selectedFloatOffset : itemVerticalOffset;
+                    float targetOffset = itemId == destinationId ? -selectedFloatOffset : 0f;
                     if (animate) {
                         itemView.animate().translationY(targetOffset).setDuration(floatDuration)
                                 .setInterpolator(new android.view.animation.DecelerateInterpolator()).start();

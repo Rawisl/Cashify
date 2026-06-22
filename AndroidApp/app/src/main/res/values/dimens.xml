@@ -10,7 +10,7 @@
     <dimen name="bottom_nav_icon_size">26dp</dimen>
     <dimen name="bottom_nav_item_padding_top">0dp</dimen>
     <dimen name="bottom_nav_item_padding_bottom">0dp</dimen>
-    <dimen name="bottom_nav_item_vertical_offset">0dp</dimen>
+    <dimen name="bottom_nav_item_vertical_offset">8dp</dimen>
     <dimen name="bottom_nav_selected_icon_float_offset">5dp</dimen>
 
     <dimen name="bottom_nav_social_height">60dp</dimen>
@@ -30,7 +30,7 @@
     <dimen name="bottom_nav_center_button_min_touch">48dp</dimen>
     <dimen name="bottom_nav_center_button_icon_padding">12dp</dimen>
     <!-- Top margin is 8dp because a centered 52dp button in a 72dp bar starts at 10dp; this raises it by 2dp. -->
-    <dimen name="bottom_nav_center_button_top_margin">8dp</dimen>
+    <dimen name="bottom_nav_center_button_top_margin">4dp</dimen>
     <dimen name="bottom_nav_center_button_elevation">10dp</dimen>
     <dimen name="bottom_nav_center_button_translation_z">2dp</dimen>
 
