@@ -43,6 +43,19 @@ public class WorkspaceContainerFragment extends Fragment {
         BottomNavigationView bottomNav = view.findViewById(R.id.bottom_navigation_workspace);
         FloatingActionButton fabAddTransaction = view.findViewById(R.id.fabAddWorkspaceTransaction);
 
+
+        ViewCompat.setOnApplyWindowInsetsListener(bottomNav, (v, windowInsets) -> {
+            Insets navInsets = windowInsets.getInsets(
+                    WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+            int systemMargin = Math.round(getResources().getDimension(R.dimen.bottom_nav_system_margin));
+
+            ViewGroup.MarginLayoutParams mlp = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
+            mlp.bottomMargin = navInsets.bottom + systemMargin;
+            v.setLayoutParams(mlp);
+
+            return WindowInsetsCompat.CONSUMED;
+        });
+
         // =========================================================================
         // =========================================================================
         // NAVIGATION SETUP
