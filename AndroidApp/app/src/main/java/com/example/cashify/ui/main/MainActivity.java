@@ -25,6 +25,7 @@ import androidx.core.splashscreen.SplashScreen;
 import androidx.core.view.GravityCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
 import androidx.navigation.NavDestination;
@@ -436,20 +437,40 @@ public class MainActivity extends BaseActivity {
     private void syncSidebarSelection(int destinationId) {
         if (navigationView == null) return;
 
-        android.view.Menu menu = navigationView.getMenu();
         if (destinationId == R.id.nav_social_container) {
-            setSidebarItemChecked(menu, R.id.nav_social);
+            setSidebarItemChecked(R.id.nav_social);
+        } else if (destinationId == R.id.nav_workspace_container) {
+            // Highlight đúng quỹ đang được chọn
+            if ("PERSONAL".equals(currentWorkspaceId)) {
+                setSidebarItemChecked(R.id.nav_workspace_personal);
+            } else {
+                // Quét trong Map để tìm ngược lại cái ID của menu (nút bấm) thuộc về quỹ hiện tại
+                for (java.util.Map.Entry<Integer, String> entry : menuIdToWorkspaceIdMap.entrySet()) {
+                    if (entry.getValue().equals(currentWorkspaceId)) {
+                        setSidebarItemChecked(entry.getKey());
+                        break;
+                    }
+                }
+            }
         } else if (destinationId == R.id.nav_home
                 || destinationId == R.id.nav_budget
                 || destinationId == R.id.nav_transaction
                 || destinationId == R.id.nav_settings) {
-            setSidebarItemChecked(menu, R.id.nav_workspace_personal);
+            setSidebarItemChecked(R.id.nav_workspace_personal);
         }
     }
 
-    private void setSidebarItemChecked(android.view.Menu menu, int itemId) {
-        android.view.MenuItem item = menu.findItem(itemId);
-        if (item != null) item.setChecked(true);
+
+    @Override
+    protected void onWorkspacesMenuUpdated() {
+        super.onWorkspacesMenuUpdated();
+        // Lấy lại ID của màn hình đang đứng hiện tại để tô đúng màu
+        androidx.navigation.fragment.NavHostFragment navHostFragment = (androidx.navigation.fragment.NavHostFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.nav_host_fragment);
+
+        if (navHostFragment != null && navHostFragment.getNavController().getCurrentDestination() != null) {
+            syncSidebarSelection(navHostFragment.getNavController().getCurrentDestination().getId());
+        }
     }
 
     private void maybeOpenCreateWorkspaceSheet() {

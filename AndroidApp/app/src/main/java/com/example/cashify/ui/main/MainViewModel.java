@@ -20,6 +20,8 @@ import com.example.cashify.data.model.WorkspaceInvitation;
 import com.example.cashify.data.remote.FirebaseManager;
 import com.example.cashify.data.repository.IWorkspaceRepo;
 import com.example.cashify.data.repository.RemoteWorkspaceRepoImpl;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
@@ -648,5 +650,44 @@ public class MainViewModel extends AndroidViewModel {
             @Override public void onSuccess(String token) {}
             @Override public void onError(String message) {}
         });
+    }
+    // LOGOUT LOGIC
+    private final MutableLiveData<Boolean> _isLoggedOut = new MutableLiveData<>(false);
+    public LiveData<Boolean> isLoggedOut = _isLoggedOut;
+
+    /**
+     * Dọn dẹp sạch sẽ Room Database, SharedPreferences và đăng xuất
+     */
+    public void clearDataAndLogout() {
+        Executors.newSingleThreadExecutor().execute(() -> {
+            //Xóa sạch Local Database
+            AppDatabase.getInstance(getApplication()).clearAllTables();
+
+            //Xóa cache User ID trong SharedPreferences
+            getApplication().getSharedPreferences("UserPrefs", android.content.Context.MODE_PRIVATE)
+                    .edit().remove("last_uid").apply();
+
+            //Đăng xuất khỏi Firebase & Google (Chạy trên Main Thread để cập nhật UI)
+            new android.os.Handler(android.os.Looper.getMainLooper()).post(this::performSignOut);
+        });
+    }
+
+    private void performSignOut() {
+        // Đăng xuất Firebase
+        FirebaseManager.getInstance().logout();
+
+        // Đăng xuất Google
+        GoogleSignInOptions gso =
+                new GoogleSignInOptions.Builder(
+                        GoogleSignInOptions.DEFAULT_SIGN_IN)
+                        .requestIdToken("195049395718-bagas4hvn2onafmdvd0dqdntsj81o9ef.apps.googleusercontent.com")
+                        .requestEmail()
+                        .build();
+
+       GoogleSignIn.getClient(getApplication(), gso)
+                .signOut()
+                .addOnCompleteListener(task -> {
+                    _isLoggedOut.setValue(true); // Kích hoạt LiveData để MainActivity biết đường văng ra Login
+                });
     }
 }
