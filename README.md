@@ -54,7 +54,7 @@ Không cần khởi động database riêng — dự án dùng **Firebase Firest
 - Project Firebase đã tạo Firestore database.
 - File `firebase-admin.json` (service account key) đã được tải về và đặt đúng vị trí (xem mục 5).
 
-Lưu ý: Một số tính năng (như Feed) yêu cầu tạo Composite Index trên Firestore Console nếu có thông báo lỗi từ API.
+Lưu ý: Một số tính năng yêu cầu tạo Composite Index trên Firestore Console nếu có thông báo lỗi từ API.
 
 ## 5. Cấu hình biến môi trường (`.env`)
 
@@ -70,7 +70,7 @@ CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 
 Không có biến môi trường tùy chọn.
 
-**Lưu ý quan trọng:** file `firebase-admin.json` (service account key lấy từ Firebase Console) phải được đặt tại thư mục gốc của dự án — đây là điều kiện bắt buộc để khởi tạo Firebase Admin SDK, độc lập với file `.env`.
+**Lưu ý quan trọng:** file `firebase-admin.json` phải được đặt tại thư mục gốc của dự án — đây là điều kiện bắt buộc để khởi tạo Firebase Admin SDK, độc lập với file `.env`.
 
 Tối thiểu để chạy được: `OPENROUTER_API_KEY`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` và file `firebase-admin.json`.
 
@@ -107,9 +107,9 @@ dotnet run
 ```
 
 ## 8. Kiểm tra
-- Môi trường Local (Phát triển): http://localhost:5283/
-- Môi trường Production (Thực tế): [Điền tên miền của bạn vào đây, ví dụ: https://api.cashify.com/]
-- Health check: Truy cập vào root / để nhận phản hồi "Hi guys!!"
+- Môi trường Local: http://localhost:5283/
+- Môi trường thực tế: https://api.cashify.io.vn
+- Health check: Truy cập vào tên miền https://api.cashify.io.vn để nhận phản hồi "Hi guys!!"
 
 ## 9. Lệnh hữu ích
 
