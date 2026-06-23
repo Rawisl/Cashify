@@ -15,7 +15,7 @@ builder.Services.AddHttpClient();
 builder.Services.AddSingleton(FirestoreDb.Create(projectId));
 
 var app = builder.Build();
-app.MapGet("/", () => "Ok chào bọn m, t đã ở đây được 3 đêm rồi");
+app.MapGet("/", () => "Hi guys!!");
 
 app.MapUtilityEndpoints();
 app.MapWorkspaceEndpoints();
