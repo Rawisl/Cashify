@@ -418,7 +418,7 @@
     <string name="group_s_icon">Group\'s Icon</string>
     <string name="group_name_ex_tien_tro_thang_5">Group Name (e.g. May rent money…)</string>
 
-    <string name="add_group">Add group</string>
+    <string name="create_group">Create group</string>
     <string name="community">Community</string>
     <string name="invite">Invite</string>
     <string name="select_friends_to_invite_to_this_workspace">Select friends to invite to this workspace.</string>

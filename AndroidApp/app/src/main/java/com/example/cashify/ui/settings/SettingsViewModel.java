@@ -72,34 +72,6 @@ public class SettingsViewModel extends ViewModel {
                 });
     }
 
-    /**
-     * Executes the logout sequence: Signs out from Firebase and Google Auth.
-     */
-    public void logout(Context context) {
-        FirebaseManager.getInstance().logout();
-
-        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                // Use your actual Web Client ID configured in Google Cloud Console
-                .requestIdToken("195049395718-bagas4hvn2onafmdvd0dqdntsj81o9ef.apps.googleusercontent.com")
-                .requestEmail()
-                .build();
-
-        GoogleSignInClient googleClient = GoogleSignIn.getClient(context, gso);
-
-        googleClient.signOut().addOnCompleteListener(task -> {
-            _isLoggedOut.setValue(true);
-        });
-    }
-
-    /**
-     * Safely clears all local Room Database tables, then triggers logout.
-     */
-    public void clearDataAndLogout(Context context) {
-        Executors.newSingleThreadExecutor().execute(() -> {
-            AppDatabase.getInstance(context).clearAllTables();
-            logout(context);
-        });
-    }
 
     /**
      * Deletes all personal transactions from Cloud and Local DB.

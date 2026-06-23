@@ -139,10 +139,6 @@ public class SettingsFragment extends Fragment {
             );
         });
 
-        //Đẩy logic clear DB nội bộ về ViewModel
-        LinearLayout btnLogout = view.findViewById(R.id.btn_logout);
-        btnLogout.setOnClickListener(v -> settingsViewModel.clearDataAndLogout(requireContext()));
-
         return view;
     }
 

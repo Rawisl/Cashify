@@ -4,11 +4,15 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.text.Spannable;
+import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
+import android.text.style.ForegroundColorSpan;
 import android.text.style.ImageSpan;
 import android.view.Gravity;
 import android.view.Menu;
@@ -19,6 +23,8 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
+import androidx.core.graphics.drawable.DrawableCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.lifecycle.ViewModelProvider;
@@ -150,7 +156,43 @@ public abstract class BaseActivity extends AppCompatActivity {
                     finish();
                 }
             }
+            else if (id == R.id.nav_logout) {
+                drawerLayout.closeDrawer(GravityCompat.START);
+                mainViewModel.clearDataAndLogout();
+                return false;
+            }
             return true;
+        });
+
+        //tô đỏ nút logout
+        Menu menu = navigationView.getMenu();
+        MenuItem logoutItem = menu.findItem(R.id.nav_logout);
+        if (logoutItem != null) {
+            int redColor = ContextCompat.getColor(this, R.color.status_red);
+
+            // chữ
+            SpannableString s = new SpannableString(logoutItem.getTitle());
+            s.setSpan(new ForegroundColorSpan(redColor), 0, s.length(), 0);
+            logoutItem.setTitle(s);
+
+            //icon
+            android.graphics.drawable.Drawable icon = logoutItem.getIcon();
+            if (icon != null) {
+                icon = icon.mutate();
+                // Dùng PorterDuffColorFilter để ép màu ở tầng đồ họa cao nhất
+                icon.setColorFilter(new PorterDuffColorFilter(redColor, PorterDuff.Mode.SRC_IN));
+                logoutItem.setIcon(icon);
+            }
+        }
+
+        // Vì Friends và Invitations là Activity riêng, ta phải ép Sidebar của chúng tự sáng lên khi mở
+        navigationView.post(() -> {
+            if (this instanceof FriendsActivity) {
+                setSidebarItemChecked(R.id.nav_friends);
+            } else if (this instanceof InvitationsActivity) {
+                setSidebarItemChecked(R.id.nav_invitations);
+            }
+            // Cứ thêm else if ở đây nếu sếp có GroupActivity hay màn hình Activity nào khác
         });
     }
 
@@ -163,6 +205,15 @@ public abstract class BaseActivity extends AppCompatActivity {
 
         // Observe Invitation Badge (Cleaned up FirebaseManager code)
         mainViewModel.getInvitationCount().observe(this, count -> updateInvitationsBadge(count != null ? count : 0));
+
+        mainViewModel.isLoggedOut.observe(this, isOut -> {
+            if (isOut != null && isOut) {
+                Intent intent = new Intent(this, com.example.cashify.ui.auth.LoginActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+                finish();
+            }
+        });
     }
 
     private void updateSidebarProfileUI(User user) {
@@ -202,8 +253,34 @@ public abstract class BaseActivity extends AppCompatActivity {
             item.setIcon(iconResId != 0 ? iconResId : R.drawable.ic_other);
             item.setCheckable(true);
         }
-    }
 
+        //DÒNG NÀY ĐỂ BÁO CÁO VẼ XONG
+        onWorkspacesMenuUpdated();
+    }
+    protected void onWorkspacesMenuUpdated() {
+        // Hàm rỗng để cho các Activity con (như MainActivity) tự do ghi đè
+    }
+    protected void setSidebarItemChecked(int itemId) {
+        if (navigationView == null) return;
+        Menu menu = navigationView.getMenu();
+
+        // Tắt toàn bộ selected cũ
+        for (int i = 0; i < menu.size(); i++) {
+            MenuItem item = menu.getItem(i);
+            item.setChecked(false);
+            if (item.hasSubMenu()) {
+                for (int j = 0; j < item.getSubMenu().size(); j++) {
+                    item.getSubMenu().getItem(j).setChecked(false);
+                }
+            }
+        }
+
+        // Chỉ bật sáng item mục tiêu
+        MenuItem target = menu.findItem(itemId);
+        if (target != null) {
+            target.setChecked(true);
+        }
+    }
     private void updateInvitationsBadge(int count) {
         Menu menu = navigationView.getMenu();
         MenuItem inviteItem = menu.findItem(R.id.nav_invitations);
@@ -270,11 +347,5 @@ public abstract class BaseActivity extends AppCompatActivity {
             });
         }
 
-        if (bellIcon != null) {
-            bellIcon.setOnClickListener(v -> {
-                NotificationBottomSheet bottomSheet = new NotificationBottomSheet();
-                bottomSheet.show(getSupportFragmentManager(), "NotificationBottomSheet");
-            });
-        }
     }
 }

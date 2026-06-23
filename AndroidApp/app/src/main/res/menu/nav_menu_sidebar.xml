@@ -2,17 +2,15 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <group android:id="@+id/group_workspaces" android:checkableBehavior="single">
-
+    <group android:id="@+id/group_system" android:checkableBehavior="single">
         <item
             android:id="@+id/nav_workspace_personal"
             android:icon="@drawable/ic_user_solid"
             android:title="@string/personal" />
         <item
-            android:id="@+id/nav_add_workspace"
-            android:icon="@drawable/ic_plus"
-            android:title="@string/add_group" />
-
+            android:id="@+id/nav_logout"
+            android:icon="@drawable/ic_settings_logout"
+            android:title="@string/settings_item_logout" />
     </group>
 
     <group
@@ -34,6 +32,13 @@
             android:icon="@android:drawable/ic_dialog_email"
             android:title="@string/invite" />
 
+    </group>
+
+    <group android:id="@+id/group_workspaces" android:checkableBehavior="single">
+    <item
+        android:id="@+id/nav_add_workspace"
+        android:icon="@drawable/ic_plus"
+        android:title="@string/create_group" />
     </group>
 
 </menu>
